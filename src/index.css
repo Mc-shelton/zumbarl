@@ -1,0 +1,10 @@
+body {
+  margin: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  color: #000;
+  background: #f3f3f6;
+}
+
+#root {
+  min-height: 100vh;
+}

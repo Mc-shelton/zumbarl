@@ -1,0 +1,6 @@
+export { default as Header } from './Header'
+export { default as Hero } from './Hero'
+export { default as AppsWall } from './AppsWall'
+export { default as WheelStory } from './WheelStory'
+export { default as CommunityProof } from './CommunityProof'
+export { default as GrowthCta } from './GrowthCta'
