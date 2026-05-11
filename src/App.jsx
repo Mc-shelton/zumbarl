@@ -1,27 +1,15 @@
+import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
-import Footer from './components/Footer'
-import {
-  AppsWall,
-  CommunityProof,
-  GrowthCta,
-  Header,
-  Hero,
-  WheelStory,
-} from './components/home'
+import HelpPage from './pages/HelpPage'
+import HomePage from './pages/HomePage'
 
 function App() {
   return (
-    <main className="page">
-      <Header />
-      <div id="wrap" className="x_wd">
-        <Hero />
-        <AppsWall />
-        <WheelStory />
-        <CommunityProof />
-        <GrowthCta />
-      </div>
-      <Footer />
-    </main>
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/help" element={<HelpPage />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
+    </Routes>
   )
 }
 

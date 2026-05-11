@@ -9,6 +9,7 @@ import {
   FaYoutube,
 } from 'react-icons/fa6'
 import { HiOutlineCalendarDays, HiOutlinePhone } from 'react-icons/hi2'
+import { Link } from 'react-router-dom'
 import {
   APPS_MEGA_MENU_FOOTER_LINKS,
   APPS_MEGA_MENU_SECTIONS,
@@ -34,6 +35,31 @@ const COMMUNITY_SOCIAL_ICON_BY_ID = {
 const COMMUNITY_QUICK_LINK_ICON_BY_ID = {
   phone: HiOutlinePhone,
   calendar: HiOutlineCalendarDays,
+}
+
+const isInternalRoute = (href) => typeof href === 'string' && href.startsWith('/')
+
+function HeaderLink({ href, children, ...props }) {
+  if (isInternalRoute(href)) {
+    return (
+      <Link to={href} {...props}>
+        {children}
+      </Link>
+    )
+  }
+
+  const isExternal = typeof href === 'string' && href.startsWith('http')
+
+  return (
+    <a
+      href={href}
+      target={isExternal ? '_blank' : undefined}
+      rel={isExternal ? 'noreferrer noopener' : undefined}
+      {...props}
+    >
+      {children}
+    </a>
+  )
 }
 
 function Header() {
@@ -133,9 +159,9 @@ function Header() {
                   >
                     {groupItems.map((item) => (
                       <li key={item.id}>
-                        <a href={item.href} onClick={closeMegaMenu} tabIndex={isOpen ? 0 : -1}>
+                        <HeaderLink href={item.href} onClick={closeMegaMenu} tabIndex={isOpen ? 0 : -1}>
                           {item.label}
-                        </a>
+                        </HeaderLink>
                       </li>
                     ))}
                   </ul>
@@ -154,7 +180,7 @@ function Header() {
                     : {}
 
                   return (
-                    <a
+                    <HeaderLink
                       key={item.label}
                       href={item.href}
                       className="community-mega-social-link"
@@ -164,7 +190,7 @@ function Header() {
                       {...externalProps}
                     >
                       {Icon ? <Icon className="community-mega-social-icon" aria-hidden="true" /> : item.label}
-                    </a>
+                    </HeaderLink>
                   )
                 })}
               </div>
@@ -174,7 +200,7 @@ function Header() {
                   const Icon = COMMUNITY_QUICK_LINK_ICON_BY_ID[item.icon]
 
                   return (
-                    <a
+                    <HeaderLink
                       key={item.label}
                       href={item.href}
                       className="community-mega-quick-link"
@@ -183,7 +209,7 @@ function Header() {
                     >
                       {Icon ? <Icon className="community-mega-quick-icon" aria-hidden="true" /> : null}
                       <span>{item.label}</span>
-                    </a>
+                    </HeaderLink>
                   )
                 })}
               </div>
@@ -191,7 +217,7 @@ function Header() {
           ) : (
             <div className="apps-mega-footer">
               {footerLinks.map((item) => (
-                <a
+                <HeaderLink
                   key={item.label}
                   href={item.href}
                   className="apps-mega-footer-link"
@@ -199,7 +225,7 @@ function Header() {
                   tabIndex={isOpen ? 0 : -1}
                 >
                   {item.label}
-                </a>
+                </HeaderLink>
               ))}
             </div>
           )}
@@ -215,9 +241,9 @@ function Header() {
       style={{ '--top-nav-height': `${topNavHeight}px` }}
     >
       <header ref={topNavRef} className="top-nav">
-        <a className="logo-link" href="index.html" aria-label="Zumbarl">
+        <Link className="logo-link" to="/" aria-label="Zumbarl" onClick={closeMegaMenu}>
           <img className="logo-img" src="/assets/index/bee.png" alt="Zumbarl bee logo" />
-        </a>
+        </Link>
 
         <nav className="nav-links" aria-label="Primary">
           {NAV_LINKS.map((link) => {
@@ -239,26 +265,10 @@ function Header() {
               )
             }
 
-            if (link === 'Help') {
-              return (
-                <a
-                  key={link}
-                  href={NAV_LINK_HREFS.Help || '/help'}
-                  onClick={(event) => {
-                    event.preventDefault()
-                    closeMegaMenu()
-                    window.location.assign(NAV_LINK_HREFS.Help || '/help')
-                  }}
-                >
-                  {link}
-                </a>
-              )
-            }
-
             return (
-              <a key={link} href={NAV_LINK_HREFS[link] || 'index.html'} onClick={closeMegaMenu}>
+              <HeaderLink key={link} href={NAV_LINK_HREFS[link] || '/'} onClick={closeMegaMenu}>
                 {link}
-              </a>
+              </HeaderLink>
             )
           })}
         </nav>

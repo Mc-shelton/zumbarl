@@ -32,10 +32,10 @@ export { HERO_DOODLE }
 
 export const NAV_LINKS = ['Apps', 'Industries', 'Community', 'Pricing', 'Help']
 export const NAV_LINK_HREFS = {
-  Apps: 'index.html',
-  Industries: 'index.html',
-  Community: 'index.html',
-  Pricing: 'index.html',
+  Apps: '/',
+  Industries: '/',
+  Community: '/',
+  Pricing: '/',
   Help: '/help',
 }
 export const WHEEL_IMAGE = '/assets/index/wheel.png'
@@ -148,7 +148,7 @@ export const DOC_APPS_FOR_GRID = ZUMBARL_APPS_FROM_DOCS.map((app, index) => {
 
   return {
     ...app,
-    href: 'index.html',
+    href: '/',
     icon: Icon,
     iconColor,
   }
@@ -200,15 +200,15 @@ export const APPS_MEGA_MENU_SECTIONS = sortedPillars.map((pillar) => {
       return {
         id: app.id,
         label: app.name,
-        href: visual?.href || 'index.html',
+        href: visual?.href || '/',
       }
     }),
   }
 })
 
 export const APPS_MEGA_MENU_FOOTER_LINKS = [
-  { label: 'All Zumbarl Apps', href: 'index.html' },
-  { label: 'Campus Integrations', href: 'index.html' },
+  { label: 'All Zumbarl Apps', href: '/' },
+  { label: 'Campus Integrations', href: '/' },
   { label: 'Business Console', href: 'appointment.html' },
 ]
 
@@ -276,11 +276,11 @@ export const INDUSTRIES_MEGA_MENU_SECTIONS = INDUSTRY_MEGA_MENU_SOURCE.map((sect
   items: section.items.map((label) => ({
     id: `industry-${slugifyMenuLabel(section.title)}-${slugifyMenuLabel(label)}`,
     label,
-    href: 'index.html',
+    href: '/',
   })),
 }))
 
-export const INDUSTRIES_MEGA_MENU_FOOTER_LINKS = [{ label: 'Browse all Industries', href: 'index.html' }]
+export const INDUSTRIES_MEGA_MENU_FOOTER_LINKS = [{ label: 'Browse all Industries', href: '/' }]
 
 const COMMUNITY_MEGA_MENU_SOURCE = [
   {
@@ -333,7 +333,7 @@ export const COMMUNITY_MEGA_MENU_SECTIONS = COMMUNITY_MEGA_MENU_SOURCE.map((sect
     labels.map((label) => ({
       id: `community-${slugifyMenuLabel(section.title)}-${groupIndex}-${slugifyMenuLabel(label)}`,
       label,
-      href: 'index.html',
+      href: '/',
     })),
   ),
 }))

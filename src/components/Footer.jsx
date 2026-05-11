@@ -7,6 +7,7 @@ import {
   TbBrandX,
   TbPhone,
 } from 'react-icons/tb'
+import { Link } from 'react-router-dom'
 
 const COMMUNITY_LINKS = [
   { label: 'Tutorials', href: 'slides/all/tag/zumbarl-tutorials-9.html' },
@@ -53,6 +54,26 @@ const SOCIAL_LINKS = [
   { label: 'Phone', href: 'tel:+3222903490', Icon: TbPhone },
 ]
 
+const isInternalRoute = (href) => typeof href === 'string' && href.startsWith('/')
+
+function FooterLink({ href, children, ...props }) {
+  if (isInternalRoute(href)) {
+    return (
+      <Link to={href} {...props}>
+        {children}
+      </Link>
+    )
+  }
+
+  const isExternal = typeof href === 'string' && href.startsWith('http')
+
+  return (
+    <a href={href} target={isExternal ? '_blank' : undefined} rel={isExternal ? 'noreferrer noopener' : undefined} {...props}>
+      {children}
+    </a>
+  )
+}
+
 function FooterList({ title, links }) {
   return (
     <section className="footer-list">
@@ -60,9 +81,9 @@ function FooterList({ title, links }) {
       <ul className="footer-list-links">
         {links.map((link) => (
           <li key={link.label}>
-            <a href={link.href} target={link.href.startsWith('http') ? '_blank' : undefined} rel="noreferrer">
+            <FooterLink href={link.href}>
               {link.label}
-            </a>
+            </FooterLink>
           </li>
         ))}
       </ul>
@@ -75,10 +96,10 @@ function Footer() {
     <footer className="site-footer" id="bottom" data-anchor="true">
       <div className="footer-shell">
         <div className="container">
-          <a className="footer-brand" href="index.html" aria-label="Zumbarl logo">
+          <Link className="footer-brand" to="/" aria-label="Zumbarl logo">
             <img className="footer-brand-logo" src="/assets/index/bee_nobg.png" alt="Zumbarl bee logo" />
             <span className="footer-brand-text">zumbarl.</span>
-          </a>
+          </Link>
 
           <div className="footer-grid">
             <div className="footer-links-grid">
@@ -94,13 +115,9 @@ function Footer() {
                 <ul className="footer-list-links">
                   {ABOUT_LINKS.map((link) => (
                     <li key={link.label}>
-                      <a
-                        href={link.href}
-                        target={link.href.startsWith('http') ? '_blank' : undefined}
-                        rel="noreferrer"
-                      >
+                      <FooterLink href={link.href}>
                         {link.label}
-                      </a>
+                      </FooterLink>
                     </li>
                   ))}
                   <li className="footer-legal-links">
