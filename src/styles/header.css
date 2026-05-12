@@ -1,0 +1,603 @@
+.top-nav-shell {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  background: var(--theme-white);
+  transform: translateY(0);
+  transition: transform 0.24s ease;
+  will-change: transform;
+}
+
+.top-nav-shell.is-hidden {
+  transform: translateY(calc(-100% - 2px));
+  pointer-events: none;
+}
+
+.top-nav-shell.is-apps-open {
+  border-bottom: 0;
+}
+
+.top-nav-shell.is-apps-open::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: #d8dde7;
+  pointer-events: none;
+  z-index: 96;
+}
+
+.top-nav {
+  position: relative;
+  z-index: 95;
+  width: min(1320px, 100% - 64px);
+  margin: 0 auto;
+  padding: 14px 0;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 24px;
+}
+
+.logo-link {
+  text-decoration: none;
+  color: inherit;
+  justify-self: start;
+}
+
+.logo {
+  display: inline-block;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 28px;
+  letter-spacing: -0.06em;
+  line-height: 1;
+  font-weight: 800;
+  color: #7b7386;
+}
+
+.logo-img {
+  display: block;
+  height: 62px;
+  width: auto;
+}
+
+.nav-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 34px;
+}
+
+.nav-links a,
+.nav-link-btn {
+  text-decoration: none;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 600;
+  color: var(--theme-dark);
+  white-space: nowrap;
+}
+
+.nav-link-btn {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
+.nav-link-btn.is-active {
+  color: #714b67;
+}
+
+.nav-link-btn:focus-visible {
+  outline: 2px solid rgba(113, 75, 103, 0.35);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+.nav-link-caret {
+  font-size: 12px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.nav-link-caret.is-open {
+  transform: rotate(180deg);
+}
+
+.apps-menu-backdrop {
+  position: fixed;
+  top: var(--top-nav-height, 90px);
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: rgba(17, 24, 39, 0.42);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.22s ease;
+  z-index: 70;
+}
+
+.apps-menu-backdrop.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.apps-mega-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--theme-white);
+  border-top: 0;
+  border-bottom: 1px solid #e7e9ee;
+  z-index: 80;
+  opacity: 0;
+  visibility: hidden;
+  clip-path: inset(0 0 100% 0);
+  pointer-events: none;
+  transition:
+    opacity 0.18s ease,
+    clip-path 0.34s cubic-bezier(0.22, 0.8, 0.24, 1),
+    visibility 0s linear 0.34s;
+}
+
+.apps-mega-menu.is-open {
+  opacity: 1;
+  visibility: visible;
+  clip-path: inset(0 0 0 0);
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+.apps-mega-menu-inner {
+  padding: 28px 0 12px;
+  transform: translateY(-14px);
+  transition: transform 0.34s cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+
+.apps-mega-menu.is-open .apps-mega-menu-inner {
+  transform: translateY(0);
+}
+
+.apps-mega-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 34px 42px;
+  margin-bottom: 4%;
+}
+
+.apps-mega-section-title {
+  margin: 0;
+  padding-bottom: 10px;
+  border-bottom: 0;
+  position: relative;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(10px, 0.7vw, 15px);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: translateY(-9px);
+  transition:
+    opacity 0.24s ease,
+    transform 0.28s cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+
+.apps-mega-section-title::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.3;
+}
+
+.apps-mega-section-list li {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.24s ease,
+    transform 0.28s cubic-bezier(0.22, 0.8, 0.24, 1);
+}
+
+.apps-mega-menu.is-open .apps-mega-section-title,
+.apps-mega-menu.is-open .apps-mega-section-list li {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.apps-mega-section {
+  --apps-menu-col-delay: 0s;
+  --apps-menu-row-delay: 0s;
+}
+
+.apps-mega-section:nth-child(4n + 1) {
+  --apps-menu-col-delay: 0.03s;
+}
+
+.apps-mega-section:nth-child(4n + 2) {
+  --apps-menu-col-delay: 0.08s;
+}
+
+.apps-mega-section:nth-child(4n + 3) {
+  --apps-menu-col-delay: 0.13s;
+}
+
+.apps-mega-section:nth-child(4n + 4) {
+  --apps-menu-col-delay: 0.18s;
+}
+
+.apps-mega-section:nth-child(n + 5) {
+  --apps-menu-row-delay: 0.03s;
+}
+
+.apps-mega-section:nth-child(n + 9) {
+  --apps-menu-row-delay: 0.06s;
+}
+
+.apps-mega-menu.is-open .apps-mega-section .apps-mega-section-title {
+  transition-delay: calc(var(--apps-menu-col-delay) + var(--apps-menu-row-delay));
+}
+
+.apps-mega-menu.is-open .apps-mega-section .apps-mega-section-list li {
+  transition-delay: calc(var(--apps-menu-col-delay) + var(--apps-menu-row-delay) + 0.03s);
+}
+
+.apps-mega-section:nth-child(8n + 1) .apps-mega-section-title,
+.apps-mega-section:nth-child(8n + 6) .apps-mega-section-title {
+  color: #2b909f;
+}
+
+.apps-mega-section:nth-child(8n + 2) .apps-mega-section-title,
+.apps-mega-section:nth-child(8n + 7) .apps-mega-section-title {
+  color: #d56b73;
+}
+
+.apps-mega-section:nth-child(8n + 3) .apps-mega-section-title,
+.apps-mega-section:nth-child(8n + 8) .apps-mega-section-title {
+  color: #587797;
+}
+
+.apps-mega-section:nth-child(8n + 4) .apps-mega-section-title {
+  color: #6d668f;
+}
+
+.apps-mega-section:nth-child(8n + 5) .apps-mega-section-title {
+  color: #7d5f79;
+}
+
+.apps-mega-section.tone-teal .apps-mega-section-title {
+  color: #2b909f;
+}
+
+.apps-mega-section.tone-blue .apps-mega-section-title {
+  color: #587797;
+}
+
+.apps-mega-section.tone-coral .apps-mega-section-title {
+  color: #d56b73;
+}
+
+.apps-mega-section.tone-violet .apps-mega-section-title {
+  color: #6d668f;
+}
+
+.apps-mega-section.tone-indigo .apps-mega-section-title {
+  color: #5f6488;
+}
+
+.apps-mega-section.tone-orange .apps-mega-section-title {
+  color: #d9764a;
+}
+
+.apps-mega-section.tone-plum .apps-mega-section-title {
+  color: #7d5f79;
+}
+
+.apps-mega-section-list {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.apps-mega-section-group + .apps-mega-section-group {
+  margin-top: 20px;
+}
+
+.community-mega-menu .apps-mega-section-group + .apps-mega-section-group {
+  margin-top: 26px;
+}
+
+.apps-mega-section-list a {
+  text-decoration: none;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.3;
+  font-weight: 500;
+  color: #434b5c;
+}
+
+.apps-mega-section-list a:hover {
+  color: #2a3348;
+}
+
+.apps-mega-footer {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #eceef3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 34px;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition:
+    opacity 0.24s ease,
+    transform 0.28s cubic-bezier(0.22, 0.8, 0.24, 1);
+  transition-delay: 0.28s;
+}
+
+.apps-mega-menu.is-open .apps-mega-footer {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.community-mega-footer {
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.community-mega-socials {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 24px;
+}
+
+.community-mega-social-link {
+  width: 22px;
+  height: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  color: #4a5162;
+}
+
+.community-mega-social-icon {
+  width: 17px;
+  height: 17px;
+  display: block;
+}
+
+.community-mega-social-link:hover {
+  color: #2e3549;
+}
+
+.community-mega-quick-links {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 26px;
+}
+
+.community-mega-quick-link {
+  text-decoration: none;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.68rem;
+  line-height: 1.25;
+  font-weight: 600;
+  color: #424a5c;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.community-mega-quick-icon {
+  width: 15px;
+  height: 15px;
+  display: block;
+  color: #626a7d;
+}
+
+.community-mega-quick-link:hover {
+  color: #2f374a;
+}
+
+.apps-mega-footer-link {
+  text-decoration: none;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.7rem;
+  line-height: 1.25;
+  font-weight: 600;
+  color: #424a5c;
+}
+
+.apps-mega-footer-link:hover {
+  color: #2f374a;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 20px;
+}
+
+.sign-in {
+  text-decoration: none;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 14px;
+  line-height: 1.2;
+  font-weight: 600;
+  color: var(--theme-dark);
+  white-space: nowrap;
+}
+
+.try-btn {
+  text-decoration: none;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  border-radius: 10px;
+  background: var(--theme-dark);
+  color: var(--theme-white);
+  font-size: 14px;
+  line-height: 1.2;
+  padding: 9px 18px;
+  white-space: nowrap;
+}
+
+@media (max-width: 1199px) {
+  .logo {
+    font-size: 24px;
+  }
+
+  .logo-img {
+    height: 36px;
+  }
+
+  .nav-links {
+    gap: 26px;
+  }
+
+  .apps-mega-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 30px 34px;
+  }
+}
+
+@media (max-width: 991px) {
+  .top-nav {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 10px;
+  }
+
+  .apps-mega-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 24px 24px;
+  }
+
+  .apps-mega-footer {
+    justify-content: flex-start;
+  }
+
+  .community-mega-footer {
+    justify-content: center;
+  }
+
+  .community-mega-socials,
+  .community-mega-quick-links {
+    justify-content: flex-start;
+  }
+
+  .logo-link {
+    justify-self: center;
+  }
+
+  .nav-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 767px) {
+  .top-nav {
+    width: min(1320px, 100% - 28px);
+  }
+
+  .nav-links {
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+
+  .nav-links a,
+  .nav-link-btn,
+  .sign-in,
+  .try-btn {
+    font-size: 14px;
+  }
+
+  .apps-mega-menu-inner {
+    padding: 20px 0 10px;
+  }
+
+  .apps-mega-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+
+  .apps-mega-section-title {
+    font-size: 13px;
+  }
+
+  .apps-mega-section-list {
+    margin-top: 10px;
+    gap: 8px;
+  }
+
+  .apps-mega-section-group + .apps-mega-section-group {
+    margin-top: 16px;
+  }
+
+  .community-mega-menu .apps-mega-section-group + .apps-mega-section-group {
+    margin-top: 20px;
+  }
+
+  .apps-mega-section-list a {
+    font-size: 0.84rem;
+  }
+
+  .apps-mega-footer {
+    margin-top: 18px;
+    padding-top: 12px;
+    justify-content: flex-start;
+    gap: 8px 18px;
+  }
+
+  .community-mega-footer {
+    gap: 10px;
+  }
+
+  .community-mega-socials {
+    gap: 8px 18px;
+  }
+
+  .community-mega-quick-links {
+    justify-content: flex-start;
+    gap: 8px 18px;
+  }
+
+  .community-mega-quick-link {
+    font-size: 0.72rem;
+  }
+
+  .apps-mega-footer-link {
+    font-size: 0.84rem;
+  }
+
+  .logo {
+    font-size: 22px;
+  }
+
+  .logo-img {
+    height: 32px;
+  }
+}

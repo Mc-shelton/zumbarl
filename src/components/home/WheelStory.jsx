@@ -222,8 +222,8 @@ export default function WheelStory() {
 
               <div className="wheel-panel-quote-card">
                 <img className="wheel-panel-quote-avatar" src={QUOTE_AVATAR} alt="Zumbarl bee mark" loading="lazy" />
-                <p className="wheel-panel-quote-text">Ninety percent of life is just showing up.</p>
-                <p className="wheel-panel-quote-author">- Shellton Kiage, Advent Band.</p>
+                <p className="wheel-panel-quote-text">Education's a dress rehearsal for a life that is yours to lead.</p>
+                <p className="wheel-panel-quote-author">- Nora Ephron, Writer.</p>
               </div>
             </article>
             <h3 className="wheel-panel-title">

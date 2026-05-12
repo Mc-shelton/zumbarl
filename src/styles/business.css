@@ -1,0 +1,1098 @@
+.business-page {
+  --business-bg: #ffffff;
+  --business-surface: #fbfcff;
+  --business-text: #171f34;
+  --business-muted: #3a4255;
+  --business-muted-soft: #687286;
+  --business-border: #e4e7ec;
+  --business-shadow: 0 14px 26px rgba(25, 29, 42, 0.08);
+  --business-accent-coral: #e57e7f;
+  --business-accent-blue: #57a9e4;
+  --business-accent-teal: #57c1b2;
+  --business-accent-brush: var(--theme-orange);
+  --business-link-blue: #3b79c7;
+  --business-enterprise-bg: #f3f4f6;
+  --business-enterprise-panel: #ffffff;
+  --business-values-panel-bg: #ffffff;
+  --business-enterprise-title: #121a2f;
+  --business-enterprise-copy: #39435a;
+  --business-enterprise-quote: #2d3448;
+  --business-enterprise-avatar-a: #93b3e0;
+  --business-enterprise-avatar-b: #6e5466;
+  --business-value-icon-bg: #eef3f9;
+  --business-value-icon-stroke: #5f6c84;
+  --business-toggle-track: #ececef;
+  --business-toggle-knob: #6e5466;
+  background: var(--business-bg);
+}
+
+.business-hero {
+  background: var(--business-bg);
+  padding: 50px 0 52px;
+}
+
+.business-hero-inner {
+  text-align: center;
+}
+
+.business-title {
+  margin: 0;
+  display: inline-block;
+  position: relative;
+  font-family: 'Caveat', cursive;
+  font-size: clamp(54px, 5.2vw, 88px);
+  line-height: 1;
+  color: var(--business-text);
+}
+
+.business-title::after {
+  content: '';
+  position: absolute;
+  left: 43%;
+  right: 18%;
+  bottom: -7px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--business-accent-coral);
+}
+
+.business-explainer-pill {
+  margin-top: 34px;
+  max-width: 700px;
+}
+
+.business-enterprise {
+  background: var(--business-enterprise-bg);
+}
+
+.business-enterprise-spotlight {
+  padding: 34px 0 26px;
+}
+
+.business-enterprise-spotlight-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(20px, 2.6vw, 44px);
+  align-items: start;
+}
+
+.business-enterprise-copy h2 {
+  margin: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(22px, 2.05vw, 32px);
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--business-enterprise-title);
+}
+
+.business-enterprise-copy p {
+  margin: 12px 0 0;
+  max-width: 430px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(12px, 0.9vw, 16px);
+  line-height: 1.45;
+  font-weight: 500;
+  color: var(--business-enterprise-copy);
+}
+
+.business-enterprise-cta {
+  margin-top: 18px;
+  min-height: 42px;
+  min-width: 144px;
+  border: 1px solid var(--business-link-blue);
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--business-link-blue);
+}
+
+.business-enterprise-cta svg {
+  width: 12px;
+  height: 12px;
+}
+
+.business-enterprise-testimonial {
+  padding-top: 4px;
+}
+
+.business-enterprise-quote {
+  margin: 0;
+  max-width: 450px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(14px, 1.04vw, 20px);
+  line-height: 1.42;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: var(--business-enterprise-quote);
+}
+
+.business-enterprise-person {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.business-enterprise-avatar {
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 3px solid #ffffff;
+  box-shadow: 0 8px 16px rgba(18, 24, 41, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex: 0 0 auto;
+}
+
+.business-enterprise-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+  padding: 7px;
+  display: block;
+}
+
+.business-enterprise-person p {
+  margin: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(16px, 1.2vw, 22px);
+  line-height: 1.18;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--business-enterprise-title);
+}
+
+.business-enterprise-person span {
+  display: block;
+  margin-top: 4px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(11px, 0.75vw, 13px);
+  line-height: 1.3;
+  font-weight: 500;
+  color: var(--business-enterprise-copy);
+}
+
+.business-enterprise-video {
+  margin-top: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.74rem;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--business-link-blue);
+  text-decoration: none;
+}
+
+.business-enterprise-video svg {
+  width: 11px;
+  height: 11px;
+}
+
+.business-enterprise-join{
+  display: flex;
+  align-items: center;
+  margin-top: 5%;
+  margin-bottom: 5%;
+  justify-content: center;
+  flex-direction: column;
+}
+.business-enterprise-join p{
+  margin: 0;
+  font-family: 'Caveat', cursive;
+  font-size: clamp(46px, 4.2vw, 72px);
+  line-height: 1.18;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--business-enterprise-title);
+  margin-bottom: 2%;
+}
+.business-enterprise-join button{
+width: 20%;
+height: 60px;
+font-size: clamp(10px, 1vw, 18px);
+}
+.business-enterprise-collage {
+  height: 620px;
+  padding: 0 0 118px;
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+}
+
+.business-enterprise-collage-grid {
+  width: min(1680px, 100%);
+  margin: 0 auto;
+  padding: 0 6px;
+  display: grid;
+  grid-template-columns: repeat(30, minmax(0, 1fr));
+  grid-auto-rows: 15px;
+  grid-auto-flow: dense;
+  gap: 4px;
+}
+
+.business-collage-tile {
+  grid-column: span 5;
+  grid-row: span 8;
+  border-radius: 5px;
+  border: 1px solid #d7deea;
+  background: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.business-collage-tile.variant-square {
+  grid-column: span 6;
+  grid-row: span 8;
+}
+
+.business-collage-tile.variant-wide {
+  grid-column: span 8;
+  grid-row: span 7;
+}
+
+.business-collage-tile.variant-tall {
+  grid-column: span 5;
+  grid-row: span 11;
+}
+
+.business-collage-tile.variant-hero {
+  grid-column: span 10;
+  grid-row: span 10;
+}
+
+.business-collage-tile img {
+  width: min(68px, 72%);
+  height: auto;
+  display: block;
+  opacity: 0.94;
+}
+
+.business-collage-tile.variant-hero img {
+  width: min(84px, 74%);
+}
+
+.business-collage-tile.variant-wide img {
+  width: min(76px, 74%);
+}
+
+.business-collage-tile.tone-blue {
+  background: #ecf5ff;
+}
+
+.business-collage-tile.tone-teal {
+  background: #e9f9f3;
+}
+
+.business-collage-tile.tone-coral {
+  background: #fff0f0;
+}
+
+.business-collage-tile.tone-purple {
+  background: #f3effa;
+}
+
+.business-values-section {
+  background: #ffffff;
+  padding: 0 0 34px;
+}
+
+.business-values-wrap {
+  margin-top: -328px;
+  margin-bottom: 30px;
+  position: relative;
+  z-index: 3;
+}
+
+.business-values-panel {
+  background: var(--business-values-panel-bg);
+  border-radius: 12px;
+  border: 1px solid var(--business-border);
+  box-shadow: 0 26px 44px rgba(21, 28, 45, 0.14);
+  padding: clamp(30px, 3.8vw, 56px);
+  max-width: 1040px;
+  margin-inline: auto;
+}
+
+.business-values-header {
+  text-align: center;
+}
+
+.business-values-header h3 {
+  margin: 0;
+  max-width: 600px;
+  margin-inline: auto;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(24px, 2.1vw, 34px);
+  line-height: 1.12;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--business-enterprise-title);
+}
+
+.business-values-header i {
+  margin: 16px auto 0;
+  width: 30px;
+  height: 2px;
+  border-radius: 999px;
+  display: block;
+  background: var(--business-accent-coral);
+}
+
+.business-values-grid {
+  margin-top: clamp(30px, 3.2vw, 42px);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(26px, 3vw, 42px) clamp(28px, 3.3vw, 48px);
+}
+
+.business-value-item {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 16px;
+}
+
+.business-value-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--business-value-icon-bg);
+  color: var(--business-value-icon-stroke);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.business-value-icon svg {
+  width: 22px;
+  height: 22px;
+}
+
+.business-value-item h4 {
+  margin: 2px 0 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(16px, 1.15vw, 22px);
+  line-height: 1.24;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--business-enterprise-title);
+}
+
+.business-value-item p {
+  margin: 12px 0 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(12px, 0.86vw, 15px);
+  line-height: 1.6;
+  font-weight: 500;
+  color: var(--business-enterprise-copy);
+}
+
+.business-values-cta {
+  margin: clamp(30px, 3vw, 46px) auto 0;
+  min-height: 42px;
+  min-width: 170px;
+  padding: 0 18px;
+  border: 1px solid var(--business-link-blue);
+  border-radius: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-decoration: none;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--business-link-blue);
+}
+
+.business-values-cta svg {
+  width: 11px;
+  height: 11px;
+}
+
+.business-trust-strip {
+  background: #ffffff;
+  padding: 20px 0 22px;
+}
+
+.business-trust-inner {
+  text-align: center;
+}
+
+.business-trust-label {
+  margin: 0;
+  font-family: 'Caveat', cursive;
+  font-size: 2rem;
+  line-height: 1.2;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.business-trust-label-brush {
+  display: inline-block;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 42' fill='none'%3E%3Cpath d='M190.276 34.0098C195.894 33.7601 197.412 27.4844 194.72 24.255C194.757 24.0053 194.775 23.7557 194.792 23.506C201.838 22.5571 201.802 11.7535 194.269 11.9533C193.473 11.97 192.679 11.97 191.866 12.0033C196.78 9.57294 195.931 0.800305 189.264 0.983415C130.765 2.54818 72.2839 4.11294 13.7848 5.67771C6.55818 5.87746 6.28715 15.0995 12.2852 16.9972C10.0992 16.9972 7.93119 16.9972 5.74517 16.9806C-1.95115 16.9306 -1.87888 28.2668 5.74517 28.6164C13.9654 28.9992 22.1676 29.3488 30.3878 29.6318C27.7863 29.7483 25.1847 29.8649 22.565 29.9814C14.941 30.3309 14.8868 41.9667 22.565 41.6172C78.4804 39.087 134.378 36.5401 190.294 34.0098H190.276Z' fill='%23fbb130'/%3E%3C/svg%3E");
+  background-position: center 62%;
+  background-repeat: no-repeat;
+  background-size: 102% 0.48em;
+  color: inherit;
+  padding: 0 0.04em 0.03em;
+  white-space: nowrap;
+}
+
+.business-trust-label::after {
+  content: '';
+  display: block;
+  width: 18px;
+  height: 2px;
+  border-radius: 999px;
+  margin: 9px auto 0;
+  background: var(--business-accent-coral);
+}
+
+.business-trust-logos {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(25px, 2.35vw, 38px);
+  flex-wrap: wrap;
+}
+
+.business-trust-logo {
+  color: #1f2537;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+}
+
+.business-brand-amazon {
+  position: relative;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(15px, 1.15vw, 20px);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #23262e;
+  text-transform: lowercase;
+}
+
+.business-brand-amazon::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 16%;
+  bottom: -4px;
+  height: 3px;
+  border-radius: 999px;
+  border-bottom: 2px solid #f2a43d;
+  transform: skewX(-25deg);
+}
+
+.business-brand-kpmg {
+  position: relative;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(16px, 1.2vw, 22px);
+  line-height: 1;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #2e4fa7;
+}
+
+.business-brand-kpmg::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  right: 2px;
+  top: -7px;
+  height: 7px;
+  border-top: 1px solid rgba(46, 79, 167, 0.62);
+  border-left: 1px solid rgba(46, 79, 167, 0.62);
+  border-right: 1px solid rgba(46, 79, 167, 0.62);
+}
+
+.business-brand-renault {
+  width: 18px;
+  height: 26px;
+  border: 2px solid #111318;
+  border-top: 0;
+  border-bottom: 0;
+  transform: rotate(8deg);
+  clip-path: polygon(50% 0%, 98% 50%, 50% 100%, 2% 50%);
+}
+
+.business-brand-netflix {
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(17px, 1.25vw, 22px);
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: #d73737;
+}
+
+.business-brand-hp {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #111318;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 13px;
+  line-height: 1;
+  font-style: italic;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  text-transform: lowercase;
+}
+
+.business-brand-facebook {
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #3b73d8;
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 700;
+  transform: translateY(2px);
+}
+
+.business-trust-link {
+  margin-top: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.9rem;
+  line-height: 1;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-top: 3%;
+  color: var(--theme-dark);
+  margin-bottom: 4%;
+}
+
+.business-trust-link svg {
+  width: 12px;
+  height: 12px;
+}
+
+.business-plans {
+  background: var(--bg-panel);
+  padding: 44px 0 72px;
+  position: relative;
+  overflow: hidden;
+}
+
+.business-plans::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 143px;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjE0MyIgdmlld0JveD0iMCAwIDE2MDAgMTQzIj4KCTxwYXRoIGZpbGw9IiNmZmZmZmYiIGQ9Ik04MDAsM2MyODEsMCw1NTAuNCw0OS42LDgwMCwxNDAuNFYwSDB2MTQzLjRDMjQ5LjYsNTIuNiw1MTksMyw4MDAsM3oiIC8+Cjwvc3ZnPgo=");
+  background-position: top center;
+  background-size: 100% auto;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+.business-plans::after {
+  content: '';
+  position: absolute;
+  left: -12%;
+  right: -12%;
+  top: 18px;
+  height: 138px;
+  background: var(--bg-panel);
+  border-top-left-radius: 50% 100%;
+  border-top-right-radius: 50% 100%;
+  z-index: 1;
+}
+
+.business-plans-inner {
+  position: relative;
+  z-index: 2;
+}
+
+.business-opportunities-header {
+  margin: 0 auto;
+  max-width: 760px;
+  text-align: center;
+}
+
+.business-opportunities-label {
+  margin: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(11px, 0.78vw, 13px);
+  line-height: 1;
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--business-muted-soft);
+}
+
+.business-opportunities-header h2 {
+  margin: 8px 0 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(26px, 2.2vw, 38px);
+  line-height: 1.08;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--business-enterprise-title);
+}
+
+.business-opportunities-header > p:last-child {
+  margin: 10px auto 0;
+  max-width: 620px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(13px, 0.98vw, 17px);
+  line-height: 1.45;
+  font-weight: 500;
+  color: var(--business-muted);
+}
+
+.business-opportunities-grid {
+  list-style: none;
+  margin: 24px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.business-opportunity-card {
+  min-height: 212px;
+  border-radius: 12px;
+  border: 1px solid var(--business-border);
+  background: var(--business-surface);
+  box-shadow: var(--business-shadow);
+  padding: 18px 18px 16px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.business-opportunity-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  border-top-left-radius: 12px;
+  border-top-right-radius: 12px;
+  background: var(--business-accent-blue);
+}
+
+.business-opportunity-card.tone-coral::before {
+  background: var(--business-accent-coral);
+}
+
+.business-opportunity-card.tone-teal::before {
+  background: var(--business-accent-teal);
+}
+
+.business-opportunity-number {
+  margin: 10px 0 0;
+  display: inline-block;
+  align-self: flex-start;
+  padding: 0 0.08em 0.08em;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(20px, 1.6vw, 28px);
+  line-height: 1;
+  font-weight: 700;
+  color: var(--theme-dark);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 42' fill='none'%3E%3Cpath d='M190.276 34.0098C195.894 33.7601 197.412 27.4844 194.72 24.255C194.757 24.0053 194.775 23.7557 194.792 23.506C201.838 22.5571 201.802 11.7535 194.269 11.9533C193.473 11.97 192.679 11.97 191.866 12.0033C196.78 9.57294 195.931 0.800305 189.264 0.983415C130.765 2.54818 72.2839 4.11294 13.7848 5.67771C6.55818 5.87746 6.28715 15.0995 12.2852 16.9972C10.0992 16.9972 7.93119 16.9972 5.74517 16.9806C-1.95115 16.9306 -1.87888 28.2668 5.74517 28.6164C13.9654 28.9992 22.1676 29.3488 30.3878 29.6318C27.7863 29.7483 25.1847 29.8649 22.565 29.9814C14.941 30.3309 14.8868 41.9667 22.565 41.6172C78.4804 39.087 134.378 36.5401 190.294 34.0098H190.276Z' fill='%2357a9e4'/%3E%3C/svg%3E");
+  background-position: center 76%;
+  background-repeat: no-repeat;
+  background-size: 104% 0.5em;
+}
+
+.business-opportunity-number.tone-coral {
+  color: var(--theme-dark);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 42' fill='none'%3E%3Cpath d='M190.276 34.0098C195.894 33.7601 197.412 27.4844 194.72 24.255C194.757 24.0053 194.775 23.7557 194.792 23.506C201.838 22.5571 201.802 11.7535 194.269 11.9533C193.473 11.97 192.679 11.97 191.866 12.0033C196.78 9.57294 195.931 0.800305 189.264 0.983415C130.765 2.54818 72.2839 4.11294 13.7848 5.67771C6.55818 5.87746 6.28715 15.0995 12.2852 16.9972C10.0992 16.9972 7.93119 16.9972 5.74517 16.9806C-1.95115 16.9306 -1.87888 28.2668 5.74517 28.6164C13.9654 28.9992 22.1676 29.3488 30.3878 29.6318C27.7863 29.7483 25.1847 29.8649 22.565 29.9814C14.941 30.3309 14.8868 41.9667 22.565 41.6172C78.4804 39.087 134.378 36.5401 190.294 34.0098H190.276Z' fill='%23e57e7f'/%3E%3C/svg%3E");
+}
+
+.business-opportunity-number.tone-teal {
+  color: var(--theme-dark);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 42' fill='none'%3E%3Cpath d='M190.276 34.0098C195.894 33.7601 197.412 27.4844 194.72 24.255C194.757 24.0053 194.775 23.7557 194.792 23.506C201.838 22.5571 201.802 11.7535 194.269 11.9533C193.473 11.97 192.679 11.97 191.866 12.0033C196.78 9.57294 195.931 0.800305 189.264 0.983415C130.765 2.54818 72.2839 4.11294 13.7848 5.67771C6.55818 5.87746 6.28715 15.0995 12.2852 16.9972C10.0992 16.9972 7.93119 16.9972 5.74517 16.9806C-1.95115 16.9306 -1.87888 28.2668 5.74517 28.6164C13.9654 28.9992 22.1676 29.3488 30.3878 29.6318C27.7863 29.7483 25.1847 29.8649 22.565 29.9814C14.941 30.3309 14.8868 41.9667 22.565 41.6172C78.4804 39.087 134.378 36.5401 190.294 34.0098H190.276Z' fill='%2357c1b2'/%3E%3C/svg%3E");
+}
+
+.business-opportunity-card h3 {
+  margin: 8px 0 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(35px, 2vw, 40px);
+  line-height: 1.1;
+  font-family: 'Caveat', cursive;
+  font-weight: 700;
+  color: var(--business-text);
+}
+
+.business-opportunity-description {
+  margin: 10px 0 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(13px, 0.96vw, 16px);
+  line-height: 1.48;
+  font-weight: 500;
+  color: var(--business-muted);
+}
+
+.business-opportunity-cta {
+  margin-top: auto;
+  align-self: flex-start;
+  min-height: 42px;
+  min-width: 144px;
+  padding: 0 16px;
+  border-radius: 2px;
+  border: 1px solid var(--business-link-blue);
+  background: transparent;
+  color: var(--business-link-blue);
+  text-decoration: none;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.business-opportunity-cta svg {
+  width: 11px;
+  height: 11px;
+}
+
+.business-opportunity-cta:hover {
+  background: rgba(59, 121, 199, 0.08);
+}
+
+@media (max-width: 1199px) {
+  .business-enterprise-spotlight {
+    padding: 30px 0 22px;
+  }
+
+  .business-enterprise-collage-grid {
+    grid-template-columns: repeat(24, minmax(0, 1fr));
+    grid-auto-rows: 14px;
+    gap: 4px;
+  }
+
+  .business-collage-tile {
+    grid-column: span 5;
+    min-height: 0;
+  }
+
+  .business-collage-tile.variant-square {
+    grid-column: span 6;
+    grid-row: span 8;
+  }
+
+  .business-collage-tile.variant-wide {
+    grid-column: span 8;
+    grid-row: span 7;
+  }
+
+  .business-collage-tile.variant-tall {
+    grid-column: span 5;
+    grid-row: span 10;
+  }
+
+  .business-collage-tile.variant-hero {
+    grid-column: span 9;
+    grid-row: span 9;
+  }
+
+  .business-values-section {
+    padding-bottom: 24px;
+  }
+
+  .business-values-wrap {
+    margin-top: -286px;
+    margin-bottom: 24px;
+  }
+
+  .business-values-panel {
+    border-radius: 10px;
+    padding: clamp(24px, 3.1vw, 40px);
+  }
+
+  .business-opportunities-grid {
+    gap: 14px;
+  }
+
+  .business-opportunity-card {
+    min-height: 208px;
+    padding: 16px 14px;
+  }
+
+  .business-opportunity-description {
+    font-size: 13px;
+  }
+}
+
+@media (max-width: 991px) {
+  .business-hero {
+    padding: 44px 0 48px;
+  }
+
+  .business-title {
+    font-size: clamp(44px, 8.8vw, 74px);
+  }
+
+  .business-explainer-pill {
+    margin-top: 28px;
+  }
+
+  .business-trust-strip {
+    padding: 16px 0 12px;
+  }
+
+  .business-trust-logos {
+    margin-top: 12px;
+    gap: 8px 12px;
+  }
+
+  .business-brand-amazon {
+    font-size: clamp(13px, 4.2vw, 18px);
+  }
+
+  .business-brand-kpmg {
+    font-size: clamp(14px, 4.3vw, 19px);
+  }
+
+  .business-brand-netflix {
+    font-size: clamp(15px, 4.6vw, 20px);
+  }
+
+  .business-brand-hp,
+  .business-brand-facebook {
+    width: 20px;
+    height: 20px;
+  }
+
+  .business-brand-hp {
+    font-size: 11px;
+  }
+
+  .business-brand-facebook {
+    font-size: 16px;
+  }
+
+  .business-trust-link {
+    margin-top: 10px;
+    font-size: 0.62rem;
+  }
+
+  .business-enterprise-spotlight-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .business-enterprise-copy p {
+    margin-top: 14px;
+  }
+
+  .business-enterprise-cta {
+    margin-top: 16px;
+    min-height: 40px;
+    min-width: 148px;
+    font-size: 0.68rem;
+  }
+
+  .business-enterprise-person {
+    margin-top: 14px;
+  }
+
+  .business-enterprise-avatar {
+    width: 46px;
+    height: 46px;
+    border-width: 3px;
+  }
+
+  .business-enterprise-avatar img {
+    padding: 6px;
+  }
+
+  .business-enterprise-video {
+    margin-top: 14px;
+    font-size: 0.68rem;
+  }
+
+  .business-enterprise-collage {
+    height: 420px;
+    padding-bottom: 18px;
+  }
+
+  .business-enterprise-collage-grid {
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    grid-auto-rows: 12px;
+    gap: 3px;
+    padding: 0 8px;
+  }
+
+  .business-collage-tile {
+    grid-column: span 4;
+    grid-row: span 7;
+    min-height: 0;
+  }
+
+  .business-collage-tile.variant-square {
+    grid-column: span 5;
+    grid-row: span 7;
+  }
+
+  .business-collage-tile.variant-wide {
+    grid-column: span 6;
+    grid-row: span 6;
+  }
+
+  .business-collage-tile.variant-tall {
+    grid-column: span 4;
+    grid-row: span 9;
+  }
+
+  .business-collage-tile.variant-hero {
+    grid-column: span 7;
+    grid-row: span 8;
+  }
+
+  .business-collage-tile img {
+    width: min(56px, 70%);
+  }
+
+  .business-collage-tile.variant-hero img {
+    width: min(64px, 72%);
+  }
+
+  .business-values-section {
+    padding-bottom: 20px;
+  }
+
+  .business-values-wrap {
+    margin-top: -208px;
+    margin-bottom: 20px;
+  }
+
+  .business-values-panel {
+    padding: 24px 20px;
+    border-radius: 10px;
+  }
+
+  .business-values-header h3 {
+    font-size: clamp(20px, 5.6vw, 30px);
+  }
+
+  .business-values-grid {
+    margin-top: 24px;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  .business-value-item {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .business-value-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .business-value-icon svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .business-value-item h4 {
+    font-size: clamp(15px, 4.5vw, 21px);
+  }
+
+  .business-value-item p {
+    margin-top: 10px;
+    font-size: clamp(11px, 3.4vw, 14px);
+    line-height: 1.52;
+  }
+
+  .business-values-cta {
+    margin-top: 24px;
+    min-height: 40px;
+    min-width: 156px;
+    font-size: 0.66rem;
+  }
+
+  .business-plans {
+    padding: 72px 0 74px;
+  }
+
+  .business-opportunities-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .business-opportunity-card {
+    min-height: 0;
+  }
+
+  .business-opportunities-header h2 {
+    font-size: clamp(24px, 7.2vw, 34px);
+  }
+
+  .business-opportunity-number {
+    font-size: clamp(20px, 6vw, 30px);
+  }
+
+  .business-opportunity-card h3 {
+    font-size: clamp(20px, 6vw, 30px);
+  }
+
+  .business-opportunity-description {
+    font-size: clamp(13px, 4vw, 16px);
+  }
+
+  .business-opportunity-cta {
+    min-height: 40px;
+    font-size: 0.66rem;
+  }
+}

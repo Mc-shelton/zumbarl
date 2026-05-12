@@ -21,6 +21,7 @@ import {
   NAV_LINKS,
   NAV_LINK_HREFS,
 } from '../../features/home/constants'
+import '../../styles/header.css'
 
 const COMMUNITY_SOCIAL_ICON_BY_ID = {
   github: FaGithub,
@@ -65,8 +66,10 @@ function HeaderLink({ href, children, ...props }) {
 function Header() {
   const [activeMegaMenu, setActiveMegaMenu] = useState(null)
   const [topNavHeight, setTopNavHeight] = useState(90)
+  const [isNavVisible, setIsNavVisible] = useState(true)
   const shellRef = useRef(null)
   const topNavRef = useRef(null)
+  const lastScrollYRef = useRef(0)
   const isAppsMenuOpen = activeMegaMenu === 'apps'
   const isIndustriesMenuOpen = activeMegaMenu === 'industries'
   const isMegaMenuOpen = activeMegaMenu !== null
@@ -88,6 +91,46 @@ function Header() {
       window.removeEventListener('resize', updateTopNavHeight)
     }
   }, [])
+
+  useEffect(() => {
+    lastScrollYRef.current = window.scrollY || 0
+
+    const SCROLL_DELTA = 6
+    const hideOffset = Math.max(topNavHeight, 72)
+
+    const handleScroll = () => {
+      const currentY = window.scrollY || 0
+      const previousY = lastScrollYRef.current
+      const delta = currentY - previousY
+
+      if (currentY <= hideOffset) {
+        if (!isNavVisible) {
+          setIsNavVisible(true)
+        }
+        lastScrollYRef.current = currentY
+        return
+      }
+
+      if (delta > SCROLL_DELTA) {
+        if (isNavVisible) {
+          setIsNavVisible(false)
+          setActiveMegaMenu(null)
+        }
+      } else if (delta < -SCROLL_DELTA) {
+        if (!isNavVisible) {
+          setIsNavVisible(true)
+        }
+      }
+
+      lastScrollYRef.current = currentY
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+    }
+  }, [isNavVisible, topNavHeight])
 
   useEffect(() => {
     if (!isMegaMenuOpen) {
@@ -116,10 +159,6 @@ function Header() {
       document.removeEventListener('keydown', handleKeyDown)
     }
   }, [isMegaMenuOpen])
-
-  const handleMegaMenuToggle = (menuKey) => {
-    setActiveMegaMenu((currentMenu) => (currentMenu === menuKey ? null : menuKey))
-  }
 
   const closeMegaMenu = () => {
     setActiveMegaMenu(null)
@@ -237,8 +276,9 @@ function Header() {
   return (
     <div
       ref={shellRef}
-      className={`top-nav-shell${isMegaMenuOpen ? ' is-apps-open' : ''}`}
+      className={`top-nav-shell${isMegaMenuOpen ? ' is-apps-open' : ''}${!isNavVisible && !isMegaMenuOpen ? ' is-hidden' : ''}`}
       style={{ '--top-nav-height': `${topNavHeight}px` }}
+      onMouseLeave={closeMegaMenu}
     >
       <header ref={topNavRef} className="top-nav">
         <Link className="logo-link" to="/" aria-label="Zumbarl" onClick={closeMegaMenu}>
@@ -252,21 +292,30 @@ function Header() {
               const isActive = activeMegaMenu === menuKey
 
               return (
-                <button
+                <HeaderLink
                   key={link}
-                  type="button"
+                  href={NAV_LINK_HREFS[link] || '/'}
                   className={`nav-link-btn${isActive ? ' is-active' : ''}`}
+                  aria-haspopup="menu"
                   aria-expanded={isActive}
                   aria-controls={`${menuKey}-mega-menu`}
-                  onClick={() => handleMegaMenuToggle(menuKey)}
+                  onMouseEnter={() => setActiveMegaMenu(menuKey)}
+                  onFocus={() => setActiveMegaMenu(menuKey)}
+                  onClick={closeMegaMenu}
                 >
                   <span>{link}</span>
-                </button>
+                </HeaderLink>
               )
             }
 
             return (
-              <HeaderLink key={link} href={NAV_LINK_HREFS[link] || '/'} onClick={closeMegaMenu}>
+              <HeaderLink
+                key={link}
+                href={NAV_LINK_HREFS[link] || '/'}
+                onMouseEnter={closeMegaMenu}
+                onFocus={closeMegaMenu}
+                onClick={closeMegaMenu}
+              >
                 {link}
               </HeaderLink>
             )

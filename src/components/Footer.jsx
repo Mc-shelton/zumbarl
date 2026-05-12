@@ -8,6 +8,7 @@ import {
   TbPhone,
 } from 'react-icons/tb'
 import { Link } from 'react-router-dom'
+import '../styles/footer.css'
 
 const COMMUNITY_LINKS = [
   { label: 'Tutorials', href: 'slides/all/tag/zumbarl-tutorials-9.html' },
@@ -18,17 +19,14 @@ const COMMUNITY_LINKS = [
 const OPEN_SOURCE_LINKS = [
   { label: 'Download', href: 'page/download.html' },
   { label: 'Github', href: 'https://github.com/zumbarl/zumbarl' },
-  { label: 'Runbot', href: 'https://runbot.zumbarl.com/' },
   { label: 'Translations', href: 'https://github.com/zumbarl/zumbarl/wiki/Translations' },
 ]
 
 const SERVICES_LINKS = [
-  { label: 'Zumbarl.sh hosting', href: 'https://www.zumbarl.sh/' },
   { label: 'Support', href: '/help' },
-  { label: 'Higher version', href: 'https://upgrade.zumbarl.com/' },
   { label: 'Custom Developments', href: 'page/developers-on-demand.html' },
-  { label: 'Education', href: 'education/program.html' },
-  { label: 'Find an accountant', href: 'accounting-firms.html' },
+  { label: 'Community', href: 'education/program.html' },
+  { label: 'Find an advisor', href: 'accounting-firms.html' },
   { label: 'Find a partner', href: 'partners.html' },
   { label: 'Become a partner', href: 'become-a-partner.html' },
 ]
@@ -168,7 +166,7 @@ function Footer() {
       <div className="footer-credit">
         <div className="container">
           <a href="app/website.html">
-            Website made with <span className="footer-credit-brand">zumbarl.</span>
+            A subsidiary of<span className="footer-credit-brand">olscorpe.</span>
           </a>
         </div>
       </div>

@@ -1,2 +1,5 @@
+export { default as AiConversationPopup } from './AiConversationPopup'
 export { default as HelpContactSection } from './HelpContactSection'
 export { default as HelpHero } from './HelpHero'
+export { default as HelpOfficesSection } from './HelpOfficesSection'
+export { default as SupportChatWidget } from './SupportChatWidget'

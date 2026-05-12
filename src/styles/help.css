@@ -1,0 +1,1041 @@
+.help-page {
+  --help-color-surface: #ffffff;
+  --help-color-title: #171f34;
+  --help-color-subtitle: #151d31;
+  --help-color-highlight-cyan: #63d2bd;
+  --help-color-highlight-amber: #efb54a;
+  --help-color-cta-purple: #714b67;
+  --help-color-border: #d6dce5;
+  --help-color-border-soft: #e5e9ef;
+  --help-color-text: #394358;
+  --help-color-placeholder: #a3adbf;
+  --help-color-muted: #97a0b3;
+  --help-color-muted-2: #666f82;
+  --help-color-action: #2f8f99;
+  --help-color-action-icon: #6697a3;
+  --help-color-emergency-title: #1a2237;
+  --help-color-emergency-link: #596276;
+  --help-office-card-bg: #f9fafb;
+  --help-office-card-border: #d6dce5;
+  --help-office-title: #171f34;
+  --help-office-region: #20283c;
+  --help-office-address: #313a4d;
+  --help-office-phone: #6f5f71;
+  --help-office-chip-bg: #f4f6f9;
+  --help-office-chip-sales: #646b8f;
+  --help-office-chip-services: #7b607f;
+  --help-office-chip-finance: #d77070;
+  --help-office-chip-hr: #2f8f99;
+  --help-office-chip-rd: #c87650;
+  --help-form-title: #1d2539;
+  --help-form-muted: #657089;
+  --help-form-focus: #8b6c84;
+  --help-chat-border: #d8dfe9;
+  --help-chat-divider: #e5eaf1;
+  --help-chat-title: #20283c;
+  --help-chat-close: #657089;
+  --help-chat-agent-bg: #f2f5f9;
+  --help-chat-agent-text: #344057;
+  --help-chat-input-text: #303a4f;
+  --help-chat-input-placeholder: #95a0b5;
+  --help-color-on-dark: #ffffff;
+  background: var(--help-color-surface);
+}
+
+.help-hero {
+  padding: 52px 0 44px;
+  background: var(--help-color-surface);
+}
+
+.help-hero-inner {
+  max-width: 980px;
+}
+
+.help-title {
+  margin: 0;
+  display: inline-block;
+  position: relative;
+  font-family: 'Caveat', cursive;
+  font-size: clamp(42px, 4vw, 64px);
+  line-height: 0.95;
+  font-weight: 700;
+  color: var(--help-color-title);
+}
+
+.help-title::after {
+  content: '';
+  position: absolute;
+  left: 30%;
+  right: 2%;
+  bottom: -7px;
+  height: 8px;
+  border-radius: 12px;
+  background: var(--help-color-highlight-cyan);
+  opacity: 0.9;
+}
+
+.help-search-row {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+}
+
+.help-search-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  border: 1px solid var(--help-color-border);
+  border-radius: 10px;
+  padding: 6px 8px 6px 14px;
+  background: var(--help-color-surface);
+}
+
+.help-search-form input {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  outline: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(10px, 1vw, 14px);
+  line-height: 1.25;
+  font-weight: 500;
+  color: var(--help-color-text);
+}
+
+.help-search-form input::placeholder {
+  color: var(--help-color-placeholder);
+}
+
+.help-search-form button {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--help-color-muted);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.help-search-form button svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.help-search-divider {
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 1rem;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--help-color-muted-2);
+}
+
+.help-human-btn {
+  text-decoration: none;
+  min-height: 48px;
+  min-width: 200px;
+  /* padding: 4px 10px; */
+  border-radius: 10px;
+  background: var(--help-color-cta-purple);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(12px, 1vw, 15px);
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--help-chat-agent-bg);
+  border: 0;
+  cursor: pointer;
+}
+
+.help-contact-section {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-panel);
+  padding: 88px 0 74px;
+}
+
+.help-contact-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 136px;
+  background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNjAwIiBoZWlnaHQ9IjE0MyIgdmlld0JveD0iMCAwIDE2MDAgMTQzIj4KCTxwYXRoIGZpbGw9IiNmZmZmZmYiIGQ9Ik04MDAsM2MyODEsMCw1NTAuNCw0OS42LDgwMCwxNDAuNFYwSDB2MTQzLjRDMjQ5LjYsNTIuNiw1MTksMyw4MDAsM3oiIC8+Cjwvc3ZnPgo=");
+  background-position: top center;
+  background-size: 100% auto;
+  background-repeat: no-repeat;
+  z-index: 0;
+}
+
+.help-contact-section::after {
+  content: '';
+  position: absolute;
+  left: -12%;
+  right: -12%;
+  top: 16px;
+  height: 126px;
+  background: var(--bg-panel);
+  border-top-left-radius: 50% 100%;
+  border-top-right-radius: 50% 100%;
+  z-index: 1;
+}
+
+.help-contact-inner {
+  position: relative;
+  z-index: 2;
+  max-width: 980px;
+}
+
+.help-subtitle {
+  margin: 0;
+  display: inline-block;
+  position: relative;
+  font-family: 'Caveat', cursive;
+  font-size: clamp(22px, 3vw, 42px);
+  line-height: 0.95;
+  font-weight: 700;
+  color: var(--help-color-subtitle);
+}
+
+.help-subtitle::after {
+  content: '';
+  position: absolute;
+  left: 1%;
+  right: 36%;
+  bottom: -7px;
+  height: 8px;
+  border-radius: 12px;
+  background: var(--help-color-highlight-amber);
+}
+
+.help-contact-grid {
+  margin-top: 34px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px 20px;
+  align-items: stretch;
+}
+
+.help-action-card {
+  min-height: 108px;
+  text-decoration: none;
+  border-radius: 10px;
+  background: var(--help-color-surface);
+  border: 1px solid var(--help-color-border-soft);
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  padding: 18px;
+  text-align: center;
+  color: var(--help-color-action);
+}
+
+.help-action-card-button {
+  width: 100%;
+  appearance: none;
+  cursor: pointer;
+}
+
+.help-action-card-button.is-active {
+  border-color: rgba(55, 54, 67, 0.52);
+  background: rgba(55, 54, 67, 0.08);
+}
+
+.help-action-icon {
+  width: 26px;
+  height: 26px;
+  display: block;
+  color: var(--help-color-action-icon);
+}
+
+.help-action-card span {
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(10px, 1vw, 20px);
+  line-height: 1.15;
+  font-weight: 600;
+}
+
+.help-emergency-card {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  border-radius: 10px;
+  background: var(--help-color-surface);
+  border: 1px solid var(--help-color-border-soft);
+  padding: 22px 20px;
+}
+
+.help-emergency-card h3 {
+  margin: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(14px, 2vw, 22px);
+  line-height: 1.05;
+  font-weight: 700;
+  color: var(--help-color-emergency-title);
+}
+
+.help-emergency-card ul {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.help-emergency-card li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: baseline;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(8px, 0.75vw, 16px);
+  line-height: 1.2;
+  color: var(--help-color-text);
+}
+
+.help-emergency-card a {
+  color: var(--help-color-emergency-link);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.help-contact-form {
+  margin-top: 16px;
+  border-radius: 10px;
+  border: 1px solid var(--help-color-border-soft);
+  background: var(--help-color-surface);
+  padding: 16px;
+  display: grid;
+  gap: 12px;
+  animation: help-contact-form-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes help-contact-form-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.help-contact-form-head h3 {
+  margin: 0;
+  font-family: 'Caveat', cursive;
+  font-size: 2rem;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--help-form-title);
+}
+
+.help-contact-form-head p {
+  margin: 4px 0 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.84rem;
+  line-height: 1.3;
+  font-weight: 500;
+  color: var(--help-form-muted);
+}
+
+.help-contact-form-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  margin-top: 1%;
+}
+
+.help-contact-form-fields label {
+  display: grid;
+  gap: 6px;
+}
+
+.help-contact-form-fields span {
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.8rem;
+  line-height: 1.2;
+  font-weight: 600;
+  color: var(--help-form-title);
+}
+
+.help-contact-form-fields input,
+.help-contact-form-fields textarea {
+  width: 100%;
+  border: 1px solid var(--help-color-border);
+  border-radius: 9px;
+  background: var(--help-color-surface);
+  padding: 10px 12px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.86rem;
+  line-height: 1.3;
+  color: var(--help-color-text);
+  outline: none;
+}
+
+.help-contact-form-fields textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.help-contact-form-fields input:focus,
+.help-contact-form-fields textarea:focus {
+  border-color: var(--help-form-focus);
+  box-shadow: 0 0 0 2px rgba(113, 75, 103, 0.12);
+}
+
+.help-contact-form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 1%;
+}
+
+.help-contact-form-actions button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 9px;
+  padding: 0 18px;
+  background: var(--theme-dark);
+  color: var(--help-color-on-dark);
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.86rem;
+  line-height: 1;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.help-contact-form-status {
+  margin: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--help-color-action);
+}
+
+.help-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.help-offices-section {
+  background: var(--bg-panel);
+  padding: 8px 0 84px;
+}
+
+.help-offices-title {
+  margin: 0;
+  margin-top: 5%;
+  display: inline-block;
+  position: relative;
+  font-family: 'Caveat', cursive;
+  font-size: clamp(52px, 4.8vw, 78px);
+  line-height: 0.95;
+  font-weight: 700;
+  color: var(--help-office-title);
+}
+
+.help-offices-title::after {
+  content: '';
+  position: absolute;
+  left: 42%;
+  right: 0;
+  bottom: -8px;
+  height: 9px;
+  border-radius: 12px;
+  background: var(--theme-blue);
+  opacity: 0.72;
+}
+
+.help-offices-region {
+  margin: 24px 0 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(16px, 1.6vw, 22px);
+  line-height: 1.14;
+  font-weight: 700;
+  color: var(--help-office-region);
+}
+
+.help-offices-grid {
+  margin-top: 26px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+}
+
+.help-office-card {
+  min-height: 304px;
+  border: 1px solid var(--help-office-card-border);
+  border-radius: 8px;
+  background: var(--help-office-card-bg);
+  padding: 22px 26px 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.help-office-name {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(10px, 1vw, 24px);
+  line-height: 1.15;
+  font-weight: 700;
+  color: var(--help-office-title);
+}
+
+.help-office-flag {
+  font-size: clamp(20px, 1.3vw, 30px);
+  line-height: 1;
+}
+
+.help-office-tags {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.help-office-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 7px;
+  border: 1px solid currentColor;
+  background: var(--help-office-chip-bg);
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.71rem;
+  line-height: 1;
+}
+
+.help-office-tag--finance {
+  color: var(--help-office-chip-finance);
+}
+
+.help-office-tag--sales {
+  color: var(--help-office-chip-sales);
+}
+
+.help-office-tag--services {
+  color: var(--help-office-chip-services);
+}
+
+.help-office-tag--hr {
+  color: var(--help-office-chip-hr);
+}
+
+.help-office-tag--rd {
+  color: var(--help-office-chip-rd);
+}
+
+.help-office-address {
+  margin: 20px 0 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(14px, 1vw, 20px);
+  line-height: 1.36;
+  font-weight: 500;
+  color: var(--help-office-address);
+  font-style: normal;
+}
+
+.help-office-address span {
+  display: block;
+}
+
+.help-office-phone {
+  margin: auto 0 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(10px, 1vw, 18px);
+  line-height: 1.15;
+  /* font-weight: 500; */
+  color: var(--help-office-phone);
+}
+
+.help-office-phone svg {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  color: var(--help-office-title);
+}
+
+.help-office-phone a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.help-office-note {
+  color: var(--help-office-region);
+}
+
+.help-ai-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 240;
+  background: rgba(17, 21, 30, 0.58);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.help-ai-modal-card {
+  width: min(760px, 100%);
+  max-height: min(82vh, 740px);
+  border: 1px solid var(--help-chat-border);
+  border-radius: 16px;
+  background: var(--help-color-surface);
+  box-shadow: 0 24px 58px rgba(11, 17, 30, 0.34);
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  overflow: hidden;
+}
+
+.help-ai-modal-header {
+  border-bottom: 1px solid var(--help-chat-divider);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.help-ai-modal-header h2 {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.96rem;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--help-chat-title);
+}
+
+.help-ai-modal-header h2 svg {
+  width: 16px;
+  height: 16px;
+  color: var(--help-color-cta-purple);
+}
+
+.help-ai-modal-close {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--help-chat-close);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.help-ai-modal-close svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.help-ai-messages {
+  overflow-y: auto;
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.help-ai-message {
+  margin: 0;
+  max-width: 82%;
+  border-radius: 10px;
+  padding: 9px 10px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.help-ai-message.is-agent {
+  justify-self: start;
+  background: var(--help-chat-agent-bg);
+  color: var(--help-chat-agent-text);
+}
+
+.help-ai-message.is-user {
+  justify-self: end;
+  background: var(--theme-dark);
+  color: var(--help-color-on-dark);
+}
+
+.help-ai-form {
+  border-top: 1px solid var(--help-chat-divider);
+  padding: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.help-ai-form input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid var(--help-color-border);
+  border-radius: 9px;
+  padding: 0 11px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.84rem;
+  line-height: 1.2;
+  color: var(--help-chat-input-text);
+}
+
+.help-ai-form input::placeholder {
+  color: var(--help-chat-input-placeholder);
+}
+
+.help-ai-form button {
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--theme-dark);
+  color: var(--help-color-on-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.help-ai-form button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.help-ai-form button svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+.support-chat {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  width: min(360px, calc(100vw - 28px));
+  height: 460px;
+  background: var(--help-color-surface);
+  border: 1px solid var(--help-chat-border);
+  border-radius: 14px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  z-index: 220;
+}
+
+.support-chat-header {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--help-chat-divider);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.support-chat-header h2 {
+  margin: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.95rem;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--help-chat-title);
+}
+
+.support-chat-close {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--help-chat-close);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.support-chat-close svg {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.support-chat-messages {
+  overflow-y: auto;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.support-chat-message {
+  margin: 0;
+  max-width: 85%;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.support-chat-message.is-agent {
+  justify-self: start;
+  background: var(--help-chat-agent-bg);
+  color: var(--help-chat-agent-text);
+}
+
+.support-chat-message.is-user {
+  justify-self: end;
+  background: var(--theme-dark);
+  color: var(--help-color-on-dark);
+}
+
+.support-chat-form {
+  border-top: 1px solid var(--help-chat-divider);
+  padding: 10px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.support-chat-form input {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid var(--help-color-border);
+  border-radius: 9px;
+  padding: 0 10px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.84rem;
+  line-height: 1.2;
+  color: var(--help-chat-input-text);
+}
+
+.support-chat-form input::placeholder {
+  color: var(--help-chat-input-placeholder);
+}
+
+.support-chat-form button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--theme-dark);
+  color: var(--help-color-on-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.support-chat-form button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.support-chat-form button svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+@media (max-width: 1199px) {
+  .help-contact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .help-emergency-card {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .help-action-card {
+    min-height: 132px;
+  }
+
+  .help-offices-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 991px) {
+  .help-hero {
+    padding: 44px 0 40px;
+  }
+
+  .help-search-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .help-search-divider {
+    display: none;
+  }
+
+  .help-human-btn {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .help-contact-section {
+    padding: 82px 0 68px;
+  }
+
+  .help-contact-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .help-action-card,
+  .help-emergency-card {
+    min-height: 0;
+  }
+
+  .help-offices-section {
+    padding: 4px 0 68px;
+  }
+
+  .help-offices-region {
+    font-size: clamp(22px, 4.3vw, 30px);
+  }
+
+  .help-offices-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 14px;
+  }
+
+  .help-office-card {
+    min-height: 0;
+    padding: 18px 18px 16px;
+  }
+}
+
+@media (max-width: 767px) {
+  .help-title,
+  .help-subtitle {
+    font-size: clamp(48px, 14vw, 72px);
+  }
+
+  .help-offices-title {
+    font-size: clamp(48px, 14vw, 72px);
+  }
+
+  .help-search-form {
+    min-height: 56px;
+    padding: 6px 8px 6px 12px;
+  }
+
+  .help-search-form input {
+    font-size: clamp(16px, 5vw, 21px);
+  }
+
+  .help-search-form button {
+    width: 40px;
+    height: 40px;
+  }
+
+  .help-human-btn {
+    min-height: 56px;
+    font-size: clamp(20px, 6vw, 24px);
+  }
+
+  .help-contact-section {
+    padding: 70px 0 56px;
+  }
+
+  .help-contact-grid {
+    margin-top: 30px;
+    gap: 14px;
+  }
+
+  .help-contact-form {
+    padding: 14px;
+  }
+
+  .help-contact-form-head h3 {
+    font-size: 0.96rem;
+  }
+
+  .help-contact-form-head p,
+  .help-contact-form-fields input,
+  .help-contact-form-fields textarea,
+  .help-contact-form-actions button,
+  .help-contact-form-status {
+    font-size: 0.82rem;
+  }
+
+  .help-action-card {
+    min-height: 114px;
+  }
+
+  .help-action-card span {
+    font-size: clamp(18px, 7vw, 24px);
+  }
+
+  .help-emergency-card {
+    padding: 18px 14px;
+  }
+
+  .help-emergency-card h3 {
+    font-size: clamp(24px, 7.6vw, 34px);
+  }
+
+  .help-emergency-card li {
+    font-size: clamp(16px, 5vw, 21px);
+    gap: 10px;
+  }
+
+  .help-office-name {
+    font-size: clamp(28px, 8vw, 36px);
+  }
+
+  .help-office-tag {
+    min-height: 36px;
+    font-size: clamp(15px, 4.2vw, 20px);
+  }
+
+  .help-office-address {
+    font-size: clamp(20px, 5.2vw, 26px);
+  }
+
+  .help-office-phone {
+    font-size: clamp(20px, 5vw, 26px);
+  }
+
+  .help-ai-modal {
+    padding: 12px;
+  }
+
+  .help-ai-modal-card {
+    width: 100%;
+    max-height: calc(100vh - 24px);
+  }
+
+  .support-chat {
+    right: 14px;
+    bottom: 14px;
+    height: 420px;
+  }
+}

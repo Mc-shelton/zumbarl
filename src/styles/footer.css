@@ -1,0 +1,264 @@
+.site-footer {
+  background: var(--theme-dark);
+  color: #adb5c6;
+}
+
+.site-footer a {
+  color: #adb5c6;
+  text-decoration: none;
+}
+
+.site-footer a:hover {
+  color: #ffffff;
+}
+
+.footer-shell {
+  padding: 52px 0 0;
+}
+
+.footer-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: fit-content;
+  margin: 0 auto 38px;
+}
+
+.footer-brand-logo {
+  display: block;
+  height: 62px;
+  width: auto;
+  filter: brightness(0) saturate(100%) invert(100%);
+  margin-left: -10px;
+}
+
+.footer-brand-text {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 1.95rem;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-transform: lowercase;
+  color: #ffffff;
+}
+
+.footer-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: 58px;
+  padding-bottom: 46px;
+}
+
+.footer-links-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 26px 36px;
+}
+
+.footer-links-column {
+  display: grid;
+  gap: 18px;
+}
+
+.footer-list-title {
+  margin: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 1.25rem;
+  line-height: 1.35;
+  font-weight: 600;
+  color: #f3f6ff;
+}
+
+.footer-list-links {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.footer-list-links li {
+  margin: 0;
+}
+
+.footer-list-links li + li {
+  margin-top: 4px;
+}
+
+.footer-list-links a,
+.footer-list-links span {
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.footer-legal-links {
+  margin-top: 10px !important;
+}
+
+.footer-info {
+  display: grid;
+  align-content: start;
+}
+
+.footer-language {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 1.1rem;
+  line-height: 1.3;
+  font-weight: 700;
+  cursor: default;
+}
+
+.footer-language-logo {
+  display: block;
+  width: 28px;
+  height: 28px;
+  filter: brightness(0) saturate(100%) invert(100%);
+}
+
+.footer-language-domain {
+  color: #adb5c6;
+  letter-spacing: -0.02em;
+}
+
+.footer-divider {
+  margin: 18px 0 20px;
+  border: 0;
+  border-top: 1px solid #62697b;
+}
+
+.footer-note {
+  margin: 0;
+  max-width: 36ch;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.875rem;
+  line-height: 1.42;
+  font-weight: 500;
+  color: #adb5c6;
+}
+
+.footer-note + .footer-note {
+  margin-top: 14px;
+}
+
+.footer-social {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.footer-social-link {
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #adb5c6;
+  transition: color 0.2s ease;
+}
+
+.footer-social-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.footer-social-link:hover {
+  color: #ffffff;
+}
+
+.footer-credit {
+  background: var(--theme-dark);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.footer-credit .container {
+  padding: 16px 0;
+  text-align: center;
+}
+
+.footer-credit a {
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 0.75rem;
+  line-height: 1.3;
+  font-weight: 500;
+  color: #adb5c6;
+}
+
+.footer-credit-brand {
+  margin-left: 5px;
+  color: #f6f8ff;
+  font-size: 1.14em;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+}
+
+@media (max-width: 1199px) {
+  .footer-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 34px;
+    padding-left: 72px;
+  }
+
+  .footer-note {
+    max-width: none;
+  }
+}
+
+@media (max-width: 991px) {
+  .footer-links-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .footer-grid {
+    padding-left: 64px;
+  }
+}
+
+@media (max-width: 767px) {
+  .footer-shell {
+    padding-top: 34px;
+  }
+
+  .footer-brand {
+    margin-bottom: 26px;
+  }
+
+  .footer-grid {
+    padding-left: 46px;
+  }
+
+  .footer-brand-text {
+    font-size: 1.65rem;
+  }
+
+  .footer-links-grid {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+
+  .footer-list-title {
+    font-size: 1.1rem;
+  }
+
+  .footer-language {
+    font-size: 1rem;
+  }
+
+  .footer-credit .container {
+    padding: 14px 0;
+  }
+}

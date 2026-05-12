@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
 import './App.css'
+import BusinessPage from './pages/BusinessPage'
 import HelpPage from './pages/HelpPage'
 import HomePage from './pages/HomePage'
 
@@ -7,6 +8,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/business" element={<BusinessPage />} />
       <Route path="/help" element={<HelpPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

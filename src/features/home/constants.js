@@ -30,12 +30,12 @@ import { HERO_DOODLE, ZUMBARL_APPS_FROM_DOCS } from '../../data/indexPageData'
 
 export { HERO_DOODLE }
 
-export const NAV_LINKS = ['Apps', 'Industries', 'Community', 'Pricing', 'Help']
+export const NAV_LINKS = ['Apps', 'Industries', 'Community', 'Business', 'Help']
 export const NAV_LINK_HREFS = {
   Apps: '/',
   Industries: '/',
   Community: '/',
-  Pricing: '/',
+  Business: '/business',
   Help: '/help',
 }
 export const WHEEL_IMAGE = '/assets/index/wheel.png'
@@ -322,6 +322,11 @@ const COMMUNITY_MEGA_MENU_SOURCE = [
     title: 'EMPOWER CAMPUS',
     tone: 'orange',
     itemGroups: [['Campus Enablement Program', 'Scale Up! Creator Game'], ['Visit Zumbarl Campus Hub']],
+  },
+  {
+    title: 'ABOUT US',
+    tone: 'orange',
+    itemGroups: [['News','Articles & Blogs', 'Our Journey']],
   },
 ]
 
