@@ -162,7 +162,7 @@ const DOC_APP_VISUAL_BY_ID = DOC_APPS_FOR_GRID.reduce((byId, app) => {
 const APP_MENU_PILLAR_ORDER = [
   'Earn',
   'Commerce',
-  'Money',
+  'Insiders',
   'Career',
   'Academics',
   'Community',
@@ -243,7 +243,7 @@ const INDUSTRY_MEGA_MENU_SOURCE = [
   {
     title: 'PRODUCTION',
     tone: 'indigo',
-    items: ['Textile', 'Metal', 'Furniture', 'Food', 'Brewery', 'Corporate Gifts'],
+    items: ['Textile', 'Metal', 'Furniture', 'Food', 'Corporate Gifts'],
   },
   {
     title: 'HEALTH & FITNESS',

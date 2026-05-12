@@ -256,16 +256,14 @@ font-size: clamp(10px, 1vw, 18px);
   grid-column: span 5;
   grid-row: span 8;
   border-radius: 5px;
-  border: 1px solid #d7deea;
-  background: #ffffff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  border: 0;
+  background: #d7deea;
+  display: block;
   overflow: hidden;
 }
 
 .business-collage-tile.variant-square {
-  grid-column: span 6;
+  grid-column: span 7;
   grid-row: span 8;
 }
 
@@ -285,34 +283,12 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-collage-tile img {
-  width: min(68px, 72%);
-  height: auto;
+  width: 100%;
+  height: 100%;
   display: block;
-  opacity: 0.94;
-}
-
-.business-collage-tile.variant-hero img {
-  width: min(84px, 74%);
-}
-
-.business-collage-tile.variant-wide img {
-  width: min(76px, 74%);
-}
-
-.business-collage-tile.tone-blue {
-  background: #ecf5ff;
-}
-
-.business-collage-tile.tone-teal {
-  background: #e9f9f3;
-}
-
-.business-collage-tile.tone-coral {
-  background: #fff0f0;
-}
-
-.business-collage-tile.tone-purple {
-  background: #f3effa;
+  object-fit: cover;
+  object-position: center;
+  opacity: 1;
 }
 
 .business-values-section {
@@ -999,11 +975,9 @@ font-size: clamp(10px, 1vw, 18px);
   }
 
   .business-collage-tile img {
-    width: min(56px, 70%);
-  }
-
-  .business-collage-tile.variant-hero img {
-    width: min(64px, 72%);
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .business-values-section {

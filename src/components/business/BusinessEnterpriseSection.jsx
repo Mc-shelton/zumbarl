@@ -40,17 +40,11 @@ const collagePattern = [
   "tall",
 ];
 
-const collageTiles = Array.from({ length: 7 }, (_, repeatIndex) =>
-  BUSINESS_ENTERPRISE_COLLAGE.map((tile, tileIndex) => ({
-    ...tile,
-    key: `${repeatIndex}-${tile.id}-${tileIndex}`,
-    variant:
-      collagePattern[
-        (repeatIndex * BUSINESS_ENTERPRISE_COLLAGE.length + tileIndex) %
-          collagePattern.length
-      ],
-  })),
-).flat();
+const collageTiles = BUSINESS_ENTERPRISE_COLLAGE.map((tile, tileIndex) => ({
+  ...tile,
+  key: `${tile.id}-${tileIndex}`,
+  variant: collagePattern[tileIndex % collagePattern.length],
+}));
 
 function BusinessEnterpriseSection() {
   return (
@@ -120,7 +114,7 @@ function BusinessEnterpriseSection() {
                 key={tile.key}
                 className={`business-collage-tile tone-${tile.tone} variant-${tile.variant}`}
               >
-                <img src={tile.src} alt="" loading="lazy" />
+                <img src={tile.src} alt="" loading="lazy" decoding="async" fetchPriority="low" />
               </span>
             ))}
           </div>

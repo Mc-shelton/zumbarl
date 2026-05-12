@@ -76,18 +76,25 @@ export const BUSINESS_ENTERPRISE_SPOTLIGHT = {
 }
 
 export const BUSINESS_ENTERPRISE_COLLAGE = [
-  { id: 'ai', src: '/assets/index/app-ai.svg', tone: 'blue' },
-  { id: 'project', src: '/assets/index/app-project.svg', tone: 'teal' },
-  { id: 'sales', src: '/assets/index/app-sales.svg', tone: 'coral' },
-  { id: 'studio', src: '/assets/index/app-studio.svg', tone: 'purple' },
-  { id: 'knowledge', src: '/assets/index/app-knowledge.svg', tone: 'blue' },
-  { id: 'crm', src: '/assets/index/app-crm.svg', tone: 'teal' },
-  { id: 'sign', src: '/assets/index/app-sign.svg', tone: 'coral' },
-  { id: 'inventory', src: '/assets/index/app-inventory.svg', tone: 'purple' },
-  { id: 'accounting', src: '/assets/index/app-accounting.svg', tone: 'blue' },
-  { id: 'timesheets', src: '/assets/index/app-timesheets.svg', tone: 'teal' },
-  { id: 'purchase', src: '/assets/index/app-purchase.svg', tone: 'coral' },
-  { id: 'dashboard', src: '/assets/index/app-dashboard.svg', tone: 'purple' },
+  { id: 'team-1', src: '/assets/index/business_page_images/optimized/leeder-bose-ne0gCdlSoew-unsplash.webp', tone: 'blue' },
+  { id: 'team-2', src: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp', tone: 'teal' },
+  { id: 'team-3', src: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp', tone: 'coral' },
+  { id: 'team-4', src: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp', tone: 'purple' },
+  { id: 'team-5', src: '/assets/index/business_page_images/optimized/0xk-y5n-nhkRd7U-unsplash.webp', tone: 'blue' },
+  { id: 'team-6', src: '/assets/index/business_page_images/optimized/ernest-malimon-XLIywCaTs_M-unsplash.webp', tone: 'teal' },
+  { id: 'team-7', src: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp', tone: 'coral' },
+  { id: 'team-8', src: '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp', tone: 'purple' },
+  { id: 'team-9', src: '/assets/index/business_page_images/optimized/sable-flow-T74mVg__F_k-unsplash.webp', tone: 'blue' },
+  { id: 'team-10', src: '/assets/index/business_page_images/optimized/product-school-XZkk5xT8Xrk-unsplash.webp', tone: 'teal' },
+  { id: 'team-11', src: '/assets/index/business_page_images/optimized/alejandro-escamilla-BbQLHCpVUqA-unsplash.webp', tone: 'coral' },
+  { id: 'team-12', src: '/assets/index/business_page_images/optimized/toa-heftiba-O3ymvT7Wf9U-unsplash.webp', tone: 'purple' },
+  { id: 'team-13', src: '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp', tone: 'blue' },
+  { id: 'team-14', src: '/assets/index/business_page_images/optimized/mapbox-ZT5v0puBjZI-unsplash.webp', tone: 'teal' },
+  { id: 'team-15', src: '/assets/index/business_page_images/optimized/igor-rodrigues-Wn932wwnpSE-unsplash.webp', tone: 'coral' },
+  { id: 'team-16', src: '/assets/index/business_page_images/optimized/justin-buisson-vIluu0IH6Ps-unsplash.webp', tone: 'purple' },
+  { id: 'team-17', src: '/assets/index/business_page_images/optimized/sayan-nath-RP1uj-umiKk-unsplash.webp', tone: 'blue' },
+  { id: 'team-18', src: '/assets/index/business_page_images/optimized/setengah-limasore-qUcZ3TUlgnM-unsplash.webp', tone: 'teal' },
+  { id: 'team-19', src: '/assets/index/business_page_images/optimized/vlad-hilitanu-1FI2QAYPa-Y-unsplash.webp', tone: 'coral' },
 ]
 
 export const BUSINESS_VALUES_PANEL = {
