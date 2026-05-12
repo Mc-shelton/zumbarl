@@ -48,7 +48,7 @@ export const WHEEL_TOPICS = [
   {
     label: 'Secure A Career',
     description:
-      'We bridge the skills gap between businesses and students to create sustainable opportunities that develop into careers and employerbility through freelancing, scoped skill work, promo missions, errands, and SME-backed opportunities while building real proof of work.',
+      'Beyond freelance work, Zumbarl connects students to structured growth opportunities exposing them to mentorship, technical coaching, job shadowing, office exposure, and internship pathways that help bridge campus life with the professional world.',
     modules: [
       'Zumbarl Gigs',
       'Zumbarl Studio',
@@ -61,7 +61,7 @@ export const WHEEL_TOPICS = [
   {
     label: 'Campus Commerce & Daily Life',
     description:
-      'Support everyday student survival by making campus buying, selling, reselling, utilities, food access, printing, laundry, transport, housing, and peer services easier and safer.',
+      'Navigate campus life smarter through trusted student marketplaces, food, transport, housing, printing, assignments, past papers, campus events, student communities, and everyday services designed to help students connect, survive, and thrive together.',
     modules: [
       'Zumbarl Market',
       'Zumbarl Reuse',
@@ -76,7 +76,7 @@ export const WHEEL_TOPICS = [
   {
     label: 'Money & Student Security',
     description:
-      'Give students tools to manage money, save in groups, plan spending, pre-pay essentials, access responsible short-term support, and stay protected through trust and safety systems.',
+      'Build student financial security through budgeting tools, savings groups, shared investments, pre-paid essentials, student-run communities, collaborative libraries, events, and trusted systems designed around student support and growth.',
     modules: [
       'Zumbarl Circles',
       'Zumbarl Flow',
@@ -88,7 +88,7 @@ export const WHEEL_TOPICS = [
   {
     label: 'Growth, Belonging & Campus Support',
     description:
-      'Turn campus life into a structured support ecosystem through career pathways, mentorship, learning resources, wellness, events, communities, student affairs, and academic collaboration.',
+      'From assignments, schedules, and shared learning resources to free counseling, mentorship, communities, clubs, events, and campus news, Zumbarl helps students build a more connected and supported student life.',
     modules: [
       'Zumbarl Pathways',
       'Zumbarl Talent',
