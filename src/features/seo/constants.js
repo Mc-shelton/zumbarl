@@ -1,5 +1,5 @@
 export const SEO_BASE_URL = 'https://zumbarl.com'
-export const SEO_DEFAULT_IMAGE = `${SEO_BASE_URL}/assets/index/bee_nobg.png`
+export const SEO_DEFAULT_IMAGE = `${SEO_BASE_URL}/assets/index/bee.png`
 export const SEO_DEFAULT_IMAGE_ALT = 'Zumbarl bee logo'
 export const SEO_DEFAULT_KEYWORDS =
   'Zumbarl, campus talent, student gigs, SME growth, business talent pipeline, training programs, talent orchestration, campus opportunities, digital resources'
