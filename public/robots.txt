@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://zumbarl.vercel.app/sitemap.xml
