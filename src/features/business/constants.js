@@ -1,7 +1,7 @@
 export const BUSINESS_PAGE_TITLE = 'Finally, your talent bridge!'
 
 export const BUSINESS_ENGAGEMENT_SECTION = {
-  label: 'SME / Business Engagement',
+  label: 'A scalable talent pipeline.',
   title: 'Engagement Opportunities',
   description: 'Three core ways SMEs / businesses can engage campus talent through Zumbarl.',
 }
@@ -14,7 +14,7 @@ export const BUSINESS_ENGAGEMENT_OPPORTUNITIES = [
     tone: 'blue',
     ctaLabel: 'Learn more',
     ctaHref: '/help',
-    description: `Zumbarl gives SMEs access to a structured, campus-powered talent network built for modern business needs.
+    description: `Zumbarl gives SMEs and businesses access to a structured, trusted student talent pool ready to work.
     From one-time creative tasks like posters, video edits, and social media campaigns to long-term support in accounting, 
     operations, customer engagement, software development, and administration — businesses can quickly find affordable,
      trainable, and motivated talent ready to deliver.`,
@@ -29,7 +29,7 @@ export const BUSINESS_ENGAGEMENT_OPPORTUNITIES = [
     description: `Zumbarl goes beyond freelance marketplaces by helping businesses shape talent to match their standards
      and workflows. SMEs can run structured training tracks, mentorship programs, certifications, and guided transition 
      programs that prepare students for real-world delivery. This gives businesses early access to emerging talent before 
-     the wider market discovers them — creating a sustainable recruitment advantage.`,
+     the wider market discovers them — creating a sustainable hiring pipeline.`,
   },
   {
     id: 'orchestration',
@@ -41,7 +41,7 @@ export const BUSINESS_ENGAGEMENT_OPPORTUNITIES = [
     description: `Zumbarl helps businesses build and manage scalable student-powered teams. Whether launching a new
      operational unit, expanding outreach, or creating continuity pipelines for existing staff, businesses can
       organize talent into structured teams with workflows, roadmaps, mentorship layers, performance tracking, 
-      and succession support. This enables SMEs to build long-term, cost-effective workforce ecosystems instead 
+      and succession support. This enables SMEs to build long-term, cost-effective talent pipelines instead 
       of relying on disconnected short-term hires.`,
   },
 ]

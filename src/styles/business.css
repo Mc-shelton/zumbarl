@@ -660,7 +660,7 @@ font-size: clamp(10px, 1vw, 18px);
   margin: 10px auto 0;
   max-width: 620px;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: clamp(13px, 0.98vw, 17px);
+  font-size: clamp(10px, 0.88vw, 14px);
   line-height: 1.45;
   font-weight: 500;
   color: var(--business-muted);

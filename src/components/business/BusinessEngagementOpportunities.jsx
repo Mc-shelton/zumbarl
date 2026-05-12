@@ -21,6 +21,8 @@ function BusinessEngagementOpportunities() {
               <p className={`business-opportunity-number tone-${opportunity.tone}`}>{opportunity.order}</p>
               <h3>{opportunity.title}</h3>
               <p className="business-opportunity-description">{opportunity.description}</p>
+              <br/>
+              <br/>
               <Link className="business-opportunity-cta" to={opportunity.ctaHref || '/help'}>
                 {opportunity.ctaLabel || 'Learn more'}
                 <FiArrowRight aria-hidden="true" />
