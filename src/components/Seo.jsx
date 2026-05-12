@@ -19,6 +19,18 @@ const ensureAbsoluteUrl = (url) => {
   return `${SEO_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`
 }
 
+const buildCanonicalUrl = (path = '/') => {
+  const canonicalUrl = new URL(path, SEO_BASE_URL)
+  canonicalUrl.hash = ''
+  canonicalUrl.search = ''
+
+  if (canonicalUrl.pathname !== '/' && canonicalUrl.pathname.endsWith('/')) {
+    canonicalUrl.pathname = canonicalUrl.pathname.replace(/\/+$/, '')
+  }
+
+  return canonicalUrl.toString()
+}
+
 const upsertMeta = (selector, attributes) => {
   let meta = document.head.querySelector(selector)
 
@@ -56,7 +68,7 @@ function Seo({
   jsonLd = [],
 }) {
   useEffect(() => {
-    const canonicalUrl = ensureAbsoluteUrl(path)
+    const canonicalUrl = buildCanonicalUrl(path)
     const socialImageUrl = ensureAbsoluteUrl(image)
     const jsonLdPayload = [...SEO_SHARED_JSON_LD, ...jsonLd]
 
