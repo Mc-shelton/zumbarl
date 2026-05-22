@@ -84,3 +84,91 @@ export const HELP_SEO = {
     path: '/help',
   }),
 }
+
+export const LOGIN_SEO = {
+  title: 'Zumbarl Login | Access Your Workspace',
+  description:
+    'Sign in to Zumbarl to manage campus opportunities, student gigs, and business collaboration in one workspace.',
+  path: '/login',
+  keywords: 'Zumbarl login, sign in, campus platform account access, business workspace login',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Login | Access Your Workspace',
+    description:
+      'Sign in to Zumbarl to manage campus opportunities, student gigs, and business collaboration in one workspace.',
+    path: '/login',
+  }),
+}
+
+export const REGISTER_SEO = {
+  title: 'Zumbarl Register | Create Your Account',
+  description:
+    'Create a Zumbarl account to connect with campus talent opportunities, support services, and SME collaboration tools.',
+  path: '/register',
+  keywords: 'Zumbarl register, sign up, create account, campus talent platform onboarding',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Register | Create Your Account',
+    description:
+      'Create a Zumbarl account to connect with campus talent opportunities, support services, and SME collaboration tools.',
+    path: '/register',
+  }),
+}
+
+export const CAMPUS_SEO = {
+  title: 'Zumbarl Campus | Student Portal Dashboard',
+  description:
+    'Manage student gigs, communities, finances, services, and campus events from your Zumbarl student dashboard.',
+  path: '/campus',
+  keywords:
+    'Zumbarl campus, student dashboard, campus opportunities, student wallet, campus events, study resources',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Campus | Student Portal Dashboard',
+    description:
+      'Manage student gigs, communities, finances, services, and campus events from your Zumbarl student dashboard.',
+    path: '/campus',
+  }),
+}
+
+export const CAMPUS_OPPORTUNITIES_SEO = {
+  title: 'Zumbarl Opportunities | Jobs and Gigs',
+  description:
+    'Discover student jobs, freelance gigs, internships, and remote opportunities tailored to your skills.',
+  path: '/campus/opportunities',
+  keywords:
+    'Zumbarl opportunities, campus jobs, student gigs, internships, remote student work, freelance opportunities',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Opportunities | Jobs and Gigs',
+    description:
+      'Discover student jobs, freelance gigs, internships, and remote opportunities tailored to your skills.',
+    path: '/campus/opportunities',
+  }),
+}
+
+export const CAMPUS_PLACE_BID_SEO = {
+  title: 'Zumbarl Place Bid | Submit Proposal',
+  description:
+    'Submit your proposal, pricing, delivery timeline, and supporting documents for a selected campus gig.',
+  path: '/campus/opportunities/place-bid',
+  keywords:
+    'Zumbarl place bid, submit proposal, campus gig proposal, student freelance bid, opportunity application',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Place Bid | Submit Proposal',
+    description:
+      'Submit your proposal, pricing, delivery timeline, and supporting documents for a selected campus gig.',
+    path: '/campus/opportunities/place-bid',
+  }),
+}
+
+export const CAMPUS_PROFILE_SEO = {
+  title: 'Zumbarl Profile | Student Performance Dashboard',
+  description:
+    'Track your Zumbarl score, gigs completed, endorsements, earnings, and profile activity in one place.',
+  path: '/campus/profile',
+  keywords:
+    'Zumbarl profile, student profile, campus portfolio, student endorsements, gig performance, earnings dashboard',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Profile | Student Performance Dashboard',
+    description:
+      'Track your Zumbarl score, gigs completed, endorsements, earnings, and profile activity in one place.',
+    path: '/campus/profile',
+  }),
+}

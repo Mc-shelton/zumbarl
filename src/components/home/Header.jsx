@@ -323,12 +323,12 @@ function Header() {
         </nav>
 
         <div className="nav-actions">
-          <a href="web/login.html" className="sign-in" onClick={closeMegaMenu}>
+          <HeaderLink href="/login" className="sign-in" onClick={closeMegaMenu}>
             Sign in
-          </a>
-          <a href="trial.html" className="try-btn" onClick={closeMegaMenu}>
+          </HeaderLink>
+          <HeaderLink href="/register" className="try-btn" onClick={closeMegaMenu}>
             Try it free
-          </a>
+          </HeaderLink>
         </div>
       </header>
 

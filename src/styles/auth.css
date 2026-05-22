@@ -1,0 +1,304 @@
+.auth-page {
+  background:
+    radial-gradient(circle at 8% 10%, rgba(251, 177, 48, 0.2) 0%, rgba(251, 177, 48, 0) 36%),
+    radial-gradient(circle at 90% 0%, rgba(27, 182, 249, 0.22) 0%, rgba(27, 182, 249, 0) 34%),
+    linear-gradient(180deg, #f8fafc 0%, #eef3f8 100%);
+}
+
+.auth-stage {
+  min-height: calc(100vh - var(--top-nav-height, 90px));
+  padding: clamp(40px, 6.4vw, 84px) 24px 74px;
+  display: grid;
+  place-items: center;
+}
+
+.auth-card {
+  width: min(1080px, 100%);
+  background: var(--theme-white);
+  border-radius: 34px;
+  border: 1px solid rgba(55, 54, 67, 0.08);
+  box-shadow: 0 24px 64px rgba(23, 34, 58, 0.12);
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 43%);
+}
+
+.auth-form-panel {
+  padding: clamp(32px, 3.7vw, 54px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-title {
+  margin: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(36px, 4vw, 50px);
+  line-height: 1;
+  font-weight: 800;
+  color: var(--theme-dark);
+  letter-spacing: -0.02em;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-field {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.auth-field-label {
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(55, 54, 67, 0.68);
+}
+
+.auth-input {
+  width: 100%;
+  min-height: 52px;
+  border-radius: 14px;
+  border: 1px solid rgba(55, 54, 67, 0.14);
+  background: #f7f9fc;
+  padding: 0 48px 0 14px;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 15px;
+  line-height: 1;
+  color: #192233;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.auth-input::placeholder {
+  color: #8592a8;
+}
+
+.auth-input:focus {
+  outline: none;
+  border-color: rgba(27, 182, 249, 0.65);
+  box-shadow: 0 0 0 4px rgba(27, 182, 249, 0.2);
+  background: var(--theme-white);
+}
+
+.auth-input-icon {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  width: 20px;
+  height: 20px;
+  color: rgba(55, 54, 67, 0.55);
+  pointer-events: none;
+}
+
+.auth-primary-btn {
+  margin-top: 4px;
+  min-height: 52px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(130deg, var(--theme-dark) 0%, #4e4f64 100%);
+  color: var(--theme-white);
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 17px;
+  line-height: 1;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px rgba(55, 54, 67, 0.24);
+}
+
+.auth-primary-btn:focus-visible,
+.auth-social-btn:focus-visible,
+.auth-promo-cta:focus-visible {
+  outline: 3px solid rgba(251, 177, 48, 0.65);
+  outline-offset: 2px;
+}
+
+.auth-helper-text {
+  margin: 2px 0 0;
+  color: rgba(55, 54, 67, 0.72);
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.auth-social-grid {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.auth-social-btn {
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgba(55, 54, 67, 0.2);
+  border-radius: 12px;
+  background: var(--theme-white);
+  color: var(--theme-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 19px;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.auth-social-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(27, 182, 249, 0.46);
+  color: #1574a1;
+}
+
+.auth-disclaimer {
+  margin: 4px 0 0;
+  color: rgba(55, 54, 67, 0.62);
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.auth-promo-panel {
+  position: relative;
+  background: linear-gradient(145deg, #50bef4 0%, #5b8be6 56%, #405ab5 100%);
+  color: var(--theme-white);
+  border-top-left-radius: 190px;
+  border-bottom-left-radius: 190px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.auth-promo-panel::before {
+  content: '';
+  position: absolute;
+  inset: auto -15% -34% 14%;
+  height: clamp(140px, 30%, 180px);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.auth-promo-panel::after {
+  content: '';
+  position: absolute;
+  inset: 8% auto auto -18%;
+  width: clamp(110px, 28%, 168px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.auth-promo-inner {
+  position: relative;
+  z-index: 1;
+  width: min(92%, 290px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.auth-promo-kicker {
+  margin: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.9;
+}
+
+.auth-promo-title {
+  margin: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: clamp(32px, 3.4vw, 44px);
+  line-height: 0.98;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.auth-promo-text {
+  margin: 0;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  max-width: 28ch;
+  opacity: 0.95;
+}
+
+.auth-promo-cta {
+  margin-top: 10px;
+  min-width: 150px;
+  min-height: 46px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  color: var(--theme-white);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 700;
+  transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.auth-promo-cta:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+@media (max-width: 980px) {
+  .auth-card {
+    grid-template-columns: 1fr;
+  }
+
+  .auth-promo-panel {
+    min-height: 260px;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-top-right-radius: 130px;
+  }
+}
+
+@media (max-width: 680px) {
+  .auth-stage {
+    padding-inline: 14px;
+  }
+
+  .auth-form-panel {
+    padding: 24px 18px 26px;
+  }
+
+  .auth-title {
+    font-size: clamp(30px, 9vw, 40px);
+  }
+
+  .auth-promo-panel {
+    min-height: 220px;
+    border-top-right-radius: 96px;
+  }
+
+  .auth-promo-title {
+    font-size: clamp(28px, 9vw, 38px);
+  }
+
+  .auth-promo-text {
+    font-size: 14px;
+  }
+}
