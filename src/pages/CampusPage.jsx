@@ -24,12 +24,12 @@ import {
 import Seo from '../components/Seo'
 import { CAMPUS_SEO } from '../features/seo/constants'
 import '../styles/campus.css'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 const SIDEBAR_NAV_ITEMS = [
   { label: 'Home', Icon: FiHome, active: true, href: '/campus' },
   { label: 'Opportunities', Icon: FiBriefcase, href: '/campus/opportunities' },
-  { label: 'Explore Campus', Icon: FiCalendar },
+  { label: 'Explore Campus', Icon: FiCalendar, href: '/campus/explore' },
   { label: 'Learn & Grow', Icon: FiBookOpen },
   { label: 'Community', Icon: FiUsers },
   { label: 'Finance', Icon: FiCreditCard },
@@ -40,7 +40,7 @@ const SIDEBAR_NAV_ITEMS = [
 
 const QUICK_ACTIONS = [
   { title: 'Find Work', subtitle: 'Jobs & gigs', Icon: FiBriefcase },
-  { title: 'Buy & Sell', subtitle: 'Marketplace', Icon: FiShoppingBag },
+  { title: 'Buy & Sell', subtitle: 'Marketplace', Icon: FiShoppingBag, href: '/campus/opportunities/buy-sell' },
   { title: 'Campus Services', subtitle: 'Food, print, laundry', Icon: FiTruck },
   { title: 'Notes & Papers', subtitle: 'Study resources', Icon: FiBookOpen },
   { title: 'Events', subtitle: "What's happening", Icon: FiCalendar },
@@ -53,6 +53,9 @@ const RECOMMENDED_GIGS = [
     org: 'Rorac Cafe',
     type: 'Part-time',
     pay: 'KSh 8,000 / month',
+    opportunityId: 'social-media-manager',
+    opportunityUuid: 'c1a7d5c4-9f0a-4d5d-8b06-9f3c2a6e1d11',
+    owner: 'ruth-atieno',
     thumbnail: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp',
   },
   {
@@ -60,6 +63,9 @@ const RECOMMENDED_GIGS = [
     org: 'Startup Wind',
     type: 'One-time',
     pay: 'KSh 3,500',
+    opportunityId: 'graphic-designer',
+    opportunityUuid: 'd7b2f3a9-3c21-4c52-a8d7-5b017e8f2214',
+    owner: 'martin-kibe',
     thumbnail: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp',
   },
   {
@@ -67,6 +73,9 @@ const RECOMMENDED_GIGS = [
     org: 'StudySync',
     type: 'Remote',
     pay: 'KSh 4,000 / article',
+    opportunityId: 'content-writer',
+    opportunityUuid: 'f0e4c2a6-75bd-4c0e-9c12-2ab67de49031',
+    owner: 'diana-kamau',
     thumbnail: '/assets/index/business_page_images/optimized/justin-buisson-vIluu0IH6Ps-unsplash.webp',
   },
   {
@@ -74,6 +83,9 @@ const RECOMMENDED_GIGS = [
     org: 'Zuri Agency',
     type: 'Part-time',
     pay: 'KSh 4,000 / month',
+    opportunityId: 'data-entry-clerk',
+    opportunityUuid: 'a84b1f29-2a3e-4f7c-b9a1-6d90ce5b4e22',
+    owner: 'paul-mwangi',
     thumbnail: '/assets/index/business_page_images/optimized/setengah-limasore-qUcZ3TUlgnM-unsplash.webp',
   },
 ]
@@ -223,6 +235,9 @@ const GIG_RECOMMENDATIONS = RECOMMENDED_GIGS.map((gig) => ({
   org: gig.org,
   meta: gig.type,
   value: gig.pay,
+  opportunityId: gig.opportunityId,
+  opportunityUuid: gig.opportunityUuid,
+  owner: gig.owner,
   thumbnail: gig.thumbnail,
 }))
 
@@ -440,6 +455,7 @@ function getAssistantReply(prompt, suggestions) {
 }
 
 function CampusPage() {
+  const navigate = useNavigate()
   const mainScrollRef = useRef(null)
   const heroCardRef = useRef(null)
   const promptInputRef = useRef(null)
@@ -619,10 +635,35 @@ function CampusPage() {
     hintDeleting ? '' : '|'
   }`
 
+  const openRecommendedGig = (opportunityUuid, owner) => {
+    const params = new URLSearchParams()
+    if (typeof opportunityUuid === 'string' && opportunityUuid.trim() !== '') {
+      params.set('opportunity', opportunityUuid)
+    }
+    if (typeof owner === 'string' && owner.trim() !== '') {
+      params.set('owner', owner)
+    }
+    navigate(`/campus/opportunities?${params.toString()}`)
+  }
+
   const renderRecommendationCard = (sectionId, item) => {
     if (sectionId === 'gigs') {
       return (
-        <article key={`${sectionId}-${item.title}`} className="campus-gig-card">
+        <article
+          key={`${sectionId}-${item.title}`}
+          className="campus-gig-card"
+          role="button"
+          tabIndex={0}
+          aria-label={`Open ${item.title} gig`}
+          onClick={() => openRecommendedGig(item.opportunityUuid, item.owner)}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') {
+              return
+            }
+            event.preventDefault()
+            openRecommendedGig(item.opportunityUuid, item.owner)
+          }}
+        >
           <img className="campus-gig-cover" src={item.thumbnail} alt={`${item.title} thumbnail`} loading="lazy" />
           <div className="campus-gigs-card-wrap">
             <img className="campus-gig-company-avatar" src="/assets/index/bee_nobg.png" alt={`${item.org} logo`} loading="lazy" />
@@ -946,15 +987,25 @@ function CampusPage() {
             <section className="campus-section">
               <h3>What would you like to do?</h3>
               <div className="campus-actions-grid">
-                {QUICK_ACTIONS.map(({ title, subtitle, Icon }) => (
-                  <article key={title} className="campus-action-card">
-                    <div className="campus-action-icon">
-                      <Icon aria-hidden="true" />
-                    </div>
-                    <h4>{title}</h4>
-                    <p>{subtitle}</p>
-                  </article>
-                ))}
+                {QUICK_ACTIONS.map(({ title, subtitle, Icon, href }) =>
+                  href ? (
+                    <Link key={title} to={href} className="campus-action-card" aria-label={`Open ${title}`}>
+                      <div className="campus-action-icon">
+                        <Icon aria-hidden="true" />
+                      </div>
+                      <h4>{title}</h4>
+                      <p>{subtitle}</p>
+                    </Link>
+                  ) : (
+                    <article key={title} className="campus-action-card">
+                      <div className="campus-action-icon">
+                        <Icon aria-hidden="true" />
+                      </div>
+                      <h4>{title}</h4>
+                      <p>{subtitle}</p>
+                    </article>
+                  )
+                )}
                 <article className="campus-action-card is-more">
                   <div className="campus-action-icon">
                     <FiMoreHorizontal aria-hidden="true" />

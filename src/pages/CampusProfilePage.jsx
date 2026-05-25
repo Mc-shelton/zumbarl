@@ -51,7 +51,7 @@ import '../styles/profile.css'
 const SIDEBAR_NAV_ITEMS = [
   { label: 'Home', Icon: FiHome, href: '/campus' },
   { label: 'Opportunities', Icon: FiBriefcase, href: '/campus/opportunities' },
-  { label: 'Explore Campus', Icon: FiCalendar },
+  { label: 'Explore Campus', Icon: FiCalendar, href: '/campus/explore' },
   { label: 'Learn & Grow', Icon: FiBookOpen },
   { label: 'Community', Icon: FiUsers },
   { label: 'Finance', Icon: FiCreditCard },

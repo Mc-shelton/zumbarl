@@ -935,6 +935,12 @@
   align-items: center;
 }
 
+a.campus-action-card {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+
 .campus-action-icon {
   width: 50px;
   height: 50px;
@@ -1050,6 +1056,12 @@
   border-radius: 15px;
   background: #ffffff;
   overflow: hidden;
+  cursor: pointer;
+}
+
+.campus-gig-card:focus-visible {
+  outline: 2px solid rgba(97, 69, 255, 0.52);
+  outline-offset: 2px;
 }
 
 .campus-gig-cover {

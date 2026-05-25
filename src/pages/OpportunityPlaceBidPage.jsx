@@ -33,7 +33,7 @@ import '../styles/opportunities.css'
 const SIDEBAR_NAV_ITEMS = [
   { label: 'Home', Icon: FiHome, active: false, href: '/campus' },
   { label: 'Opportunities', Icon: FiBriefcase, active: true, href: '/campus/opportunities' },
-  { label: 'Explore Campus', Icon: FiCalendar, active: false },
+  { label: 'Explore Campus', Icon: FiCalendar, active: false, href: '/campus/explore' },
   { label: 'Learn & Grow', Icon: FiBookOpen, active: false },
   { label: 'Community', Icon: FiUsers, active: false },
   { label: 'Finance', Icon: FiCreditCard, active: false },

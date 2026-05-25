@@ -23,7 +23,7 @@ import {
   FiUsers,
   FiX,
 } from 'react-icons/fi'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Seo from '../components/Seo'
 import { CAMPUS_OPPORTUNITIES_SEO } from '../features/seo/constants'
 import '../styles/campus.css'
@@ -32,7 +32,7 @@ import '../styles/opportunities.css'
 const SIDEBAR_NAV_ITEMS = [
   { label: 'Home', Icon: FiHome, active: false, href: '/campus' },
   { label: 'Opportunities', Icon: FiBriefcase, active: true, href: '/campus/opportunities' },
-  { label: 'Explore Campus', Icon: FiCalendar, active: false },
+  { label: 'Explore Campus', Icon: FiCalendar, active: false, href: '/campus/explore' },
   { label: 'Learn & Grow', Icon: FiBookOpen, active: false },
   { label: 'Community', Icon: FiUsers, active: false },
   { label: 'Finance', Icon: FiCreditCard, active: false },
@@ -50,11 +50,25 @@ const OPPORTUNITY_TYPES = [
   { label: 'On-campus', count: 186, Icon: FiHome },
 ]
 
-const OPPORTUNITY_TABS = ['Discover', 'My Bids', 'Invites']
+const OPPORTUNITY_TABS = ['Discover', 'My Bids', 'Invites', 'Service Orders']
+const OPPORTUNITY_TAB_TO_QUERY = {
+  Discover: 'discover',
+  'My Bids': 'bids',
+  Invites: 'invites',
+  'Service Orders': 'service-orders',
+}
+const OPPORTUNITY_QUERY_TO_TAB = {
+  discover: 'Discover',
+  bids: 'My Bids',
+  invites: 'Invites',
+  'service-orders': 'Service Orders',
+}
 
 const OPPORTUNITIES = [
   {
     id: 'social-media-manager',
+    shareKey: 'gig-social-media-manager-rorac-cafe',
+    opportunityUuid: 'c1a7d5c4-9f0a-4d5d-8b06-9f3c2a6e1d11',
     title: 'Social Media Manager',
     company: 'Rorac Cafe',
     meta: 'Part-time · On-campus',
@@ -95,6 +109,8 @@ const OPPORTUNITIES = [
   },
   {
     id: 'graphic-designer',
+    shareKey: 'gig-graphic-designer-startup-wind',
+    opportunityUuid: 'd7b2f3a9-3c21-4c52-a8d7-5b017e8f2214',
     title: 'Graphic Designer',
     company: 'Startup Wind',
     meta: 'One-time · Remote',
@@ -134,6 +150,8 @@ const OPPORTUNITIES = [
   },
   {
     id: 'brand-ambassador',
+    shareKey: 'gig-brand-ambassador-viva-drinks',
+    opportunityUuid: '4b9de7f2-6a51-49d9-8a4b-f2e7153c4b87',
     title: 'Campus Brand Ambassador',
     company: 'Viva Drinks',
     meta: 'Part-time · On-campus',
@@ -173,6 +191,8 @@ const OPPORTUNITIES = [
   },
   {
     id: 'delivery-rider',
+    shareKey: 'gig-delivery-rider-quickbite',
+    opportunityUuid: '91b0c2d4-5e7a-4c81-9f23-ae47d9160b35',
     title: 'Food Delivery Rider',
     company: 'QuickBite',
     meta: 'Part-time · Flexible',
@@ -211,7 +231,91 @@ const OPPORTUNITIES = [
     ],
   },
   {
+    id: 'content-writer',
+    shareKey: 'gig-content-writer-studysync',
+    opportunityUuid: 'f0e4c2a6-75bd-4c0e-9c12-2ab67de49031',
+    title: 'Content Writer',
+    company: 'StudySync',
+    meta: 'Remote · Flexible',
+    description: 'Write concise student-friendly articles and social captions for campus campaigns.',
+    tags: ['Writing', 'SEO', 'Research'],
+    pay: 'KSh 4,000',
+    unit: 'per article',
+    posted: 'Posted 8h ago',
+    location: 'Remote',
+    commitment: '2 articles / week',
+    proposals: '11 proposals',
+    owner: {
+      name: 'Diana Kamau',
+      role: 'Content Lead, StudySync',
+      background:
+        'Diana manages campus learning content and works with student writers to ship practical weekly guides and promotion copy.',
+      metrics: [
+        { label: 'Rating', value: '4.8 / 5' },
+        { label: 'Hire Rate', value: '79%' },
+        { label: 'Projects', value: '34 articles' },
+      ],
+    },
+    overview:
+      'We are looking for a writer who can turn topic briefs into clear, engaging student content across blog and social formats.',
+    responsibilities: [
+      'Write two short-form articles per week from provided briefs.',
+      'Draft supporting captions for Instagram and WhatsApp updates.',
+      'Incorporate editor feedback within 24 hours.',
+      'Submit final copy in shared document templates.',
+    ],
+    requirements: [
+      'Strong written English and clear structure.',
+      'Portfolio samples in educational or lifestyle content.',
+      'Ability to research quickly and cite reliable sources.',
+      'Reliable turnaround and communication.',
+    ],
+  },
+  {
+    id: 'data-entry-clerk',
+    shareKey: 'gig-data-entry-clerk-zuri',
+    opportunityUuid: 'a84b1f29-2a3e-4f7c-b9a1-6d90ce5b4e22',
+    title: 'Data Entry Clerk',
+    company: 'Zuri Agency',
+    meta: 'Part-time · Hybrid',
+    description: 'Update spreadsheets, clean records and prepare simple weekly data reports.',
+    tags: ['Data Entry', 'Spreadsheets', 'Accuracy'],
+    pay: 'KSh 4,000',
+    unit: 'per month',
+    posted: 'Posted 6h ago',
+    location: 'Nairobi CBD / Remote',
+    commitment: '10 hrs / week',
+    proposals: '16 proposals',
+    owner: {
+      name: 'Paul Mwangi',
+      role: 'Operations Coordinator, Zuri Agency',
+      background:
+        'Paul oversees client operations data and often hires students for structured admin and reporting support.',
+      metrics: [
+        { label: 'Rating', value: '4.7 / 5' },
+        { label: 'Hire Rate', value: '84%' },
+        { label: 'Projects', value: '29 support roles' },
+      ],
+    },
+    overview:
+      'Support day-to-day data organization by entering records, validating fields and sharing clean weekly summaries.',
+    responsibilities: [
+      'Transfer records from forms into spreadsheet trackers.',
+      'Flag duplicates, missing fields and format inconsistencies.',
+      'Prepare simple totals and status summaries each week.',
+      'Follow internal naming and folder structure standards.',
+    ],
+    requirements: [
+      'Comfort with Google Sheets or Excel basics.',
+      'Strong attention to detail and consistency.',
+      'Ability to keep sensitive records confidential.',
+      'Availability for a scheduled weekly check-in.',
+    ],
+  },
+  {
     id: 'web-developer',
+    shareKey: 'gig-web-developer-techsquad',
+    opportunityUuid: 'b7e90a1c-31d5-4f6f-8e02-d3c6b89a7410',
     title: 'Website Developer',
     company: 'TechSquad',
     meta: 'One-time · Remote',
@@ -454,8 +558,60 @@ const OPPORTUNITY_DETAIL_THUMBNAILS = {
   'graphic-designer': '/assets/index/business_page_images/alejandro-escamilla-BbQLHCpVUqA-unsplash.jpg',
   'brand-ambassador': '/assets/index/business_page_images/omar-lopez-1qfy-jDc_jo-unsplash.jpg',
   'delivery-rider': '/assets/index/business_page_images/igor-rodrigues-Wn932wwnpSE-unsplash.jpg',
+  'content-writer': '/assets/index/business_page_images/justin-buisson-vIluu0IH6Ps-unsplash.jpg',
+  'data-entry-clerk': '/assets/index/business_page_images/setengah-limasore-qUcZ3TUlgnM-unsplash.jpg',
   'web-developer': '/assets/index/business_page_images/cowomen-ZKHksse8tUU-unsplash.jpg',
 }
+
+function slugifyOwner(value) {
+  if (typeof value !== 'string') {
+    return ''
+  }
+
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+function hash32(seed, salt) {
+  let hash = (2166136261 ^ salt) >>> 0
+
+  for (let index = 0; index < seed.length; index += 1) {
+    hash ^= seed.charCodeAt(index)
+    hash = Math.imul(hash, 16777619)
+    hash ^= hash >>> 13
+  }
+
+  return hash >>> 0
+}
+
+function toHex8(value) {
+  return value.toString(16).padStart(8, '0')
+}
+
+function createDeterministicUuid(seed) {
+  const hex = `${toHex8(hash32(seed, 0))}${toHex8(hash32(seed, 1))}${toHex8(hash32(seed, 2))}${toHex8(hash32(seed, 3))}`
+  const normalized = hex.split('')
+
+  normalized[12] = '4'
+  normalized[16] = ((parseInt(normalized[16], 16) & 0x3) | 0x8).toString(16)
+
+  const compact = normalized.join('')
+  return `${compact.slice(0, 8)}-${compact.slice(8, 12)}-${compact.slice(12, 16)}-${compact.slice(16, 20)}-${compact.slice(20, 32)}`
+}
+
+const OPPORTUNITY_LISTINGS = OPPORTUNITIES.map((item, index) => ({
+  ...item,
+  shareKey: item.shareKey || `${item.id}-${index + 1}`,
+  opportunityUuid: item.opportunityUuid || createDeterministicUuid(item.shareKey || `${item.id}-${item.company}-${index + 1}`),
+  ownerSlug: item.ownerSlug || slugifyOwner(item.owner?.name || item.company || ''),
+}))
+const OPPORTUNITY_UUID_SET = new Set(OPPORTUNITY_LISTINGS.map((item) => item.opportunityUuid))
+const OPPORTUNITY_UUID_TO_LISTING = new Map(OPPORTUNITY_LISTINGS.map((item) => [item.opportunityUuid, item]))
+const OPPORTUNITY_SHARE_KEY_SET = new Set(OPPORTUNITY_LISTINGS.map((item) => item.shareKey))
+const OPPORTUNITY_ID_SET = new Set(OPPORTUNITY_LISTINGS.map((item) => item.id))
 
 const MY_BIDS = [
   {
@@ -686,15 +842,138 @@ const BID_RAIL_REMINDERS = [
   },
 ]
 
+const SERVICE_ORDERS = [
+  {
+    id: 'svc-order-2419',
+    service: 'Graduation Makeup Session',
+    category: 'Beauty & Styling',
+    provider: 'Nasha Beauty Studio',
+    contact: 'Mercy W.',
+    schedule: 'Tue, May 26 · 2:00 PM',
+    location: 'KU Hostels, Block C',
+    amount: 'KSh 2,500',
+    note: 'Bring your preferred look references before appointment.',
+    status: 'Confirmed',
+    statusTone: 'is-confirmed',
+  },
+  {
+    id: 'svc-order-2427',
+    service: 'Laundry Pickup & Delivery',
+    category: 'Home Services',
+    provider: 'FreshFold Campus',
+    contact: 'Brian O.',
+    schedule: 'Wed, May 27 · 8:00 AM',
+    location: 'USIU Gate B',
+    amount: 'KSh 900',
+    note: 'Pickup slot reserved. Clothes returned same day by 6:00 PM.',
+    status: 'Scheduled',
+    statusTone: 'is-scheduled',
+  },
+  {
+    id: 'svc-order-2388',
+    service: 'Laptop Cleaning & OS Tune-up',
+    category: 'Tech Support',
+    provider: 'ByteFix Students',
+    contact: 'Ian K.',
+    schedule: 'Completed · Mon, May 18',
+    location: 'Remote support',
+    amount: 'KSh 1,800',
+    note: 'Service completed. Follow-up health check available in 7 days.',
+    status: 'Completed',
+    statusTone: 'is-completed',
+  },
+  {
+    id: 'svc-order-2432',
+    service: 'Photography for Club Event',
+    category: 'Creative Services',
+    provider: 'LensLab Collective',
+    contact: 'Aisha N.',
+    schedule: 'Fri, May 29 · 6:30 PM',
+    location: 'KU Amphitheatre',
+    amount: 'KSh 3,200',
+    note: 'Awaiting your final shot list and event program.',
+    status: 'Awaiting Input',
+    statusTone: 'is-awaiting',
+  },
+]
+
+function resolveOpportunityTab(tabQueryValue) {
+  const normalizedQuery = typeof tabQueryValue === 'string' ? tabQueryValue.trim().toLowerCase() : ''
+  return OPPORTUNITY_QUERY_TO_TAB[normalizedQuery] || OPPORTUNITY_TABS[0]
+}
+
+function findOpportunityListingBySelector(selector) {
+  if (typeof selector !== 'string' || selector.trim() === '') {
+    return null
+  }
+
+  if (OPPORTUNITY_UUID_SET.has(selector)) {
+    return OPPORTUNITY_UUID_TO_LISTING.get(selector) || null
+  }
+
+  if (OPPORTUNITY_SHARE_KEY_SET.has(selector)) {
+    return OPPORTUNITY_LISTINGS.find((item) => item.shareKey === selector) || null
+  }
+
+  if (OPPORTUNITY_ID_SET.has(selector)) {
+    return OPPORTUNITY_LISTINGS.find((item) => item.id === selector) || null
+  }
+
+  return null
+}
+
+function resolveOpportunityUuid(opportunityQueryValue, ownerQueryValue, gigQueryValue) {
+  const normalizedOwner = slugifyOwner(ownerQueryValue)
+
+  if (typeof opportunityQueryValue === 'string' && opportunityQueryValue.trim() !== '') {
+    if (OPPORTUNITY_UUID_SET.has(opportunityQueryValue)) {
+      const directUuidMatch = OPPORTUNITY_UUID_TO_LISTING.get(opportunityQueryValue) || null
+      if (directUuidMatch) {
+        return directUuidMatch.opportunityUuid
+      }
+    }
+
+    if (OPPORTUNITY_ID_SET.has(opportunityQueryValue)) {
+      const byIdAndOwner = OPPORTUNITY_LISTINGS.find(
+        (item) => item.id === opportunityQueryValue && (!normalizedOwner || item.ownerSlug === normalizedOwner)
+      )
+      if (byIdAndOwner) {
+        return byIdAndOwner.opportunityUuid
+      }
+    }
+
+    if (OPPORTUNITY_SHARE_KEY_SET.has(opportunityQueryValue)) {
+      const byShareKey = OPPORTUNITY_LISTINGS.find((item) => item.shareKey === opportunityQueryValue) || null
+      if (byShareKey && (!normalizedOwner || byShareKey.ownerSlug === normalizedOwner)) {
+        return byShareKey.opportunityUuid
+      }
+    }
+  }
+
+  if (typeof gigQueryValue === 'string' && gigQueryValue.trim() !== '') {
+    const legacyGigMatch = findOpportunityListingBySelector(gigQueryValue)
+    if (legacyGigMatch && (!normalizedOwner || legacyGigMatch.ownerSlug === normalizedOwner)) {
+      return legacyGigMatch.opportunityUuid
+    }
+  }
+
+  return null
+}
+
 function OpportunitiesPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const initialTab = resolveOpportunityTab(searchParams.get('tab'))
+  const initialOpportunityUuid = initialTab === 'Discover'
+    ? resolveOpportunityUuid(searchParams.get('opportunity'), searchParams.get('owner'), searchParams.get('gig'))
+    : null
   const opportunitySearchRef = useRef(null)
-  const [selectedOpportunityId, setSelectedOpportunityId] = useState(null)
-  const [activeOpportunityTab, setActiveOpportunityTab] = useState(OPPORTUNITY_TABS[0])
+  const [selectedOpportunityUuid, setSelectedOpportunityUuid] = useState(initialOpportunityUuid)
+  const [activeOpportunityTab, setActiveOpportunityTab] = useState(initialTab)
   const [selectedBidId, setSelectedBidId] = useState(MY_BIDS[0]?.id || null)
   const [isFilterExpanded, setIsFilterExpanded] = useState(false)
 
-  const selectedOpportunity = OPPORTUNITIES.find((item) => item.id === selectedOpportunityId) || null
+  const selectedOpportunity = OPPORTUNITY_UUID_TO_LISTING.get(selectedOpportunityUuid) || null
   const selectedOpportunityThumbnail = selectedOpportunity
     ? OPPORTUNITY_DETAIL_THUMBNAILS[selectedOpportunity.id] || DEFAULT_OPPORTUNITY_THUMBNAIL
     : DEFAULT_OPPORTUNITY_THUMBNAIL
@@ -705,6 +984,7 @@ function OpportunitiesPage() {
   const isDiscoverTab = activeOpportunityTab === 'Discover'
   const isBidsTab = activeOpportunityTab === 'My Bids'
   const isInvitesTab = activeOpportunityTab === 'Invites'
+  const isServiceOrdersTab = activeOpportunityTab === 'Service Orders'
   const hasRightRail = isDiscoverTab || isBidsTab
   const selectedBid = MY_BIDS.find((bid) => bid.id === selectedBidId) || MY_BIDS[0] || null
   const selectedBidInterview = selectedBid
@@ -714,6 +994,58 @@ function OpportunitiesPage() {
   const newInvitesCount = OPPORTUNITY_INVITES.filter((invite) => invite.isNew).length
   const expiringSoonInvitesCount = OPPORTUNITY_INVITES.filter((invite) => invite.expires.includes('1 day') || invite.expires.includes('2 days')).length
   const activeInviteClientsCount = new Set(OPPORTUNITY_INVITES.map((invite) => invite.company)).size
+  const confirmedServiceOrdersCount = SERVICE_ORDERS.filter((order) => order.statusTone === 'is-confirmed' || order.statusTone === 'is-scheduled').length
+  const completedServiceOrdersCount = SERVICE_ORDERS.filter((order) => order.statusTone === 'is-completed').length
+  const actionRequiredServiceOrdersCount = SERVICE_ORDERS.filter((order) => order.statusTone === 'is-awaiting').length
+  const tabQueryParam = searchParams.get('tab')
+  const opportunityQueryParam = searchParams.get('opportunity')
+  const ownerQueryParam = searchParams.get('owner')
+  const gigQueryParam = searchParams.get('gig')
+
+  const syncRouteSelection = (tab, opportunityUuid = null) => {
+    const nextParams = new URLSearchParams(searchParams)
+    const tabQueryValue = OPPORTUNITY_TAB_TO_QUERY[tab] || OPPORTUNITY_TAB_TO_QUERY[OPPORTUNITY_TABS[0]]
+    const shouldPersistOpportunity =
+      tab === 'Discover' &&
+      typeof opportunityUuid === 'string' &&
+      OPPORTUNITY_UUID_SET.has(opportunityUuid)
+    const selectedListing = shouldPersistOpportunity
+      ? OPPORTUNITY_UUID_TO_LISTING.get(opportunityUuid) || null
+      : null
+
+    if (tabQueryValue === OPPORTUNITY_TAB_TO_QUERY[OPPORTUNITY_TABS[0]]) {
+      nextParams.delete('tab')
+    } else {
+      nextParams.set('tab', tabQueryValue)
+    }
+
+    if (shouldPersistOpportunity && selectedListing) {
+      nextParams.set('opportunity', selectedListing.opportunityUuid)
+      nextParams.set('owner', selectedListing.ownerSlug)
+    } else {
+      nextParams.delete('opportunity')
+      nextParams.delete('owner')
+    }
+    nextParams.delete('gig')
+
+    setSearchParams(nextParams, { replace: true })
+  }
+
+  useEffect(() => {
+    const tabFromQuery = resolveOpportunityTab(tabQueryParam)
+    const opportunityFromQuery = tabFromQuery === 'Discover'
+      ? resolveOpportunityUuid(opportunityQueryParam, ownerQueryParam, gigQueryParam)
+      : null
+
+    setActiveOpportunityTab((currentTab) => (currentTab === tabFromQuery ? currentTab : tabFromQuery))
+    setSelectedOpportunityUuid((currentOpportunityUuid) =>
+      currentOpportunityUuid === opportunityFromQuery ? currentOpportunityUuid : opportunityFromQuery
+    )
+
+    if (tabFromQuery !== 'Discover') {
+      setIsFilterExpanded(false)
+    }
+  }, [gigQueryParam, opportunityQueryParam, ownerQueryParam, tabQueryParam])
 
   useEffect(() => {
     const handleShortcutFocus = (event) => {
@@ -734,28 +1066,44 @@ function OpportunitiesPage() {
     return () => window.removeEventListener('keydown', handleShortcutFocus)
   }, [])
 
-  const handleOpportunitySelect = (opportunityId) => {
-    setSelectedOpportunityId(opportunityId)
-    setIsFilterExpanded(false)
+  const handleOpportunityTabChange = (tab) => {
+    setActiveOpportunityTab(tab)
+
+    if (tab !== 'Discover') {
+      setSelectedOpportunityUuid(null)
+      setIsFilterExpanded(false)
+      syncRouteSelection(tab)
+      return
+    }
+
+    syncRouteSelection(tab, selectedOpportunityUuid)
   }
 
-  const handleOpportunityCardKeyDown = (event, opportunityId) => {
+  const handleOpportunitySelect = (opportunityUuid) => {
+    setActiveOpportunityTab('Discover')
+    setSelectedOpportunityUuid(opportunityUuid)
+    setIsFilterExpanded(false)
+    syncRouteSelection('Discover', opportunityUuid)
+  }
+
+  const handleOpportunityCardKeyDown = (event, opportunityUuid) => {
     if (event.key !== 'Enter' && event.key !== ' ') {
       return
     }
 
     event.preventDefault()
-    handleOpportunitySelect(opportunityId)
+    handleOpportunitySelect(opportunityUuid)
   }
 
   const handleCloseDetails = () => {
-    setSelectedOpportunityId(null)
+    setSelectedOpportunityUuid(null)
     setIsFilterExpanded(false)
+    syncRouteSelection('Discover')
   }
 
-  const handleOpenPlaceBid = (opportunityId, invite = null) => {
-    const opportunity = OPPORTUNITIES.find((item) => item.id === opportunityId) || OPPORTUNITIES[0] || null
-    const targetOpportunityId = opportunity?.id || opportunityId || 'social-media-manager'
+  const handleOpenPlaceBid = (opportunitySelector, invite = null) => {
+    const opportunity = findOpportunityListingBySelector(opportunitySelector) || OPPORTUNITY_LISTINGS[0] || null
+    const targetOpportunityId = opportunity?.id || opportunitySelector || 'social-media-manager'
 
     navigate(`/campus/opportunities/${targetOpportunityId}/place-bid`, {
       state: {
@@ -883,13 +1231,7 @@ function OpportunitiesPage() {
                       type="button"
                       className={activeOpportunityTab === tab ? 'is-active' : ''}
                       aria-selected={activeOpportunityTab === tab}
-                      onClick={() => {
-                        setActiveOpportunityTab(tab)
-                        if (tab !== 'Discover') {
-                          setSelectedOpportunityId(null)
-                          setIsFilterExpanded(false)
-                        }
-                      }}
+                      onClick={() => handleOpportunityTabChange(tab)}
                     >
                       <span>{tab}</span>
                       {tab === 'Invites' && newInvitesCount > 0 ? (
@@ -927,16 +1269,16 @@ function OpportunitiesPage() {
                   </div>
 
                   <div className="opportunities-list">
-                    {OPPORTUNITIES.map((item) => (
+                    {OPPORTUNITY_LISTINGS.map((item) => (
                       <article
-                        key={item.id}
-                        className={`opportunities-job-card${selectedOpportunityId === item.id ? ' is-selected' : ''}`}
+                        key={item.opportunityUuid}
+                        className={`opportunities-job-card${selectedOpportunityUuid === item.opportunityUuid ? ' is-selected' : ''}`}
                         role="button"
                         tabIndex={0}
-                        aria-pressed={selectedOpportunityId === item.id}
+                        aria-pressed={selectedOpportunityUuid === item.opportunityUuid}
                         aria-label={`Open details for ${item.title}`}
-                        onClick={() => handleOpportunitySelect(item.id)}
-                        onKeyDown={(event) => handleOpportunityCardKeyDown(event, item.id)}
+                        onClick={() => handleOpportunitySelect(item.opportunityUuid)}
+                        onKeyDown={(event) => handleOpportunityCardKeyDown(event, item.opportunityUuid)}
                       >
                         <div className="opportunities-job-avatar">
                           <img src="/assets/index/bee_nobg.png" alt={`${item.company} logo`} loading="lazy" />
@@ -1152,6 +1494,76 @@ function OpportunitiesPage() {
                 </div>
               </section>
             ) : null}
+
+            {isServiceOrdersTab ? (
+              <section className="opportunities-list-section opportunities-service-orders-section" aria-label="Service orders">
+                <div className="opportunities-section-head opportunities-service-orders-head">
+                  <div>
+                    <h2>Service Orders</h2>
+                    <p>Bookings for services, deliveries and scheduled support requests.</p>
+                  </div>
+                  <button type="button" className="campus-link-btn">Create booking</button>
+                </div>
+
+                <div className="opportunities-service-orders-summary">
+                  <article>
+                    <p>Confirmed</p>
+                    <strong>{confirmedServiceOrdersCount}</strong>
+                    <span>Upcoming bookings</span>
+                  </article>
+                  <article>
+                    <p>Completed</p>
+                    <strong>{completedServiceOrdersCount}</strong>
+                    <span>Closed orders</span>
+                  </article>
+                  <article>
+                    <p>Action needed</p>
+                    <strong>{actionRequiredServiceOrdersCount}</strong>
+                    <span>Requires your input</span>
+                  </article>
+                </div>
+
+                <div className="opportunities-service-orders-list">
+                  {SERVICE_ORDERS.map((order) => (
+                    <article key={order.id} className="opportunities-service-order-card">
+                      <header className="opportunities-service-order-head">
+                        <div>
+                          <p className="opportunities-service-order-id">{order.id.toUpperCase()}</p>
+                          <h3>{order.service}</h3>
+                          <p className="opportunities-job-meta">{order.provider} · {order.category}</p>
+                        </div>
+                        <span className={`opportunities-service-order-chip ${order.statusTone}`}>{order.status}</span>
+                      </header>
+
+                      <div className="opportunities-service-order-meta">
+                        <p>
+                          <FiCalendar aria-hidden="true" />
+                          {order.schedule}
+                        </p>
+                        <p>
+                          <FiMapPin aria-hidden="true" />
+                          {order.location}
+                        </p>
+                        <p>
+                          <FiUsers aria-hidden="true" />
+                          {order.contact}
+                        </p>
+                      </div>
+
+                      <p className="opportunities-service-order-note">{order.note}</p>
+
+                      <footer className="opportunities-service-order-foot">
+                        <p className="opportunities-service-order-amount">{order.amount}</p>
+                        <div className="opportunities-service-order-actions">
+                          <button type="button" className="campus-link-btn">Message</button>
+                          <button type="button" className="opportunities-search-btn">View Booking</button>
+                        </div>
+                      </footer>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
           </section>
 
           {isDiscoverTab ? (
@@ -1308,7 +1720,7 @@ function OpportunitiesPage() {
                   <button
                     type="button"
                     className="opportunities-detail-bid-btn"
-                    onClick={() => handleOpenPlaceBid(selectedOpportunity.id)}
+                    onClick={() => handleOpenPlaceBid(selectedOpportunity.opportunityUuid)}
                   >
                     Place Bid
                     <FiArrowRight aria-hidden="true" />

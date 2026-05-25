@@ -143,6 +143,36 @@ export const CAMPUS_OPPORTUNITIES_SEO = {
   }),
 }
 
+export const CAMPUS_BUY_SELL_SEO = {
+  title: 'Zumbarl Opportunities | Buy and Sell',
+  description:
+    'Browse student marketplace listings for electronics, books, furniture, fashion, and campus services.',
+  path: '/campus/opportunities/buy-sell',
+  keywords:
+    'Zumbarl buy and sell, campus marketplace, student marketplace, campus products, campus services, second-hand items',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Opportunities | Buy and Sell',
+    description:
+      'Browse student marketplace listings for electronics, books, furniture, fashion, and campus services.',
+    path: '/campus/opportunities/buy-sell',
+  }),
+}
+
+export const CAMPUS_EXPLORE_SEO = {
+  title: 'Zumbarl Explore Campus | Stories, Events, and Community',
+  description:
+    'Discover campus stories, announcements, student projects, events, and marketplace activity in one live feed.',
+  path: '/campus/explore',
+  keywords:
+    'Zumbarl explore campus, campus feed, student stories, campus events, campus announcements, student marketplace',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Explore Campus | Stories, Events, and Community',
+    description:
+      'Discover campus stories, announcements, student projects, events, and marketplace activity in one live feed.',
+    path: '/campus/explore',
+  }),
+}
+
 export const CAMPUS_PLACE_BID_SEO = {
   title: 'Zumbarl Place Bid | Submit Proposal',
   description:
