@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   FiAtSign,
   FiArrowRight,
@@ -42,7 +42,7 @@ import {
   FiX,
 } from 'react-icons/fi'
 import { FaFacebookF, FaInstagram, FaTiktok, FaWhatsapp } from 'react-icons/fa6'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import Seo from '../components/Seo'
 import { CAMPUS_PROFILE_SEO } from '../features/seo/constants'
 import '../styles/campus.css'
@@ -1518,6 +1518,9 @@ function getShopProductDetail(item) {
 }
 
 function CampusProfilePage() {
+  const [searchParams] = useSearchParams()
+  const queryTab = (searchParams.get('tab') || '').trim().toLowerCase()
+  const queryProduct = (searchParams.get('product') || '').trim()
   const [activeTab, setActiveTab] = useState('Overview')
   const [activePortfolioFilter, setActivePortfolioFilter] = useState('all')
   const [selectedPortfolioId, setSelectedPortfolioId] = useState(null)
@@ -1529,6 +1532,35 @@ function CampusProfilePage() {
   const [skillsCategoryFilter, setSkillsCategoryFilter] = useState(SKILLS_CATEGORY_FILTERS[0])
   const [skillsLevelFilter, setSkillsLevelFilter] = useState(SKILLS_LEVEL_FILTERS[0])
   const [activeShopFilter, setActiveShopFilter] = useState(SHOP_TAB_FILTERS[0].key)
+
+  useEffect(() => {
+    if (!queryTab && !queryProduct) {
+      return
+    }
+
+    const resolvedTab = PROFILE_TABS.find((tab) => tab.toLowerCase() === queryTab)
+    if (resolvedTab) {
+      setActiveTab(resolvedTab)
+    }
+
+    if (!queryProduct) {
+      return
+    }
+
+    const resolvedProduct = SHOP_PRODUCTS_WITH_UID.find((item) => item.uid === queryProduct)
+      || SHOP_PRODUCTS_WITH_UID.find((item) => item.id === queryProduct)
+
+    if (!resolvedProduct) {
+      return
+    }
+
+    setActiveTab('Shop')
+    setActiveShopFilter('all')
+    setSelectedShopProductUid((currentUid) => (currentUid === resolvedProduct.uid ? currentUid : resolvedProduct.uid))
+    setActiveShopDetailImageIndex(0)
+    setActiveShopDetailTab('details')
+  }, [queryTab, queryProduct])
+
   const profileScoreColor = getScoreFillColor(PROFILE_SCORE, 100)
   const isPortfolioTab = activeTab === 'Portfolio'
   const isExperienceTab = activeTab === 'Experience'
@@ -2937,6 +2969,13 @@ function CampusProfilePage() {
                     <header className="campus-shop-detail-topbar">
                       {/* <h2>{selectedShopProduct.title}</h2> */}
                       <div>
+                        <button
+                          type="button"
+                          className="campus-shop-detail-more-btn"
+                          onClick={() => setActiveShopDetailTab('details')}
+                        >
+                          More details
+                        </button>
                         <button
                           type="button"
                           aria-label="Previous product image"

@@ -3961,7 +3961,30 @@
   width:100%;
 }
 
-.campus-shop-detail-topbar > div > button {
+.campus-shop-detail-more-btn {
+  border-radius: 10px;
+  border: 1px solid #d7deef;
+  background: #ffffff;
+  color: #32406f;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0 12px;
+  height: 40px;
+  cursor: pointer;
+}
+
+.campus-shop-detail-more-btn:hover {
+  border-color: #bcc7e2;
+  background: #f8faff;
+}
+
+.campus-shop-detail-more-btn:focus-visible {
+  outline: 2px solid rgba(95, 67, 232, 0.22);
+  outline-offset: 1px;
+}
+
+.campus-shop-detail-topbar > div > button:not(.campus-shop-detail-more-btn) {
   width: 40px;
   height: 40px;
   border-radius: 10px;

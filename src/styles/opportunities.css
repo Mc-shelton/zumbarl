@@ -524,18 +524,53 @@
 }
 
 .opportunities-bid-progress-track {
+  position: relative;
   width: 100%;
-  height: 7px;
-  border-radius: 999px;
-  background: #edf0fa;
-  overflow: hidden;
+  height: 18px;
 }
 
-.opportunities-bid-progress-track span {
-  display: block;
+.opportunities-bid-progress-track-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 5px;
+  transform: translateY(-50%);
+  border-radius: 999px;
+  background: #edf0fa;
+}
+
+.opportunities-bid-progress-track-line.is-filled {
+  right: auto;
+  background: var(--theme-green);
+  transition: width 220ms ease;
+}
+
+.opportunities-bid-progress-points {
+  position: relative;
+  z-index: 1;
   height: 100%;
-  border-radius: inherit;
-  background: var(--theme-green)
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.opportunities-bid-progress-point {
+  width: 13px;
+  height: 13px;
+  border-radius: 999px;
+  border: 2px solid #d8deef;
+  background: #ffffff;
+  transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.opportunities-bid-progress-point.is-complete {
+  border-color: var(--theme-green);
+  background: var(--theme-green);
+}
+
+.opportunities-bid-progress-point.is-current {
+  box-shadow: 0 0 0 3px rgba(60, 139, 147, 0.2);
 }
 
 .opportunities-bid-progress p {
@@ -881,6 +916,7 @@
   background: #ffffff;
   display: grid;
   gap: 10px;
+  border:2px solid red;
 }
 
 .opportunities-service-order-head {
@@ -1051,9 +1087,7 @@
 
 .opportunities-bid-header h1 {
   color: #1c2248;
-  font-size: clamp(30px, 2.5vw, 46px);
-  line-height: 1.05;
-  letter-spacing: -0.02em;
+  font-size: 40px;
 }
 
 .opportunities-bid-header p {
@@ -1067,8 +1101,7 @@
   display: block;
   margin-top: 8px;
   color: #677194;
-  font-size: 15px;
-  line-height: 1.45;
+  font-size: 16px;
 }
 
 .opportunities-bid-top-actions {
@@ -1081,8 +1114,8 @@
 .opportunities-bid-ghost-btn {
   border: 1px solid #d9deef;
   border-radius: 12px;
-  background: #ffffff;
-  color: #3f4b75;
+  background: var(--theme-dark);
+  color: white;
   padding: 10px 12px;
   font-size: 14px;
   font-weight: 700;
@@ -1094,8 +1127,7 @@
 }
 
 .opportunities-bid-ghost-btn:hover {
-  border-color: #a5afcf;
-  color: #1f2a53;
+  background: var(--theme-purple);
 }
 
 .opportunities-bid-form-card {
@@ -1113,15 +1145,14 @@
 }
 
 .opportunities-bid-form-card header h2 {
-  color: #1f254a;
-  font-size: 30px;
-  line-height: 1.15;
+  color: var(--theme-dark);
+  font-size: 20px;
 }
 
 .opportunities-bid-form-card header p {
   margin-top: 5px;
   color: #677193;
-  font-size: 15px;
+  font-size: 16px;
 }
 
 .opportunities-bid-field {
@@ -1131,14 +1162,14 @@
 
 .opportunities-bid-field label {
   color: #212950;
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
 }
 
 .opportunities-bid-field-hint {
   margin: -2px 0 0;
   color: #6a7497;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 .opportunities-bid-field-head {
@@ -1154,7 +1185,7 @@
   background: #f0eefe;
   color: var(--theme-purple);
   padding: 8px 11px;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -1182,7 +1213,7 @@
   border-radius: 8px;
   background: #ffffff;
   color: #4d587d;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   display: grid;
   place-items: center;
@@ -1196,7 +1227,7 @@
   outline: none;
   padding: 12px;
   color: #26315a;
-  font-size: 15px;
+  font-size: 16px;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
   min-height: 156px;
 }
@@ -1230,7 +1261,7 @@
   background: #ffffff;
   color: #49557e;
   padding: 10px 12px;
-  font-size: 15px;
+  font-size: 16px;
   font-family: inherit;
   outline: none;
 }
@@ -1298,6 +1329,77 @@
   color: #6f7998;
   font-size: 13px;
   font-weight: 600;
+}
+
+.opportunities-bid-success-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(20, 24, 42, 0.58);
+  display: grid;
+  place-items: center;
+  z-index: 140;
+  padding: 20px;
+}
+
+.opportunities-bid-success-dialog {
+  width: min(460px, 100%);
+  border: 1px solid #e5e9f7;
+  border-radius: 18px;
+  background: #ffffff;
+  padding: 22px;
+  display: grid;
+  gap: 12px;
+  box-shadow: 0 24px 48px rgba(24, 28, 54, 0.26);
+}
+
+.opportunities-bid-success-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 30px;
+  color: #1f8b5a;
+  background: #eaf8f0;
+}
+
+.opportunities-bid-success-dialog h2,
+.opportunities-bid-success-dialog p {
+  margin: 0;
+}
+
+.opportunities-bid-success-dialog h2 {
+  color: #1f254a;
+  font-size: 26px;
+  line-height: 1.2;
+}
+
+.opportunities-bid-success-dialog p {
+  color: #5b6689;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.opportunities-bid-success-actions {
+  margin-top: 10%;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.opportunities-bid-success-actions .campus-link-btn,
+.opportunities-bid-success-actions .opportunities-detail-bid-btn {
+  width: 100%;
+  justify-content: center;
+  padding: 11px 12px;
+  font-weight: 400;
+  font-size: 14px;
+}
+.opportunities-bid-success-actions .campus-link-btn {
+  border: 1px solid #d9deef;
+  border-radius: 12px;
+}
+.opportunities-bid-success-actions .campus-link-btn:hover{
+  border:1px solid var(--theme-dark)
 }
 
 .opportunities-bid-summary-rail {
@@ -1384,7 +1486,7 @@
 
 .opportunities-bid-summary-block p {
   color: #5a6588;
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1.45;
 }
 
@@ -1402,7 +1504,7 @@
 
 .opportunities-bid-summary-meta article p {
   color: #5f698d;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -1413,8 +1515,9 @@
   margin-top: 2px;
   display: block;
   color: #222b53;
-  font-size: 22px;
+  font-size: 16px;
   line-height: 1.2;
+  margin-bottom: 20px;
 }
 
 .opportunities-bid-summary-skills {
@@ -1447,6 +1550,7 @@
   grid-template-columns: 40px minmax(0, 1fr);
   gap: 10px;
   align-items: start;
+  border:1px solid var(--theme-dark);
 }
 
 .opportunities-bid-info-icon {
@@ -1482,7 +1586,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #4f2be3;
+  color: var(--theme-orange);
   font-size: 14px;
   font-weight: 700;
   text-decoration: none;
@@ -2580,7 +2684,7 @@
   border: 0;
   border-radius: 12px;
   padding: 12px 16px;
-  background: linear-gradient(120deg, #6d4eff, #4f2be3);
+  background: var(--theme-dark);
   color: #ffffff;
   font-size: 16px;
   font-weight: 700;
@@ -2589,7 +2693,9 @@
   gap: 8px;
   cursor: pointer;
 }
-
+.opportunities-marketplace-post-btn:hover{
+  background:var(--theme-purple)
+}
 .opportunities-marketplace-search-row {
   border: 1px solid #e4e8f5;
   border-radius: 16px;
@@ -2617,7 +2723,6 @@
   width: 100%;
   color: #252c52;
   font-size: 16px;
-  font-weight: 500;
   font-family: inherit;
 }
 
@@ -2632,6 +2737,7 @@
 .opportunities-marketplace-search-btn {
   padding: 12px 18px;
   min-width: 96px;
+  font-size: 16px;
 }
 
 .opportunities-marketplace-categories {
@@ -2651,6 +2757,8 @@
   display: grid;
   justify-items: center;
   gap: 4px;
+  cursor: pointer;
+  background: #ffffff;
   transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
 }
 
@@ -2662,6 +2770,11 @@
 .opportunities-marketplace-category:not(.is-active):hover {
   transform: translateY(-2px);
   border-color: #afb7d8;
+}
+
+.opportunities-marketplace-category:focus-visible {
+  outline: 2px solid #5943dc;
+  outline-offset: 2px;
 }
 
 .opportunities-marketplace-category-icon {
@@ -2677,7 +2790,7 @@
 
 .opportunities-marketplace-category.is-active .opportunities-marketplace-category-icon {
   background: #ece9ff;
-  color: #4f2be3;
+  color: var(--theme-purple);
 }
 
 .opportunities-marketplace-category h3,
@@ -2743,7 +2856,7 @@
   border-radius: 999px;
   padding: 4px 8px;
   background: #ece9ff;
-  color: #4f2be3;
+  color: var(--theme-purple);
   font-size: 12px;
   font-weight: 700;
 }
@@ -2789,9 +2902,9 @@
 
 .opportunities-marketplace-card-price {
   color: #16824d;
-  font-size: 28px;
+  font-size: 20px;
   line-height: 1.2;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .opportunities-marketplace-card-body footer {
@@ -2808,7 +2921,7 @@
 .opportunities-marketplace-card-body footer span {
   margin: 0;
   color: #687295;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -2835,7 +2948,7 @@
 }
 
 .opportunities-marketplace-card.is-recent .opportunities-marketplace-card-price {
-  font-size: 30px;
+  font-size: 20px;
 }
 
 .opportunities-marketplace-filters {
@@ -2851,13 +2964,13 @@
   background: #f6f7fc;
   color: #5e678a;
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
 
 .opportunities-marketplace-filters button.is-active {
-  border-color: #4f2be3;
-  background: #4f2be3;
+  border-color: var(--theme-purple);
+  background: var(--theme-purple);
   color: #ffffff;
 }
 
@@ -2894,7 +3007,9 @@
   display: grid;
   gap: 12px;
 }
-
+.opportunities-marketplace-trending-card h3{
+  font-size:20px;
+}
 .opportunities-marketplace-trending-list {
   display: grid;
   gap: 8px;
@@ -2924,16 +3039,14 @@
 
 .opportunities-marketplace-trending-item h4 {
   color: #212850;
-  font-size: 15px;
-  line-height: 1.3;
+  font-size: 16px;
 }
 
 .opportunities-marketplace-trending-item p {
   margin-top: 2px;
   color: #16824d;
-  font-size: 20px;
-  font-weight: 800;
-  line-height: 1.2;
+  font-size: 18px;
+  font-weight: 700;
 }
 
 .opportunities-marketplace-trending-item span {
@@ -2953,10 +3066,13 @@
   border-radius: 11px;
   padding: 10px 12px;
   background: #f7f8fd;
-  color: #4f2be3;
+  color: var(--theme-purple);
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;
+}
+.opportunities-marketplace-trending-cta:hover{
+  border: 1px solid var(--theme-dark)
 }
 
 @media (max-width: 1580px) {
@@ -3016,5 +3132,639 @@
 
   .opportunities-marketplace-card.is-recent .opportunities-marketplace-card-price {
     font-size: 24px;
+  }
+}
+
+.opportunities-marketplace-card.is-clickable,
+.opportunities-marketplace-product-mini-card,
+.opportunities-marketplace-product-suggested-item,
+.opportunities-marketplace-trending-item {
+  cursor: pointer;
+}
+
+.opportunities-marketplace-empty-state {
+  border: 1px dashed #d8deef;
+  border-radius: 12px;
+  background: #fafbff;
+  grid-column: 1 / -1;
+  padding: 14px;
+}
+
+.opportunities-marketplace-empty-state p {
+  margin: 0;
+  color: #616b90;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.opportunities-marketplace-empty-state.is-compact {
+  padding: 12px;
+}
+
+.opportunities-marketplace-card.is-clickable {
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.opportunities-marketplace-card.is-clickable:hover,
+.opportunities-marketplace-card.is-clickable:focus-visible {
+  border-color: #cfd6ef;
+  box-shadow: 0 10px 24px rgba(47, 65, 128, 0.12);
+  transform: translateY(-2px);
+}
+
+.opportunities-marketplace-product-main {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  padding-top: 0;
+}
+
+.opportunities-marketplace-product-head {
+  border: 1px solid #e8ebf8;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.opportunities-marketplace-product-breadcrumb a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.opportunities-marketplace-product-breadcrumb a:hover {
+  color: #5542da;
+}
+
+.opportunities-marketplace-product-head h2 {
+  margin: 6px 0 0;
+  color: #161d44;
+  font-size: clamp(32px, 2.6vw, 50px);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+}
+
+.opportunities-marketplace-product-head > div > p:last-child {
+  margin: 8px 0 0;
+  color: #5f678d;
+  font-size: 17px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.opportunities-marketplace-product-head > div > p:last-child em {
+  border-radius: 999px;
+  padding: 4px 10px;
+  background: #ece9ff;
+  color: #4f2be3;
+  font-size: 13px;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.opportunities-marketplace-product-head-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.opportunities-marketplace-product-head-actions button {
+  border: 1px solid #dbe1f2;
+  border-radius: 11px;
+  height: 40px;
+  padding: 0 14px;
+  background: #ffffff;
+  color: #313a63;
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.opportunities-marketplace-product-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 12px;
+  align-items: start;
+}
+
+.opportunities-marketplace-product-gallery-card,
+.opportunities-marketplace-product-detail-card {
+  border: 1px solid #e8ebf8;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 14px;
+}
+
+.opportunities-marketplace-product-hero-wrap {
+  border-radius: 14px;
+  background: #f4f5fb;
+  height: 480px;
+  position: relative;
+  overflow: hidden;
+}
+
+.opportunities-marketplace-product-hero-wrap > span {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: rgba(55, 60, 85, 0.65);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 2;
+}
+
+.opportunities-marketplace-product-hero-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.opportunities-marketplace-product-image-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #3a4169;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.opportunities-marketplace-product-image-nav.is-prev {
+  left: 12px;
+}
+
+.opportunities-marketplace-product-image-nav.is-next {
+  right: 12px;
+}
+
+.opportunities-marketplace-product-thumbs {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.opportunities-marketplace-product-thumbs button {
+  border: 1px solid #e1e5f4;
+  border-radius: 10px;
+  background: #ffffff;
+  padding: 0;
+  height: 70px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.opportunities-marketplace-product-thumbs button.is-active {
+  border-color: #5a3eef;
+  box-shadow: 0 0 0 2px rgba(90, 62, 239, 0.2);
+}
+
+.opportunities-marketplace-product-thumbs img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.opportunities-marketplace-product-thumbs-more {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 2px;
+  color: #384168;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.opportunities-marketplace-product-thumbs-more small {
+  font-size: 11px;
+  color: #727ca1;
+}
+
+.opportunities-marketplace-product-detail-card h3 {
+  margin: 0;
+  color: #1f2750;
+  font-size: 28px;
+}
+
+.opportunities-marketplace-product-detail-card dl {
+  margin: 10px 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+.opportunities-marketplace-product-detail-card dl div {
+  border-bottom: 1px solid #edf0f9;
+  padding-bottom: 8px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.opportunities-marketplace-product-detail-card dl div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.opportunities-marketplace-product-detail-card dt,
+.opportunities-marketplace-product-detail-card dd {
+  margin: 0;
+  color: #2f3966;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.opportunities-marketplace-product-detail-card dt {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #5f698f;
+  font-weight: 600;
+}
+
+.opportunities-marketplace-product-detail-card dd {
+  text-align: right;
+  font-weight: 700;
+}
+
+.opportunities-marketplace-product-description {
+  margin-top: 8px;
+  border-top: 1px solid #e9edf9;
+  padding-top: 10px;
+}
+
+.opportunities-marketplace-product-description h4,
+.opportunities-marketplace-product-description p {
+  margin: 0;
+}
+
+.opportunities-marketplace-product-description h4 {
+  color: #222b56;
+  font-size: 18px;
+}
+
+.opportunities-marketplace-product-description p {
+  margin-top: 6px;
+  color: #5f688f;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.opportunities-marketplace-product-related {
+  border: 1px solid #e8ebf8;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+}
+
+.opportunities-marketplace-product-related .opportunities-section-head {
+  align-items: center;
+}
+
+.opportunities-marketplace-product-related .opportunities-section-head h3 {
+  margin: 0;
+  color: #1f2750;
+  font-size: 30px;
+}
+
+.opportunities-marketplace-product-related-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.opportunities-marketplace-product-mini-card {
+  border: 1px solid #e5e9f8;
+  border-radius: 12px;
+  background: #ffffff;
+  padding: 9px;
+  display: grid;
+  gap: 5px;
+  position: relative;
+}
+
+.opportunities-marketplace-product-mini-card img {
+  width: 100%;
+  height: 132px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.opportunities-marketplace-product-mini-card h4,
+.opportunities-marketplace-product-mini-card p,
+.opportunities-marketplace-product-mini-card strong {
+  margin: 0;
+}
+
+.opportunities-marketplace-product-mini-card h4 {
+  color: #212850;
+  font-size: 15px;
+  line-height: 1.3;
+}
+
+.opportunities-marketplace-product-mini-card p {
+  color: #6b7599;
+  font-size: 13px;
+}
+
+.opportunities-marketplace-product-mini-card strong {
+  color: #16824d;
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.opportunities-marketplace-product-mini-card button {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #697397;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.opportunities-marketplace-product-rail {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.opportunities-marketplace-product-price-card {
+  display: grid;
+  gap: 10px;
+}
+
+.opportunities-marketplace-product-price-card > p {
+  margin: 0;
+  color: #16824d;
+  font-size: 56px;
+  line-height: 1;
+  font-weight: 800;
+}
+
+.opportunities-marketplace-product-primary-btn,
+.opportunities-marketplace-product-secondary-btn {
+  border-radius: 11px;
+  height: 46px;
+  width: 100%;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.opportunities-marketplace-product-primary-btn {
+  border: 0;
+  background: linear-gradient(120deg, #6d4eff, #4f2be3);
+  color: #ffffff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.opportunities-marketplace-product-secondary-btn {
+  border: 1px solid #cfd6ef;
+  background: #ffffff;
+  color: #4f2be3;
+}
+
+.opportunities-marketplace-product-price-card article {
+  margin-top: 2px;
+  border-radius: 12px;
+  background: #f4f5fb;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+}
+
+.opportunities-marketplace-product-price-card article h4,
+.opportunities-marketplace-product-price-card article p {
+  margin: 0;
+}
+
+.opportunities-marketplace-product-price-card article h4 {
+  color: #1f2750;
+  font-size: 20px;
+}
+
+.opportunities-marketplace-product-price-card article p {
+  margin-top: 2px;
+  color: #5c668c;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.opportunities-marketplace-product-seller-card {
+  display: grid;
+  gap: 11px;
+}
+
+.opportunities-marketplace-product-seller-card h3 {
+  margin: 0;
+  color: #1f2750;
+  font-size: 32px;
+}
+
+.opportunities-marketplace-product-seller-head {
+  display: grid;
+  grid-template-columns: 50px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.opportunities-marketplace-product-seller-head img {
+  width: 50px;
+  height: 50px;
+  border-radius: 999px;
+  border: 1px solid #dee2f1;
+  object-fit: cover;
+}
+
+.opportunities-marketplace-product-seller-head h4,
+.opportunities-marketplace-product-seller-head p,
+.opportunities-marketplace-product-seller-head span {
+  margin: 0;
+}
+
+.opportunities-marketplace-product-seller-head h4 {
+  color: #1e254c;
+  font-size: 20px;
+}
+
+.opportunities-marketplace-product-seller-head p {
+  margin-top: 1px;
+  color: #4f2be3;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.opportunities-marketplace-product-seller-head span {
+  margin-top: 2px;
+  color: #667194;
+  font-size: 13px;
+}
+
+.opportunities-marketplace-product-seller-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.opportunities-marketplace-product-seller-metrics article {
+  border: 1px solid #e7ebf9;
+  border-radius: 10px;
+  padding: 8px;
+  text-align: center;
+}
+
+.opportunities-marketplace-product-seller-metrics strong,
+.opportunities-marketplace-product-seller-metrics span {
+  display: block;
+}
+
+.opportunities-marketplace-product-seller-metrics strong {
+  color: #1f2750;
+  font-size: 16px;
+}
+
+.opportunities-marketplace-product-seller-metrics span {
+  color: #6b7498;
+  font-size: 12px;
+  margin-top: 2px;
+}
+
+.opportunities-marketplace-product-suggested-card {
+  display: grid;
+  gap: 10px;
+}
+
+.opportunities-marketplace-product-suggested-list {
+  display: grid;
+  gap: 8px;
+}
+
+.opportunities-marketplace-product-suggested-item {
+  border: 1px solid #e5e9f8;
+  border-radius: 11px;
+  padding: 8px;
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+}
+
+.opportunities-marketplace-product-suggested-item img {
+  width: 58px;
+  height: 58px;
+  border-radius: 9px;
+  object-fit: cover;
+}
+
+.opportunities-marketplace-product-suggested-item h4,
+.opportunities-marketplace-product-suggested-item p {
+  margin: 0;
+}
+
+.opportunities-marketplace-product-suggested-item h4 {
+  color: #1f2750;
+  font-size: 14px;
+  line-height: 1.3;
+}
+
+.opportunities-marketplace-product-suggested-item p {
+  margin-top: 3px;
+  color: #16824d;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.opportunities-marketplace-product-suggested-item > svg {
+  color: #747ea2;
+}
+
+@media (max-width: 1580px) {
+  .opportunities-marketplace-product-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .opportunities-marketplace-product-detail-card dl div {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .opportunities-marketplace-product-related-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1260px) {
+  .opportunities-marketplace-product-head {
+    flex-direction: column;
+  }
+
+  .opportunities-marketplace-product-thumbs {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .opportunities-marketplace-product-related-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .opportunities-marketplace-product-hero-wrap {
+    height: 380px;
+  }
+}
+
+@media (max-width: 760px) {
+  .opportunities-marketplace-product-head h2 {
+    font-size: 34px;
+  }
+
+  .opportunities-marketplace-product-thumbs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .opportunities-marketplace-product-related-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .opportunities-marketplace-product-detail-card dd {
+    text-align: left;
+  }
+
+  .opportunities-marketplace-product-detail-card dl div {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .opportunities-marketplace-product-seller-metrics {
+    grid-template-columns: 1fr;
   }
 }

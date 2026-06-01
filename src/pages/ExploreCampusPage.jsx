@@ -23,10 +23,12 @@ import {
   FiShoppingBag,
   FiSmile,
   FiSliders,
+  FiStar,
   FiTruck,
   FiUsers,
   FiX,
 } from 'react-icons/fi'
+import { BsPinAngleFill } from 'react-icons/bs'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Seo from '../components/Seo'
@@ -175,8 +177,10 @@ const FEED_POSTS = [
     id: 'aisha-post',
     author: 'Aisha Mwangi',
     handle: '@aisha.mwangi',
+    avatar: '/assets/index/bee_nobg.png',
     time: '3h ago',
     tag: 'Product',
+    shopProductRef: 'canvas-tote-bag',
     copy: 'Just launched my handmade beaded bracelets collection! Each piece is unique and made with love.',
     stats: { likes: 128, comments: 24, reposts: 12 },
     gallery: [
@@ -192,6 +196,7 @@ const FEED_POSTS = [
     id: 'collins-post',
     author: 'Collins Otieno',
     handle: '@collins.dev',
+    avatar: '/assets/index/bee_nobg.png',
     time: '5h ago',
     tag: 'Project',
     copy: 'Just completed my latest data dashboard for analyzing student performance trends. Built using Python, SQL and Power BI.',
@@ -202,14 +207,68 @@ const FEED_POSTS = [
 
 const FEED_COMMENTS = {
   'aisha-post': [
-    { id: 'a1', author: 'Mercy Wanjiku', handle: '@mercy.w', time: '1h', text: 'These are beautiful. Proud of your launch!' },
-    { id: 'a2', author: 'David K.', handle: '@davidk', time: '52m', text: 'Love the color mixes. Do you deliver on campus?' },
-    { id: 'a3', author: 'Tessy Njoki', handle: '@tessy', time: '34m', text: 'I need two of these for graduation week.' },
+    { id: 'a1', author: 'Mercy Wanjiku', handle: '@mercy.w', time: '1h', avatar: '/assets/index/bee_nobg.png', text: 'These are beautiful. Proud of your launch!' },
+    { id: 'a2', author: 'David K.', handle: '@davidk', time: '52m', avatar: '/assets/index/bee_nobg.png', text: 'Love the color mixes. Do you deliver on campus?' },
+    { id: 'a3', author: 'Tessy Njoki', handle: '@tessy', time: '34m', avatar: '/assets/index/bee_nobg.png', text: 'I need two of these for graduation week.' },
   ],
   'collins-post': [
-    { id: 'c1', author: 'Brian Odhiambo', handle: '@brian.o', time: '48m', text: 'Clean dashboard layout. Which chart lib did you use?' },
-    { id: 'c2', author: 'Fatma A.', handle: '@fatma.ai', time: '27m', text: 'Great work. The KPI cards are clear and readable.' },
+    { id: 'c1', author: 'Brian Odhiambo', handle: '@brian.o', time: '48m', avatar: '/assets/index/bee_nobg.png', text: 'Clean dashboard layout. Which chart lib did you use?' },
+    { id: 'c2', author: 'Fatma A.', handle: '@fatma.ai', time: '27m', avatar: '/assets/index/bee_nobg.png', text: 'Great work. The KPI cards are clear and readable.' },
   ],
+}
+
+const EXPLORE_PRODUCT_DETAILS = {
+  'canvas-tote-bag': {
+    id: 'canvas-tote-bag',
+    seller: 'Aisha Mwangi',
+    title: 'Canvas Tote Bag',
+    price: 'KES 980',
+    badge: 'New Arrival',
+    description: 'Roomy eco-friendly tote bag for classes, errands and weekend plans.',
+    rating: '4.9',
+    reviews: 48,
+    sold: 156,
+    gallery: [
+      '/assets/index/business_page_images/optimized/igor-rodrigues-Wn932wwnpSE-unsplash.webp',
+      '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp',
+      '/assets/index/business_page_images/optimized/sable-flow-T74mVg__F_k-unsplash.webp',
+      '/assets/index/business_page_images/optimized/ernest-malimon-XLIywCaTs_M-unsplash.webp',
+    ],
+    featureChips: [
+      { label: 'Material', value: 'Canvas' },
+      { label: 'Category', value: 'Lifestyle' },
+      { label: 'Stock', value: '24 left' },
+      { label: 'Delivery', value: '24h' },
+    ],
+    summary: 'Crafted for campus life, this tote handles books, groceries, and daily carry with ease.',
+    details: [
+      'Inner zip pocket for valuables.',
+      'Soft shoulder straps with reinforced stitching.',
+      'Easy to clean and water-resistant lining.',
+      'Available in neutral and pastel tones.',
+    ],
+    colors: ['#f0dfcb', '#8b5e3a', '#d4c2aa', '#9ca8bf'],
+    posts: [
+      {
+        id: 'canvas-post-1',
+        title: 'Everyday Looks',
+        date: 'May 5',
+        caption: 'Simple styling for lectures and errands.',
+        image: '/assets/index/business_page_images/optimized/ernest-malimon-XLIywCaTs_M-unsplash.webp',
+        likes: 63,
+        comments: 10,
+      },
+      {
+        id: 'canvas-post-2',
+        title: 'What Fits Inside',
+        date: '4d ago',
+        caption: 'Fits notebooks, laptop sleeve and essentials.',
+        image: '/assets/index/business_page_images/optimized/sable-flow-T74mVg__F_k-unsplash.webp',
+        likes: 42,
+        comments: 7,
+      },
+    ],
+  },
 }
 
 const PEOPLE_YOU_MAY_KNOW = [
@@ -277,6 +336,9 @@ function ExploreCampusPage() {
   const [searchInput, setSearchInput] = useState(activeQuery)
   const [isStoriesVisible, setIsStoriesVisible] = useState(true)
   const [mediaViewerState, setMediaViewerState] = useState(null)
+  const [activeRailProductId, setActiveRailProductId] = useState(null)
+  const [activeRailProductImageIndex, setActiveRailProductImageIndex] = useState(0)
+  const [activeRailProductTab, setActiveRailProductTab] = useState('details')
   const isStoriesVisibleRef = useRef(true)
   const scrollMetaRef = useRef({
     lastOffset: 0,
@@ -306,6 +368,16 @@ function ExploreCampusPage() {
   useEffect(() => {
     isStoriesVisibleRef.current = isStoriesVisible
   }, [isStoriesVisible])
+
+  useEffect(() => {
+    if (!isSearchMode) {
+      return
+    }
+
+    setActiveRailProductId(null)
+    setActiveRailProductImageIndex(0)
+    setActiveRailProductTab('details')
+  }, [isSearchMode])
 
   useEffect(() => {
     if (!mediaViewerState) {
@@ -490,6 +562,20 @@ function ExploreCampusPage() {
     setMediaViewerState(null)
   }
 
+  const handleViewProduct = (post) => {
+    if (!post.shopProductRef) {
+      return
+    }
+
+    if (!EXPLORE_PRODUCT_DETAILS[post.shopProductRef]) {
+      return
+    }
+
+    setActiveRailProductId(post.shopProductRef)
+    setActiveRailProductImageIndex(0)
+    setActiveRailProductTab('details')
+  }
+
   const stepMediaViewer = (direction) => {
     setMediaViewerState((current) => {
       if (!current) {
@@ -516,6 +602,20 @@ function ExploreCampusPage() {
     : 0
   const activeMediaImage = activeMediaPost ? activeMediaPost.gallery[activeMediaIndex] : null
   const activeMediaComments = activeMediaPost ? FEED_COMMENTS[activeMediaPost.id] || [] : []
+  const activeRailProduct = activeRailProductId ? EXPLORE_PRODUCT_DETAILS[activeRailProductId] || null : null
+  const activeRailProductGallery = activeRailProduct?.gallery || []
+  const normalizedRailProductImageIndex = activeRailProductGallery.length
+    ? getWrappedGalleryIndex(activeRailProductImageIndex, activeRailProductGallery.length)
+    : 0
+  const activeRailProductImage = activeRailProductGallery[normalizedRailProductImageIndex] || null
+
+  const handleStepRailProductImage = (direction) => {
+    if (!activeRailProductGallery.length) {
+      return
+    }
+
+    setActiveRailProductImageIndex((current) => getWrappedGalleryIndex(current + direction, activeRailProductGallery.length))
+  }
 
   return (
     <main className="campus-page explore-campus-page">
@@ -528,7 +628,7 @@ function ExploreCampusPage() {
       />
 
       <div className="campus-stage">
-        <div className="campus-shell explore-campus-shell">
+        <div className={`campus-shell explore-campus-shell${activeRailProduct ? ' is-product-detail-open' : ''}`}>
           <aside className="campus-sidebar" aria-label="Student portal navigation">
             <Link className="campus-brand" to="/" aria-label="Zumbarl logo">
               <img className="campus-brand-logo" src="/assets/index/bee_nobg.png" alt="Zumbarl bee logo" />
@@ -606,7 +706,7 @@ function ExploreCampusPage() {
 
                 <button type="button" className="explore-campus-discover-btn">
                   <FiPlus aria-hidden="true" />
-                  Discover Programs
+                  Explore
                 </button>
 
                 <div className="explore-campus-header-actions">
@@ -851,7 +951,7 @@ function ExploreCampusPage() {
                 <article className="explore-campus-feed-card explore-campus-pinned-card" aria-label="Pinned announcement">
                   <header className="explore-campus-feed-head">
                     <p className="explore-campus-pinned-label">
-                      <FiBookmark aria-hidden="true" />
+                      <BsPinAngleFill aria-hidden="true" />
                       Pinned Announcement
                     </p>
                     <button type="button" className="explore-campus-more-btn" aria-label="More announcement options">
@@ -899,8 +999,17 @@ function ExploreCampusPage() {
                             {post.author} <span>{post.handle}</span>
                           </h3>
                           <p>
-                            {post.time}
+                            <span>{post.time}</span>
                             <em>{post.tag}</em>
+                            {post.tag === 'Product' && post.shopProductRef ? (
+                              <button
+                                type="button"
+                                className="explore-campus-view-product-chip"
+                                onClick={() => handleViewProduct(post)}
+                              >
+                                View product
+                              </button>
+                            ) : null}
                           </p>
                         </div>
                       </div>
@@ -956,96 +1065,262 @@ function ExploreCampusPage() {
           </section>
 
           <aside className="campus-rail explore-campus-rail" aria-label="Explore campus side panels">
-            <section className="campus-rail-card explore-campus-right-card">
-              <header>
-                <h3>People You May Know</h3>
-                <button type="button" className="campus-link-btn">See All</button>
-              </header>
-
-              <div className="explore-campus-people-list">
-                {PEOPLE_YOU_MAY_KNOW.map((person) => (
-                  <article key={person.id} className="explore-campus-person-item">
-                    <div className="explore-campus-person-avatar">
-                      <img src="/assets/index/bee_nobg.png" alt={person.name} />
-                      {person.isOnline ? <span /> : null}
-                    </div>
-                    <div>
-                      <h4>{person.name}</h4>
-                      <p>{person.school}</p>
-                    </div>
-                    <button type="button" className="explore-campus-follow-btn">Follow</button>
-                    <button type="button" className="explore-campus-close-btn" aria-label={`Dismiss ${person.name}`}>
+            {activeRailProduct ? (
+              <section className="campus-rail-card explore-campus-right-card explore-campus-product-detail-card">
+                <header className="explore-campus-product-detail-topbar">
+                  <button
+                    type="button"
+                    className="explore-campus-product-more-btn"
+                    onClick={() => setActiveRailProductTab('details')}
+                  >
+                    More details
+                  </button>
+                  <div>
+                    <button
+                      type="button"
+                      aria-label="Previous product image"
+                      onClick={() => handleStepRailProductImage(-1)}
+                    >
+                      <FiChevronLeft aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Next product image"
+                      onClick={() => handleStepRailProductImage(1)}
+                    >
+                      <FiChevronRight aria-hidden="true" />
+                    </button>
+                    <button
+                      type="button"
+                      aria-label="Close product details"
+                      onClick={() => {
+                        setActiveRailProductId(null)
+                        setActiveRailProductImageIndex(0)
+                        setActiveRailProductTab('details')
+                      }}
+                    >
                       <FiX aria-hidden="true" />
                     </button>
-                  </article>
-                ))}
-              </div>
-            </section>
+                  </div>
+                </header>
 
-            <section className="campus-rail-card explore-campus-right-card">
-              <header>
-                <h3>Campus Announcements</h3>
-                <button type="button" className="campus-link-btn">See All</button>
-              </header>
+                {activeRailProductImage ? (
+                  <section className="explore-campus-product-gallery">
+                    <div className="explore-campus-product-thumbs">
+                      {activeRailProductGallery.map((image, index) => (
+                        <button
+                          key={`${activeRailProduct.id}-thumb-${index}`}
+                          type="button"
+                          className={index === normalizedRailProductImageIndex ? 'is-active' : ''}
+                          aria-label={`Show product image ${index + 1}`}
+                          onClick={() => setActiveRailProductImageIndex(index)}
+                        >
+                          <img src={image} alt={`${activeRailProduct.title} thumbnail ${index + 1}`} loading="lazy" />
+                        </button>
+                      ))}
+                    </div>
+                    <div className="explore-campus-product-hero">
+                      <img src={activeRailProductImage} alt={`${activeRailProduct.title} preview`} loading="lazy" />
+                      <em>{activeRailProduct.badge}</em>
+                      <span>{normalizedRailProductImageIndex + 1}/{activeRailProductGallery.length}</span>
+                    </div>
+                  </section>
+                ) : null}
 
-              <div className="explore-campus-announcement-list">
-                {CAMPUS_ANNOUNCEMENTS.map((announcement) => (
-                  <article key={announcement.id}>
-                    <h4>{announcement.title}</h4>
-                    <p>{announcement.detail}</p>
-                    <span>{announcement.time}</span>
-                  </article>
-                ))}
-              </div>
-            </section>
+                <div className="explore-campus-product-title-row">
+                  <div>
+                    <h3>{activeRailProduct.title}</h3>
+                    <p>by {activeRailProduct.seller}</p>
+                  </div>
+                  <strong>{activeRailProduct.price}</strong>
+                </div>
 
-            <section className="campus-rail-card explore-campus-right-card">
-              <header>
-                <h3>Upcoming Events</h3>
-                <button type="button" className="campus-link-btn">See All</button>
-              </header>
+                <p className="explore-campus-product-rating">
+                  <FiStar aria-hidden="true" />
+                  {activeRailProduct.rating} ({activeRailProduct.reviews} reviews) · {activeRailProduct.sold} sold
+                </p>
 
-              <div className="explore-campus-events-list">
-                {UPCOMING_EVENTS.map((event) => (
-                  <article key={event.id} className="explore-campus-event-item">
-                    <div>
-                      <h4>{event.title}</h4>
+                <p className="explore-campus-product-description">{activeRailProduct.description}</p>
+
+                <div className="explore-campus-product-chip-grid">
+                  {activeRailProduct.featureChips.map((chip) => (
+                    <article key={`${activeRailProduct.id}-${chip.label}`}>
+                      <p>{chip.label}</p>
+                      <strong>{chip.value}</strong>
+                    </article>
+                  ))}
+                </div>
+
+                <div className="explore-campus-product-actions">
+                  <button type="button" className="explore-campus-product-action-btn is-primary">
+                    <FiShoppingBag aria-hidden="true" />
+                    Add to Cart
+                  </button>
+                  <button type="button" className="explore-campus-product-action-btn is-ghost">Buy Now</button>
+                </div>
+
+                <div className="explore-campus-product-switcher">
+                  <button
+                    type="button"
+                    className={activeRailProductTab === 'details' ? 'is-active' : ''}
+                    onClick={() => setActiveRailProductTab('details')}
+                  >
+                    Details
+                  </button>
+                  <button
+                    type="button"
+                    className={activeRailProductTab === 'posts' ? 'is-active' : ''}
+                    onClick={() => setActiveRailProductTab('posts')}
+                  >
+                    Posts ({activeRailProduct.posts.length})
+                  </button>
+                </div>
+
+                {activeRailProductTab === 'details' ? (
+                  <section className="explore-campus-product-copy">
+                    <h4>Product Details</h4>
+                    <p>{activeRailProduct.summary}</p>
+                    <ul>
+                      {activeRailProduct.details.map((detail) => (
+                        <li key={`${activeRailProduct.id}-${detail}`}>{detail}</li>
+                      ))}
+                    </ul>
+                    <h4>Available Colors</h4>
+                    <div className="explore-campus-product-color-row">
+                      {activeRailProduct.colors.map((color) => (
+                        <span key={`${activeRailProduct.id}-${color}`} style={{ background: color }} />
+                      ))}
+                    </div>
+                    <footer className="explore-campus-product-footer">
                       <p>
-                        <FiClock aria-hidden="true" />
-                        {event.dateTime}
-                      </p>
-                      <span>
                         <FiMapPin aria-hidden="true" />
-                        {event.location}
-                      </span>
-                    </div>
-                    <img src={event.image} alt={event.title} loading="lazy" />
-                  </article>
-                ))}
-              </div>
-            </section>
+                        Ships from Nairobi, Kenya
+                      </p>
+                      <p>
+                        <FiRepeat aria-hidden="true" />
+                        7-day easy returns
+                      </p>
+                    </footer>
+                  </section>
+                ) : (
+                  <section className="explore-campus-product-posts">
+                    {activeRailProduct.posts.map((post) => (
+                      <article key={post.id}>
+                        <img src={post.image} alt={post.title} loading="lazy" />
+                        <div>
+                          <h4>{post.title}</h4>
+                          <p>{post.caption}</p>
+                          <span>{post.date}</span>
+                        </div>
+                        <footer>
+                          <p>
+                            <FiHeart aria-hidden="true" />
+                            {post.likes}
+                          </p>
+                          <p>
+                            <FiMessageCircle aria-hidden="true" />
+                            {post.comments}
+                          </p>
+                        </footer>
+                      </article>
+                    ))}
+                  </section>
+                )}
+              </section>
+            ) : (
+              <>
+                <section className="campus-rail-card explore-campus-right-card">
+                  <header>
+                    <h3>People You May Know</h3>
+                    <button type="button" className="campus-link-btn">See All</button>
+                  </header>
 
-            <section className="campus-rail-card explore-campus-right-card">
-              <header>
-                <h3>Marketplace</h3>
-                <button type="button" className="campus-link-btn">See All</button>
-              </header>
+                  <div className="explore-campus-people-list">
+                    {PEOPLE_YOU_MAY_KNOW.map((person) => (
+                      <article key={person.id} className="explore-campus-person-item">
+                        <div className="explore-campus-person-avatar">
+                          <img src="/assets/index/bee_nobg.png" alt={person.name} />
+                          {person.isOnline ? <span /> : null}
+                        </div>
+                        <div>
+                          <h4>{person.name}</h4>
+                          <p>{person.school}</p>
+                        </div>
+                        <button type="button" className="explore-campus-follow-btn">Follow</button>
+                        <button type="button" className="explore-campus-close-btn" aria-label={`Dismiss ${person.name}`}>
+                          <FiX aria-hidden="true" />
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                </section>
 
-              <div className="explore-campus-market-list">
-                {MARKETPLACE_ITEMS.map((item) => (
-                  <article key={item.id} className="explore-campus-market-item">
-                    <img src={item.image} alt={item.name} loading="lazy" />
-                    <div>
-                      <h4>{item.name}</h4>
-                      <p>{item.price}</p>
-                    </div>
-                    <button type="button" aria-label={`Open ${item.name}`}>
-                      <FiShoppingBag aria-hidden="true" />
-                    </button>
-                  </article>
-                ))}
-              </div>
-            </section>
+                <section className="campus-rail-card explore-campus-right-card">
+                  <header>
+                    <h3>Campus Announcements</h3>
+                    <button type="button" className="campus-link-btn">See All</button>
+                  </header>
+
+                  <div className="explore-campus-announcement-list">
+                    {CAMPUS_ANNOUNCEMENTS.map((announcement) => (
+                      <article key={announcement.id}>
+                        <h4>{announcement.title}</h4>
+                        <p>{announcement.detail}</p>
+                        <span>{announcement.time}</span>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="campus-rail-card explore-campus-right-card">
+                  <header>
+                    <h3>Upcoming Events</h3>
+                    <button type="button" className="campus-link-btn">See All</button>
+                  </header>
+
+                  <div className="explore-campus-events-list">
+                    {UPCOMING_EVENTS.map((event) => (
+                      <article key={event.id} className="explore-campus-event-item">
+                        <div>
+                          <h4>{event.title}</h4>
+                          <p>
+                            <FiClock aria-hidden="true" />
+                            {event.dateTime}
+                          </p>
+                          <span>
+                            <FiMapPin aria-hidden="true" />
+                            {event.location}
+                          </span>
+                        </div>
+                        <img src={event.image} alt={event.title} loading="lazy" />
+                      </article>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="campus-rail-card explore-campus-right-card">
+                  <header>
+                    <h3>Marketplace</h3>
+                    <button type="button" className="campus-link-btn">See All</button>
+                  </header>
+
+                  <div className="explore-campus-market-list">
+                    {MARKETPLACE_ITEMS.map((item) => (
+                      <article key={item.id} className="explore-campus-market-item">
+                        <img src={item.image} alt={item.name} loading="lazy" />
+                        <div>
+                          <h4>{item.name}</h4>
+                          <p>{item.price}</p>
+                        </div>
+                        <button type="button" aria-label={`Open ${item.name}`}>
+                          <FiShoppingBag aria-hidden="true" />
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              </>
+            )}
           </aside>
 
           {activeMediaPost && activeMediaImage ? (
@@ -1090,18 +1365,36 @@ function ExploreCampusPage() {
                   </header>
 
                   <section className="explore-campus-media-post-context">
-                    <h4>{activeMediaPost.author}</h4>
+                    <div className="explore-campus-media-post-head">
+                      <img
+                        src={activeMediaPost.avatar || '/assets/index/bee_nobg.png'}
+                        alt={activeMediaPost.author}
+                        loading="lazy"
+                      />
+                      <div>
+                        <h4>{activeMediaPost.author}</h4>
+                        <span>{activeMediaPost.handle}</span>
+                      </div>
+                    </div>
                     <p>{activeMediaPost.copy}</p>
                   </section>
 
                   <div className="explore-campus-media-thread">
                     {activeMediaComments.map((comment) => (
                       <article key={comment.id}>
-                        <div>
-                          <strong>{comment.author}</strong>
-                          <span>{comment.handle} · {comment.time}</span>
+                        <img
+                          className="explore-campus-media-comment-avatar"
+                          src={comment.avatar || '/assets/index/bee_nobg.png'}
+                          alt={comment.author}
+                          loading="lazy"
+                        />
+                        <div className="explore-campus-media-comment-body">
+                          <div className="explore-campus-media-comment-head">
+                            <strong>{comment.author}</strong>
+                            <span>{comment.handle} · {comment.time}</span>
+                          </div>
+                          <p>{comment.text}</p>
                         </div>
-                        <p>{comment.text}</p>
                       </article>
                     ))}
                   </div>

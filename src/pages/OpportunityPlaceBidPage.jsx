@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -17,7 +17,6 @@ import {
   FiHome,
   FiMail,
   FiMapPin,
-  FiMessageCircle,
   FiPaperclip,
   FiShield,
   FiTruck,
@@ -150,6 +149,7 @@ function OpportunityPlaceBidPage() {
   const { opportunityId } = useParams()
   const location = useLocation()
   const navigate = useNavigate()
+  const [isBidSuccessOpen, setIsBidSuccessOpen] = useState(false)
 
   const selectedGig = useMemo(() => {
     if (location.state?.opportunity || location.state?.invite) {
@@ -160,6 +160,20 @@ function OpportunityPlaceBidPage() {
     }
     return PLACE_BID_FALLBACK_GIGS.default
   }, [location.state, opportunityId])
+
+  const handleSubmitProposal = () => {
+    setIsBidSuccessOpen(true)
+  }
+
+  const handleContinueDiscovery = () => {
+    setIsBidSuccessOpen(false)
+    navigate('/campus/opportunities')
+  }
+
+  const handleOpenMyBids = () => {
+    setIsBidSuccessOpen(false)
+    navigate('/campus/opportunities?tab=bids')
+  }
 
   return (
     <main className="campus-page opportunities-page opportunities-bid-page">
@@ -343,7 +357,7 @@ function OpportunityPlaceBidPage() {
               </div>
 
               <footer className="opportunities-bid-form-foot">
-                <button type="button" className="opportunities-detail-bid-btn">
+                <button type="button" className="opportunities-detail-bid-btn" onClick={handleSubmitProposal}>
                   Submit Proposal
                   <FiArrowRight aria-hidden="true" />
                 </button>
@@ -451,6 +465,34 @@ function OpportunityPlaceBidPage() {
           </aside>
         </div>
       </div>
+
+      {isBidSuccessOpen ? (
+        <div className="opportunities-bid-success-overlay" role="presentation">
+          <section
+            className="opportunities-bid-success-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="bid-success-title"
+            aria-describedby="bid-success-description"
+          >
+            <div className="opportunities-bid-success-icon" aria-hidden="true">
+              <FiCheckCircle />
+            </div>
+            <h2 id="bid-success-title">Proposal submitted successfully</h2>
+            <p id="bid-success-description">
+              Your bid has been sent to {selectedGig.company}. You can continue exploring opportunities or track this in My Bids.
+            </p>
+            <div className="opportunities-bid-success-actions">
+              <button type="button" className="campus-link-btn" onClick={handleContinueDiscovery}>
+                Continue discovery
+              </button>
+              <button type="button" className="opportunities-detail-bid-btn" onClick={handleOpenMyBids}>
+                My Bids
+              </button>
+            </div>
+          </section>
+        </div>
+      ) : null}
     </main>
   )
 }

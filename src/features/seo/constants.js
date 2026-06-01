@@ -158,6 +158,66 @@ export const CAMPUS_BUY_SELL_SEO = {
   }),
 }
 
+export const CAMPUS_CART_SEO = {
+  title: 'Zumbarl Cart | Review and Checkout',
+  description:
+    'Review your selected campus products, adjust quantities, apply promo codes, and proceed to secure checkout.',
+  path: '/campus/cart',
+  keywords:
+    'Zumbarl cart, campus cart, student marketplace checkout, order summary, campus shopping',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Cart | Review and Checkout',
+    description:
+      'Review your selected campus products, adjust quantities, apply promo codes, and proceed to secure checkout.',
+    path: '/campus/cart',
+  }),
+}
+
+export const CAMPUS_CART_PAYMENT_SEO = {
+  title: 'Zumbarl Checkout | Payment',
+  description:
+    'Select a payment method and complete your campus marketplace checkout securely on Zumbarl.',
+  path: '/campus/cart/payment',
+  keywords:
+    'Zumbarl checkout payment, campus payment, student marketplace checkout, secure payment',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Checkout | Payment',
+    description:
+      'Select a payment method and complete your campus marketplace checkout securely on Zumbarl.',
+    path: '/campus/cart/payment',
+  }),
+}
+
+export const CAMPUS_CART_REVIEW_SEO = {
+  title: 'Zumbarl Checkout | Review Order',
+  description:
+    'Review delivery details, payment information, and order items before placing your campus marketplace order.',
+  path: '/campus/cart/review',
+  keywords:
+    'Zumbarl review order, checkout review, campus order confirmation, student marketplace order review',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Checkout | Review Order',
+    description:
+      'Review delivery details, payment information, and order items before placing your campus marketplace order.',
+    path: '/campus/cart/review',
+  }),
+}
+
+export const CAMPUS_CART_ORDER_PLACED_SEO = {
+  title: 'Zumbarl Checkout | Order Placed',
+  description:
+    'View your order confirmation, delivery timeline, and next steps after placing your campus marketplace order.',
+  path: '/campus/cart/order-placed',
+  keywords:
+    'Zumbarl order placed, order confirmation, campus checkout success, student marketplace order status',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Checkout | Order Placed',
+    description:
+      'View your order confirmation, delivery timeline, and next steps after placing your campus marketplace order.',
+    path: '/campus/cart/order-placed',
+  }),
+}
+
 export const CAMPUS_EXPLORE_SEO = {
   title: 'Zumbarl Explore Campus | Stories, Events, and Community',
   description:

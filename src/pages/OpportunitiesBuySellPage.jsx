@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react'
 import {
   FiArrowRight,
   FiBell,
@@ -10,6 +11,7 @@ import {
   FiClock,
   FiCreditCard,
   FiGrid,
+  FiHeart,
   FiHome,
   FiMail,
   FiMapPin,
@@ -20,12 +22,12 @@ import {
   FiShoppingBag,
   FiSmartphone,
   FiTool,
+  FiTrendingUp,
   FiTruck,
   FiUsers,
-  FiHeart,
-  FiTrendingUp,
 } from 'react-icons/fi'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { getMarketplaceItemPath, FEATURED_ITEMS, MARKETPLACE_CATEGORIES, RECENT_FILTERS, RECENT_ITEMS, TRENDING_ITEMS } from '../data/marketplace'
 import Seo from '../components/Seo'
 import { CAMPUS_BUY_SELL_SEO } from '../features/seo/constants'
 import '../styles/campus.css'
@@ -43,115 +45,67 @@ const SIDEBAR_NAV_ITEMS = [
   { label: 'Notifications', Icon: FiBell, active: false },
 ]
 
-const MARKETPLACE_CATEGORIES = [
-  { label: 'All Items', count: 2340, Icon: FiGrid, active: true },
-  { label: 'Electronics', count: 420, Icon: FiSmartphone },
-  { label: 'Books & Notes', count: 512, Icon: FiBookOpen },
-  { label: 'Furniture', count: 268, Icon: FiHome },
-  { label: 'Fashion', count: 318, Icon: FiShoppingBag },
-  { label: 'Sports', count: 156, Icon: FiBox },
-  { label: 'Services', count: 366, Icon: FiTool },
-  { label: 'Other', count: 300, Icon: FiMoreHorizontal },
-]
-
-const FEATURED_ITEMS = [
-  {
-    id: 'featured-macbook',
-    title: 'MacBook Air M1',
-    category: 'Electronics',
-    price: 'KSh 75,000',
-    location: 'Kenyatta University',
-    badge: 'Featured',
-    image: '/assets/index/business_page_images/optimized/product-school-XZkk5xT8Xrk-unsplash.webp',
-  },
-  {
-    id: 'featured-accounting-notes',
-    title: 'Fundamentals of Accounting',
-    category: 'Books & Notes',
-    price: 'KSh 1,200',
-    location: 'Kenyatta University',
-    badge: 'Featured',
-    image: '/assets/index/business_page_images/optimized/alejandro-escamilla-BbQLHCpVUqA-unsplash.webp',
-  },
-  {
-    id: 'featured-chair',
-    title: 'Study Desk Chair',
-    category: 'Furniture',
-    price: 'KSh 4,500',
-    location: 'Kenyatta University',
-    badge: 'Featured',
-    image: '/assets/index/business_page_images/optimized/0xk-y5n-nhkRd7U-unsplash.webp',
-  },
-  {
-    id: 'featured-nike',
-    title: 'Nike Air Force 1',
-    category: 'Fashion',
-    price: 'KSh 3,000',
-    location: 'Kenyatta University',
-    badge: 'Featured',
-    image: '/assets/index/business_page_images/optimized/vlad-hilitanu-1FI2QAYPa-Y-unsplash.webp',
-  },
-]
-
-const RECENT_ITEMS = [
-  {
-    id: 'recent-iphone',
-    title: 'iPhone 12 128GB',
-    category: 'Electronics',
-    price: 'KSh 38,000',
-    location: 'Kenyatta University',
-    posted: '2h ago',
-    image: '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp',
-  },
-  {
-    id: 'recent-notes',
-    title: 'Engineering Mathematics Notes',
-    category: 'Books & Notes',
-    price: 'KSh 300',
-    location: 'Kenyatta University',
-    posted: '3h ago',
-    image: '/assets/index/business_page_images/optimized/setengah-limasore-qUcZ3TUlgnM-unsplash.webp',
-  },
-  {
-    id: 'recent-backpack',
-    title: 'Laptop Backpack',
-    category: 'Fashion',
-    price: 'KSh 1,500',
-    location: 'Kenyatta University',
-    posted: '4h ago',
-    image: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-  },
-  {
-    id: 'recent-printer',
-    title: 'HP DeskJet 2130 Printer',
-    category: 'Electronics',
-    price: 'KSh 4,000',
-    location: 'Kenyatta University',
-    posted: '5h ago',
-    image: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp',
-  },
-  {
-    id: 'recent-desk',
-    title: 'Study Desk',
-    category: 'Furniture',
-    price: 'KSh 6,500',
-    location: 'Kenyatta University',
-    posted: '6h ago',
-    image: '/assets/index/business_page_images/optimized/leeder-bose-ne0gCdlSoew-unsplash.webp',
-  },
-]
-
-const TRENDING_ITEMS = [
-  { id: 'trend-airpods', title: 'AirPods Pro generation 2', price: 'KSh 16,000', trend: 12, image: '/assets/index/business_page_images/optimized/toa-heftiba-O3ymvT7Wf9U-unsplash.webp' },
-  { id: 'trend-economics', title: 'Economics 4th Ed. Textbook', price: 'KSh 1,000', trend: 9, image: '/assets/index/business_page_images/optimized/alejandro-escamilla-BbQLHCpVUqA-unsplash.webp' },
-  { id: 'trend-bike', title: 'Mountain Bike', price: 'KSh 18,500', trend: 7, image: '/assets/index/business_page_images/optimized/igor-rodrigues-Wn932wwnpSE-unsplash.webp' },
-  { id: 'trend-camera', title: 'Canon EOS 2000D Camera', price: 'KSh 32,000', trend: 6, image: '/assets/index/business_page_images/optimized/product-school-XZkk5xT8Xrk-unsplash.webp' },
-  { id: 'trend-sofa', title: '2-Seater Sofa', price: 'KSh 12,000', trend: 5, image: '/assets/index/business_page_images/optimized/sable-flow-T74mVg__F_k-unsplash.webp' },
-]
-
-const RECENT_FILTERS = ['All', 'Near You', 'New Today', 'Price: Low to High', 'Price: High to Low']
+const CATEGORY_ICON_MAP = {
+  grid: FiGrid,
+  smartphone: FiSmartphone,
+  book: FiBookOpen,
+  home: FiHome,
+  'shopping-bag': FiShoppingBag,
+  box: FiBox,
+  tool: FiTool,
+  more: FiMoreHorizontal,
+}
 
 function OpportunitiesBuySellPage() {
+  const navigate = useNavigate()
+  const [activeCategory, setActiveCategory] = useState('All Items')
+
+  const filteredFeaturedItems = useMemo(() => {
+    if (activeCategory === 'All Items') {
+      return FEATURED_ITEMS
+    }
+
+    return FEATURED_ITEMS.filter((item) => item.category === activeCategory)
+  }, [activeCategory])
+
+  const filteredRecentItems = useMemo(() => {
+    if (activeCategory === 'All Items') {
+      return RECENT_ITEMS
+    }
+
+    return RECENT_ITEMS.filter((item) => item.category === activeCategory)
+  }, [activeCategory])
+
+  const filteredTrendingItems = useMemo(() => {
+    if (activeCategory === 'All Items') {
+      return TRENDING_ITEMS
+    }
+
+    return TRENDING_ITEMS.filter((item) => item.category === activeCategory)
+  }, [activeCategory])
+
+  const openItemDetail = (itemId) => {
+    navigate(getMarketplaceItemPath(itemId))
+  }
+
+  const handleCardKeyDown = (event, itemId) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      openItemDetail(itemId)
+    }
+  }
+
+  const preventCardNavigation = (event) => {
+    event.stopPropagation()
+  }
+
+  const handleCategoryKeyDown = (event, categoryLabel) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault()
+      setActiveCategory(categoryLabel)
+    }
+  }
+
   return (
     <main className="campus-page opportunities-page opportunities-marketplace-page">
       <Seo
@@ -263,15 +217,29 @@ function OpportunitiesBuySellPage() {
             </section>
 
             <section className="opportunities-marketplace-categories" aria-label="Marketplace categories">
-              {MARKETPLACE_CATEGORIES.map(({ label, count, Icon, active }) => (
-                <article key={label} className={`opportunities-marketplace-category${active ? ' is-active' : ''}`}>
-                  <div className="opportunities-marketplace-category-icon">
-                    <Icon aria-hidden="true" />
-                  </div>
-                  <h3>{label}</h3>
-                  <p>{count.toLocaleString()}</p>
-                </article>
-              ))}
+              {MARKETPLACE_CATEGORIES.map(({ label, count, icon }) => {
+                const Icon = CATEGORY_ICON_MAP[icon] || FiMoreHorizontal
+                const isActive = label === activeCategory
+
+                return (
+                  <article
+                    key={label}
+                    className={`opportunities-marketplace-category is-clickable${isActive ? ' is-active' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setActiveCategory(label)}
+                    onKeyDown={(event) => handleCategoryKeyDown(event, label)}
+                    aria-pressed={isActive}
+                    aria-label={`Filter by ${label}`}
+                  >
+                    <div className="opportunities-marketplace-category-icon">
+                      <Icon aria-hidden="true" />
+                    </div>
+                    <h3>{label}</h3>
+                    <p>{count.toLocaleString()}</p>
+                  </article>
+                )
+              })}
             </section>
 
             <section className="opportunities-marketplace-block" aria-label="Featured items">
@@ -283,8 +251,16 @@ function OpportunitiesBuySellPage() {
               </div>
 
               <div className="opportunities-marketplace-featured-grid">
-                {FEATURED_ITEMS.map((item) => (
-                  <article key={item.id} className="opportunities-marketplace-card">
+                {filteredFeaturedItems.map((item) => (
+                  <article
+                    key={item.id}
+                    className="opportunities-marketplace-card is-clickable"
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => openItemDetail(item.id)}
+                    onKeyDown={(event) => handleCardKeyDown(event, item.id)}
+                    aria-label={`Open ${item.title}`}
+                  >
                     <div className="opportunities-marketplace-card-image-wrap">
                       <img src={item.image} alt={item.title} loading="lazy" />
                       <span>{item.badge}</span>
@@ -299,13 +275,19 @@ function OpportunitiesBuySellPage() {
                           <FiMapPin aria-hidden="true" />
                           {item.location}
                         </p>
-                        <button type="button" aria-label={`Save ${item.title}`}>
+                        <button type="button" aria-label={`Save ${item.title}`} onClick={preventCardNavigation}>
                           <FiHeart aria-hidden="true" />
                         </button>
                       </footer>
                     </div>
                   </article>
                 ))}
+
+                {filteredFeaturedItems.length === 0 ? (
+                  <article className="opportunities-marketplace-empty-state" aria-live="polite">
+                    <p>No featured items in {activeCategory} right now.</p>
+                  </article>
+                ) : null}
               </div>
             </section>
 
@@ -326,11 +308,19 @@ function OpportunitiesBuySellPage() {
               </div>
 
               <div className="opportunities-marketplace-recent-grid">
-                {RECENT_ITEMS.map((item) => (
-                  <article key={item.id} className="opportunities-marketplace-card is-recent">
+                {filteredRecentItems.map((item) => (
+                  <article
+                    key={item.id}
+                    className="opportunities-marketplace-card is-recent is-clickable"
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => openItemDetail(item.id)}
+                    onKeyDown={(event) => handleCardKeyDown(event, item.id)}
+                    aria-label={`Open ${item.title}`}
+                  >
                     <div className="opportunities-marketplace-card-image-wrap">
                       <img src={item.image} alt={item.title} loading="lazy" />
-                      <button type="button" aria-label={`Save ${item.title}`}>
+                      <button type="button" aria-label={`Save ${item.title}`} onClick={preventCardNavigation}>
                         <FiHeart aria-hidden="true" />
                       </button>
                     </div>
@@ -352,6 +342,12 @@ function OpportunitiesBuySellPage() {
                     </div>
                   </article>
                 ))}
+
+                {filteredRecentItems.length === 0 ? (
+                  <article className="opportunities-marketplace-empty-state" aria-live="polite">
+                    <p>No recently added items in {activeCategory} yet.</p>
+                  </article>
+                ) : null}
               </div>
             </section>
           </section>
@@ -407,8 +403,16 @@ function OpportunitiesBuySellPage() {
               </header>
 
               <div className="opportunities-marketplace-trending-list">
-                {TRENDING_ITEMS.map((item) => (
-                  <article key={item.id} className="opportunities-marketplace-trending-item">
+                {filteredTrendingItems.map((item) => (
+                  <article
+                    key={item.id}
+                    className="opportunities-marketplace-trending-item"
+                    role="link"
+                    tabIndex={0}
+                    onClick={() => openItemDetail(item.id)}
+                    onKeyDown={(event) => handleCardKeyDown(event, item.id)}
+                    aria-label={`Open ${item.title}`}
+                  >
                     <img src={item.image} alt={item.title} loading="lazy" />
 
                     <div>
@@ -422,6 +426,12 @@ function OpportunitiesBuySellPage() {
                     </span>
                   </article>
                 ))}
+
+                {filteredTrendingItems.length === 0 ? (
+                  <article className="opportunities-marketplace-empty-state is-compact" aria-live="polite">
+                    <p>No trending items in {activeCategory} right now.</p>
+                  </article>
+                ) : null}
               </div>
 
               <button type="button" className="opportunities-marketplace-trending-cta">
