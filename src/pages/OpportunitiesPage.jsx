@@ -1,17 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import {
   FiArrowRight,
-  FiBell,
   FiBookOpen,
   FiBriefcase,
   FiCalendar,
   FiCheckCircle,
   FiChevronDown,
-  FiChevronRight,
   FiClock,
   FiCreditCard,
   FiHome,
-  FiMail,
   FiMapPin,
   FiMessageCircle,
   FiMoreVertical,
@@ -19,27 +16,17 @@ import {
   FiShoppingBag,
   FiStar,
   FiTrendingUp,
-  FiTruck,
   FiUsers,
   FiX,
 } from 'react-icons/fi'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import CampusSidebar from '../components/layout/CampusSidebar'
+import CampusTopActions from '../components/layout/CampusTopActions'
 import Seo from '../components/Seo'
+import Breadcrumb from '../components/ui/Breadcrumb'
 import { CAMPUS_OPPORTUNITIES_SEO } from '../features/seo/constants'
 import '../styles/campus.css'
 import '../styles/opportunities.css'
-
-const SIDEBAR_NAV_ITEMS = [
-  { label: 'Home', Icon: FiHome, active: false, href: '/campus' },
-  { label: 'Opportunities', Icon: FiBriefcase, active: true, href: '/campus/opportunities' },
-  { label: 'Explore Campus', Icon: FiCalendar, active: false, href: '/campus/explore' },
-  { label: 'Learn & Grow', Icon: FiBookOpen, active: false },
-  { label: 'Community', Icon: FiUsers, active: false },
-  { label: 'Finance', Icon: FiCreditCard, active: false },
-  { label: 'Services', Icon: FiTruck, active: false },
-  { label: 'Messages', Icon: FiMail, active: false },
-  { label: 'Notifications', Icon: FiBell, active: false },
-]
 
 const OPPORTUNITY_TYPES = [
   { label: 'All Opportunities', count: 1248, Icon: FiBriefcase, active: true },
@@ -50,17 +37,19 @@ const OPPORTUNITY_TYPES = [
   { label: 'On-campus', count: 186, Icon: FiHome },
 ]
 
-const OPPORTUNITY_TABS = ['Discover', 'My Bids', 'Invites', 'Service Orders']
+const OPPORTUNITY_TABS = ['Discover', 'My Bids', 'Invites', 'Ongoing', 'Service Orders']
 const OPPORTUNITY_TAB_TO_QUERY = {
   Discover: 'discover',
   'My Bids': 'bids',
   Invites: 'invites',
+  Ongoing: 'ongoing',
   'Service Orders': 'service-orders',
 }
 const OPPORTUNITY_QUERY_TO_TAB = {
   discover: 'Discover',
   bids: 'My Bids',
   invites: 'Invites',
+  ongoing: 'Ongoing',
   'service-orders': 'Service Orders',
 }
 
@@ -850,6 +839,57 @@ function getBidProgressPointIndex(progressValue, pointCount = BID_PROGRESS_POINT
   return Math.round((safeProgress / 100) * (safePointCount - 1))
 }
 
+const ONGOING_PROJECTS = [
+  {
+    id: 'social-media-content-creation',
+    title: 'Social Media Content Creation',
+    client: 'BrightPath Solutions',
+    category: 'Digital Marketing',
+    status: 'In Progress',
+    statusTone: 'is-scheduled',
+    deadline: 'May 28, 2024',
+    budget: 'KES 25,000',
+    progress: '60%',
+    note: 'Create weekly posts, stories and captions across Instagram, LinkedIn and Facebook.',
+  },
+  {
+    id: 'datavista-dashboard-redesign',
+    title: 'DataVista Dashboard Redesign',
+    client: 'DataVista Analytics',
+    category: 'UI/UX Design',
+    status: 'In Progress',
+    statusTone: 'is-scheduled',
+    deadline: 'Jun 15, 2024',
+    budget: 'KES 35,000',
+    progress: '60%',
+    note: 'Redesign dashboard screens, prototype the core flows and prepare handoff assets.',
+  },
+  {
+    id: 'campus-brand-campaign',
+    title: 'Campus Brand Campaign',
+    client: 'Viva Drinks',
+    category: 'Brand Activation',
+    status: 'Awaiting Input',
+    statusTone: 'is-awaiting',
+    deadline: 'May 29, 2024',
+    budget: 'KES 18,000',
+    progress: '35%',
+    note: 'Finalize campaign plan and confirm campus activation slots before launch.',
+  },
+  {
+    id: 'team-social-media-content-creation',
+    title: 'Social Media Content Creation',
+    client: 'BrightPath Solutions',
+    category: 'Team Project',
+    status: 'In Progress',
+    statusTone: 'is-scheduled',
+    deadline: 'May 28, 2024',
+    budget: 'KES 25,000',
+    progress: '60%',
+    note: 'Team-based social content project with sprint planning, board tasks, milestones, invoices and reviews.',
+  },
+]
+
 const SERVICE_ORDERS = [
   {
     id: 'svc-order-2419',
@@ -971,15 +1011,17 @@ function resolveOpportunityUuid(opportunityQueryValue, ownerQueryValue, gigQuery
 function OpportunitiesPage() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
-  const initialTab = resolveOpportunityTab(searchParams.get('tab'))
-  const initialOpportunityUuid = initialTab === 'Discover'
-    ? resolveOpportunityUuid(searchParams.get('opportunity'), searchParams.get('owner'), searchParams.get('gig'))
-    : null
   const opportunitySearchRef = useRef(null)
-  const [selectedOpportunityUuid, setSelectedOpportunityUuid] = useState(initialOpportunityUuid)
-  const [activeOpportunityTab, setActiveOpportunityTab] = useState(initialTab)
   const [selectedBidId, setSelectedBidId] = useState(MY_BIDS[0]?.id || null)
   const [isFilterExpanded, setIsFilterExpanded] = useState(false)
+  const tabQueryParam = searchParams.get('tab')
+  const opportunityQueryParam = searchParams.get('opportunity')
+  const ownerQueryParam = searchParams.get('owner')
+  const gigQueryParam = searchParams.get('gig')
+  const activeOpportunityTab = resolveOpportunityTab(tabQueryParam)
+  const selectedOpportunityUuid = activeOpportunityTab === 'Discover'
+    ? resolveOpportunityUuid(opportunityQueryParam, ownerQueryParam, gigQueryParam)
+    : null
 
   const selectedOpportunity = OPPORTUNITY_UUID_TO_LISTING.get(selectedOpportunityUuid) || null
   const selectedOpportunityThumbnail = selectedOpportunity
@@ -992,6 +1034,7 @@ function OpportunitiesPage() {
   const isDiscoverTab = activeOpportunityTab === 'Discover'
   const isBidsTab = activeOpportunityTab === 'My Bids'
   const isInvitesTab = activeOpportunityTab === 'Invites'
+  const isOngoingTab = activeOpportunityTab === 'Ongoing'
   const isServiceOrdersTab = activeOpportunityTab === 'Service Orders'
   const hasRightRail = isDiscoverTab || isBidsTab
   const selectedBid = MY_BIDS.find((bid) => bid.id === selectedBidId) || MY_BIDS[0] || null
@@ -1005,11 +1048,6 @@ function OpportunitiesPage() {
   const confirmedServiceOrdersCount = SERVICE_ORDERS.filter((order) => order.statusTone === 'is-confirmed' || order.statusTone === 'is-scheduled').length
   const completedServiceOrdersCount = SERVICE_ORDERS.filter((order) => order.statusTone === 'is-completed').length
   const actionRequiredServiceOrdersCount = SERVICE_ORDERS.filter((order) => order.statusTone === 'is-awaiting').length
-  const tabQueryParam = searchParams.get('tab')
-  const opportunityQueryParam = searchParams.get('opportunity')
-  const ownerQueryParam = searchParams.get('owner')
-  const gigQueryParam = searchParams.get('gig')
-
   const syncRouteSelection = (tab, opportunityUuid = null) => {
     const nextParams = new URLSearchParams(searchParams)
     const tabQueryValue = OPPORTUNITY_TAB_TO_QUERY[tab] || OPPORTUNITY_TAB_TO_QUERY[OPPORTUNITY_TABS[0]]
@@ -1040,22 +1078,6 @@ function OpportunitiesPage() {
   }
 
   useEffect(() => {
-    const tabFromQuery = resolveOpportunityTab(tabQueryParam)
-    const opportunityFromQuery = tabFromQuery === 'Discover'
-      ? resolveOpportunityUuid(opportunityQueryParam, ownerQueryParam, gigQueryParam)
-      : null
-
-    setActiveOpportunityTab((currentTab) => (currentTab === tabFromQuery ? currentTab : tabFromQuery))
-    setSelectedOpportunityUuid((currentOpportunityUuid) =>
-      currentOpportunityUuid === opportunityFromQuery ? currentOpportunityUuid : opportunityFromQuery
-    )
-
-    if (tabFromQuery !== 'Discover') {
-      setIsFilterExpanded(false)
-    }
-  }, [gigQueryParam, opportunityQueryParam, ownerQueryParam, tabQueryParam])
-
-  useEffect(() => {
     const handleShortcutFocus = (event) => {
       const usedCommandOrControl = event.metaKey || event.ctrlKey
       if (!usedCommandOrControl || event.key !== '/') {
@@ -1075,10 +1097,7 @@ function OpportunitiesPage() {
   }, [])
 
   const handleOpportunityTabChange = (tab) => {
-    setActiveOpportunityTab(tab)
-
     if (tab !== 'Discover') {
-      setSelectedOpportunityUuid(null)
       setIsFilterExpanded(false)
       syncRouteSelection(tab)
       return
@@ -1088,8 +1107,6 @@ function OpportunitiesPage() {
   }
 
   const handleOpportunitySelect = (opportunityUuid) => {
-    setActiveOpportunityTab('Discover')
-    setSelectedOpportunityUuid(opportunityUuid)
     setIsFilterExpanded(false)
     syncRouteSelection('Discover', opportunityUuid)
   }
@@ -1104,7 +1121,6 @@ function OpportunitiesPage() {
   }
 
   const handleCloseDetails = () => {
-    setSelectedOpportunityUuid(null)
     setIsFilterExpanded(false)
     syncRouteSelection('Discover')
   }
@@ -1133,85 +1149,28 @@ function OpportunitiesPage() {
 
       <div className="campus-stage">
         <div className={`campus-shell${isDetailPanelVisible ? ' is-detail-open' : ''}${!hasRightRail ? ' is-no-rail' : ''}`}>
-          <aside className="campus-sidebar" aria-label="Student portal navigation">
-            <Link className="campus-brand" to="/" aria-label="Zumbarl logo">
-              <img className="campus-brand-logo" src="/assets/index/bee_nobg.png" alt="Zumbarl bee logo" />
-              <span className="campus-brand-text">zumbarl.</span>
-            </Link>
-
-            <nav className="campus-nav">
-              {SIDEBAR_NAV_ITEMS.map(({ label, Icon, active, href }) =>
-                href ? (
-                  <Link
-                    key={label}
-                    to={href}
-                    className={`campus-nav-item${active ? ' is-active' : ''}`}
-                    aria-current={active ? 'page' : undefined}
-                  >
-                    <Icon aria-hidden="true" />
-                    <span>{label}</span>
-                  </Link>
-                ) : (
-                  <button
-                    key={label}
-                    type="button"
-                    className={`campus-nav-item${active ? ' is-active' : ''}`}
-                    aria-current={active ? 'page' : undefined}
-                  >
-                    <Icon aria-hidden="true" />
-                    <span>{label}</span>
-                  </button>
-                )
-              )}
-            </nav>
-
-            <Link className="campus-profile-card" to="/campus/profile" aria-label="Student profile">
-              <img className="campus-avatar" src="/assets/index/bee_nobg.png" alt="Brian Mwangi" />
-              <div>
-                <p className="campus-profile-name">Brian Mwangi</p>
-                <p className="campus-profile-meta meta-category">Student</p>
-                <p className="campus-profile-meta">Kenyatta University</p>
-              </div>
-              <FiChevronRight aria-hidden="true" />
-            </Link>
-
-            <section className="campus-sidebar-card">
-              <h3>Invite your friends</h3>
-              <p>Bring your squad and earn rewards together.</p>
-              <button type="button" className="campus-pill-btn">
-                Invite Now
-                <FiArrowRight aria-hidden="true" />
-              </button>
-            </section>
-          </aside>
+          <CampusSidebar activeItemId="opportunities" />
 
           <section className="campus-main opportunities-main">
             <div className="opportunities-sticky-head">
               <header className="campus-header opportunities-header">
                 <div className="opportunities-head-copy">
-                  <p className="opportunities-breadcrumb">
-                    <span>Opportunities</span>
-                    <FiChevronRight aria-hidden="true" />
-                    <strong>Jobs & Gigs</strong>
-                  </p>
+                  <Breadcrumb
+                    className="opportunities-breadcrumb"
+                    items={[
+                      { label: 'Opportunities' },
+                      { label: 'Jobs & Gigs' },
+                    ]}
+                  />
                   <h1 className="opportunities-title">Jobs & Gigs</h1>
                   <p className="opportunities-subtitle">
                     Find flexible work, gigs and opportunities that fit your skills and schedule.
                   </p>
                 </div>
-                <div className="campus-header-actions">
-                  <button type="button" className="campus-icon-btn" aria-label="Open messages">
-                    <FiMessageCircle aria-hidden="true" />
-                    <span className="campus-badge">3</span>
-                  </button>
-                  <button type="button" className="campus-icon-btn" aria-label="Open notifications">
-                    <FiBell aria-hidden="true" />
-                    <span className="campus-badge">6</span>
-                  </button>
-                  <button type="button" className="opportunities-user-btn" aria-label="Open profile menu">
-                    <img src="/assets/index/bee_nobg.png" alt="Brian avatar" />
-                  </button>
-                </div>
+                <CampusTopActions
+                  className="campus-header-actions"
+                  userButtonClassName="opportunities-user-btn"
+                />
               </header>
 
               <section className="opportunities-search-row" aria-label="Search opportunities">
@@ -1529,6 +1488,92 @@ function OpportunitiesPage() {
               </section>
             ) : null}
 
+            {isOngoingTab ? (
+              <section className="opportunities-list-section opportunities-service-orders-section" aria-label="Ongoing jobs, gigs and projects">
+                <div className="opportunities-section-head opportunities-service-orders-head">
+                  <div>
+                    <h2>Ongoing</h2>
+                    <p>Active jobs, gigs and projects you have already won or accepted.</p>
+                  </div>
+                  <button type="button" className="campus-link-btn">View calendar</button>
+                </div>
+
+                <div className="opportunities-service-orders-summary">
+                  <article>
+                    <p>Active</p>
+                    <strong>{ONGOING_PROJECTS.length}</strong>
+                    <span>Jobs and projects</span>
+                  </article>
+                  <article>
+                    <p>Due soon</p>
+                    <strong>2</strong>
+                    <span>Deadlines this month</span>
+                  </article>
+                  <article>
+                    <p>Pending input</p>
+                    <strong>1</strong>
+                    <span>Needs your action</span>
+                  </article>
+                </div>
+
+                <div className="opportunities-service-orders-list">
+                  {ONGOING_PROJECTS.map((project) => (
+                    <article key={project.id} className="opportunities-service-order-card">
+                      <header className="opportunities-service-order-head">
+                        <div>
+                          <p className="opportunities-service-order-id">{project.category}</p>
+                          <h3>{project.title}</h3>
+                          <p className="opportunities-job-meta">{project.client} · {project.progress} complete</p>
+                        </div>
+                        <span className={`opportunities-service-order-chip ${project.statusTone}`}>{project.status}</span>
+                      </header>
+
+                      <div className="opportunities-service-order-meta">
+                        <p>
+                          <FiCalendar aria-hidden="true" />
+                          Deadline: {project.deadline}
+                        </p>
+                        <p>
+                          <FiCreditCard aria-hidden="true" />
+                          {project.budget}
+                        </p>
+                        <p>
+                          <FiUsers aria-hidden="true" />
+                          {project.client}
+                        </p>
+                      </div>
+
+                      <p className="opportunities-service-order-note">{project.note}</p>
+
+                      <footer className="opportunities-service-order-foot">
+                        <p className="opportunities-service-order-amount">{project.progress}</p>
+                        <div className="opportunities-service-order-actions">
+                          <button type="button" className="campus-link-btn">Message</button>
+                          <button
+                            type="button"
+                            className="opportunities-search-btn"
+                            onClick={() =>
+                              navigate(
+                                `/campus/projects/${project.id}${
+                                  project.id === 'datavista-dashboard-redesign'
+                                    ? '?tab=milestones'
+                                    : project.id === 'team-social-media-content-creation'
+                                      ? '?tab=board'
+                                      : ''
+                                }`
+                              )
+                            }
+                          >
+                            Open Project
+                          </button>
+                        </div>
+                      </footer>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+
             {isServiceOrdersTab ? (
               <section className="opportunities-list-section opportunities-service-orders-section" aria-label="Service orders">
                 <div className="opportunities-section-head opportunities-service-orders-head">
@@ -1590,7 +1635,13 @@ function OpportunitiesPage() {
                         <p className="opportunities-service-order-amount">{order.amount}</p>
                         <div className="opportunities-service-order-actions">
                           <button type="button" className="campus-link-btn">Message</button>
-                          <button type="button" className="opportunities-search-btn">View Booking</button>
+                          <button
+                            type="button"
+                            className="opportunities-search-btn"
+                            onClick={() => navigate('/campus/projects/social-media-content-creation')}
+                          >
+                            View Booking
+                          </button>
                         </div>
                       </footer>
                     </article>

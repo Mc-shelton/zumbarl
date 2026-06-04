@@ -2,16 +2,9 @@ import { useMemo, useState } from 'react'
 import {
   FiArrowRight,
   FiBell,
-  FiBookOpen,
-  FiBriefcase,
-  FiCalendar,
   FiChevronDown,
   FiChevronRight,
-  FiCreditCard,
-  FiHome,
   FiLock,
-  FiMail,
-  FiMapPin,
   FiMessageCircle,
   FiMinus,
   FiPlus,
@@ -19,26 +12,14 @@ import {
   FiShield,
   FiTrash2,
   FiTruck,
-  FiUsers,
   FiX,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import CampusSidebar from '../components/layout/CampusSidebar'
 import Seo from '../components/Seo'
 import { CAMPUS_CART_SEO } from '../features/seo/constants'
 import '../styles/campus.css'
 import '../styles/cart.css'
-
-const SIDEBAR_NAV_ITEMS = [
-  { label: 'Home', Icon: FiHome, active: false, href: '/campus' },
-  { label: 'Opportunities', Icon: FiBriefcase, active: true, href: '/campus/opportunities' },
-  { label: 'Explore Campus', Icon: FiCalendar, active: false, href: '/campus/explore' },
-  { label: 'Learn & Grow', Icon: FiBookOpen, active: false },
-  { label: 'Community', Icon: FiUsers, active: false },
-  { label: 'Finance', Icon: FiCreditCard, active: false },
-  { label: 'Services', Icon: FiTruck, active: false },
-  { label: 'Messages', Icon: FiMail, active: false },
-  { label: 'Notifications', Icon: FiBell, active: false },
-]
 
 const INITIAL_CART_ITEMS = [
   {
@@ -162,57 +143,7 @@ function CampusCartPage() {
 
       <div className="campus-stage">
         <div className="campus-shell campus-cart-shell">
-          <aside className="campus-sidebar" aria-label="Student portal navigation">
-            <Link className="campus-brand" to="/" aria-label="Zumbarl logo">
-              <img className="campus-brand-logo" src="/assets/index/bee_nobg.png" alt="Zumbarl bee logo" />
-              <span className="campus-brand-text">zumbarl.</span>
-            </Link>
-
-            <nav className="campus-nav">
-              {SIDEBAR_NAV_ITEMS.map(({ label, Icon, active, href }) =>
-                href ? (
-                  <Link
-                    key={label}
-                    to={href}
-                    className={`campus-nav-item${active ? ' is-active' : ''}`}
-                    aria-current={active ? 'page' : undefined}
-                  >
-                    <Icon aria-hidden="true" />
-                    <span>{label}</span>
-                  </Link>
-                ) : (
-                  <button
-                    key={label}
-                    type="button"
-                    className={`campus-nav-item${active ? ' is-active' : ''}`}
-                    aria-current={active ? 'page' : undefined}
-                  >
-                    <Icon aria-hidden="true" />
-                    <span>{label}</span>
-                  </button>
-                )
-              )}
-            </nav>
-
-            <Link className="campus-profile-card" to="/campus/profile" aria-label="Student profile">
-              <img className="campus-avatar" src="/assets/index/bee_nobg.png" alt="Brian Mwangi" />
-              <div>
-                <p className="campus-profile-name">Brian Mwangi</p>
-                <p className="campus-profile-meta meta-category">Student</p>
-                <p className="campus-profile-meta">Kenyatta University</p>
-              </div>
-              <FiChevronRight aria-hidden="true" />
-            </Link>
-
-            <section className="campus-sidebar-card">
-              <h3>Invite your friends</h3>
-              <p>Bring your squad and earn rewards together.</p>
-              <button type="button" className="campus-pill-btn">
-                Invite Now
-                <FiArrowRight aria-hidden="true" />
-              </button>
-            </section>
-          </aside>
+          <CampusSidebar activeItemId="opportunities" />
 
           <section className="campus-main campus-cart-main">
             <section className="campus-cart-top-actions" aria-label="Campus cart actions">

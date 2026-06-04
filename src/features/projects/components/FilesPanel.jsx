@@ -1,0 +1,93 @@
+import { FiChevronDown, FiFileText, FiGrid, FiList, FiMessageCircle, FiMoreHorizontal, FiPlus, FiUploadCloud } from 'react-icons/fi'
+import { workspaceFiles } from '../data/mockWorkspace'
+
+function FilesPanel() {
+  const createCards = [
+    ['Document', 'Text docs'],
+    ['Spreadsheet', 'Excel, Google Sheets'],
+    ['Presentation', 'Slides, Pitch decks'],
+    ['Form', 'Surveys, Intake forms'],
+    ['Gantt Chart', 'Project timelines'],
+    ['Mind Map', 'Brainstorm ideas'],
+    ['Lead Tracker', 'Lead generation'],
+    ['Kanban Board', 'Task management'],
+    ['More', 'See all'],
+  ]
+
+  return (
+    <section className="project-files-panel">
+      <header className="project-files-head">
+        <div>
+          <h2>Project Files</h2>
+          <p>Access, organize, and manage all project-related files in one place.</p>
+        </div>
+        <button type="button" className="project-primary-btn">
+          <FiPlus aria-hidden="true" />
+          New
+        </button>
+        <button type="button" className="project-soft-btn">
+          <FiUploadCloud aria-hidden="true" />
+          Upload Files
+        </button>
+        <button type="button" className="project-icon-btn" aria-label="List view">
+          <FiList aria-hidden="true" />
+        </button>
+        <button type="button" className="project-icon-btn" aria-label="Grid view">
+          <FiGrid aria-hidden="true" />
+        </button>
+      </header>
+
+      <div className="project-files-tools">
+        <label>
+          <FiMessageCircle aria-hidden="true" />
+          <input type="search" placeholder="Search files..." />
+        </label>
+        <button type="button">
+          Filter
+          <FiChevronDown aria-hidden="true" />
+        </button>
+      </div>
+
+      <section className="project-create-row" aria-label="Create new file">
+        {createCards.map(([title, caption]) => (
+          <button key={title} type="button">
+            <FiFileText aria-hidden="true" />
+            <strong>{title}</strong>
+            <span>{caption}</span>
+          </button>
+        ))}
+      </section>
+
+      <section className="project-card project-files-table" aria-label="Project files table">
+        <div className="project-files-row is-head">
+          <span>Name</span>
+          <span>Type</span>
+          <span>Owner</span>
+          <span>Last Updated</span>
+          <span>Size</span>
+          <span />
+        </div>
+        {workspaceFiles.map(({ icon: Icon, ...file }) => (
+          <div key={file.name} className="project-files-row">
+            <span>
+              <Icon className={`is-${file.tone}`} aria-hidden="true" />
+              <strong>{file.name}</strong>
+            </span>
+            <span>{file.type}</span>
+            <span>
+              <img src="/assets/index/bee_nobg.png" alt="" />
+              {file.owner}
+            </span>
+            <span>{file.updated}</span>
+            <span>{file.size}</span>
+            <button type="button" aria-label={`More actions for ${file.name}`}>
+              <FiMoreHorizontal aria-hidden="true" />
+            </button>
+          </div>
+        ))}
+      </section>
+    </section>
+  )
+}
+
+export default FilesPanel

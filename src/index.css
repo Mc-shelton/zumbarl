@@ -1,7 +1,9 @@
+@import './styles/theme.css';
+
 body {
   margin: 0;
-  font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  color: #000;
+  font-family: var(--font-sans);
+  color: var(--color-text);
   background: #f3f3f6;
 }
 

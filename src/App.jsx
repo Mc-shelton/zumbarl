@@ -15,6 +15,7 @@ import OpportunityPlaceBidPage from './pages/OpportunityPlaceBidPage'
 import OpportunitiesPage from './pages/OpportunitiesPage'
 import OpportunitiesBuySellPage from './pages/OpportunitiesBuySellPage'
 import OpportunitiesBuySellProductPage from './pages/OpportunitiesBuySellProductPage'
+import ProjectWorkspacePage from './pages/ProjectWorkspacePage'
 
 function App() {
   return (
@@ -32,6 +33,7 @@ function App() {
       <Route path="/campus/opportunities/buy-sell/:itemId" element={<OpportunitiesBuySellProductPage />} />
       <Route path="/campus/opportunities/:opportunityId/place-bid" element={<OpportunityPlaceBidPage />} />
       <Route path="/campus/opportunities/jobs-gigs" element={<Navigate to="/campus/opportunities" replace />} />
+      <Route path="/campus/projects/:projectId" element={<ProjectWorkspacePage />} />
       <Route path="/business" element={<BusinessPage />} />
       <Route path="/help" element={<HelpPage />} />
       <Route path="/login" element={<AuthPage defaultMode="login" />} />
