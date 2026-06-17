@@ -1,0 +1,495 @@
+.learn-page {
+  background: var(--color-surface-muted);
+  color: var(--color-text);
+  font-family: var(--font-ui);
+}
+
+.learn-shell {
+  grid-template-columns: 262px minmax(0, 1fr) 340px;
+}
+
+.learn-main {
+  display: grid;
+  gap: 18px;
+}
+
+.learn-hero,
+.learn-roadmap-panel,
+.learn-card,
+.learn-rail-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  box-shadow: var(--shadow-sm);
+}
+
+.learn-hero {
+  align-items: center;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.8fr);
+  padding: 24px;
+}
+
+.learn-hero span {
+  color: var(--color-accent-purple);
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+  text-transform: uppercase;
+}
+
+.learn-hero h1 {
+  color: var(--color-text);
+  font-size: clamp(1.8rem, 3vw, 2.7rem);
+  letter-spacing: 0;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.learn-hero p {
+  color: var(--color-text-muted);
+  line-height: 1.55;
+  margin: 12px 0 0;
+  max-width: 760px;
+}
+
+.learn-hero dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.learn-hero dl div {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.learn-hero dt {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.learn-hero dd {
+  color: var(--color-text);
+  font-size: 1.2rem;
+  font-weight: 900;
+  margin: 4px 0 0;
+}
+
+.learn-ladder-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.learn-ladder-grid button {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text);
+  cursor: pointer;
+  padding: 16px;
+  text-align: left;
+}
+
+.learn-ladder-grid button.is-selected {
+  border-color: var(--color-accent-purple);
+  box-shadow: 0 0 0 3px rgba(116, 81, 111, 0.12);
+}
+
+.learn-ladder-grid strong,
+.learn-ladder-grid span,
+.learn-ladder-grid p {
+  display: block;
+}
+
+.learn-ladder-grid span {
+  color: var(--color-accent-purple);
+  font-size: 0.78rem;
+  font-weight: 800;
+  margin-top: 6px;
+}
+
+.learn-ladder-grid p {
+  color: var(--color-text-muted);
+  line-height: 1.45;
+  margin: 10px 0 0;
+}
+
+.learn-roadmap-panel {
+  padding: 18px;
+}
+
+.learn-roadmap-panel header {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.learn-roadmap-panel h2 {
+  margin: 0;
+}
+
+.learn-roadmap-panel header p {
+  color: var(--color-text-muted);
+  margin: 4px 0 0;
+}
+
+.learn-roadmap-panel header > strong {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-accent-purple);
+  font-size: 0.76rem;
+  padding: 8px 12px;
+}
+
+.learn-roadmap-actions {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin-bottom: 18px;
+  padding: 6px;
+}
+
+.learn-roadmap-actions button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 0.82rem;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.learn-roadmap-actions button.is-active {
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text);
+}
+
+.learn-roadmap-tree {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  position: relative;
+}
+
+.learn-roadmap-tree::before {
+  background: linear-gradient(90deg, transparent 0 6%, var(--color-border) 6% 94%, transparent 94%);
+  content: '';
+  height: 2px;
+  left: 10%;
+  position: absolute;
+  right: 10%;
+  top: 35px;
+}
+
+.learn-roadmap-node {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  position: relative;
+}
+
+.learn-roadmap-node::before {
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: 50%;
+  content: '';
+  height: 12px;
+  left: 50%;
+  position: absolute;
+  top: 30px;
+  transform: translateX(-50%);
+  width: 12px;
+  z-index: 1;
+}
+
+.learn-roadmap-node.is-active::before {
+  background: var(--color-accent-purple);
+  border-color: var(--color-accent-purple);
+}
+
+.learn-roadmap-node button {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  cursor: pointer;
+  display: grid;
+  gap: 8px;
+  min-height: 160px;
+  padding: 16px;
+  position: relative;
+  text-align: left;
+  width: 100%;
+}
+
+.learn-roadmap-node button::after {
+  background: var(--color-border);
+  content: '';
+  height: 18px;
+  left: 50%;
+  position: absolute;
+  top: -18px;
+  width: 2px;
+}
+
+.learn-roadmap-node.is-active button {
+  border-color: var(--color-accent-purple);
+  box-shadow: 0 0 0 3px rgba(116, 81, 111, 0.12);
+}
+
+.learn-roadmap-node.is-locked button {
+  opacity: 0.72;
+}
+
+.learn-roadmap-node span,
+.learn-roadmap-node strong,
+.learn-roadmap-node em {
+  display: block;
+}
+
+.learn-node-index {
+  align-items: center;
+  background: var(--color-text);
+  border-radius: 50%;
+  color: var(--color-surface);
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 900;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.learn-roadmap-node.is-active .learn-node-index {
+  background: var(--color-accent-purple);
+}
+
+.learn-node-level {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.learn-roadmap-node strong {
+  color: var(--color-text);
+  min-height: 42px;
+}
+
+.learn-roadmap-node em {
+  color: var(--color-success);
+  font-size: 1.35rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.learn-node-branches {
+  display: grid;
+  gap: 8px;
+}
+
+.learn-node-branches span {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.35;
+  padding: 10px;
+}
+
+.learn-tool-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.learn-tool-grid article,
+.learn-tool-panel {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.learn-tool-grid article {
+  display: grid;
+  gap: 10px;
+  min-height: 150px;
+}
+
+.learn-tool-grid svg,
+.learn-tool-panel svg {
+  color: var(--color-success);
+  height: 22px;
+  width: 22px;
+}
+
+.learn-tool-grid strong {
+  color: var(--color-text);
+}
+
+.learn-tool-grid span,
+.learn-tool-panel p {
+  color: var(--color-text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.learn-tool-panel {
+  align-items: flex-start;
+  display: flex;
+  gap: 14px;
+}
+
+.learn-tool-panel h3 {
+  margin: 0 0 6px;
+}
+
+.learn-detail-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.learn-card {
+  padding: 18px;
+}
+
+.learn-card h2 {
+  margin: 0 0 8px;
+}
+
+.learn-card h3 {
+  font-size: 0.9rem;
+  margin: 18px 0 8px;
+}
+
+.learn-card p {
+  align-items: flex-start;
+  color: var(--color-text-muted);
+  display: flex;
+  gap: 8px;
+  line-height: 1.45;
+  margin: 10px 0;
+}
+
+.learn-card svg {
+  color: var(--color-success);
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.learn-card span {
+  display: grid;
+  gap: 4px;
+}
+
+.learn-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.learn-rail-card {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 16px;
+}
+
+.learn-rail-card h2 {
+  flex: 0 0 100%;
+  font-size: 1rem;
+  margin: 0 0 6px;
+}
+
+.learn-rail-card span {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 7px 10px;
+}
+
+@media (max-width: 1180px) {
+  .learn-shell {
+    grid-template-columns: 228px minmax(0, 1fr);
+  }
+
+  .learn-rail {
+    grid-column: 2;
+  }
+
+  .learn-hero,
+  .learn-ladder-grid,
+  .learn-tool-grid,
+  .learn-detail-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .learn-roadmap-tree {
+    grid-template-columns: 1fr;
+    padding-left: 22px;
+  }
+
+  .learn-roadmap-tree::before {
+    bottom: 34px;
+    height: auto;
+    left: 6px;
+    right: auto;
+    top: 34px;
+    width: 2px;
+  }
+
+  .learn-roadmap-node::before {
+    left: -16px;
+    top: 32px;
+    transform: none;
+  }
+
+  .learn-roadmap-node button::after {
+    display: none;
+  }
+}
+
+@media (max-width: 780px) {
+  .learn-shell,
+  .learn-main,
+  .learn-rail {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+  }
+
+  .learn-hero,
+  .learn-ladder-grid,
+  .learn-tool-grid,
+  .learn-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .learn-roadmap-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+}

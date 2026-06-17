@@ -1,0 +1,16 @@
+Jobs & gigs page:
+- categories not working
+- tiles need swapping
+- earn mode/pipeline mode should be done on the setting
+- rewrokk the 'fits' tagging
+- make 'place bid button' come down rather than being on the top
+- remove bid submission path [not relevant for the ui]
+- 'per' pricing details are not complete [if the project is not fixed price, then we have to come up with a time logging mechanism as well]
+-
+- opportunities don't have iamges
+- remove 'active gig process gates'
+- business opportunity tabs should be Opportunities, Completed, Drafts, Archived
+- intead of top skills on the right bar, lets have top freelancers
+- for the tags of the status, lets have open, draft, pending
+- when i click review, it should take me to the review page just like the students side, but with business functionalities
+- the applicants tab shoudl be a list of people they've worked with or working with, with details like their progress, their projects, just profile altogether[GUI]

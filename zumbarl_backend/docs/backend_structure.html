@@ -1,0 +1,274 @@
+
+<style>
+*{box-sizing:border-box}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0}
+.wrap{padding:1rem 0 2rem}
+.tab-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.tab{font-size:11px;padding:4px 12px;border-radius:10px;border:0.5px solid var(--color-border-tertiary);cursor:pointer;color:var(--color-text-secondary);background:transparent}
+.tab.act{background:var(--color-background-primary);border-color:var(--color-border-primary);color:var(--color-text-primary);font-weight:500}
+.panel{display:none}.panel.act{display:block}
+.layer{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:.85rem 1rem;margin-bottom:8px}
+.layer-head{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.layer-badge{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:500}
+.layer-title{font-size:13px;font-weight:500;color:var(--color-text-primary)}
+.layer-desc{font-size:12px;color:var(--color-text-secondary);line-height:1.5;margin-bottom:8px}
+.service-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.service{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:7px 9px}
+.service-name{font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:2px}
+.service-desc{font-size:11px;color:var(--color-text-secondary);line-height:1.4}
+.tech-row{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.tech{font-size:10px;padding:2px 7px;border-radius:6px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary)}
+.db-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.db-card{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:7px 9px;border-left:2px solid transparent}
+.db-name{font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:2px}
+.db-desc{font-size:11px;color:var(--color-text-secondary);line-height:1.4}
+.db-tables{font-size:10px;color:var(--color-text-tertiary);margin-top:4px}
+.rule-row{display:flex;gap:8px;padding:6px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.rule-row:last-child{border-bottom:none}
+.rule-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:3px}
+.rule-title{font-size:12px;font-weight:500;color:var(--color-text-primary)}
+.rule-desc{font-size:11px;color:var(--color-text-secondary);line-height:1.4;margin-top:1px}
+.warn{background:var(--color-background-warning);border:0.5px solid var(--color-border-warning);border-radius:var(--border-radius-md);padding:7px 10px;font-size:11px;color:var(--color-text-warning);margin-top:8px}
+.send-btn{width:100%;margin-top:10px;padding:8px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;cursor:pointer;color:var(--color-text-primary)}
+</style>
+
+<div class="wrap">
+<h2 class="sr-only">Zumbarl backend architecture across five layers: client, API gateway, core services, data layer, and infrastructure.</h2>
+
+<div class="tab-row">
+  <button class="tab act" onclick="show('overview',this)">Overview</button>
+  <button class="tab" onclick="show('services',this)">Core services</button>
+  <button class="tab" onclick="show('data',this)">Data layer</button>
+  <button class="tab" onclick="show('auth',this)">Auth & roles</button>
+  <button class="tab" onclick="show('realtime',this)">Real-time</button>
+  <button class="tab" onclick="show('infra',this)">Infrastructure</button>
+</div>
+
+<div class="panel act" id="p-overview">
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#E1F5EE;color:#085041">Layer 1</span><span class="layer-title">Client layer</span></div>
+    <div class="layer-desc">Your React app. Talks only to the API gateway — never directly to services or databases. All requests carry a JWT token.</div>
+    <div class="tech-row"><span class="tech">React</span><span class="tech">Axios / Fetch</span><span class="tech">React Query</span><span class="tech">Zustand</span><span class="tech">Socket.io client</span></div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#EEEDFE;color:#3C3489">Layer 2</span><span class="layer-title">API gateway</span></div>
+    <div class="layer-desc">Single entry point for all client requests. Handles routing, rate limiting, authentication verification, and request logging before anything reaches a service.</div>
+    <div class="tech-row"><span class="tech">Node.js + Express</span><span class="tech">nginx reverse proxy</span><span class="tech">Rate limiter</span><span class="tech">JWT verification</span></div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#FAEEDA;color:#633806">Layer 3</span><span class="layer-title">Core services</span></div>
+    <div class="layer-desc">Eight independent services each owning a domain. They communicate with each other through internal APIs or a message queue — never directly to another service's database.</div>
+    <div class="tech-row"><span class="tech">Node.js microservices</span><span class="tech">REST + internal events</span><span class="tech">BullMQ job queue</span></div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#E6F1FB;color:#0C447C">Layer 4</span><span class="layer-title">Data layer</span></div>
+    <div class="layer-desc">Three databases, each chosen for what it does best. PostgreSQL for structured relational data, Redis for fast caching and sessions, and S3-compatible storage for files.</div>
+    <div class="tech-row"><span class="tech">PostgreSQL</span><span class="tech">Redis</span><span class="tech">S3 / Cloudflare R2</span><span class="tech">Prisma ORM</span></div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#EAF3DE;color:#27500A">Layer 5</span><span class="layer-title">Infrastructure & external</span></div>
+    <div class="layer-desc">Third-party services Zumbarl depends on. Each is abstracted behind an internal adapter so you can swap providers without touching service code.</div>
+    <div class="tech-row"><span class="tech">M-Pesa Daraja API</span><span class="tech">Africa's Talking SMS</span><span class="tech">SendGrid email</span><span class="tech">Cloudflare</span><span class="tech">Railway / Render</span></div>
+  </div>
+</div>
+
+<div class="panel" id="p-services">
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#E1F5EE;color:#085041">Auth service</span></div>
+    <div class="layer-desc">Handles registration, login, KYC verification, role assignment, and JWT issuance. Every other service trusts tokens issued here.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">Registration & KYC</div><div class="service-desc">Student and company onboarding. Document upload and verification flow.</div></div>
+      <div class="service"><div class="service-name">Token management</div><div class="service-desc">JWT issue, refresh, and revocation. Blacklist stored in Redis.</div></div>
+      <div class="service"><div class="service-name">Role engine</div><div class="service-desc">Assigns and upgrades roles — student, transition, alumni, company tiers.</div></div>
+      <div class="service"><div class="service-name">Session management</div><div class="service-desc">Active sessions per device. Force logout on security events.</div></div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#EEEDFE;color:#3C3489">Gig service</span></div>
+    <div class="layer-desc">The core marketplace engine. Manages the full gig lifecycle from brief creation to payment release.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">Brief management</div><div class="service-desc">Create, edit, close briefs. Scope validation and category tagging.</div></div>
+      <div class="service"><div class="service-name">Matching engine</div><div class="service-desc">Matches students to briefs by score tier, skills, location, and availability.</div></div>
+      <div class="service"><div class="service-name">Lifecycle manager</div><div class="service-desc">Tracks gig status — open, accepted, in progress, submitted, completed, disputed.</div></div>
+      <div class="service"><div class="service-name">Dispute handler</div><div class="service-desc">Escalation flow when company or student raises a complaint.</div></div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#FAEEDA;color:#633806">Score service</span></div>
+    <div class="layer-desc">Calculates and refreshes Zumbarl scores every 18 days. Manages skill levels, pipeline stage unlocks, and transition mode triggers.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">Score calculator</div><div class="service-desc">Runs the formula — quality, volume, delivery, loyalty, trust — on each refresh cycle.</div></div>
+      <div class="service"><div class="service-name">Skill verifier</div><div class="service-desc">Advances skill levels based on completed gig evidence and company ratings.</div></div>
+      <div class="service"><div class="service-name">Pipeline engine</div><div class="service-desc">Manages stage progression, unlock criteria, and transition mode activation.</div></div>
+      <div class="service"><div class="service-name">Achievement tracker</div><div class="service-desc">Awards badges, endorsement currencies, and milestone notifications.</div></div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#E6F1FB;color:#0C447C">Finance service</span></div>
+    <div class="layer-desc">Handles all money movement. Escrow, payouts, chama wallets, micro-advances, and M-Pesa integration. Most regulated service — most careful code.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">Escrow manager</div><div class="service-desc">Holds company payment until gig is confirmed complete. Releases or refunds.</div></div>
+      <div class="service"><div class="service-name">Payout engine</div><div class="service-desc">Calculates student earnings minus platform fee. Triggers M-Pesa disbursement.</div></div>
+      <div class="service"><div class="service-name">Chama wallets</div><div class="service-desc">Group savings logic — contributions, investments, whitelisted disbursements.</div></div>
+      <div class="service"><div class="service-name">Micro-advance</div><div class="service-desc">Issues advances against pending gig payouts. Repayment lock on payout release.</div></div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#EAF3DE;color:#27500A">Safety service</span></div>
+    <div class="layer-desc">Completely siloed. Handles safety reports, account suspensions, and partner organisation routing. No other service can read safety report data.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">Report intake</div><div class="service-desc">One-tap flag capture with automatic timestamp, gig context, and location if available.</div></div>
+      <div class="service"><div class="service-name">Score protection</div><div class="service-desc">Freezes company rating ability for 48hrs when a safety flag is filed.</div></div>
+      <div class="service"><div class="service-name">Account suspension</div><div class="service-desc">Immediately pauses company gig posting pending safety review.</div></div>
+      <div class="service"><div class="service-name">Partner routing</div><div class="service-desc">Routes to FIDA Kenya, GVRC, Befrienders based on report type.</div></div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#FAECE7;color:#712B13">Notification service</span></div>
+    <div class="layer-desc">Manages all outbound communication — in-app, push, WhatsApp, SMS, and email. Batches non-urgent notifications to avoid spam.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">In-app notifications</div><div class="service-desc">Real-time via WebSocket. Stored in DB for notification centre.</div></div>
+      <div class="service"><div class="service-name">WhatsApp integration</div><div class="service-desc">Gig alerts, group messages, errand confirmations via WhatsApp Business API.</div></div>
+      <div class="service"><div class="service-name">SMS fallback</div><div class="service-desc">Africa's Talking for critical notifications when app is closed.</div></div>
+      <div class="service"><div class="service-name">Email</div><div class="service-desc">SendGrid for KYC verification, weekly summaries, and certificate delivery.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="p-data">
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#E1F5EE;color:#085041">PostgreSQL — primary database</span></div>
+    <div class="layer-desc">All structured, relational data. Every table that needs joins, transactions, or audit trails lives here.</div>
+    <div class="db-grid">
+      <div class="db-card" style="border-left-color:#1D9E75"><div class="db-name">Users & auth</div><div class="db-tables">users · roles · kyc_documents · sessions · role_history</div></div>
+      <div class="db-card" style="border-left-color:#1D9E75"><div class="db-name">Gigs</div><div class="db-tables">gigs · applications · submissions · ratings · disputes</div></div>
+      <div class="db-card" style="border-left-color:#1D9E75"><div class="db-name">Scores</div><div class="db-tables">score_snapshots · skill_levels · pipeline_stages · achievements · endorsements</div></div>
+      <div class="db-card" style="border-left-color:#534AB7"><div class="db-name">Finance</div><div class="db-tables">wallets · transactions · escrow_holds · payouts · chama_wallets · advances</div></div>
+      <div class="db-card" style="border-left-color:#534AB7"><div class="db-name">Companies</div><div class="db-tables">companies · contacts · pipeline_relationships · briefs · placements</div></div>
+      <div class="db-card" style="border-left-color:#BA7517"><div class="db-name">Campus life</div><div class="db-tables">marketplace_listings · groups · chamas · events · notes_library · services</div></div>
+    </div>
+    <div class="warn"><i class="ti ti-alert-triangle" style="font-size:13px;vertical-align:-1px;margin-right:4px" aria-hidden="true"></i>Finance tables need row-level security and audit logging on every write. No direct UPDATE or DELETE — soft deletes only, with who changed what and when.</div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#EEEDFE;color:#3C3489">Redis — cache & sessions</span></div>
+    <div class="layer-desc">Fast in-memory storage for things that need speed or short-lived state.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">Session store</div><div class="service-desc">Active JWT tokens and blacklisted tokens. TTL matches token expiry.</div></div>
+      <div class="service"><div class="service-name">Score cache</div><div class="service-desc">Current Zumbarl scores cached for fast reads. Invalidated on each 18-day refresh.</div></div>
+      <div class="service"><div class="service-name">Rate limit counters</div><div class="service-desc">Per-user API call counts. Resets on rolling window.</div></div>
+      <div class="service"><div class="service-name">Real-time presence</div><div class="service-desc">Online status, active gig states, and typing indicators for messaging.</div></div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#FAEEDA;color:#633806">File storage — Cloudflare R2</span></div>
+    <div class="layer-desc">S3-compatible object storage for all files. Cheaper than AWS S3 for African traffic patterns. Files are never stored in the database.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">KYC documents</div><div class="service-desc">Student IDs, company certificates. Encrypted at rest. Access via signed URLs only.</div></div>
+      <div class="service"><div class="service-name">Portfolio assets</div><div class="service-desc">Project thumbnails, deliverable files, work samples. CDN-served.</div></div>
+      <div class="service"><div class="service-name">Gig deliverables</div><div class="service-desc">Submitted work files. Accessible to company and student only. Deleted after 90 days unless archived.</div></div>
+      <div class="service"><div class="service-name">Certificates</div><div class="service-desc">Generated Zumbarl certificates as signed PDFs. Permanent, tamper-evident.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="p-auth">
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#E1F5EE;color:#085041">JWT structure</span></div>
+    <div class="layer-desc">Every request carries a JWT with the minimum information each service needs to make an access decision without a database call.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">Payload fields</div><div class="service-desc">user_id · role · campus_id · company_id (if company) · transition_mode · issued_at · expires_at</div></div>
+      <div class="service"><div class="service-name">Token lifespan</div><div class="service-desc">Access token: 15 minutes. Refresh token: 30 days. Safety events force immediate revocation.</div></div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#EEEDFE;color:#3C3489">Role-based access control</span></div>
+    <div class="layer-desc">Every API endpoint declares which roles can access it. The gateway checks the token role before the request reaches a service.</div>
+    <div class="rule-row"><div class="rule-dot" style="background:#1D9E75"></div><div><div class="rule-title">Student standard</div><div class="rule-desc">Can read own profile, apply to gigs, access campus features. Cannot post briefs or view other students' private data.</div></div></div>
+    <div class="rule-row"><div class="rule-dot" style="background:#1D9E75"></div><div><div class="rule-title">Student transition</div><div class="rule-desc">All standard access plus pipeline dashboard, placement availability toggle, and runway program features.</div></div></div>
+    <div class="rule-row"><div class="rule-dot" style="background:#534AB7"></div><div><div class="rule-title">Company standard</div><div class="rule-desc">Post briefs, view applicant profiles, rate students, access own analytics. Cannot see students who haven't engaged with them.</div></div></div>
+    <div class="rule-row"><div class="rule-dot" style="background:#534AB7"></div><div><div class="rule-title">Pipeline partner</div><div class="rule-desc">All company access plus full pipeline dashboard, transition-ready student pool, placement offer capability.</div></div></div>
+    <div class="rule-row"><div class="rule-dot" style="background:#BA7517"></div><div><div class="rule-title">Safety officer</div><div class="rule-desc">Read-only access to safety reports and related gig context only. Cannot access any other user data.</div></div></div>
+    <div class="rule-row"><div class="rule-dot" style="background:#E24B4A"></div><div><div class="rule-title">Super admin</div><div class="rule-desc">Full access. Every action is logged with timestamp and reason. Requires 2FA on every session.</div></div></div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#FAEEDA;color:#633806">Automatic role upgrades</span></div>
+    <div class="layer-desc">Role changes that happen without manual intervention — triggered by platform events, not admin action.</div>
+    <div class="rule-row"><div class="rule-dot" style="background:#1D9E75"></div><div><div class="rule-title">Transition mode unlock</div><div class="rule-desc">Score service emits an event when a student meets score + time thresholds. Auth service upgrades the role. Student's next token refresh includes the new role.</div></div></div>
+    <div class="rule-row"><div class="rule-dot" style="background:#534AB7"></div><div><div class="rule-title">Alumni window activation</div><div class="rule-desc">Triggered on graduation date stored in profile. Gig access closes, pipeline access stays open. 12-month TTL set automatically.</div></div></div>
+    <div class="rule-row"><div class="rule-dot" style="background:#BA7517"></div><div><div class="rule-title">Pipeline partner upgrade</div><div class="rule-desc">Company completes 3 verified gigs. Gig service emits event. Auth service upgrades company role to pipeline partner.</div></div></div>
+  </div>
+</div>
+
+<div class="panel" id="p-realtime">
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#E1F5EE;color:#085041">WebSocket layer</span></div>
+    <div class="layer-desc">Socket.io manages persistent connections for features that need instant updates. Not everything needs real-time — only these do.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">Gig status updates</div><div class="service-desc">Company accepts, student gets notified instantly. Submission received — company sees it immediately.</div></div>
+      <div class="service"><div class="service-name">Chat and messaging</div><div class="service-desc">Student-company gig chat. Typing indicators, read receipts, message delivery confirmation.</div></div>
+      <div class="service"><div class="service-name">Safety alerts</div><div class="service-desc">Safety flag received by operations team in real-time. No polling — this must be instant.</div></div>
+      <div class="service"><div class="service-name">Score refresh notification</div><div class="service-desc">When 18-day cycle completes and score updates, student sees the new number immediately on next app open.</div></div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#EEEDFE;color:#3C3489">Job queue — BullMQ</span></div>
+    <div class="layer-desc">Background jobs for things that should happen but don't need to block the request. Backed by Redis.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">Score recalculation</div><div class="service-desc">Runs every 18 days per student on a staggered schedule. Not all at once — spreads the load.</div></div>
+      <div class="service"><div class="service-name">Payout processing</div><div class="service-desc">M-Pesa disbursements queued and retried on failure. Never lost even if the service restarts.</div></div>
+      <div class="service"><div class="service-name">Document verification</div><div class="service-desc">KYC document checks queued for async processing. Student gets notified when done.</div></div>
+      <div class="service"><div class="service-name">Notification batching</div><div class="service-desc">Non-urgent notifications batched per user to avoid spam. Max 3 push notifications per day.</div></div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#FAEEDA;color:#633806">WhatsApp integration</span></div>
+    <div class="layer-desc">WhatsApp Business API via a provider like Twilio or Africa's Talking. Zumbarl-specific flows that don't require the student to open the app.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">Gig alerts</div><div class="service-desc">New matching gig → WhatsApp message with deep link. Student taps to accept without opening app first.</div></div>
+      <div class="service"><div class="service-name">Errand confirmations</div><div class="service-desc">One-tap confirm or dispute on delivery. Response updates gig status in real-time.</div></div>
+      <div class="service"><div class="service-name">Score refresh alert</div><div class="service-desc">"Your Zumbarl score just updated to 81. You've reached Gold tier." — WhatsApp first, app second.</div></div>
+      <div class="service"><div class="service-name">Chama notifications</div><div class="service-desc">Group contribution received, loan approved, disbursement made — all routable to WhatsApp group.</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="panel" id="p-infra">
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#E1F5EE;color:#085041">Hosting — start simple</span></div>
+    <div class="layer-desc">You don't need AWS or GCP yet. Start with managed platforms that handle the ops for you. Migrate when you have the scale to justify the complexity.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">Railway or Render</div><div class="service-desc">Deploy your Node.js services. Auto-deploys from GitHub. Managed PostgreSQL and Redis included. $20–50/month to start.</div></div>
+      <div class="service"><div class="service-name">Cloudflare R2</div><div class="service-desc">File storage with free egress. Better value than S3 for Kenyan traffic. CDN built in.</div></div>
+      <div class="service"><div class="service-name">Cloudflare</div><div class="service-desc">DNS, DDoS protection, and WAF. Free tier covers everything you need at this scale.</div></div>
+      <div class="service"><div class="service-name">GitHub Actions</div><div class="service-desc">CI/CD pipeline. Tests run on every push. Deploy to Railway on merge to main.</div></div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#EEEDFE;color:#3C3489">External integrations</span></div>
+    <div class="layer-desc">Each external service is wrapped in an adapter class. If you change providers, you change one file — not scattered code throughout the codebase.</div>
+    <div class="service-grid">
+      <div class="service"><div class="service-name">M-Pesa Daraja API</div><div class="service-desc">STK push for company payments. B2C for student payouts. C2B for chama contributions.</div></div>
+      <div class="service"><div class="service-name">Africa's Talking</div><div class="service-desc">SMS for critical alerts. USSD potentially for feature phone access later.</div></div>
+      <div class="service"><div class="service-name">WhatsApp Business</div><div class="service-desc">Via Twilio or 360dialog. Template messages for gig alerts, confirmations, score updates.</div></div>
+      <div class="service"><div class="service-name">SendGrid</div><div class="service-desc">Transactional email. KYC verification, weekly digest, certificate delivery.</div></div>
+    </div>
+  </div>
+  <div class="layer">
+    <div class="layer-head"><span class="layer-badge" style="background:#FAEEDA;color:#633806">Three rules for the backend</span></div>
+    <div class="layer-desc">These matter more than any specific technology choice.</div>
+    <div class="rule-row"><div class="rule-dot" style="background:#1D9E75"></div><div><div class="rule-title">Never trust the client</div><div class="rule-desc">Every permission check happens on the server. The React app never determines what a user can do — it only reflects what the server says they can do.</div></div></div>
+    <div class="rule-row"><div class="rule-dot" style="background:#534AB7"></div><div><div class="rule-title">Money is never lost</div><div class="rule-desc">Every financial operation uses database transactions. If a payout fails halfway, the entire operation rolls back. Log every state change with before and after values.</div></div></div>
+    <div class="rule-row"><div class="rule-dot" style="background:#E24B4A"></div><div><div class="rule-title">Safety data is siloed</div><div class="rule-desc">The safety service has its own database schema that no other service can query. A bug in the gig service should never be able to expose a safety report.</div></div></div>
+  </div>
+  <button class="send-btn" onclick="sendPrompt('Show me what the Zumbarl database schema looks like for the core tables')">Show me the database schema ↗</button>
+</div>
+</div>
+
+<script>
+function show(id, btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('act'));
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('act'));
+  document.getElementById('p-'+id).classList.add('act');
+  btn.classList.add('act');
+}
+</script>

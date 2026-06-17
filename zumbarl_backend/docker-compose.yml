@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: zumbarl
+      POSTGRES_PASSWORD: zumbarl
+      POSTGRES_DB: zumbarl
+    ports:
+      - "55432:5432"
+    volumes:
+      - zumbarl_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zumbarl -d zumbarl"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "56379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - zumbarl_redis:/data
+volumes:
+  zumbarl_pg:
+  zumbarl_redis:
