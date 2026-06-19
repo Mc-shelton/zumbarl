@@ -9,11 +9,11 @@ export function BusinessRecentApplicants({ applicants }) {
           <h2 id="business-recent-applicants-title">Recent Applicants</h2>
           <p>New applicants for your opportunities.</p>
         </div>
-        <Link to="/business/applicant-profile" className="business-link-btn">View all</Link>
+        <Link to="/business/applicants" className="business-link-btn">View all</Link>
       </header>
 
       <div className="business-applicant-table">
-        {applicants.map((applicant) => (
+        {applicants.length ? applicants.map((applicant) => (
           <article key={applicant.id} className="business-applicant-row">
             <img src={applicant.avatar} alt={`${applicant.name} avatar`} />
             <div>
@@ -40,10 +40,12 @@ export function BusinessRecentApplicants({ applicants }) {
               <FiArrowRight aria-hidden="true" />
             </Link>
           </article>
-        ))}
+        )) : (
+          <p className="business-dashboard-empty">No applicants yet. Applications submitted through your opportunities will appear here.</p>
+        )}
       </div>
 
-      <Link to="/business/applicant-profile" className="business-dashboard-link">
+      <Link to="/business/applicants" className="business-dashboard-link">
         View all applicants
         <FiArrowRight aria-hidden="true" />
       </Link>

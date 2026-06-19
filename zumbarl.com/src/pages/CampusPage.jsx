@@ -31,6 +31,7 @@ function CampusPage() {
     prompt,
     promptInputRef,
     promptPlaceholder,
+    recommendationSections,
     resetChatSurface,
     setPrompt,
     showBackToAiButton,
@@ -83,6 +84,7 @@ function CampusPage() {
               onMarketplaceHoverEnd={handleMarketplaceHoverEnd}
               onMarketplaceHoverStart={handleMarketplaceHoverStart}
               onOpenRecommendedGig={openRecommendedGig}
+              recommendationSections={recommendationSections}
             />
             <CampusTrustStrip />
           </section>

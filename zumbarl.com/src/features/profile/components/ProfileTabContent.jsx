@@ -18,6 +18,7 @@ function ProfileTabContent({ activeTab, handlers, profileState, viewModel }) {
         onPortfolioItemSelect={handlers.onPortfolioItemSelect}
         onPortfolioServiceSelect={handlers.onPortfolioServiceSelect}
         portfolioItems={viewModel.portfolioItems}
+        portfolioServices={viewModel.portfolioServices}
         selectedPortfolioId={profileState.selectedPortfolioId}
         selectedPortfolioServiceId={profileState.selectedPortfolioServiceId}
       />

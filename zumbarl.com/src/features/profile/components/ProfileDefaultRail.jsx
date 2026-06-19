@@ -6,7 +6,7 @@ import {
   RECENT_ACTIVITY,
 } from '../constants'
 
-function ProfileDefaultRail() {
+function ProfileDefaultRail({ relationships = PIPELINE_RELATIONSHIPS, recentActivity = RECENT_ACTIVITY }) {
   const quickActions = filterByAccess(QUICK_ACTIONS)
 
   return (
@@ -18,12 +18,12 @@ function ProfileDefaultRail() {
         </header>
 
         <div className="campus-profile-pipeline-list">
-          {PIPELINE_RELATIONSHIPS.map((item) => (
-            <article key={item.name}>
-              <img src="/assets/index/bee_nobg.png" alt={`${item.name} logo`} />
+          {relationships.map((item) => (
+            <article key={item.id || item.name || item.company}>
+              <img src="/assets/index/bee_nobg.png" alt={`${item.name || item.company} logo`} />
               <div>
-                <h3>{item.name}</h3>
-                <p>{item.meta}</p>
+                <h3>{item.name || item.company}</h3>
+                <p>{item.meta || `${item.gigs || 0} gigs${item.targetRole ? ` · ${item.targetRole}` : ''}`}</p>
               </div>
               <em>{item.status}</em>
             </article>
@@ -43,16 +43,18 @@ function ProfileDefaultRail() {
         </header>
 
         <div className="campus-profile-activity-list">
-          {RECENT_ACTIVITY.map(({ title, detail, time, Icon, tone }) => (
+          {recentActivity.map(({ title, detail, description, time, meta, Icon, tone = 'teal' }) => (
             <article key={`${title}-${time}`}>
-              <div className={`campus-profile-activity-icon is-${tone}`}>
-                <Icon aria-hidden="true" />
-              </div>
+              {Icon ? (
+                <div className={`campus-profile-activity-icon is-${tone}`}>
+                  <Icon aria-hidden="true" />
+                </div>
+              ) : null}
               <div>
                 <h3>{title}</h3>
-                <p>{detail}</p>
+                <p>{detail || description}</p>
               </div>
-              <span>{time}</span>
+              <span>{time || meta}</span>
             </article>
           ))}
         </div>

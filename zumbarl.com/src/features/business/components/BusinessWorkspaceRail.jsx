@@ -13,17 +13,34 @@ const ACTION_ICONS = [FiCalendar, FiBriefcase, FiCheckCircle, FiBarChart2]
 
 export function BusinessWorkspaceRail({
   insights,
+  kyc,
   upcomingActions,
 }) {
+  const kycStatus = String(kyc?.status || 'not_started').replace(/_/g, ' ')
+
   return (
     <aside className="campus-rail business-workspace-rail">
+      <section className="business-profile-card business-kyc-card">
+        <header>
+          <h2>Business KYC</h2>
+          <Link to="/business/kyc" className="business-link-btn">Open</Link>
+        </header>
+        <div className="business-kyc-progress" aria-label={`${kyc?.percent || 0}% KYC complete`}>
+          <span style={{ width: `${kyc?.percent || 0}%` }} />
+        </div>
+        <p>
+          <strong>{kyc?.completed || 0}/{kyc?.total || 0} checks complete</strong>
+          <span>{kycStatus}</span>
+        </p>
+      </section>
+
       <section className="business-profile-card business-upcoming-card">
         <header>
           <h2>Upcoming Actions</h2>
-          <Link to="/business/applicant-profile" className="business-link-btn">View all</Link>
+          <Link to="/business/applicants" className="business-link-btn">View all</Link>
         </header>
         <ul className="business-upcoming-list">
-          {upcomingActions.map((item, index) => {
+          {upcomingActions.length ? upcomingActions.map((item, index) => {
             const Icon = ACTION_ICONS[index] || FiCalendar
 
             return (
@@ -36,7 +53,16 @@ export function BusinessWorkspaceRail({
                 <time>{item.time}</time>
               </li>
             )
-          })}
+          }) : (
+            <li>
+              <span className="tone-blue"><FiCheckCircle aria-hidden="true" /></span>
+              <div>
+                <strong>No upcoming actions</strong>
+                <p>New deadlines and KYC tasks will appear here.</p>
+              </div>
+              <time>Now</time>
+            </li>
+          )}
         </ul>
       </section>
 
@@ -45,8 +71,8 @@ export function BusinessWorkspaceRail({
           <h2>Insights</h2>
           <button type="button" className="business-workspace-filter">This month</button>
         </header>
-        <div className="business-insight-donut" aria-label="156 total applicants">
-          <strong>156</strong>
+        <div className="business-insight-donut" aria-label={`${insights.reduce((sum, item) => sum + item.value, 0)} applicant insight score`}>
+          <strong>{insights.reduce((sum, item) => sum + item.value, 0)}</strong>
           <span>Total Applicants</span>
         </div>
         <ul>
@@ -71,11 +97,11 @@ export function BusinessWorkspaceRail({
             <FiBriefcase aria-hidden="true" />
             Post New Opportunity
           </Link>
-          <Link to="/business/applicant-profile">
+          <Link to="/business/applicants">
             <FiSearch aria-hidden="true" />
             Search Talent
           </Link>
-          <Link to="/business/applicant-profile">
+          <Link to="/business/applicants">
             <FiUserPlus aria-hidden="true" />
             Invite to Opportunity
           </Link>

@@ -1,13 +1,15 @@
 import { PROFILE_METRICS } from '../constants'
 
-function ProfileMetrics() {
+function ProfileMetrics({ metrics = PROFILE_METRICS }) {
   return (
     <section className="campus-profile-metrics" aria-label="Profile metrics">
-      {PROFILE_METRICS.map(({ label, value, meta, Icon, tone }) => (
+      {metrics.map(({ label, value, meta, Icon, tone = 'purple' }) => (
         <article key={label} className={`campus-profile-surface campus-profile-metric-card is-${tone}`}>
-          <div className="campus-profile-metric-icon">
-            <Icon aria-hidden="true" />
-          </div>
+          {Icon ? (
+            <div className="campus-profile-metric-icon">
+              <Icon aria-hidden="true" />
+            </div>
+          ) : null}
           <div className="campus-profile-metric-tab">
             <p>{label}</p>
             <h3>{value}</h3>

@@ -37,6 +37,7 @@ function BusinessOpportunitiesPage() {
                 onChangeApplicationStatus={opportunities.onChangeApplicationStatus}
                 onChangeReviewTab={opportunities.onChangeReviewTab}
                 opportunity={opportunities.reviewOpportunity}
+                openPublishPayment={opportunities.openPublishPaymentForReview}
               />
             ) : (
               <>

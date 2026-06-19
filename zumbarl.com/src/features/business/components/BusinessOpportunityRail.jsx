@@ -43,7 +43,7 @@ export function BusinessOpportunityRail({ activity, skillsDemand, summary }) {
       <section className="business-profile-card business-skill-demand-card">
         <header>
           <h2>Top Skills in Demand</h2>
-          <Link to="/business/applicant-profile" className="business-link-btn">View all</Link>
+          <Link to="/business/applicants" className="business-link-btn">View all</Link>
         </header>
         <ul>
           {skillsDemand.map((item) => (
@@ -75,7 +75,7 @@ export function BusinessOpportunityRail({ activity, skillsDemand, summary }) {
         <div>
           <h2>Need help finding the right talent?</h2>
           <p>Let our AI assistant help you find the best students for your project.</p>
-          <Link to="/business/applicant-profile" className="business-profile-ghost-btn">Find Talent</Link>
+          <Link to="/business/applicants" className="business-profile-ghost-btn">Find Talent</Link>
         </div>
         <span aria-hidden="true">
           <FiSearch />

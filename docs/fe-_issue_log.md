@@ -14,3 +14,4 @@ Jobs & gigs page:
 - for the tags of the status, lets have open, draft, pending
 - when i click review, it should take me to the review page just like the students side, but with business functionalities
 - the applicants tab shoudl be a list of people they've worked with or working with, with details like their progress, their projects, just profile altogether[GUI]
+- make the deliverables draggable, and collapsable, same with milestones

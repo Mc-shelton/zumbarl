@@ -1,5 +1,17 @@
 import { FiAlertCircle, FiArrowLeft, FiCheckCircle, FiEdit2, FiSave, FiSend } from 'react-icons/fi'
 
+function numberValue(value) {
+  return Number(String(value || '').replace(/[^\d.]/g, '')) || 0
+}
+
+function getTotalBudget(milestones = []) {
+  return milestones.reduce((total, milestone) => total + numberValue(milestone.budget), 0)
+}
+
+function getTotalPercent(milestones = []) {
+  return milestones.reduce((total, milestone) => total + numberValue(milestone.paymentPercent), 0)
+}
+
 function EditButton({ onClick }) {
   return (
     <button type="button" className="business-create-review-edit" onClick={onClick}>
@@ -21,6 +33,15 @@ function ReviewCard({ children, onEdit, title }) {
   )
 }
 
+function formatRequiredAttachments(requiredAttachments = []) {
+  if (!requiredAttachments.length) return 'No required attachments'
+
+  return requiredAttachments
+    .filter((attachment) => attachment.label || attachment.fileType)
+    .map((attachment) => `${attachment.label || 'Attachment'} (${attachment.fileType || 'Any accepted file'})`)
+    .join(', ')
+}
+
 export function BusinessOpportunityBriefReviewStep({
   clarityChecks = [],
   form,
@@ -31,6 +52,8 @@ export function BusinessOpportunityBriefReviewStep({
   onStepChange,
 }) {
   const firstMissingDetail = clarityChecks.find((check) => !check.complete)
+  const scopeItems = form.scopeMode === 'milestone' ? form.milestoneScopes : form.deliverableMilestones
+  const scopeLabel = form.scopeMode === 'milestone' ? 'Milestone' : 'Deliverable'
 
   return (
     <>
@@ -50,18 +73,50 @@ export function BusinessOpportunityBriefReviewStep({
           <div><dt>Experience Level</dt><dd>{form.experienceLevel}</dd></div>
           <div><dt>Portfolio</dt><dd>{form.portfolioRequired}</dd></div>
           <div><dt>Screening Focus</dt><dd>{form.screeningFocus}</dd></div>
-          <div><dt>Bidder Instructions</dt><dd>{form.bidderInstructions}</dd></div>
+          <div><dt>Required Attachments</dt><dd>{formatRequiredAttachments(form.requiredAttachments)}</dd></div>
         </dl>
       </ReviewCard>
 
       <ReviewCard title="Scope & Budget" onEdit={() => onStepChange(3)}>
+        {scopeItems?.length ? (
+          <>
+            <div className="business-create-review-milestone-summary">
+              <span><strong>{scopeLabel} Scope</strong>Scope mode</span>
+              <span><strong>KES {getTotalBudget(scopeItems).toLocaleString('en-US')}</strong>Total budget</span>
+              <span><strong>{getTotalPercent(scopeItems)}%</strong>Payment split</span>
+            </div>
+            <div className="business-create-review-milestones">
+              {scopeItems.map((milestone, index) => (
+                <article key={milestone.id}>
+                  <header>
+                    <span>{scopeLabel} {index + 1}</span>
+                    <strong>{milestone.title || milestone.type}</strong>
+                    <b>KES {Number(numberValue(milestone.budget)).toLocaleString('en-US')} · {milestone.paymentPercent}%</b>
+                  </header>
+                  <p>{milestone.description}</p>
+                  <dl>
+                    <div><dt>{form.scopeMode === 'milestone' ? 'Accepted Methods' : 'Workflow'}</dt><dd>{form.scopeMode === 'milestone' ? 'All documented submission methods' : milestone.workflow || milestone.type}</dd></div>
+                    <div><dt>Submission</dt><dd>{milestone.submissionMethod}</dd></div>
+                    <div><dt>Verification</dt><dd>{milestone.verificationMethod}</dd></div>
+                    <div><dt>Evidence</dt><dd>{milestone.evidenceRequired}</dd></div>
+                    <div><dt>Acceptance</dt><dd>{milestone.acceptanceCriteria}</dd></div>
+                    <div><dt>Release</dt><dd>{milestone.paymentRelease}</dd></div>
+                  </dl>
+                </article>
+              ))}
+            </div>
+          </>
+        ) : (
+          <dl className="business-create-review-list">
+            <div><dt>Deliverables</dt><dd>{form.deliverables}</dd></div>
+            <div><dt>Acceptance Criteria</dt><dd>{form.acceptanceCriteria}</dd></div>
+            <div><dt>Budget</dt><dd>KES {form.budget}</dd></div>
+          </dl>
+        )}
         <dl className="business-create-review-list">
-          <div><dt>Deliverables</dt><dd>{form.deliverables}</dd></div>
-          <div><dt>Acceptance Criteria</dt><dd>{form.acceptanceCriteria}</dd></div>
-          <div><dt>Budget</dt><dd>KES {form.budget}</dd></div>
           <div><dt>Duration</dt><dd>{form.duration}</dd></div>
           <div><dt>Engagement</dt><dd>{form.engagementMode}</dd></div>
-          <div><dt>Deadline</dt><dd>{form.applicationDeadline}</dd></div>
+          <div><dt>Deadline</dt><dd>{form.applicationDeadline || 'Rolling'}</dd></div>
         </dl>
       </ReviewCard>
 
@@ -79,7 +134,7 @@ export function BusinessOpportunityBriefReviewStep({
         </ul>
         {!isPublishReady ? (
           <p className="business-create-readiness-note">
-            Complete the missing details before publishing. You can still save this opportunity as a draft.
+            Complete the missing details before creating and publishing. You can still save this opportunity as a draft.
           </p>
         ) : null}
       </ReviewCard>
@@ -99,7 +154,7 @@ export function BusinessOpportunityBriefReviewStep({
           disabled={!isPublishReady}
           onClick={onPublish}
         >
-          Publish Opportunity
+          Create & Publish Opportunity
           <FiSend aria-hidden="true" />
         </button>
       </div>

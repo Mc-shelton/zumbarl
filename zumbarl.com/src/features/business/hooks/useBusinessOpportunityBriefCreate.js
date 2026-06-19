@@ -13,6 +13,41 @@ function getBudgetLabel(form) {
   return `KES ${String(form.budget).replace(/^KES\\s*/i, '')}`
 }
 
+function getNumberValue(value) {
+  return Number(String(value || '').replace(/[^\d.]/g, '')) || 0
+}
+
+function getDeliverableMilestones(form) {
+  if (form.scopeMode === 'milestone') {
+    return Array.isArray(form.milestoneScopes) ? form.milestoneScopes : []
+  }
+
+  return Array.isArray(form.deliverableMilestones) ? form.deliverableMilestones : []
+}
+
+function getDeliverableBudgetTotal(form) {
+  return getDeliverableMilestones(form).reduce((total, milestone) => total + getNumberValue(milestone.budget), 0)
+}
+
+function getDeliverablePaymentPercentTotal(form) {
+  return getDeliverableMilestones(form).reduce((total, milestone) => total + getNumberValue(milestone.paymentPercent), 0)
+}
+
+function hasCompleteDeliverableMilestones(form) {
+  const milestones = getDeliverableMilestones(form)
+
+  return milestones.length > 0 && milestones.every((milestone) => (
+    hasMinimumText(milestone.title, 3)
+    && hasMinimumText(milestone.description, 20)
+    && hasMinimumText(milestone.submissionMethod, 20)
+    && hasMinimumText(milestone.verificationMethod, 20)
+    && hasMinimumText(milestone.evidenceRequired, 15)
+    && hasMinimumText(milestone.acceptanceCriteria, 20)
+    && getNumberValue(milestone.budget) > 0
+    && getNumberValue(milestone.paymentPercent) > 0
+  ))
+}
+
 function getSkillList(skills) {
   return String(skills || '')
     .split(',')
@@ -22,6 +57,14 @@ function getSkillList(skills) {
 
 function hasMinimumText(value, minimumLength) {
   return String(value || '').trim().length >= minimumLength
+}
+
+function hasCompleteRequiredAttachments(form) {
+  const requiredAttachments = Array.isArray(form.requiredAttachments) ? form.requiredAttachments : []
+
+  return requiredAttachments.every((attachment) => (
+    hasMinimumText(attachment.label, 3) && hasMinimumText(attachment.fileType, 2)
+  ))
 }
 
 function getClarityChecks(form) {
@@ -45,33 +88,37 @@ function getClarityChecks(form) {
       step: 2,
     },
     {
-      id: 'bid-instructions',
-      complete: hasMinimumText(form.bidderInstructions, 45),
-      label: 'Bidder instructions explain what students should submit',
-      step: 2,
-    },
-    {
       id: 'scope',
-      complete: hasMinimumText(form.deliverables, 50) && hasMinimumText(form.acceptanceCriteria, 55),
-      label: 'Deliverables and acceptance criteria define what done means',
+      complete: hasCompleteDeliverableMilestones(form),
+      label: form.scopeMode === 'milestone'
+        ? 'Each milestone has scope, evidence, verification, and acceptance criteria'
+        : 'Each deliverable has requirements, evidence, verification, and acceptance criteria',
       step: 3,
     },
     {
       id: 'commercials',
-      complete: Number(String(form.budget).replace(/[^\d]/g, '')) > 0 && hasMinimumText(form.duration, 3),
-      label: 'Budget, duration, and payment terms are ready',
+      complete: getDeliverableBudgetTotal(form) > 0
+        && getDeliverablePaymentPercentTotal(form) === 100
+        && hasMinimumText(form.duration, 3),
+      label: 'Budgets, payment splits, and estimated duration are ready',
       step: 3,
     },
     {
       id: 'timeline',
-      complete: hasMinimumText(form.estimatedStartDate, 6) && hasMinimumText(form.applicationDeadline, 6),
-      label: 'Start date and application deadline are visible',
+      complete: true,
+      label: 'Application deadline can be left open when timing is flexible',
       step: 1,
     },
     {
       id: 'screening',
       complete: hasMinimumText(form.screeningFocus, 45),
       label: 'Screening focus tells the business how to review applicants',
+      step: 2,
+    },
+    {
+      id: 'required-attachments',
+      complete: hasCompleteRequiredAttachments(form),
+      label: 'Required applicant attachments have accepted file types',
       step: 2,
     },
   ]
@@ -88,11 +135,12 @@ function toPayload(form, status, clarityScore) {
     company: form.companyName,
     companyDescription: form.companyDescription,
     clarityScore,
-    deadline: form.applicationDeadline,
+    deadline: form.applicationDeadline || 'Rolling',
     deliverables: form.deliverables,
+    deliverableMilestones: form.deliverableMilestones,
+    milestoneScopes: form.milestoneScopes,
     duration: form.duration,
     engagementMode: form.engagementMode,
-    estimatedStartDate: form.estimatedStartDate,
     experienceLevel: form.experienceLevel,
     mode: `${form.opportunityType} - ${form.engagementMode}`,
     mustHave: form.mustHave,
@@ -100,6 +148,8 @@ function toPayload(form, status, clarityScore) {
     paymentTerms: form.paymentTerms,
     portfolioRequired: form.portfolioRequired,
     preferredQualifications: form.preferredQualifications,
+    requiredAttachments: form.requiredAttachments,
+    scopeMode: form.scopeMode,
     screeningFocus: form.screeningFocus,
     skills: form.skills,
     status,
@@ -125,11 +175,14 @@ export function useBusinessOpportunityBriefCreate() {
     acceptanceCriteria: form.acceptanceCriteria,
     applicants: 'Will be visible after publishing',
     budget: getBudgetLabel(form),
+    deliverableMilestones: form.deliverableMilestones,
+    milestoneScopes: form.milestoneScopes,
     company: form.companyName,
-    deadline: form.applicationDeadline,
+    deadline: form.applicationDeadline || 'Rolling',
     duration: form.duration,
     engagement: form.engagementMode,
     paymentTerms: form.paymentTerms,
+    requiredAttachments: form.requiredAttachments,
     readiness: `${completeClarityChecks}/${clarityChecks.length} checks complete`,
     summary: form.summary,
     title: form.title,
@@ -141,8 +194,8 @@ export function useBusinessOpportunityBriefCreate() {
     setForm((current) => ({ ...current, [name]: value }))
   }
 
-  function saveOpportunity(status) {
-    if (status === 'Open' && !isPublishReady) {
+  function saveOpportunity(status, options = {}) {
+    if (options.requiresPublishReadiness && !isPublishReady) {
       setActiveStep(firstMissingDetail?.step || maxStep)
       return null
     }
@@ -156,7 +209,27 @@ export function useBusinessOpportunityBriefCreate() {
       detail: `${opportunity.title} ${isPublished ? 'published' : 'saved as a draft'} from create opportunity brief.`,
     })
 
-    navigate('/business/opportunities')
+    if (!options.skipNavigate) {
+      navigate('/business/opportunities', options.navigateState ? { state: options.navigateState } : undefined)
+    }
+    return opportunity
+  }
+
+  function createAndPublishOpportunity() {
+    const opportunity = saveOpportunity('Draft', {
+      requiresPublishReadiness: true,
+      skipNavigate: true,
+    })
+
+    if (!opportunity) return null
+
+    navigate('/business/opportunities', {
+      state: {
+        openPublishPayment: true,
+        reviewOpportunityId: opportunity.id,
+      },
+    })
+
     return opportunity
   }
 
@@ -173,7 +246,7 @@ export function useBusinessOpportunityBriefCreate() {
     summary,
     onBack: () => setActiveStep((current) => Math.max(1, current - 1)),
     onContinue: () => setActiveStep((current) => Math.min(maxStep, current + 1)),
-    onPublish: () => saveOpportunity('Open'),
+    onPublish: createAndPublishOpportunity,
     onReset: () => {
       setActiveStep(1)
       setForm(BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS)

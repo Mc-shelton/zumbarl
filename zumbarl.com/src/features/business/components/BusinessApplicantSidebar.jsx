@@ -23,5 +23,5 @@ export function BusinessWorkspaceSidebar({ activeItemId = 'home' }) {
 }
 
 export function BusinessApplicantSidebar() {
-  return <BusinessWorkspaceSidebar activeItemId="applicants" />
+  return <BusinessWorkspaceSidebar activeItemId="browse" />
 }

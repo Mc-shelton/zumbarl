@@ -82,15 +82,18 @@ export function BusinessOpportunityBriefDetailsStep({ form, onUpdateField }) {
         />
       </div>
       <div className="business-opportunity-brief-grid-2">
-        <BusinessCreateDateField
-          label="Estimated Start Date"
-          name="estimatedStartDate"
-          value={form.estimatedStartDate}
+        <BusinessCreateSelectField
+          label="Estimated Project Duration"
+          name="duration"
+          options={BUSINESS_OPPORTUNITY_BRIEF_SELECTS.duration}
+          required
+          value={form.duration}
           onUpdateField={onUpdateField}
         />
         <BusinessCreateDateField
-          label="Application Deadline"
+          label="Application Deadline (Optional)"
           name="applicationDeadline"
+          required={false}
           value={form.applicationDeadline}
           onUpdateField={onUpdateField}
         />

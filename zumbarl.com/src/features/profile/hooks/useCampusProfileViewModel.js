@@ -34,7 +34,7 @@ function useCampusProfileViewModel({
   skillsCategoryFilter,
   skillsLevelFilter,
   skillsSearchQuery,
-}) {
+}, profileExperience = null) {
   const isPortfolioTab = activeTab === 'Portfolio'
   const isExperienceTab = activeTab === 'Experience'
   const isSkillsTab = activeTab === 'Skills'
@@ -47,9 +47,32 @@ function useCampusProfileViewModel({
   const endorsementItems = useMemo(() => (
     earnFlow.endorsements.map((item) => ({ ...item, source: 'earn-flow' }))
   ), [earnFlow.endorsements])
-  const combinedPortfolioItems = useMemo(() => (
-    [...portfolioEvidenceItems, ...PORTFOLIO_ITEMS]
-  ), [portfolioEvidenceItems])
+  const apiPortfolioItems = useMemo(() => (
+    (profileExperience?.portfolioItems || []).map((item) => ({
+      ...item,
+      date: item.date || 'From database',
+      featured: item.featured ?? item.isFeatured,
+      image: item.image || '/assets/business/campaign-workshop.jpg',
+      rating: item.rating || 'Verified',
+      source: 'backend',
+    }))
+  ), [profileExperience?.portfolioItems])
+  const combinedPortfolioItems = useMemo(() => {
+    const backendItems = [...portfolioEvidenceItems, ...apiPortfolioItems]
+    return backendItems.length ? backendItems : PORTFOLIO_ITEMS
+  }, [apiPortfolioItems, portfolioEvidenceItems])
+  const portfolioServices = useMemo(() => {
+    const services = (profileExperience?.services || []).map((service) => ({
+      id: service.id,
+      title: service.title,
+      category: service.category || service.meta || 'Service',
+      description: service.description,
+      price: service.price || service.value,
+      delivery: service.delivery || service.meta,
+      image: service.image || service.thumbnail || '/assets/business/campaign-workshop.jpg',
+    }))
+    return services.length ? services : PORTFOLIO_SERVICES
+  }, [profileExperience?.services])
 
   const portfolioItems = useMemo(() => (
     activePortfolioFilter === 'all'
@@ -65,15 +88,34 @@ function useCampusProfileViewModel({
 
   const selectedPortfolioService = useMemo(() => (
     selectedPortfolioServiceId
-      ? PORTFOLIO_SERVICES.find((service) => service.id === selectedPortfolioServiceId) || null
+      ? portfolioServices.find((service) => service.id === selectedPortfolioServiceId) || null
       : null
-  ), [selectedPortfolioServiceId])
+  ), [portfolioServices, selectedPortfolioServiceId])
+
+  const shopProducts = useMemo(() => {
+    const products = (profileExperience?.shopProducts || []).map((product) => ({
+      ...product,
+      uid: product.uid || product.id,
+      seller: product.seller || profileExperience?.header?.name || 'Student seller',
+      time: product.time || 'From database',
+      image: product.image || product.thumbnail || '/assets/marketplace/poster-kit.jpg',
+      badge: product.badge || 'Available',
+      badgeTone: product.badgeTone || 'is-new',
+      price: product.price || product.value,
+      likes: product.likes || 0,
+      comments: product.comments || 0,
+      shares: product.shares || 0,
+      filter: product.filter || 'products',
+      badges: product.badges || product.tags || [],
+    }))
+    return products.length ? products : SHOP_PRODUCTS_WITH_UID
+  }, [profileExperience?.header?.name, profileExperience?.shopProducts])
 
   const selectedShopProduct = useMemo(() => (
     selectedShopProductUid
-      ? SHOP_PRODUCTS_WITH_UID.find((item) => item.uid === selectedShopProductUid) || null
+      ? shopProducts.find((item) => item.uid === selectedShopProductUid) || null
       : null
-  ), [selectedShopProductUid])
+  ), [selectedShopProductUid, shopProducts])
 
   const selectedShopProductDetail = useMemo(() => (
     selectedShopProduct ? getShopProductDetail(selectedShopProduct) : null
@@ -108,7 +150,16 @@ function useCampusProfileViewModel({
     hasSkillsResults,
   } = useMemo(() => {
     const normalizedSkillSearch = skillsSearchQuery.trim().toLowerCase()
-    const nextCoreSkills = SKILLS_CORE.filter((skill) => (
+    const backendSkills = (profileExperience?.skills || []).map((skill) => ({
+      id: skill.id,
+      name: skill.name,
+      category: skill.category || 'General',
+      level: String(skill.level || 'BEGINNER').toLowerCase().replace(/^./, (letter) => letter.toUpperCase()),
+      endorsements: skill.verifiedByGigs || 0,
+      score: skill.verifiedByGigs || 0,
+    }))
+    const coreSource = backendSkills.length ? backendSkills : SKILLS_CORE
+    const nextCoreSkills = coreSource.filter((skill) => (
       matchesSkillFilters(skill, normalizedSkillSearch, skillsCategoryFilter, skillsLevelFilter)
     ))
     const nextOtherSkills = SKILLS_OTHER.filter((skill) => (
@@ -120,7 +171,7 @@ function useCampusProfileViewModel({
       filteredOtherSkills: nextOtherSkills,
       hasSkillsResults: nextCoreSkills.length > 0 || nextOtherSkills.length > 0,
     }
-  }, [skillsCategoryFilter, skillsLevelFilter, skillsSearchQuery])
+  }, [profileExperience?.skills, skillsCategoryFilter, skillsLevelFilter, skillsSearchQuery])
 
   const {
     skillsTrendCoordinates,
@@ -142,11 +193,11 @@ function useCampusProfileViewModel({
 
   const filteredShopProducts = useMemo(() => (
     activeShopFilter === 'all'
-      ? SHOP_PRODUCTS_WITH_UID
-      : SHOP_PRODUCTS_WITH_UID.filter((item) => (
+      ? shopProducts
+      : shopProducts.filter((item) => (
         item.filter === activeShopFilter || item.badges.includes(activeShopFilter)
       ))
-  ), [activeShopFilter])
+  ), [activeShopFilter, shopProducts])
   const workHighlights = useMemo(() => (
     portfolioItems.slice(0, 4).map((item) => ({
       image: item.image,
@@ -178,6 +229,7 @@ function useCampusProfileViewModel({
     isSkillsTab,
     normalizedShopDetailImageIndex,
     portfolioItems,
+    portfolioServices,
     selectedPortfolioDetail,
     selectedPortfolioItem,
     selectedPortfolioScorePoints,

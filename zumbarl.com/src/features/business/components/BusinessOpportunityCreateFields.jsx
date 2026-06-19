@@ -67,12 +67,12 @@ export function BusinessCreateSelectField({
   )
 }
 
-export function BusinessCreateDateField({ label, name, onUpdateField, value }) {
+export function BusinessCreateDateField({ label, name, onUpdateField, required = true, value }) {
   return (
-    <BusinessCreateField label={label} required>
+    <BusinessCreateField label={label} required={required}>
       <span className="business-create-date-wrap">
         <FiCalendar aria-hidden="true" />
-        <input required value={value} onChange={(event) => onUpdateField(name, event.target.value)} />
+        <input required={required} type="date" value={value} onChange={(event) => onUpdateField(name, event.target.value)} />
       </span>
     </BusinessCreateField>
   )

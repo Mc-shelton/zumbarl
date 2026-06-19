@@ -25,10 +25,10 @@ export const BUSINESS_NAV_ITEMS = [
     requiredAccess: ACCESS_KEYS.business.postOpportunities,
   },
   {
-    id: 'applicants',
-    label: 'Applicants',
+    id: 'browse',
+    label: 'Browse',
     icon: 'user',
-    href: '/business/applicant-profile',
+    href: '/business/applicants',
     requiredAccess: [ACCESS_KEYS.business.applicantProfiles, ACCESS_KEYS.business.applicantProfilesLimited],
   },
   {
@@ -52,7 +52,8 @@ export const BUSINESS_NAV_ITEMS = [
   },
   { id: 'transactions', label: 'Transactions', icon: 'activity', requiredAccess: ACCESS_KEYS.business.transactions },
   { id: 'company', label: 'Company Profile', icon: 'file', requiredAccess: ACCESS_KEYS.business.companyProfile },
-  { id: 'settings', label: 'Settings', icon: 'settings', requiredAccess: ACCESS_KEYS.business.settings },
+  { id: 'kyc', label: 'Business KYC', icon: 'file', href: '/business/kyc', requiredAccess: ACCESS_KEYS.business.dashboard },
+  { id: 'settings', label: 'Settings', icon: 'settings', href: '/business/settings', requiredAccess: ACCESS_KEYS.business.settings },
 ]
 
 export const BUSINESS_VIEWER = {

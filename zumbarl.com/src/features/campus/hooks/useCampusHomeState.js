@@ -3,10 +3,12 @@ import { useNavigate } from 'react-router-dom'
 import {
   CHAT_PROMPT_HINTS,
   DISCOVERY_DEFAULT_CHIPS,
+  RECOMMENDATION_SECTIONS,
   SEARCH_PROMPT_HINTS,
   getAssistantReply,
   getDiscoverySuggestions,
 } from '../homeData'
+import { readCampusHomeExperience } from '../services/readCampusExperience'
 import useMarketplaceSlideshow from './useMarketplaceSlideshow'
 import useTypewriterPromptHint from './useTypewriterPromptHint'
 
@@ -19,6 +21,7 @@ function useCampusHomeState() {
   const [chatMode, setChatMode] = useState(false)
   const [activePrompt, setActivePrompt] = useState('')
   const [chatMessages, setChatMessages] = useState([])
+  const [campusExperience, setCampusExperience] = useState(null)
   const [showBackToAiButton, setShowBackToAiButton] = useState(false)
 
   const activeHints = chatMode ? CHAT_PROMPT_HINTS : SEARCH_PROMPT_HINTS
@@ -43,6 +46,18 @@ function useCampusHomeState() {
 
     window.addEventListener('keydown', handleShortcutFocus)
     return () => window.removeEventListener('keydown', handleShortcutFocus)
+  }, [])
+
+  useEffect(() => {
+    let isMounted = true
+    readCampusHomeExperience()
+      .then((experience) => {
+        if (isMounted) setCampusExperience(experience)
+      })
+      .catch(() => {})
+    return () => {
+      isMounted = false
+    }
   }, [])
 
   const discoverySuggestions = useMemo(
@@ -162,6 +177,9 @@ function useCampusHomeState() {
     prompt,
     promptInputRef,
     promptPlaceholder,
+    recommendationSections: campusExperience?.recommendationSections?.some((section) => section.items?.length)
+      ? campusExperience.recommendationSections
+      : RECOMMENDATION_SECTIONS,
     resetChatSurface,
     setPrompt,
     showBackToAiButton,

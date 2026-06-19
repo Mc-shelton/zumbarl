@@ -183,45 +183,6 @@
   background: var(--theme-purple);
 }
 
-.opportunities-intent-row {
-  margin-top: 10px;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.opportunities-intent-option {
-  min-height: 72px;
-  border: 1px solid var(--color-border);
-  border-radius: 14px;
-  background: #ffffff;
-  padding: 10px 12px;
-  display: grid;
-  gap: 4px;
-  text-align: left;
-  color: var(--color-text);
-  cursor: pointer;
-  transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
-}
-
-.opportunities-intent-option strong {
-  color: var(--theme-dark);
-  font-size: 15px;
-  line-height: 1.2;
-}
-
-.opportunities-intent-option span {
-  color: var(--color-text-muted);
-  font-size: 13px;
-  line-height: 1.35;
-}
-
-.opportunities-intent-option.is-active {
-  border-color: var(--theme-dark);
-  background: var(--color-surface-brand-soft);
-  box-shadow: 0 8px 18px rgba(36, 42, 77, 0.08);
-}
-
 .opportunities-tabs-wrap {
   margin-top: 10px;
   padding: 0 2px;
@@ -2592,7 +2553,6 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .opportunities-intent-row,
   .opportunities-bid-intent-grid {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -7930,65 +7890,185 @@
     grid-template-columns: 1fr;
   }
 }
-.opportunities-marketing-workflow-card {
-  align-items: center;
-  background: linear-gradient(135deg, #373643 0%, #3c8b93 100%);
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 8px;
-  color: #fff;
-  display: grid;
-  gap: 18px;
-  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr) auto;
+.opportunities-marketing-opportunities {
   margin: 18px 0;
-  padding: 20px;
+  display: grid;
+  gap: 12px;
 }
 
-.opportunities-marketing-workflow-card span {
-  color: #fbb130;
+.opportunities-marketing-opportunities > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.opportunities-marketing-opportunities h2,
+.opportunities-marketing-opportunities p,
+.opportunities-marketing-opportunity-card h3,
+.opportunities-marketing-opportunity-card p {
+  margin: 0;
+}
+
+.opportunities-marketing-opportunities h2 {
+  color: var(--theme-dark);
+  font-size: 1.12rem;
+}
+
+.opportunities-marketing-opportunities header p {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-weight: 700;
+}
+
+.opportunities-marketing-opportunities > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.opportunities-marketing-opportunity-card {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: #ffffff;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto;
+  overflow: hidden;
+}
+
+.opportunities-marketing-opportunity-thumb,
+.student-marketing-material-preview {
+  margin: 0;
+  min-height: 112px;
+  color: #ffffff;
+  display: grid;
+  position: relative;
+  overflow: hidden;
+}
+
+.opportunities-marketing-opportunity-thumb img,
+.student-marketing-material-preview img {
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+  object-fit: cover;
   display: block;
-  font-size: 0.75rem;
+  grid-area: 1 / 1;
+}
+
+.opportunities-marketing-opportunity-thumb::after,
+.student-marketing-material-preview::after {
+  content: "";
+  background: linear-gradient(180deg, rgba(24, 38, 58, 0.18) 0%, rgba(24, 38, 58, 0.82) 100%);
+  grid-area: 1 / 1;
+  position: relative;
+  z-index: 1;
+}
+
+.opportunities-marketing-opportunity-thumb figcaption,
+.student-marketing-material-preview figcaption {
+  padding: 16px;
+  display: grid;
+  align-content: end;
+  gap: 8px;
+  grid-area: 1 / 1;
+  position: relative;
+  z-index: 2;
+}
+
+.opportunities-marketing-opportunity-thumb strong,
+.student-marketing-material-preview strong {
+  font-size: 1rem;
+  line-height: 1.16;
+  max-width: 16ch;
+}
+
+.opportunities-marketing-opportunity-thumb span,
+.student-marketing-material-preview span {
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: 0.08em;
-  margin-bottom: 6px;
+}
+
+.opportunities-marketing-opportunity-body {
+  padding: 14px;
+  display: grid;
+  gap: 8px;
+}
+
+.opportunities-marketing-opportunity-body > span {
+  color: var(--theme-purple);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-.opportunities-marketing-workflow-card h2 {
-  color: #fff;
-  font-size: 1.15rem;
-  margin: 0;
+.opportunities-marketing-opportunity-card h3 {
+  color: var(--theme-dark);
+  font-size: 1rem;
 }
 
-.opportunities-marketing-workflow-card p {
-  color: rgba(255, 255, 255, 0.82);
-  line-height: 1.5;
-  margin: 8px 0 0;
+.opportunities-marketing-opportunity-card p {
+  color: var(--color-text-muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+  font-weight: 700;
 }
 
-.opportunities-marketing-workflow-card dl {
-  display: grid;
-  gap: 10px;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  margin: 0;
+.opportunities-marketing-opportunity-card ul {
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
-.opportunities-marketing-workflow-card div > dt,
-.opportunities-marketing-workflow-card dt {
-  color: rgba(255, 255, 255, 0.68);
+.opportunities-marketing-opportunity-card li {
+  min-height: 24px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: #f8f1e9;
+  color: #7a5573;
+  display: inline-flex;
+  align-items: center;
   font-size: 0.72rem;
-  margin-bottom: 4px;
+  font-weight: 900;
 }
 
-.opportunities-marketing-workflow-card div > dd,
-.opportunities-marketing-workflow-card dd {
-  color: #fff;
-  font-weight: 800;
+.opportunities-marketing-opportunity-card dl {
+  margin: 0;
+  padding: 0 14px 14px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.opportunities-marketing-opportunity-card dt,
+.opportunities-marketing-opportunity-card dd {
   margin: 0;
 }
 
-.opportunities-marketing-workflow-card .opportunities-detail-bid-btn {
+.opportunities-marketing-opportunity-card dt {
+  color: var(--color-text-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.opportunities-marketing-opportunity-card dd {
+  margin-top: 3px;
+  color: var(--theme-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.opportunities-marketing-opportunity-card .opportunities-detail-bid-btn {
+  box-sizing: border-box;
+  margin: 0 14px 14px;
+  width: calc(100% - 28px);
   justify-content: center;
-  min-width: 190px;
 }
 
 .student-marketing-back {
@@ -8016,6 +8096,26 @@
   font-size: clamp(1.65rem, 2.6vw, 2.3rem);
   letter-spacing: 0;
   margin: 0;
+}
+
+.student-marketing-materials {
+  display: grid;
+  gap: 16px;
+}
+
+.student-marketing-material-preview {
+  border-radius: 14px;
+  min-height: 170px;
+}
+
+.student-marketing-material-preview strong {
+  font-size: clamp(1.4rem, 3vw, 2.5rem);
+}
+
+.student-marketing-material-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .student-marketing-proof .opportunities-bid-field input {
@@ -8153,17 +8253,13 @@
 }
 
 @media (max-width: 1180px) {
-  .opportunities-marketing-workflow-card {
-    grid-template-columns: 1fr;
+  .opportunities-marketing-opportunities > div {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .marketplace-workflow-shell,
   .marketplace-workflow-grid {
     grid-template-columns: 1fr;
-  }
-
-  .opportunities-marketing-workflow-card dl {
-    grid-template-columns: repeat(3, minmax(120px, 1fr));
   }
 
   .project-program-hero,
@@ -8173,8 +8269,14 @@
 }
 
 @media (max-width: 680px) {
-  .opportunities-marketing-workflow-card dl {
+  .opportunities-marketing-opportunities > div,
+  .opportunities-marketing-opportunity-card dl {
     grid-template-columns: 1fr;
+  }
+
+  .opportunities-marketing-opportunities > header {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .marketplace-workflow-card dl {

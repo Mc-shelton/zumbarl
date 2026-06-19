@@ -1,4 +1,9 @@
 import { BUSINESS_APPLICANT_PROFILE } from '../applicantProfileData'
+import {
+  createBackendBusinessOpportunity,
+  listBackendBusinessOpportunities,
+  publishBackendBusinessOpportunity,
+} from './persistBusinessOpportunity'
 import { getOpportunityStatusForAction } from './businessPipelineService'
 
 const STORAGE_KEY = 'zumbarl.businessFlow.v1'
@@ -6,6 +11,14 @@ const STATE_VERSION = 1
 const REPEAT_HIRE_LIMIT = 3
 
 const listeners = new Set()
+
+function mirrorBackendWrite(writeOperation, onSuccess) {
+  writeOperation()
+    .then((result) => {
+      if (result && onSuccess) onSuccess(result)
+    })
+    .catch(() => {})
+}
 
 function getDefaultOpportunity() {
   return {
@@ -22,7 +35,6 @@ function getDefaultOpportunity() {
     deliverables: 'Instagram and TikTok content calendar, 12 short captions, 8 designed posts, and weekly performance summary.',
     duration: '4 weeks',
     engagementMode: 'Hybrid',
-    estimatedStartDate: 'Jun 24, 2026',
     experienceLevel: 'Intermediate',
     mode: 'Part-time - Hybrid',
     budget: 'KSh 8,000 / month',
@@ -33,6 +45,10 @@ function getDefaultOpportunity() {
     paymentTerms: 'Milestone-based',
     portfolioRequired: 'Portfolio samples required',
     preferredQualifications: 'Experience creating content for student clubs, SMEs, or campus campaigns.',
+    requiredAttachments: [
+      { id: 'required-portfolio-samples', label: 'Portfolio samples', fileType: 'PDF' },
+      { id: 'required-content-links', label: 'Relevant content links', fileType: 'Link' },
+    ],
     screeningFocus: 'Portfolio samples, caption quality, brand fit, analytics awareness, and weekly availability.',
     summary: 'Manage Instagram, TikTok and WhatsApp content for a student-facing campaign.',
     skills: 'Social Media, Canva, Copywriting, Analytics',
@@ -135,6 +151,7 @@ function normalizeOpportunity(opportunity) {
         duration: '',
         invitedCount: 0,
         paymentTerms: '',
+        requiredAttachments: [],
         screeningFocus: '',
       }
 
@@ -155,6 +172,32 @@ export function subscribeBusinessFlow(listener) {
   return () => listeners.delete(listener)
 }
 
+function mergeBackendOpportunities(opportunities) {
+  const backendOpportunities = opportunities.map((opportunity) => normalizeOpportunity({
+    ...opportunity,
+    backendId: opportunity.id,
+  }))
+  const backendIds = new Set(backendOpportunities.map((opportunity) => opportunity.backendId))
+
+  setBusinessFlowState((state) => ({
+    ...state,
+    opportunities: [
+      ...backendOpportunities,
+      ...state.opportunities.filter((opportunity) => !backendIds.has(opportunity.backendId)),
+    ],
+  }))
+}
+
+export function hydrateBusinessOpportunitiesFromBackend() {
+  return listBackendBusinessOpportunities()
+    .then((response) => {
+      const opportunities = response?.data || []
+      if (opportunities.length) mergeBackendOpportunities(opportunities)
+      return opportunities
+    })
+    .catch(() => [])
+}
+
 export function createBusinessOpportunity(payload) {
   const opportunity = {
     id: createId('brief', `${payload.title}-${Date.now()}`),
@@ -172,6 +215,18 @@ export function createBusinessOpportunity(payload) {
     opportunities: [opportunity, ...state.opportunities],
     selectedOpportunityId: opportunity.id,
   }))
+
+  mirrorBackendWrite(
+    () => createBackendBusinessOpportunity(opportunity),
+    (backendOpportunity) => {
+      setBusinessFlowState((state) => ({
+        ...state,
+        opportunities: state.opportunities.map((item) => (
+          item.id === opportunity.id ? { ...item, backendId: backendOpportunity.id } : item
+        )),
+      }))
+    },
+  )
 
   return opportunity
 }
@@ -195,6 +250,7 @@ export function publishBusinessOpportunity(opportunityId) {
   }))
 
   if (updatedOpportunity) {
+    mirrorBackendWrite(() => publishBackendBusinessOpportunity(updatedOpportunity.backendId || opportunityId))
     recordApplicantReviewEvent({
       action: 'opportunity_published',
       detail: `${updatedOpportunity.title} published from the opportunities workspace.`,

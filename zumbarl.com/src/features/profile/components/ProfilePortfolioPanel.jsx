@@ -17,6 +17,7 @@ function ProfilePortfolioPanel({
   onPortfolioItemSelect,
   onPortfolioServiceSelect,
   portfolioItems,
+  portfolioServices,
   selectedPortfolioId,
   selectedPortfolioServiceId,
 }) {
@@ -24,6 +25,7 @@ function ProfilePortfolioPanel({
     <>
       <ProfilePortfolioServicesPanel
         onPortfolioServiceSelect={onPortfolioServiceSelect}
+        portfolioServices={portfolioServices}
         selectedPortfolioServiceId={selectedPortfolioServiceId}
       />
 

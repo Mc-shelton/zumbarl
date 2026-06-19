@@ -3,10 +3,12 @@ import { createEarnFlowSyncPayload, loadEarnFlowState, saveEarnFlowState } from 
 import { createPayoutReadinessRecord, resolveProjectPayment } from './earnPaymentService'
 import { applyReviewToEvidence, createProjectEndorsement, createProjectReview, getReviewedProjectState } from './earnReviewMappers'
 import { resolveEarnTrustSnapshot } from './earnTrustService'
+import { sendZumbarlApiRequest } from '../../../lib/sendZumbarlApiRequest'
 
 const listeners = new Set()
 
 let currentState = loadEarnFlowState()
+let backendHydrationPromise = null
 
 function setEarnFlowState(updater) {
   currentState = updater(currentState)
@@ -22,6 +24,40 @@ export function getEarnFlowSnapshot() {
 export function subscribeEarnFlow(listener) {
   listeners.add(listener)
   return () => listeners.delete(listener)
+}
+
+function readEnvelopeData(payload) {
+  return Array.isArray(payload?.data) ? payload.data : []
+}
+
+export async function hydrateEarnFlowFromBackend() {
+  if (backendHydrationPromise) {
+    return backendHydrationPromise
+  }
+
+  backendHydrationPromise = Promise.all([
+    sendZumbarlApiRequest('/earn/opportunities').catch(() => null),
+    sendZumbarlApiRequest('/earn/bids').catch(() => null),
+    sendZumbarlApiRequest('/earn/projects').catch(() => null),
+  ]).then(([opportunitiesPayload, bidsPayload, projectsPayload]) => {
+    const opportunities = readEnvelopeData(opportunitiesPayload)
+    const bids = readEnvelopeData(bidsPayload)
+    const projects = readEnvelopeData(projectsPayload)
+
+    setEarnFlowState((state) => ({
+      ...state,
+      opportunities: opportunities.length ? opportunities : state.opportunities,
+      bids: bids.length ? bids : state.bids,
+      projects: projects.length ? projects : state.projects,
+    }))
+
+    return currentState
+  }).catch((error) => {
+    backendHydrationPromise = null
+    throw error
+  })
+
+  return backendHydrationPromise
 }
 
 export function submitOpportunityBid({ gig, intent, proposal }) {

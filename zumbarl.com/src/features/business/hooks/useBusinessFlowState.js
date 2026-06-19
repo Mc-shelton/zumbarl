@@ -1,13 +1,20 @@
-import { useSyncExternalStore } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import {
   getBusinessFlowSnapshot,
+  hydrateBusinessOpportunitiesFromBackend,
   subscribeBusinessFlow,
 } from '../services/businessFlowService'
 
 export function useBusinessFlowState() {
-  return useSyncExternalStore(
+  const snapshot = useSyncExternalStore(
     subscribeBusinessFlow,
     getBusinessFlowSnapshot,
     getBusinessFlowSnapshot,
   )
+
+  useEffect(() => {
+    hydrateBusinessOpportunitiesFromBackend()
+  }, [])
+
+  return snapshot
 }

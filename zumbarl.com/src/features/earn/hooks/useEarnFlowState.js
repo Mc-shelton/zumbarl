@@ -1,15 +1,22 @@
-import { useSyncExternalStore } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
 import {
+  hydrateEarnFlowFromBackend,
   getEarnFlowSnapshot,
   subscribeEarnFlow,
 } from '../services/earnFlowService'
 
 function useEarnFlowState() {
-  return useSyncExternalStore(
+  const state = useSyncExternalStore(
     subscribeEarnFlow,
     getEarnFlowSnapshot,
     getEarnFlowSnapshot,
   )
+
+  useEffect(() => {
+    hydrateEarnFlowFromBackend().catch(() => {})
+  }, [])
+
+  return state
 }
 
 export default useEarnFlowState

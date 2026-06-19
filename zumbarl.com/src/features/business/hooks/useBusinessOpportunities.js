@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import {
   BUSINESS_OPPORTUNITY_ACTIVITY,
   BUSINESS_OPPORTUNITY_BIDDER_CANDIDATES,
@@ -9,7 +10,6 @@ import {
 } from '../opportunitiesData'
 import {
   inviteBusinessOpportunityBidders,
-  publishBusinessOpportunity,
 } from '../services/businessFlowService'
 import { useBusinessFlowState } from './useBusinessFlowState'
 
@@ -87,11 +87,17 @@ function matchesBudget(opportunity, budgetFilter) {
 }
 
 export function useBusinessOpportunities() {
+  const location = useLocation()
+  const incomingReviewOpportunityId = location.state?.reviewOpportunityId || null
+  const shouldOpenPublishPayment = Boolean(location.state?.openPublishPayment && incomingReviewOpportunityId)
   const businessFlow = useBusinessFlowState()
   const [activeTab, setActiveTab] = useState('opportunities')
   const [activeReviewTab, setActiveReviewTab] = useState('overview')
   const [activeApplicationStatus, setActiveApplicationStatus] = useState('all')
-  const [reviewOpportunityId, setReviewOpportunityId] = useState(null)
+  const [reviewOpportunityId, setReviewOpportunityId] = useState(incomingReviewOpportunityId)
+  const [publishPaymentOpportunityId, setPublishPaymentOpportunityId] = useState(
+    shouldOpenPublishPayment ? incomingReviewOpportunityId : null,
+  )
   const [budget, setBudget] = useState('all')
   const [category, setCategory] = useState('all')
   const [query, setQuery] = useState('')
@@ -233,7 +239,10 @@ export function useBusinessOpportunities() {
   function publishOpportunity(opportunity) {
     if (!opportunity?.canPublish) return
 
-    publishBusinessOpportunity(opportunity.id)
+    setReviewOpportunityId(opportunity.id)
+    setActiveReviewTab('overview')
+    setActiveApplicationStatus('all')
+    setPublishPaymentOpportunityId(opportunity.id)
   }
 
   function changeReviewTab(tabId) {
@@ -253,6 +262,7 @@ export function useBusinessOpportunities() {
     inviteCandidates,
     inviteNote,
     inviteOpportunity,
+    openPublishPaymentForReview: publishPaymentOpportunityId === reviewOpportunity?.id,
     reviewOpportunity,
     opportunities: filteredOpportunities.slice(0, PAGE_SIZE),
     selectedBidderIds,
@@ -279,12 +289,14 @@ export function useBusinessOpportunities() {
     onChangeReviewTab: changeReviewTab,
     onCloseReviewOpportunity: () => {
       setReviewOpportunityId(null)
+      setPublishPaymentOpportunityId(null)
       setActiveReviewTab('overview')
       setActiveApplicationStatus('all')
     },
     onOpenInvitePanel: openInvitePanel,
     onReviewOpportunity: (opportunity) => {
       setReviewOpportunityId(opportunity?.id ?? null)
+      setPublishPaymentOpportunityId(null)
       setActiveReviewTab('overview')
       setActiveApplicationStatus('all')
     },

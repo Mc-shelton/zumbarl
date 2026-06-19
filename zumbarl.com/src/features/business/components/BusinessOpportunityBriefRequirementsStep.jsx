@@ -9,6 +9,17 @@ import {
   BusinessCreateTextareaField,
 } from './BusinessOpportunityCreateFields'
 
+const REQUIRED_ATTACHMENT_TYPE_OPTIONS = [
+  'Any accepted file',
+  'PDF',
+  'DOCX',
+  'Image',
+  'Video',
+  'Spreadsheet',
+  'ZIP',
+  'Link',
+]
+
 function getSkillList(value) {
   return String(value || '')
     .split(',')
@@ -155,6 +166,86 @@ function BusinessOpportunityQualificationQuestions({ value, onUpdateField }) {
   )
 }
 
+function BusinessOpportunityRequiredAttachmentsField({ requiredAttachments = [], onUpdateField }) {
+  const safeAttachments = Array.isArray(requiredAttachments) ? requiredAttachments : []
+
+  function updateRequiredAttachments(nextAttachments) {
+    onUpdateField('requiredAttachments', nextAttachments)
+  }
+
+  function addRequiredAttachment() {
+    updateRequiredAttachments([
+      ...safeAttachments,
+      {
+        id: `required-attachment-${Date.now()}`,
+        label: '',
+        fileType: REQUIRED_ATTACHMENT_TYPE_OPTIONS[0],
+      },
+    ])
+  }
+
+  function updateRequiredAttachment(attachmentId, field, value) {
+    updateRequiredAttachments(safeAttachments.map((attachment) => (
+      attachment.id === attachmentId ? { ...attachment, [field]: value } : attachment
+    )))
+  }
+
+  function removeRequiredAttachment(attachmentId) {
+    updateRequiredAttachments(safeAttachments.filter((attachment) => attachment.id !== attachmentId))
+  }
+
+  return (
+    <div className="business-create-required-attachments-field">
+      <header>
+        <div>
+          <h4>Required Attachments</h4>
+          <p>Define the files or links applicants must provide when they apply.</p>
+        </div>
+        <button type="button" className="business-create-add-question" onClick={addRequiredAttachment}>
+          <FiPlus aria-hidden="true" />
+          Add required attachment
+        </button>
+      </header>
+      <div className="business-create-required-attachment-list">
+        {safeAttachments.map((attachment, index) => (
+          <article key={attachment.id} className="business-create-required-attachment-row">
+            <label>
+              <span>Attachment {index + 1}</span>
+              <input
+                type="text"
+                value={attachment.label}
+                placeholder="e.g. Portfolio samples"
+                onChange={(event) => updateRequiredAttachment(attachment.id, 'label', event.target.value)}
+              />
+            </label>
+            <label>
+              <span>File type</span>
+              <select
+                value={attachment.fileType}
+                onChange={(event) => updateRequiredAttachment(attachment.id, 'fileType', event.target.value)}
+              >
+                {REQUIRED_ATTACHMENT_TYPE_OPTIONS.map((option) => (
+                  <option key={option} value={option}>{option}</option>
+                ))}
+              </select>
+            </label>
+            <button
+              type="button"
+              aria-label={`Remove required attachment ${index + 1}`}
+              onClick={() => removeRequiredAttachment(attachment.id)}
+            >
+              <FiX aria-hidden="true" />
+            </button>
+          </article>
+        ))}
+      </div>
+      {!safeAttachments.length ? (
+        <p className="business-create-required-attachments-empty">No required attachments yet. Add one if applicants need to submit a file, portfolio, proof, or link.</p>
+      ) : null}
+    </div>
+  )
+}
+
 export function BusinessOpportunityBriefRequirementsStep({ form, onUpdateField }) {
   return (
     <>
@@ -186,12 +277,8 @@ export function BusinessOpportunityBriefRequirementsStep({ form, onUpdateField }
             value={form.screeningFocus}
             onUpdateField={onUpdateField}
           />
-          <BusinessCreateTextareaField
-            isWide
-            label="Bidder Instructions"
-            name="bidderInstructions"
-            required
-            value={form.bidderInstructions}
+          <BusinessOpportunityRequiredAttachmentsField
+            requiredAttachments={form.requiredAttachments}
             onUpdateField={onUpdateField}
           />
         </div>

@@ -128,10 +128,11 @@ function CampusRecommendations({
   onMarketplaceHoverEnd,
   onMarketplaceHoverStart,
   onOpenRecommendedGig,
+  recommendationSections = RECOMMENDATION_SECTIONS,
 }) {
   return (
     <>
-      {RECOMMENDATION_SECTIONS.map((section, index) => (
+      {recommendationSections.map((section, index) => (
         <section key={section.id} className="campus-section">
           {index === 0 ? (
             <div className="campus-section-head">

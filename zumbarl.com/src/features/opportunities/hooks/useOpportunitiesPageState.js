@@ -176,9 +176,20 @@ function useOpportunitiesPageState() {
         businessOpportunityBidCounts[opportunity.id] || opportunity.applicants || 0,
       ))
   ), [businessFlow.opportunities, businessOpportunityBidCounts])
+  const databaseOpportunities = useMemo(() => (
+    (earnFlow.opportunities || [])
+      .filter((opportunity) => {
+        const status = getBusinessOpportunityStatus(opportunity.status)
+        return status === 'published' || status === 'open' || status === 'public'
+      })
+      .map((opportunity) => toStudentBusinessOpportunity(
+        opportunity,
+        opportunity.applicants || 0,
+      ))
+  ), [earnFlow.opportunities])
   const allOpportunityListings = useMemo(() => (
-    [...businessOpportunities, ...OPPORTUNITY_LISTINGS]
-  ), [businessOpportunities])
+    [...databaseOpportunities, ...businessOpportunities, ...OPPORTUNITY_LISTINGS]
+  ), [databaseOpportunities, businessOpportunities])
   const opportunityUuidSet = useMemo(() => (
     new Set(allOpportunityListings.map((item) => item.opportunityUuid))
   ), [allOpportunityListings])
@@ -336,7 +347,9 @@ function useOpportunitiesPageState() {
     onCloseDetails: handleCloseDetails,
     onEditFilters: () => setIsFilterExpanded(true),
     onIntentChange: handleOpportunityIntentChange,
-    onOpenMarketingCampaign: () => navigate('/campus/opportunities/marketing/level-up-skills'),
+    onOpenMarketingCampaign: (campaignId = 'level-up-skills') => navigate(`/campus/opportunities/marketing/${campaignId}`, {
+      state: { accepted: true },
+    }),
     onOpenPlaceBid: handleOpenPlaceBid,
     onOpenProject: (project) => navigate(getOpportunityProjectHref(project)),
     onOpportunitySelect: handleOpportunitySelect,

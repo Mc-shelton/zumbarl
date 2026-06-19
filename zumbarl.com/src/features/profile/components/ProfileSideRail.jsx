@@ -17,6 +17,7 @@ function ProfileSideRail({
   onDetailTabChange,
   onNextShopImage,
   onPreviousShopImage,
+  profileExperience,
   selectedShopProduct,
   selectedShopProductDetail,
   skillsTrendCoordinates,
@@ -58,7 +59,10 @@ function ProfileSideRail({
           <ProfileShopRail />
         )
       ) : (
-        <ProfileDefaultRail />
+        <ProfileDefaultRail
+          recentActivity={profileExperience?.recentActivity}
+          relationships={profileExperience?.relationships}
+        />
       )}
     </aside>
   )

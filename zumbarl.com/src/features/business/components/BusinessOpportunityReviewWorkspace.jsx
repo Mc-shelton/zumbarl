@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   FiBarChart2,
   FiCalendar,
@@ -18,7 +19,6 @@ import {
   FiMoreVertical,
   FiMapPin,
   FiPlus,
-  FiSave,
   FiSearch,
   FiSend,
   FiSettings,
@@ -42,6 +42,12 @@ const REVIEW_TABS = [
   { id: 'activity', label: 'Activity' },
 ]
 
+function getReviewTabs(opportunity) {
+  if (opportunity?.scopeMode === 'milestone') return REVIEW_TABS
+
+  return REVIEW_TABS.filter((tab) => tab.id !== 'performance')
+}
+
 const PLATFORM_BUDGETS = [
   { label: 'Instagram', value: 'KES 10,000', share: '40%' },
   { label: 'TikTok', value: 'KES 7,500', share: '30%' },
@@ -58,6 +64,7 @@ const DELIVERABLES = [
 ]
 
 const REVIEW_IMAGE = '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp'
+const SAMPLE_APPLICATION_PDF_PREVIEW = 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAzMDAgMTQ0XSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA0NCA+PgpzdHJlYW0KQlQKL0YxIDI0IFRmCjcyIDcyIFRkCihQb3J0Zm9saW8gc2FtcGxlKSBUagpFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNzQgMDAwMDAgbiAKMDAwMDAwMDM2NyAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQzNQolJUVPRgo='
 
 const APPLICATION_FILTERS = [
   { id: 'all', label: 'All', count: 18 },
@@ -312,6 +319,12 @@ const DELIVERABLE_ROWS = [
     status: 'In Review',
     tone: 'blue',
     icon: 'instagram',
+    format: 'PNG, PDF, source files',
+    evidenceRequired: 'Final PNG/PDF exports, editable source files, brand assets and no-watermark proof.',
+    acceptanceCriteria: 'Files match the approved brand direction, include editable sources, and pass originality review.',
+    paymentRelease: 'Release after company approval and file verification.',
+    budget: 'KES 6,000',
+    reference: 'Brand assets and campaign brief attached.',
   },
   {
     id: 'code-development',
@@ -325,6 +338,12 @@ const DELIVERABLE_ROWS = [
     status: 'In Review',
     tone: 'blue',
     icon: 'x',
+    format: 'Repository, live URL, walkthrough',
+    evidenceRequired: 'GitHub repo, deploy URL, commit history and Loom walkthrough.',
+    acceptanceCriteria: 'Build is runnable, source is student-authored, and all brief requirements are met.',
+    paymentRelease: 'Release after technical review and live demo verification.',
+    budget: 'KES 7,500',
+    reference: 'Landing page copy and wireframe notes attached.',
   },
   {
     id: 'document-report',
@@ -338,6 +357,12 @@ const DELIVERABLE_ROWS = [
     status: 'Submitted',
     tone: 'green',
     icon: 'youtube',
+    format: 'Google Docs and PDF',
+    evidenceRequired: 'Editable document link, exported PDF, sources and originality report.',
+    acceptanceCriteria: 'Report covers the requested audience, has clear citations, and passes originality checks.',
+    paymentRelease: 'Release after document review and final approval.',
+    budget: 'KES 4,000',
+    reference: 'Research questions and target audience notes attached.',
   },
   {
     id: 'stats-metrics',
@@ -351,6 +376,12 @@ const DELIVERABLE_ROWS = [
     status: 'In Progress',
     tone: 'orange',
     icon: 'instagram',
+    format: 'Analytics screenshots',
+    evidenceRequired: 'Before and after screenshots, baseline, measurement window and platform metrics.',
+    acceptanceCriteria: 'Metrics match the agreed window and show the target result or verified effort.',
+    paymentRelease: 'Release after metric verification.',
+    budget: 'KES 4,500',
+    reference: 'Analytics target sheet attached.',
   },
   {
     id: 'proof-based',
@@ -364,6 +395,12 @@ const DELIVERABLE_ROWS = [
     status: 'In Progress',
     tone: 'orange',
     icon: 'tiktok',
+    format: 'Proof photos and confirmation',
+    evidenceRequired: 'Geo-tagged photos, GPS check-in, timestamped proof and recipient confirmation.',
+    acceptanceCriteria: 'Evidence matches the agreed location, recipient and activation requirements.',
+    paymentRelease: 'Release after proof validation.',
+    budget: 'KES 3,500',
+    reference: 'Activation location and proof checklist attached.',
   },
   {
     id: 'hybrid-launch',
@@ -377,6 +414,12 @@ const DELIVERABLE_ROWS = [
     status: 'Not Started',
     tone: 'gray',
     icon: 'instagram',
+    format: 'Hybrid submission',
+    evidenceRequired: 'Design assets, proof of posting and final analytics package.',
+    acceptanceCriteria: 'Each component is submitted in sequence and approved before release.',
+    paymentRelease: 'Release according to staged escrow split.',
+    budget: 'KES 9,000',
+    reference: 'Hybrid workflow brief attached.',
   },
 ]
 
@@ -879,26 +922,6 @@ function getSkillList(opportunity) {
     : String(opportunity?.skills || '').split(',').map((item) => item.trim()).filter(Boolean)
 }
 
-function ReviewField({ label, value }) {
-  return (
-    <label className="business-review-editor-field">
-      <span>{label}</span>
-      <input readOnly value={value || ''} />
-    </label>
-  )
-}
-
-function ReviewSelect({ label, value }) {
-  return (
-    <label className="business-review-editor-field">
-      <span>{label}</span>
-      <select defaultValue={value || ''}>
-        <option>{value || 'Not set'}</option>
-      </select>
-    </label>
-  )
-}
-
 function PlatformBadge({ platform }) {
   const label = platform === 'YouTube' ? '▶' : platform === 'TikTok' ? '♪' : '◎'
   const tone = platform.toLowerCase().replace(/\s+/g, '-')
@@ -922,12 +945,79 @@ function DeliverableIcon({ icon }) {
   return <span className="business-review-deliverable-icon tone-x">X</span>
 }
 
+function AttachmentPreview({ attachment }) {
+  if (!attachment) return null
+
+  if (attachment.previewType === 'image') {
+    return <img src={attachment.src} alt={`${attachment.title} preview`} />
+  }
+
+  if (attachment.previewType === 'video') {
+    return (
+      <video controls poster={attachment.poster}>
+        <source src={attachment.src} type={attachment.mimeType || 'video/mp4'} />
+        <track kind="captions" label="English captions" />
+      </video>
+    )
+  }
+
+  if (attachment.previewType === 'pdf') {
+    return <iframe src={attachment.src} title={`${attachment.title} PDF preview`} />
+  }
+
+  return (
+    <div className="business-review-attachment-preview-empty">
+      <FiFileText aria-hidden="true" />
+      <p>This file type cannot be previewed inline.</p>
+      <a href={attachment.src} target="_blank" rel="noreferrer">Open file</a>
+    </div>
+  )
+}
+
 function ApplicationReviewModal({ application, initialStep = 'review', onClose }) {
   const [reviewStep, setReviewStep] = useState(initialStep)
+  const [previewAttachment, setPreviewAttachment] = useState(null)
 
   if (!application) return null
 
   const isScheduling = reviewStep === 'schedule'
+  const qualificationAnswers = [
+    { id: 'over-18', question: 'Are you above 18 years old?', answer: true, detail: 'Yes, I am 22 years old.' },
+    { id: 'weekly-availability', question: 'Can you commit to the expected weekly availability?', answer: true, detail: 'Yes, I can commit 12-15 hours weekly and attend one weekly check-in.' },
+    { id: 'social-experience', question: 'Have you managed Instagram or TikTok pages for a group, club, or small business?', answer: true, detail: 'Yes, I have managed two student association pages and one small business page.' },
+    { id: 'source-files', question: 'Can you submit editable source files where required?', answer: true, detail: 'Yes, I can submit Canva links and exported source files.' },
+  ]
+  const submittedAttachments = [
+    {
+      id: 'portfolio-pdf',
+      title: 'Portfolio samples',
+      fileType: 'PDF',
+      meta: 'Required attachment · 4 pages',
+      src: SAMPLE_APPLICATION_PDF_PREVIEW,
+      previewType: 'pdf',
+      previewLabel: 'Preview portfolio',
+    },
+    {
+      id: 'content-example-image',
+      title: 'Instagram content example',
+      fileType: 'Image',
+      meta: 'Required content example · JPG',
+      src: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp',
+      previewType: 'image',
+      previewLabel: 'Preview image',
+    },
+    {
+      id: 'video-example',
+      title: 'Short-form video sample',
+      fileType: 'Video',
+      meta: 'Required content example · MP4',
+      src: '/assets/index/Zumbarl__Campus_Survival.mp4',
+      poster: '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
+      mimeType: 'video/mp4',
+      previewType: 'video',
+      previewLabel: 'Preview video',
+    },
+  ]
 
   return (
     <div className="business-review-modal-backdrop" role="presentation">
@@ -982,7 +1072,7 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose }
                 <span>12</span>
               </header>
               <p>Completed Campaigns</p>
-              <Button tone="ghost">View Portfolio</Button>
+              <Link className="ui-button is-ghost" to="/business/applicant-profile">View Portfolio</Link>
             </section>
 
             <section className="business-profile-card business-review-applicant-score">
@@ -1094,9 +1184,76 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose }
                   <p>Excited to be part of this and deliver impactful results!</p>
                 </li>
               </ol>
+
+              <section className="business-review-qualification-answers">
+                <header>
+                  <h3>Qualification Answers</h3>
+                  <p>Answers to the qualification questions configured for this opportunity.</p>
+                </header>
+                <div>
+                  {qualificationAnswers.map((item) => (
+                    <article key={item.id}>
+                      <span aria-hidden="true"><FiCheckCircle /></span>
+                      <div>
+                        <h4>{item.question}</h4>
+                        <p>{item.detail}</p>
+                      </div>
+                      <StatusPill tone={item.answer ? 'green' : 'orange'}>{item.answer ? 'Yes' : 'No'}</StatusPill>
+                    </article>
+                  ))}
+                </div>
+              </section>
+
+              <section className="business-review-application-attachments">
+                <header>
+                  <h3>Required Attachments</h3>
+                  <p>Files and proof submitted against the required attachments in the brief.</p>
+                </header>
+                <div>
+                  {submittedAttachments.map((attachment) => (
+                    <article key={attachment.id}>
+                      <span aria-hidden="true">
+                        {attachment.previewType === 'video' ? <FiVideo /> : attachment.previewType === 'image' ? <FiImage /> : <FiFileText />}
+                      </span>
+                      <div>
+                        <h4>{attachment.title}</h4>
+                        <p>{attachment.fileType} · {attachment.meta}</p>
+                      </div>
+                      <button type="button" onClick={() => setPreviewAttachment(attachment)}>
+                        <FiEye aria-hidden="true" />
+                        {attachment.previewLabel}
+                      </button>
+                    </article>
+                  ))}
+                </div>
+              </section>
             </section>
           )}
         </div>
+
+        {previewAttachment ? (
+          <section className="business-review-attachment-preview-modal" role="dialog" aria-modal="true" aria-labelledby="attachment-preview-title">
+            <header>
+              <div>
+                <h3 id="attachment-preview-title">{previewAttachment.title}</h3>
+                <p>{previewAttachment.fileType} attachment preview</p>
+              </div>
+              <button type="button" aria-label="Close attachment preview" onClick={() => setPreviewAttachment(null)}>
+                <FiX aria-hidden="true" />
+              </button>
+            </header>
+            <div>
+              <AttachmentPreview attachment={previewAttachment} />
+            </div>
+            <footer>
+              <a href={previewAttachment.src} target="_blank" rel="noreferrer">
+                <FiDownload aria-hidden="true" />
+                Open original
+              </a>
+              <Button tone="ghost" onClick={() => setPreviewAttachment(null)}>Close preview</Button>
+            </footer>
+          </section>
+        ) : null}
 
         <footer>
           {isScheduling ? (
@@ -1319,105 +1476,295 @@ function ApproveReleasePaymentDialog({ submission, onCancel, onApprove }) {
   )
 }
 
-function AddDeliverableModal({ isOpen, onClose }) {
+const DELIVERABLE_WORKFLOW_OPTIONS = [
+  {
+    value: 'file-assets',
+    label: 'File Asset Deliverables',
+    acceptedEvidence: 'PNG, JPG, PDF, SVG, MP4, MOV, AI, PSD, Figma link, or Canva link.',
+    type: 'Type 1 - File Asset',
+  },
+  {
+    value: 'code-development',
+    label: 'Code & Development Deliverables',
+    acceptedEvidence: 'GitHub repository, commit history, live URL, ZIP fallback, test evidence, or Loom walkthrough.',
+    type: 'Type 2 - Code & Development',
+  },
+  {
+    value: 'documents',
+    label: 'Document Deliverables',
+    acceptedEvidence: 'Google Docs link, PDF, DOCX, report, script, proposal, source notes, or originality evidence.',
+    type: 'Type 3 - Document',
+  },
+  {
+    value: 'stats-metrics',
+    label: 'Stats & Metrics Deliverables',
+    acceptedEvidence: 'Analytics screenshots, CSV export, dashboard link, before/after metrics, or verified platform report.',
+    type: 'Type 4 - Stats & Metrics',
+  },
+  {
+    value: 'proof-based',
+    label: 'Proof-Based Deliverables',
+    acceptedEvidence: 'Geo-tagged photos, timestamped screenshots, signed confirmation, location proof, or recipient proof.',
+    type: 'Type 5 - Proof-Based',
+  },
+  {
+    value: 'hybrid',
+    label: 'Hybrid Deliverables',
+    acceptedEvidence: 'A combined package of files, links, proof, metrics, and supporting notes needed for approval.',
+    type: 'Type 6 - Hybrid',
+  },
+]
+
+const NEW_DELIVERABLE_TEMPLATE = {
+  acceptanceCriteria: 'No watermarks, follows brand assets, and includes editable source files for work above KES 5,000.',
+  budget: '6,000',
+  lockedUntilApproved: true,
+  requirement: 'Design and upload the final campaign graphics plus editable source files.',
+  title: 'Create branded social media assets',
+  workflow: 'file-assets',
+}
+
+function getDeliverableWorkflow(workflowValue, deliverableType = '') {
+  const matchedWorkflow = DELIVERABLE_WORKFLOW_OPTIONS.find((workflow) => workflow.value === workflowValue)
+  if (matchedWorkflow) return matchedWorkflow
+
+  const matchedType = DELIVERABLE_WORKFLOW_OPTIONS.find((workflow) => deliverableType.includes(workflow.type.replace(/^Type \d - /, '')))
+  return matchedType || DELIVERABLE_WORKFLOW_OPTIONS[0]
+}
+
+function getDeliverablePaymentPercent(draft, drafts) {
+  const totalBudget = drafts.reduce((sum, item) => sum + Number(String(item.budget).replace(/,/g, '') || 0), 0)
+  const draftBudget = Number(String(draft.budget).replace(/,/g, '') || 0)
+
+  if (!totalBudget) return Math.round(100 / drafts.length)
+
+  return Math.round((draftBudget / totalBudget) * 100)
+}
+
+function createDeliverableDraft(index = 0) {
+  return {
+    ...NEW_DELIVERABLE_TEMPLATE,
+    id: `draft-deliverable-${Date.now()}-${index}`,
+    title: index ? `New Deliverable ${index + 1}` : NEW_DELIVERABLE_TEMPLATE.title,
+  }
+}
+
+function DeliverableDetailsModal({ deliverable, onClose }) {
+  if (!deliverable) return null
+
+  const workflow = getDeliverableWorkflow(deliverable.workflow, deliverable.type)
+
+  return (
+    <div className="business-review-modal-backdrop" role="presentation">
+      <section className="business-review-deliverable-details-modal" role="dialog" aria-modal="true" aria-labelledby="deliverable-details-title">
+        <header>
+          <div>
+            <h2 id="deliverable-details-title">{deliverable.title}</h2>
+            <p>Deliverable scope details from the opportunity setup.</p>
+          </div>
+          <button type="button" aria-label="Close deliverable details" onClick={onClose}>
+            <FiX aria-hidden="true" />
+          </button>
+        </header>
+
+        <div className="business-review-deliverable-details-body">
+          <section>
+            <h3>Deliverable Summary</h3>
+            <dl>
+              <div><dt>Workflow</dt><dd>{deliverable.workflowLabel || workflow.label}</dd></div>
+              <div><dt>Accepted evidence</dt><dd>{deliverable.acceptedEvidence || workflow.acceptedEvidence}</dd></div>
+              <div><dt>Budget</dt><dd>{deliverable.budget || 'Not assigned'}</dd></div>
+              <div><dt>Payment %</dt><dd>{deliverable.paymentPercent || 'Calculated from budget'}</dd></div>
+              <div><dt>Status</dt><dd><StatusPill tone={deliverable.tone}>{deliverable.status}</StatusPill></dd></div>
+              <div><dt>Submission lock</dt><dd>{deliverable.lockedUntilApproved ? 'Locks later deliverables' : 'No sequencing lock'}</dd></div>
+            </dl>
+          </section>
+
+          <section>
+            <h3>Deliverable Requirement</h3>
+            <p>{deliverable.requirement || deliverable.description}</p>
+          </section>
+
+          <section>
+            <h3>Acceptance Criteria</h3>
+            <p>{deliverable.acceptanceCriteria}</p>
+          </section>
+
+          <section>
+            <h3>Student Submission Rules</h3>
+            <p>{deliverable.lockedUntilApproved ? 'Later deliverable submissions stay locked until this deliverable is approved.' : 'Students can submit later deliverables without waiting for this one to be approved.'}</p>
+          </section>
+        </div>
+
+        <footer>
+          <Button tone="ghost" onClick={onClose}>Close</Button>
+        </footer>
+      </section>
+    </div>
+  )
+}
+
+function AddDeliverableModal({ isOpen, onClose, onCreate }) {
+  const [activeTab, setActiveTab] = useState('deliverables')
+  const [drafts, setDrafts] = useState(() => [createDeliverableDraft()])
+
   if (!isOpen) return null
+
+  const totalBudget = drafts.reduce((sum, draft) => sum + Number(String(draft.budget).replace(/,/g, '') || 0), 0)
+
+  function updateDraft(id, field, value) {
+    setDrafts((items) => items.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
+  }
+
+  function addDraft() {
+    setDrafts((items) => [...items, createDeliverableDraft(items.length)])
+  }
+
+  function removeDraft(id) {
+    setDrafts((items) => (items.length > 1 ? items.filter((item) => item.id !== id) : items))
+  }
+
+  function handleClose() {
+    setActiveTab('deliverables')
+    setDrafts([createDeliverableDraft()])
+    onClose()
+  }
+
+  function handleCreate() {
+    onCreate(drafts)
+    handleClose()
+  }
 
   return (
     <div className="business-review-modal-backdrop" role="presentation">
       <section className="business-review-add-deliverable-modal" role="dialog" aria-modal="true" aria-labelledby="add-deliverable-title">
         <header>
           <div>
-            <h2 id="add-deliverable-title">Add Deliverable</h2>
-            <p>Add a new deliverable to define what the creator needs to submit.</p>
+            <h2 id="add-deliverable-title">Add Deliverables</h2>
+            <p>{activeTab === 'deliverables' ? 'Add one or more deliverables for creators to submit.' : 'Review the deliverables before creating them.'}</p>
           </div>
-          <button type="button" aria-label="Close add deliverable" onClick={onClose}>
+          <button type="button" aria-label="Close add deliverable" onClick={handleClose}>
             <FiX aria-hidden="true" />
           </button>
         </header>
 
+        <div className="business-review-add-tabs" role="tablist" aria-label="Add deliverable steps">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'deliverables'}
+            className={activeTab === 'deliverables' ? 'is-active' : ''}
+            onClick={() => setActiveTab('deliverables')}
+          >
+            Deliverables
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={activeTab === 'review'}
+            className={activeTab === 'review' ? 'is-active' : ''}
+            onClick={() => setActiveTab('review')}
+          >
+            Review
+          </button>
+        </div>
+
         <div className="business-review-add-deliverable-body">
-          <label className="business-review-add-field">
-            <span>1. Deliverable Type <em>*</em></span>
-            <small>What type of content or output do you expect?</small>
-            <select defaultValue="file-asset">
-              <option value="file-asset">Type 1 - File Asset Deliverable</option>
-              <option value="code-development">Type 2 - Code & Development Deliverable</option>
-              <option value="document">Type 3 - Document Deliverable</option>
-              <option value="stats-metrics">Type 4 - Stats & Metrics Deliverable</option>
-              <option value="proof-based">Type 5 - Proof-Based Deliverable</option>
-              <option value="hybrid">Type 6 - Hybrid Deliverable</option>
-            </select>
-          </label>
+          {activeTab === 'deliverables' ? (
+            <>
+              {drafts.map((draft, index) => (
+                <section key={draft.id} className="business-review-add-draft-card">
+                  <header>
+                    <div>
+                      <p>Deliverable {index + 1}</p>
+                      <h3>{draft.title}</h3>
+                    </div>
+                    <button type="button" aria-label={`Remove deliverable ${index + 1}`} onClick={() => removeDraft(draft.id)}>
+                      <FiX aria-hidden="true" />
+                    </button>
+                  </header>
 
-          <label className="business-review-add-field">
-            <span>2. Title <em>*</em></span>
-            <small>Give your deliverable a clear title.</small>
-            <input type="text" defaultValue="Campaign Design Asset Pack" />
-          </label>
+                  <div className="business-review-add-two-column">
+                    <label className="business-review-add-field">
+                      <span>Deliverable Workflow</span>
+                      <select value={draft.workflow} onChange={(event) => updateDraft(draft.id, 'workflow', event.target.value)}>
+                        {DELIVERABLE_WORKFLOW_OPTIONS.map((workflow) => (
+                          <option key={workflow.value} value={workflow.value}>{workflow.label}</option>
+                        ))}
+                      </select>
+                      <small>{getDeliverableWorkflow(draft.workflow).acceptedEvidence}</small>
+                    </label>
+                    <label className="business-review-add-field">
+                      <span>Title</span>
+                      <input type="text" value={draft.title} onChange={(event) => updateDraft(draft.id, 'title', event.target.value)} />
+                    </label>
+                  </div>
 
-          <label className="business-review-add-field business-review-add-description">
-            <span>3. Description <em>*</em></span>
-            <small>Explain what needs to be created and any key requirements.</small>
-            <div className="business-review-add-editor">
-              <div className="business-review-add-editor-toolbar">
-                <select defaultValue="paragraph" aria-label="Text style">
-                  <option value="paragraph">Paragraph</option>
-                </select>
-                <button type="button" aria-label="Bold">B</button>
-                <button type="button" aria-label="Italic">I</button>
-                <button type="button" aria-label="Underline">U</button>
-                <button type="button" aria-label="Bulleted list">•</button>
-                <button type="button" aria-label="Numbered list">1.</button>
-                <button type="button" aria-label="Insert link">⌁</button>
-                <button type="button" aria-label="More editor actions">...</button>
-              </div>
-              <textarea
-                defaultValue={`Create a high-quality file asset package for the campaign.\n\n• Upload final PNG and PDF exports\n• Include editable source files where required\n• Use the provided brand assets\n• Do not watermark escrow-backed deliverables`}
-              />
-              <em>156/2000</em>
-            </div>
-          </label>
+                  <label className="business-review-add-field">
+                    <span>Deliverable Requirement</span>
+                    <textarea value={draft.requirement} onChange={(event) => updateDraft(draft.id, 'requirement', event.target.value)} />
+                  </label>
 
-          <div className="business-review-add-grid">
-            <label className="business-review-add-field">
-              <span>4. Format <em>*</em></span>
-              <small>What should the deliverable be?</small>
-              <select defaultValue="image">
-                <option value="image">Image</option>
-                <option value="video">Video</option>
-                <option value="document">Document</option>
-              </select>
-            </label>
-            <label className="business-review-add-field">
-              <span>5. Due Date <em>*</em></span>
-              <small>When should this be submitted?</small>
-              <input type="text" defaultValue="May 21, 2025" />
-            </label>
-            <label className="business-review-add-field">
-              <span>6. Max Submissions</span>
-              <small>How many submissions allowed?</small>
-              <input type="number" min="1" defaultValue="3" />
-            </label>
-          </div>
+                  <div className="business-review-add-two-column">
+                    <label className="business-review-add-field">
+                      <span>Budget (KES)</span>
+                      <input type="text" value={draft.budget} onChange={(event) => updateDraft(draft.id, 'budget', event.target.value)} />
+                    </label>
+                    <label className="business-review-add-field">
+                      <span>Payment %</span>
+                      <input type="text" value={getDeliverablePaymentPercent(draft, drafts)} readOnly />
+                      <small>Recalculates based on total deliverables</small>
+                    </label>
+                  </div>
 
-          <section className="business-review-add-upload">
-            <h3>7. Attach Reference (Optional)</h3>
-            <p>Attach brief, assets or examples to guide the creator.</p>
-            <button type="button">
-              <FiUpload aria-hidden="true" />
-              <span><strong>Click to upload or drag and drop</strong><em>PNG, JPG, PDF or ZIP (Max 50MB)</em></span>
-            </button>
-          </section>
+                  <label className="business-review-add-field">
+                    <span>Acceptance Criteria</span>
+                    <textarea value={draft.acceptanceCriteria} onChange={(event) => updateDraft(draft.id, 'acceptanceCriteria', event.target.value)} />
+                  </label>
 
-          <label className="business-review-add-notify">
-            <input type="checkbox" defaultChecked />
-            <span>Notify creators about this new deliverable</span>
-          </label>
+                  <label className="business-review-add-lock">
+                    <input
+                      type="checkbox"
+                      checked={draft.lockedUntilApproved}
+                      onChange={(event) => updateDraft(draft.id, 'lockedUntilApproved', event.target.checked)}
+                    />
+                    <span>Lock later deliverable submissions until this deliverable is approved</span>
+                  </label>
+                </section>
+              ))}
+              <button type="button" className="business-review-add-more-deliverable" onClick={addDraft}>
+                <FiPlus aria-hidden="true" />
+                Add another deliverable
+              </button>
+            </>
+          ) : null}
+
+          {activeTab === 'review' ? (
+            <section className="business-review-add-review">
+              <h3>Review New Deliverables</h3>
+              <p>{drafts.length} deliverable{drafts.length === 1 ? '' : 's'} will be created and added to this opportunity.</p>
+              {drafts.map((draft, index) => (
+                <article key={draft.id}>
+                  <span>{index + 1}</span>
+                  <div>
+                    <strong>{draft.title}</strong>
+                    <p>{getDeliverableWorkflow(draft.workflow).label} · {getDeliverableWorkflow(draft.workflow).acceptedEvidence}</p>
+                    <em>{draft.requirement}</em>
+                  </div>
+                  <strong>{getDeliverablePaymentPercent(draft, drafts)}%</strong>
+                  <b>KES {Number(String(draft.budget).replace(/,/g, '') || 0).toLocaleString()}</b>
+                </article>
+              ))}
+              <footer><span>Total budget to approve</span><strong>KES {totalBudget.toLocaleString()}</strong></footer>
+            </section>
+          ) : null}
         </div>
 
         <footer>
-          <Button tone="ghost" onClick={onClose}>Cancel</Button>
-          <Button tone="brand" onClick={onClose}>Add Deliverable</Button>
+          <Button tone="ghost" onClick={activeTab === 'deliverables' ? handleClose : () => setActiveTab('deliverables')}>{activeTab === 'deliverables' ? 'Cancel' : 'Back'}</Button>
+          <Button tone="brand" onClick={activeTab === 'review' ? handleCreate : () => setActiveTab('review')}>
+            {activeTab === 'deliverables' ? 'Review Deliverables' : 'Create Deliverables'}
+          </Button>
         </footer>
       </section>
     </div>
@@ -1426,13 +1773,66 @@ function AddDeliverableModal({ isOpen, onClose }) {
 
 function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
   const [publishStep, setPublishStep] = useState(1)
+  const [paymentMethod, setPaymentMethod] = useState('wallet')
+  const [selectedCardId, setSelectedCardId] = useState('visa-8421')
 
   if (!isOpen) return null
 
+  const paymentMethods = {
+    wallet: {
+      actionLabel: 'Pay with Wallet',
+      amountCopy: 'This amount will be deducted from your Zumbarl wallet balance and held in escrow.',
+      detailCopy: 'Confirm that you want to fund this opportunity from your wallet.',
+      detailTitle: 'Use your Zumbarl wallet balance',
+      label: 'Zumbarl Wallet',
+      meta: 'Available Balance: KES 32,450',
+      nextLabel: 'Next: Wallet Confirmation',
+      stepLabel: 'Wallet Confirmation',
+      summary: 'Fund escrow instantly from your Zumbarl wallet.',
+    },
+    'mobile-money': {
+      actionLabel: 'Send STK Push',
+      amountCopy: 'This amount will be requested through M-Pesa STK push.',
+      detailCopy: 'Enter your phone number to receive the payment request.',
+      detailTitle: 'You will receive an STK push on your registered phone number',
+      label: 'Mobile Money STK Push',
+      meta: 'M-Pesa request sent to your phone',
+      nextLabel: 'Next: STK Push',
+      stepLabel: 'STK Push',
+      summary: 'Complete payment from your phone.',
+    },
+    bank: {
+      actionLabel: 'Confirm Bank Transfer',
+      amountCopy: 'Transfer this amount to the Zumbarl escrow account and upload the payment reference.',
+      detailCopy: 'Use the reference below so finance can match your transfer to this opportunity.',
+      detailTitle: 'Make a bank transfer to Zumbarl escrow',
+      label: 'Bank Transfer',
+      meta: 'Manual transfer, reviewed by finance',
+      nextLabel: 'Next: Bank Details',
+      stepLabel: 'Bank Details',
+      summary: 'Send payment directly to our bank account.',
+    },
+    card: {
+      actionLabel: 'Pay with Card',
+      amountCopy: 'Your card will be charged securely after confirmation.',
+      detailCopy: 'Enter card details to complete escrow funding for this opportunity.',
+      detailTitle: 'Pay securely with card',
+      label: 'Card Payment',
+      meta: 'Visa, Mastercard and supported cards',
+      nextLabel: 'Next: Card Checkout',
+      stepLabel: 'Card Checkout',
+      summary: 'Complete payment with a debit or credit card.',
+    },
+  }
+  const selectedPaymentMethod = paymentMethods[paymentMethod]
   const services = [
     { icon: 'instagram', milestone: 'Instagram Feed Post', description: '1 feed post to promote the campaign and brand message.', quantity: '1 post', unitCost: '10,000', total: '10,000' },
     { icon: 'tiktok', milestone: 'TikTok Video', description: '1 short-form video highlighting the campaign.', quantity: '1 video', unitCost: '10,000', total: '10,000' },
     { icon: 'youtube', milestone: 'YouTube Short', description: '1 short video for YouTube Shorts.', quantity: '1 short', unitCost: '5,000', total: '5,000' },
+  ]
+  const savedCards = [
+    { id: 'visa-8421', label: 'Visa ending 8421', meta: 'Expires 08/28', brand: 'Visa' },
+    { id: 'mastercard-1134', label: 'Mastercard ending 1134', meta: 'Expires 11/27', brand: 'Mastercard' },
   ]
 
   return (
@@ -1450,7 +1850,7 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
         <ol className="business-review-publish-steps" aria-label="Publish opportunity steps">
           <li className={publishStep === 1 ? 'is-active' : 'is-complete'}><span>{publishStep > 1 ? <FiCheckCircle aria-hidden="true" /> : '1'}</span><strong>Budget & Services</strong><em>Define budget and services</em></li>
           <li className={publishStep === 2 ? 'is-active' : publishStep > 2 ? 'is-complete' : ''}><span>{publishStep > 2 ? <FiCheckCircle aria-hidden="true" /> : '2'}</span><strong>Payment Method</strong><em>Choose payment option</em></li>
-          <li className={publishStep === 3 ? 'is-active' : ''}><span>3</span><strong>STK Push</strong><em>Complete payment</em></li>
+          <li className={publishStep === 3 ? 'is-active' : ''}><span>3</span><strong>{selectedPaymentMethod.stepLabel}</strong><em>Complete payment</em></li>
         </ol>
 
         <div className="business-review-publish-body">
@@ -1485,34 +1885,95 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
                 <div className="business-review-publish-stk-main">
                   <div className="business-review-publish-selected-method">
                     <span><FiCreditCard aria-hidden="true" /></span>
-                    <strong>You selected: Pay with Wallet (Zumbarl Wallet)</strong>
-                    <em>Available Balance: KES 32,450</em>
+                    <strong>You selected: {selectedPaymentMethod.label}</strong>
+                    <em>{selectedPaymentMethod.meta}</em>
                   </div>
                   <section className="business-review-publish-amount">
                     <span>Amount to Pay</span>
                     <strong>KES 25,000</strong>
-                    <p>This amount will be deducted from your Zumbarl wallet.</p>
+                    <p>{selectedPaymentMethod.amountCopy}</p>
                   </section>
-                  <section className="business-review-publish-phone">
-                    <header>
-                      <FiMessageSquare aria-hidden="true" />
-                      <div>
-                        <strong>You will receive an STK push on your registered phone number</strong>
-                        <p>Enter your phone number to receive the payment request.</p>
+                  {paymentMethod === 'wallet' ? (
+                    <section className="business-review-publish-phone">
+                      <header>
+                        <FiCreditCard aria-hidden="true" />
+                        <div>
+                          <strong>{selectedPaymentMethod.detailTitle}</strong>
+                          <p>{selectedPaymentMethod.detailCopy}</p>
+                        </div>
+                      </header>
+                      <label>
+                        <span>Wallet Balance</span>
+                        <div><strong>KES</strong><input type="text" defaultValue="32,450" readOnly /><StatusPill tone="green">Enough funds</StatusPill></div>
+                        <em>KES 25,000 will move into escrow after confirmation.</em>
+                      </label>
+                    </section>
+                  ) : paymentMethod === 'mobile-money' ? (
+                    <section className="business-review-publish-phone">
+                      <header>
+                        <FiMessageSquare aria-hidden="true" />
+                        <div>
+                          <strong>{selectedPaymentMethod.detailTitle}</strong>
+                          <p>{selectedPaymentMethod.detailCopy}</p>
+                        </div>
+                      </header>
+                      <label>
+                        <span>Phone Number</span>
+                        <div><strong>KE</strong><input type="text" defaultValue="+254 712 345 678" /><StatusPill tone="green">Verified</StatusPill></div>
+                        <em>Make sure this is the number registered with M-Pesa.</em>
+                      </label>
+                    </section>
+                  ) : paymentMethod === 'bank' ? (
+                    <section className="business-review-publish-phone">
+                      <header>
+                        <FiCreditCard aria-hidden="true" />
+                        <div>
+                          <strong>{selectedPaymentMethod.detailTitle}</strong>
+                          <p>{selectedPaymentMethod.detailCopy}</p>
+                        </div>
+                      </header>
+                      <label>
+                        <span>Bank Reference</span>
+                        <div><strong>REF</strong><input type="text" defaultValue={`ZMB-${String(opportunity.id || 'OPP').slice(-6).toUpperCase()}`} /><StatusPill tone="blue">Required</StatusPill></div>
+                        <em>Bank: Zumbarl Escrow Account · Account: 123456789 · Branch: Nairobi</em>
+                      </label>
+                    </section>
+                  ) : (
+                    <section className="business-review-publish-phone">
+                      <header>
+                        <FiCreditCard aria-hidden="true" />
+                        <div>
+                          <strong>{selectedPaymentMethod.detailTitle}</strong>
+                          <p>{selectedPaymentMethod.detailCopy}</p>
+                        </div>
+                      </header>
+                      <div className="business-review-card-selector" role="radiogroup" aria-label="Saved cards">
+                        {savedCards.map((card) => (
+                          <label key={card.id} className={selectedCardId === card.id ? 'is-selected' : ''}>
+                            <input
+                              type="radio"
+                              name="publish-saved-card"
+                              checked={selectedCardId === card.id}
+                              onChange={() => setSelectedCardId(card.id)}
+                            />
+                            <span><strong>{card.brand}</strong>{card.label}</span>
+                            <em>{card.meta}</em>
+                          </label>
+                        ))}
                       </div>
-                    </header>
-                    <label>
-                      <span>Phone Number</span>
-                      <div><strong>🇰🇪</strong><input type="text" defaultValue="+254 712 345 678" /><StatusPill tone="green">Verified</StatusPill></div>
-                      <em>Make sure this is the number registered with M-Pesa.</em>
-                    </label>
-                  </section>
+                      <Link to="/business/settings#payment-methods" className="business-review-add-card-link">
+                        <FiPlus aria-hidden="true" />
+                        Add card in Settings
+                      </Link>
+                      <p className="business-review-card-note">Card details are managed in business settings and encrypted by the payment provider.</p>
+                    </section>
+                  )}
                 </div>
-                <aside className="business-review-publish-phone-preview" aria-label="STK push preview">
+                <aside className="business-review-publish-phone-preview" aria-label={`${selectedPaymentMethod.stepLabel} preview`}>
                   <div>
-                    <span>STK Push</span>
+                    <span>{selectedPaymentMethod.stepLabel}</span>
                     <strong>Zumbarl<br />KES 25,000</strong>
-                    <p>Enter your M-Pesa PIN to complete the payment.</p>
+                    <p>{selectedPaymentMethod.summary}</p>
                   </div>
                   <b><FiLock aria-hidden="true" /></b>
                 </aside>
@@ -1523,22 +1984,29 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
               <h2>Payment Method</h2>
               <p>Select how you would like to pay for this opportunity.</p>
               <div className="business-review-publish-payment-options">
-                <label className="is-selected">
-                  <input type="radio" name="publish-payment-method" defaultChecked />
+                <label className={paymentMethod === 'wallet' ? 'is-selected' : ''}>
+                  <input type="radio" name="publish-payment-method" checked={paymentMethod === 'wallet'} onChange={() => setPaymentMethod('wallet')} />
                   <span><FiCreditCard aria-hidden="true" /></span>
                   <strong>Pay with Wallet <em>(Recommended)</em></strong>
-                  <small>Pay securely using your Zumbarl wallet balance.</small>
+                  <small>Use your existing Zumbarl wallet balance.</small>
                   <b>Available Balance<br />KES 32,450</b>
                 </label>
-                <label>
-                  <input type="radio" name="publish-payment-method" />
+                <label className={paymentMethod === 'mobile-money' ? 'is-selected' : ''}>
+                  <input type="radio" name="publish-payment-method" checked={paymentMethod === 'mobile-money'} onChange={() => setPaymentMethod('mobile-money')} />
+                  <span><FiCreditCard aria-hidden="true" /></span>
+                  <strong>Mobile Money STK Push</strong>
+                  <small>Send an M-Pesa payment request to your phone.</small>
+                  <b>Processing Time<br />Instant</b>
+                </label>
+                <label className={paymentMethod === 'bank' ? 'is-selected' : ''}>
+                  <input type="radio" name="publish-payment-method" checked={paymentMethod === 'bank'} onChange={() => setPaymentMethod('bank')} />
                   <span><FiCreditCard aria-hidden="true" /></span>
                   <strong>Bank Transfer</strong>
                   <small>Make payment directly to our bank account.</small>
                   <b>Processing Time<br />1-2 hours</b>
                 </label>
-                <label>
-                  <input type="radio" name="publish-payment-method" />
+                <label className={paymentMethod === 'card' ? 'is-selected' : ''}>
+                  <input type="radio" name="publish-payment-method" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} />
                   <span><FiCreditCard aria-hidden="true" /></span>
                   <strong>Pay with Card</strong>
                   <small>Pay securely using Visa, Mastercard or other cards.</small>
@@ -1547,7 +2015,7 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
               </div>
               <aside>
                 <FiMessageSquare aria-hidden="true" />
-                <span>You will be redirected to complete the payment after reviewing your details.</span>
+                <span>{selectedPaymentMethod.summary}</span>
               </aside>
             </section>
           ) : (
@@ -1602,8 +2070,8 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
             <section className="business-review-publish-next">
               <h2>What happens next?</h2>
               <div>
-                <article><FiUsers aria-hidden="true" /><span><strong>1. STK Push Sent</strong><em>You&apos;ll receive an STK push on your phone.</em></span></article>
-                <article><FiLock aria-hidden="true" /><span><strong>2. Enter M-Pesa PIN</strong><em>Enter your PIN to authorize the payment.</em></span></article>
+                <article><FiUsers aria-hidden="true" /><span><strong>1. {selectedPaymentMethod.stepLabel} Started</strong><em>{paymentMethod === 'wallet' ? 'We will reserve the amount from your wallet.' : paymentMethod === 'mobile-money' ? 'You will receive an STK push on your phone.' : paymentMethod === 'bank' ? 'Use the bank details and reference shown above.' : 'The secure card checkout is ready.'}</em></span></article>
+                <article><FiLock aria-hidden="true" /><span><strong>2. Complete {selectedPaymentMethod.stepLabel}</strong><em>{paymentMethod === 'wallet' ? 'Confirm wallet deduction to fund escrow.' : paymentMethod === 'mobile-money' ? 'Enter your PIN to authorize the payment.' : paymentMethod === 'bank' ? 'Send the transfer and keep the reference visible.' : 'Confirm the secure card payment.'}</em></span></article>
                 <article><FiCheckCircle aria-hidden="true" /><span><strong>3. Payment Confirmed</strong><em>We&apos;ll confirm payment and publish your opportunity.</em></span></article>
               </div>
             </section>
@@ -1616,9 +2084,9 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
           ) : (
             <Button tone="ghost" onClick={onClose}>Cancel</Button>
           )}
-          {publishStep === 3 ? <p><FiMessageSquare aria-hidden="true" /> You will be redirected after successful payment.</p> : null}
+          {publishStep === 3 ? <p><FiMessageSquare aria-hidden="true" /> {paymentMethod === 'bank' ? 'We will publish after the transfer is confirmed.' : paymentMethod === 'wallet' ? 'Your opportunity will publish after wallet escrow is funded.' : 'You will be redirected after successful payment.'}</p> : null}
           <Button tone="brand" onClick={() => setPublishStep(Math.min(3, publishStep + 1))}>
-            {publishStep === 3 ? 'Send STK Push' : publishStep === 2 ? 'Next: STK Push' : 'Next: Payment Method'}
+            {publishStep === 3 ? selectedPaymentMethod.actionLabel : publishStep === 2 ? selectedPaymentMethod.nextLabel : 'Next: Payment Method'}
           </Button>
         </footer>
       </section>
@@ -2120,13 +2588,58 @@ function BusinessDeliverableMessagesPanel() {
   )
 }
 
-function DeliverablesPanel() {
+function DeliverablesPanel({ onRequestPayment }) {
   const [activeDeliverableTab, setActiveDeliverableTab] = useState('deliverables')
   const [selectedSubmission, setSelectedSubmission] = useState(null)
+  const [selectedDeliverable, setSelectedDeliverable] = useState(null)
+  const [deliverableRows, setDeliverableRows] = useState(DELIVERABLE_ROWS)
   const [isAddingDeliverable, setIsAddingDeliverable] = useState(false)
   const isSubmittedWork = activeDeliverableTab === 'submitted-work'
   const isFiles = activeDeliverableTab === 'files'
   const isMessages = activeDeliverableTab === 'messages'
+  const deliverableCount = deliverableRows.length
+
+  function getDeliverableIcon(type) {
+    if (type.includes('Code')) return 'x'
+    if (type.includes('Document')) return 'youtube'
+    if (type.includes('Proof')) return 'tiktok'
+    return 'instagram'
+  }
+
+  function createDeliverableRows(drafts) {
+    const timestamp = Date.now()
+
+    const rows = drafts.map((draft, index) => {
+      const budgetValue = Number(String(draft.budget).replace(/,/g, '') || 0)
+      const workflow = getDeliverableWorkflow(draft.workflow)
+      const paymentPercent = getDeliverablePaymentPercent(draft, drafts)
+
+      return {
+        id: `added-deliverable-${timestamp}-${index}`,
+        title: draft.title,
+        required: true,
+        type: workflow.type,
+        description: draft.requirement,
+        requirement: draft.requirement,
+        workflow: draft.workflow,
+        workflowLabel: workflow.label,
+        acceptedEvidence: workflow.acceptedEvidence,
+        dueDate: 'Scheduled after agreement',
+        dueMeta: 'Payment approved',
+        submissions: '0',
+        status: 'Approved',
+        tone: 'green',
+        icon: getDeliverableIcon(workflow.type),
+        acceptanceCriteria: draft.acceptanceCriteria,
+        paymentPercent: `${paymentPercent}%`,
+        lockedUntilApproved: draft.lockedUntilApproved,
+        budget: `KES ${budgetValue.toLocaleString()}`,
+      }
+    })
+
+    setDeliverableRows((items) => [...rows, ...items])
+    onRequestPayment?.()
+  }
 
   return (
     <section className="business-profile-card business-review-deliverables-card">
@@ -2273,7 +2786,7 @@ function DeliverablesPanel() {
               <span>Actions</span>
             </div>
 
-            {DELIVERABLE_ROWS.map((row) => (
+            {deliverableRows.map((row) => (
               <article key={row.id} className="business-review-deliverable-row">
                 <button type="button" className="business-review-deliverable-drag" aria-label={`Reorder ${row.title}`}>⋮⋮</button>
                 <div className="business-review-deliverable-title">
@@ -2292,7 +2805,7 @@ function DeliverablesPanel() {
                 <strong className="business-review-deliverable-submissions">{row.submissions}</strong>
                 <StatusPill className="business-review-status-pill" tone={row.tone}>{row.status}</StatusPill>
                 <div className="business-review-deliverable-actions">
-                  <button type="button">View</button>
+                  <button type="button" onClick={() => setSelectedDeliverable(row)}>View</button>
                   <button type="button" aria-label={`More actions for ${row.title}`}>
                     <FiMoreVertical aria-hidden="true" />
                   </button>
@@ -2302,13 +2815,18 @@ function DeliverablesPanel() {
           </div>
 
           <footer className="business-review-deliverable-footer">
-            Showing 1-6 of 6 deliverables
+            Showing 1-{deliverableCount} of {deliverableCount} deliverables
           </footer>
         </>
       )}
+      <DeliverableDetailsModal
+        deliverable={selectedDeliverable}
+        onClose={() => setSelectedDeliverable(null)}
+      />
       <AddDeliverableModal
         isOpen={isAddingDeliverable}
         onClose={() => setIsAddingDeliverable(false)}
+        onCreate={createDeliverableRows}
       />
     </section>
   )
@@ -2567,81 +3085,143 @@ function ActivityPanel() {
   )
 }
 
-function OverviewPanel({ onBack, opportunity, skills, type }) {
+function DetailBlock({ items, title }) {
   return (
-    <section className="business-profile-card business-review-editor-card">
+    <section className="business-review-detail-block">
+      <h3>{title}</h3>
+      <dl>
+        {items.map((item) => (
+          <div key={item.label}>
+            <dt>{item.label}</dt>
+            <dd>{item.value || 'Not set'}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  )
+}
+
+function OverviewPanel({ opportunity, skills, type }) {
+  const deadline = opportunity.deadline || 'Rolling'
+  const budget = opportunity.budget || 'KES 25,000'
+  const upcomingInterviews = [
+    { id: 'aisha-mwangi', icon: FiVideo, name: 'Aisha Mwangi', time: 'Today, 2:00 PM', note: 'Portfolio review', status: 'Needs link' },
+    { id: 'brian-otieno', icon: FiPhone, name: 'Brian Otieno', time: 'Tomorrow, 10:30 AM', note: 'Phone screen', status: 'Confirmed' },
+    { id: 'grace-wanjiku', icon: FiVideo, name: 'Grace Wanjiku', time: 'Friday, 4:00 PM', note: 'Final interview', status: 'Pending' },
+  ]
+
+  return (
+    <section className="business-profile-card business-review-overview-readonly-card">
       <header>
         <div>
-          <h2>Opportunity Details</h2>
-          <p>View and edit your opportunity details.</p>
+          <h2>Opportunity Overview</h2>
+          <p>Read-only summary of the brief, applicant access and upcoming hiring actions.</p>
         </div>
         <div>
-          <button type="button" className="business-profile-ghost-btn" onClick={onBack}>
-            <FiX aria-hidden="true" />
-            Cancel
-          </button>
           <button type="button" className="business-profile-primary-btn">
-            <FiSave aria-hidden="true" />
-            Save Changes
+            <FiSend aria-hidden="true" />
+            Invite Applicants
           </button>
         </div>
       </header>
 
-      <div className="business-review-editor-grid">
-        <section>
-          <ReviewField label="Opportunity Title" value={opportunity.title} />
-          <div className="business-review-editor-two">
-            <ReviewSelect label="Type" value={type} />
-            <ReviewSelect label="Category" value={opportunity.category} />
+      <div className="business-review-overview-actions">
+        <article>
+          <FiUsers aria-hidden="true" />
+          <span><strong>Invite qualified applicants</strong><em>18 matched students can be invited now</em></span>
+          <button type="button">Invite applicants</button>
+        </article>
+        <article>
+          <FiMessageSquare aria-hidden="true" />
+          <span><strong>Accessibility notes</strong><em>Remote-friendly, flexible timing, interview accommodations available</em></span>
+          <button type="button">Share notes</button>
+        </article>
+      </div>
+
+      <section className="business-review-upcoming-interviews">
+        <header>
+          <div>
+            <h3>Immediate Upcoming Interviews</h3>
+            <p>Shortlist conversations that need attention this week.</p>
           </div>
-          <label className="business-review-editor-field">
-            <span>Objective</span>
-            <textarea readOnly value={opportunity.description || ''} />
-          </label>
-          <div className="business-review-platforms">
-            <span>Instagram</span>
-            <span>TikTok</span>
-            <span>YouTube</span>
-            <button type="button">+ Add Platform</button>
+          <button type="button">View schedule</button>
+        </header>
+        <div>
+          {upcomingInterviews.map((interview) => {
+            const InterviewIcon = interview.icon
+
+            return (
+              <article key={interview.id}>
+                <span><InterviewIcon aria-hidden="true" /></span>
+                <div>
+                  <strong>{interview.name}</strong>
+                  <em>{interview.note}</em>
+                </div>
+                <time>{interview.time}</time>
+                <StatusPill tone={interview.status === 'Confirmed' ? 'green' : 'purple'}>{interview.status}</StatusPill>
+              </article>
+            )
+          })}
+        </div>
+      </section>
+
+      <div className="business-review-readonly-grid">
+        <DetailBlock
+          title="Brief Details"
+          items={[
+            { label: 'Opportunity title', value: opportunity.title },
+            { label: 'Type', value: type },
+            { label: 'Category', value: opportunity.category },
+            { label: 'Engagement mode', value: opportunity.engagementMode || opportunity.mode || 'Remote' },
+            { label: 'Visibility', value: 'Visible to all creators' },
+            { label: 'Deadline', value: deadline },
+          ]}
+        />
+
+        <section className="business-review-detail-block">
+          <h3>Audience & Requirements</h3>
+          <p>{opportunity.description || opportunity.summary || 'No summary provided.'}</p>
+          <div className="business-review-interest-row" aria-label="Required skills">
+            {skills.slice(0, 6).map((skill) => <span key={skill}>{skill}</span>)}
           </div>
-          <div className="business-review-editor-three">
-            <ReviewSelect label="Location" value="Kenya" />
-            <ReviewSelect label="Age Range" value="18 - 28" />
-            <ReviewSelect label="Gender" value="All" />
-          </div>
-          <div className="business-review-interest-row">
-            {skills.slice(0, 4).map((skill) => <span key={skill}>{skill}</span>)}
-          </div>
-          <div className="business-review-editor-two">
-            <ReviewField label="Start Date" value="May 20, 2025" />
-            <ReviewField label="End Date" value={opportunity.deadline || 'May 27, 2025'} />
-          </div>
+          <dl>
+            <div><dt>Location</dt><dd>Kenya</dd></div>
+            <div><dt>Age range</dt><dd>18 - 28</dd></div>
+            <div><dt>Gender</dt><dd>All</dd></div>
+          </dl>
         </section>
 
-        <section>
-          <div className="business-review-budget-card">
-            <h3>Budget & Compensation</h3>
-            <ReviewField label="Total Budget (KES)" value={String(opportunity.budget || '').replace(/[^\d,]/g, '') || '25,000'} />
-            <ReviewSelect label="Creator Compensation" value="Pay per Deliverable" />
-            <ul>
-              {PLATFORM_BUDGETS.map((item) => (
-                <li key={item.label}><span>{item.label}</span><strong>{item.value}</strong><em>{item.share}</em></li>
-              ))}
-            </ul>
-          </div>
-          <div className="business-review-budget-card">
-            <h3>Deliverables</h3>
-            <ul>
-              {DELIVERABLES.map((item) => (
-                <li key={item.label}><span>{item.label}</span><strong>{item.value}</strong></li>
-              ))}
-            </ul>
-            <button type="button">+ Add Deliverable</button>
-          </div>
-          <div className="business-review-budget-card">
-            <h3>Additional Requirements</h3>
-            <p>Please tag @{opportunity.company?.toLowerCase().replace(/\s+/g, '.') || 'zetech.studios'} and use #{opportunity.title.replace(/\s+/g, '')} in all posts.</p>
-          </div>
+        <section className="business-review-detail-block">
+          <h3>Scope & Deliverables</h3>
+          <ul>
+            {DELIVERABLES.map((item) => (
+              <li key={item.label}><span>{item.label}</span><strong>{item.value}</strong></li>
+            ))}
+          </ul>
+          <p>{opportunity.deliverables || 'Deliverables are listed in the scoped brief.'}</p>
+        </section>
+
+        <section className="business-review-detail-block">
+          <h3>Budget & Compensation</h3>
+          <dl>
+            <div><dt>Total budget</dt><dd>{budget}</dd></div>
+            <div><dt>Compensation model</dt><dd>{opportunity.paymentTerms || 'Pay per deliverable'}</dd></div>
+            <div><dt>Duration</dt><dd>{opportunity.duration || 'Flexible'}</dd></div>
+          </dl>
+          <ul>
+            {PLATFORM_BUDGETS.map((item) => (
+              <li key={item.label}><span>{item.label}</span><strong>{item.value}</strong><em>{item.share}</em></li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="business-review-detail-block business-review-accessibility-block">
+          <h3>Applicant Accessibility</h3>
+          <ul>
+            <li><FiCheckCircle aria-hidden="true" /><span>Remote interview option available</span></li>
+            <li><FiCheckCircle aria-hidden="true" /><span>Flexible scheduling before final selection</span></li>
+            <li><FiCheckCircle aria-hidden="true" /><span>Applicants can request communication accommodations</span></li>
+          </ul>
         </section>
       </div>
     </section>
@@ -2654,14 +3234,17 @@ export function BusinessOpportunityReviewWorkspace({
   onBack,
   onChangeApplicationStatus,
   onChangeReviewTab,
+  openPublishPayment = false,
   opportunity,
 }) {
-  const [isPublishingOpportunity, setIsPublishingOpportunity] = useState(false)
+  const [isPublishingOpportunity, setIsPublishingOpportunity] = useState(openPublishPayment)
 
   if (!opportunity) return null
 
   const skills = getSkillList(opportunity)
   const type = opportunity.category === 'Social Media' ? 'Campaign' : opportunity.mode || 'Project'
+  const reviewTabs = getReviewTabs(opportunity)
+  const canShowPerformance = opportunity.scopeMode === 'milestone'
 
   return (
     <>
@@ -2713,7 +3296,7 @@ export function BusinessOpportunityReviewWorkspace({
       </section>
 
       <div className="business-review-detail-tabs" role="tablist" aria-label="Opportunity review sections">
-        {REVIEW_TABS.map((tab) => (
+        {reviewTabs.map((tab) => (
           <button
             key={tab.id}
             type="button"
@@ -2734,10 +3317,10 @@ export function BusinessOpportunityReviewWorkspace({
           onChangeApplicationStatus={onChangeApplicationStatus}
         />
       ) : activeReviewTab === 'deliverables' ? (
-        <DeliverablesPanel />
+        <DeliverablesPanel onRequestPayment={() => setIsPublishingOpportunity(true)} />
       ) : activeReviewTab === 'payments' ? (
         <PaymentsPanel />
-      ) : activeReviewTab === 'performance' ? (
+      ) : activeReviewTab === 'performance' && canShowPerformance ? (
         <PerformancePanel />
       ) : activeReviewTab === 'messages' ? (
         <section className="business-profile-card business-review-deliverables-card">

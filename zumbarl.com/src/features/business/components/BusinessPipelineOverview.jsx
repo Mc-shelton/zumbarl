@@ -16,7 +16,7 @@ export function BusinessPipelineOverview({ stages }) {
       </header>
 
       <div className="business-pipeline-overview-grid">
-        {stages.map((stage) => (
+        {stages.length ? stages.map((stage) => (
           <article key={stage.label} className={`business-pipeline-summary tone-${stage.tone}`}>
             <h3>{stage.label}</h3>
             <strong>{stage.value}</strong>
@@ -25,10 +25,12 @@ export function BusinessPipelineOverview({ stages }) {
               <span>{stage.trend}</span>
             </p>
           </article>
-        ))}
+        )) : (
+          <p className="business-dashboard-empty">No pipeline records yet. Applicants will appear here after students apply.</p>
+        )}
       </div>
 
-      <Link to="/business/applicant-profile" className="business-dashboard-link">
+      <Link to="/business/applicants" className="business-dashboard-link">
         View full pipeline
         <FiArrowRight aria-hidden="true" />
       </Link>

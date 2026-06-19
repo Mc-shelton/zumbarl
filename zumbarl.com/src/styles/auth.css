@@ -46,6 +46,45 @@
   gap: 16px;
 }
 
+.auth-account-toggle {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.auth-account-toggle button {
+  min-height: 86px;
+  border: 1px solid rgba(55, 54, 67, 0.14);
+  border-radius: 14px;
+  background: #f7f9fc;
+  color: var(--theme-dark);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  justify-content: center;
+  padding: 14px;
+  text-align: left;
+}
+
+.auth-account-toggle button.is-active {
+  border-color: rgba(91, 63, 226, 0.62);
+  background: #f1edff;
+  box-shadow: 0 0 0 3px rgba(91, 63, 226, 0.12);
+}
+
+.auth-account-toggle strong {
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.auth-account-toggle span {
+  color: rgba(55, 54, 67, 0.68);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
 .auth-field {
   position: relative;
   display: flex;
@@ -111,6 +150,13 @@
   font-weight: 700;
   cursor: pointer;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-error-message {
+  color: #b42318;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0;
 }
 
 .auth-primary-btn:hover {

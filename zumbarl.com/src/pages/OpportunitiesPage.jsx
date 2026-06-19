@@ -28,10 +28,7 @@ function OpportunitiesPage() {
 
           <section className="campus-main opportunities-main">
             <OpportunitiesHeader
-              activeOpportunityIntentId={pageState.activeOpportunityIntent.id}
               activeOpportunityTab={pageState.activeOpportunityTab}
-              intentOptions={pageState.opportunityIntentOptions}
-              onIntentChange={pageState.onIntentChange}
               newInvitesCount={pageState.newInvitesCount}
               onTabChange={pageState.onTabChange}
               opportunitySearchRef={pageState.opportunitySearchRef}

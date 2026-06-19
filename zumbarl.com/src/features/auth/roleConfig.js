@@ -456,8 +456,30 @@ export const AUTH_ROLES = {
 
 export const AUTH_ROLE_LIST = Object.values(AUTH_ROLES)
 
+export const AUTH_ROLE_STORAGE_KEY = 'zumbarl.auth.roleId'
+
+const BACKEND_ROLE_TO_AUTH_ROLE_ID = {
+  student: AUTH_ROLES.studentStandard.id,
+  STUDENT_STANDARD: AUTH_ROLES.studentStandard.id,
+  STUDENT_TRANSITION: AUTH_ROLES.studentTransition.id,
+  STUDENT_ALUMNI: AUTH_ROLES.studentAlumni.id,
+  CAMPUS_AMBASSADOR: AUTH_ROLES.campusAmbassador.id,
+  business: AUTH_ROLES.companyStandard.id,
+  COMPANY_STANDARD: AUTH_ROLES.companyStandard.id,
+  COMPANY_PIPELINE_PARTNER: AUTH_ROLES.companyPipelinePartner.id,
+  COMPANY_HR_MANAGER: AUTH_ROLES.companyHrManager.id,
+  COMPANY_HIRING_MANAGER: AUTH_ROLES.companyHiringManager.id,
+  COMPANY_VIEWER: AUTH_ROLES.companyViewer.id,
+  SUPER_ADMIN: AUTH_ROLES.superAdmin.id,
+  OPERATIONS_MANAGER: AUTH_ROLES.operationsManager.id,
+  CAMPUS_MANAGER: AUTH_ROLES.campusManager.id,
+  SAFETY_OFFICER: AUTH_ROLES.safetyOfficer.id,
+  FINANCE_OFFICER: AUTH_ROLES.financeOfficer.id,
+  CONTENT_MODERATOR: AUTH_ROLES.contentModerator.id,
+}
+
 // Temporary local switch until real auth/session state exists.
-export const TEMP_CURRENT_LOGIN_ROLE_ID = AUTH_ROLES.companyHrManager.id
+export const TEMP_CURRENT_LOGIN_ROLE_ID = AUTH_ROLES.studentStandard.id
 
 export const TEMP_CURRENT_LOGIN_PROFILE = {
   name: 'Brian Mwangi',
@@ -469,7 +491,16 @@ export function getAuthRoleById(roleId) {
   return AUTH_ROLE_LIST.find((role) => role.id === roleId) || AUTH_ROLES.studentStandard
 }
 
-const TEMP_BASE_LOGIN_ROLE = getAuthRoleById(TEMP_CURRENT_LOGIN_ROLE_ID)
+function readStoredAuthRoleId() {
+  if (typeof window === 'undefined') return ''
+  return window.localStorage.getItem(AUTH_ROLE_STORAGE_KEY) || ''
+}
+
+export function getAuthRoleIdFromBackendRole(role) {
+  return BACKEND_ROLE_TO_AUTH_ROLE_ID[role] || AUTH_ROLES.studentStandard.id
+}
+
+const TEMP_BASE_LOGIN_ROLE = getAuthRoleById(readStoredAuthRoleId() || TEMP_CURRENT_LOGIN_ROLE_ID)
 
 export const CURRENT_LOGIN_ROLE = {
   ...TEMP_BASE_LOGIN_ROLE,
@@ -483,6 +514,14 @@ export const CURRENT_LOGIN_VIEWER = {
   roleSide: CURRENT_LOGIN_ROLE.side,
 }
 
+export function getCurrentLoginRole() {
+  const role = getAuthRoleById(readStoredAuthRoleId() || TEMP_CURRENT_LOGIN_ROLE_ID)
+  return {
+    ...role,
+    access: Array.from(new Set(role.access)),
+  }
+}
+
 function normalizeRequiredAccess(requiredAccess) {
   if (!requiredAccess) {
     return []
@@ -491,11 +530,11 @@ function normalizeRequiredAccess(requiredAccess) {
   return Array.isArray(requiredAccess) ? requiredAccess.filter(Boolean) : [requiredAccess]
 }
 
-export function getAccessSet(role = CURRENT_LOGIN_ROLE) {
+export function getAccessSet(role = getCurrentLoginRole()) {
   return new Set(role?.access || [])
 }
 
-export function hasAccess(accessKey, role = CURRENT_LOGIN_ROLE) {
+export function hasAccess(accessKey, role = getCurrentLoginRole()) {
   if (!accessKey) {
     return true
   }
@@ -504,7 +543,7 @@ export function hasAccess(accessKey, role = CURRENT_LOGIN_ROLE) {
   return accessSet.has(ACCESS_KEYS.platform.all) || accessSet.has(accessKey)
 }
 
-export function hasAnyAccess(requiredAccess, role = CURRENT_LOGIN_ROLE) {
+export function hasAnyAccess(requiredAccess, role = getCurrentLoginRole()) {
   const required = normalizeRequiredAccess(requiredAccess)
 
   if (!required.length) {
@@ -514,7 +553,7 @@ export function hasAnyAccess(requiredAccess, role = CURRENT_LOGIN_ROLE) {
   return required.some((accessKey) => hasAccess(accessKey, role))
 }
 
-export function hasAllAccess(requiredAccess, role = CURRENT_LOGIN_ROLE) {
+export function hasAllAccess(requiredAccess, role = getCurrentLoginRole()) {
   const required = normalizeRequiredAccess(requiredAccess)
 
   if (!required.length) {
@@ -524,6 +563,6 @@ export function hasAllAccess(requiredAccess, role = CURRENT_LOGIN_ROLE) {
   return required.every((accessKey) => hasAccess(accessKey, role))
 }
 
-export function filterByAccess(items, role = CURRENT_LOGIN_ROLE) {
+export function filterByAccess(items, role = getCurrentLoginRole()) {
   return items.filter((item) => hasAnyAccess(item.requiredAccess, role))
 }

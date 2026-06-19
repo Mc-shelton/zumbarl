@@ -14,6 +14,7 @@ function handleKeyboardActivation(event, onActivate) {
 
 function ProfilePortfolioServicesPanel({
   onPortfolioServiceSelect,
+  portfolioServices = PORTFOLIO_SERVICES,
   selectedPortfolioServiceId,
 }) {
   const canManagePortfolio = hasAccess(ACCESS_KEYS.profile.managePortfolio)
@@ -57,7 +58,7 @@ function ProfilePortfolioServicesPanel({
       ) : null}
 
       <div className="campus-portfolio-service-grid">
-        {PORTFOLIO_SERVICES.map(({ id, title, category, description, price, delivery, image }) => (
+        {portfolioServices.map(({ id, title, category, description, price, delivery, image }) => (
           <article
             key={id}
             className={`campus-portfolio-service-card${selectedPortfolioServiceId === id ? ' is-selected' : ''}`}

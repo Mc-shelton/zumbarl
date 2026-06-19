@@ -99,7 +99,7 @@ export function BusinessOpportunityBriefRail({
             onClick={onPublish}
           >
             <FiSend aria-hidden="true" />
-            Publish Opportunity
+            Create & Publish Opportunity
           </button>
         </footer>
       </section>

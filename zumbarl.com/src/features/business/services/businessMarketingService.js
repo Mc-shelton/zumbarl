@@ -1,5 +1,12 @@
 import { BUSINESS_MARKETING_CAMPAIGNS } from '../marketingData'
 import { BUSINESS_MARKETING_CAMPAIGN_DETAILS } from '../marketingDetailData'
+import {
+  acceptBackendMarketingCampaign,
+  createBackendMarketingCampaign,
+  listBackendMarketingCampaigns,
+  readBackendMarketingCampaign,
+  submitBackendMarketingCampaignProof,
+} from './persistMarketingCampaign'
 
 const STORAGE_KEY = 'zumbarl.businessMarketingCampaigns.v1'
 
@@ -22,6 +29,10 @@ function readCreatedCampaigns() {
 function writeCreatedCampaigns(campaigns) {
   const storage = getStorage()
   if (storage) storage.setItem(STORAGE_KEY, JSON.stringify(campaigns))
+}
+
+function mirrorBackendWrite(writeOperation) {
+  writeOperation().catch(() => {})
 }
 
 function createId(value) {
@@ -50,6 +61,7 @@ export function createBusinessMarketingCampaign(payload) {
   }
 
   writeCreatedCampaigns([campaign, ...readCreatedCampaigns()])
+  mirrorBackendWrite(() => createBackendMarketingCampaign(campaign))
   return campaign
 }
 
@@ -64,4 +76,25 @@ export function getBusinessMarketingCampaign(campaignId) {
     ...campaign,
     detail: BUSINESS_MARKETING_CAMPAIGN_DETAILS[campaign.id] || BUSINESS_MARKETING_CAMPAIGN_DETAILS['level-up-skills'],
   }
+}
+
+export async function listBusinessMarketingCampaignsFromBackend() {
+  const response = await listBackendMarketingCampaigns()
+  return response?.data || []
+}
+
+export async function getBusinessMarketingCampaignFromBackend(campaignId) {
+  const response = await readBackendMarketingCampaign(campaignId)
+  return response?.campaign ? {
+    ...response.campaign,
+    detail: BUSINESS_MARKETING_CAMPAIGN_DETAILS[response.campaign.id] || BUSINESS_MARKETING_CAMPAIGN_DETAILS['level-up-skills'],
+  } : null
+}
+
+export function acceptBusinessMarketingCampaign(campaignId) {
+  return acceptBackendMarketingCampaign(campaignId)
+}
+
+export function submitBusinessMarketingCampaignProof(campaignId, proof) {
+  return submitBackendMarketingCampaignProof(campaignId, proof)
 }

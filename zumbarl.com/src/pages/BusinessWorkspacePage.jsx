@@ -26,9 +26,11 @@ function BusinessWorkspacePage() {
 
           <section className="campus-main business-workspace-main">
             <BusinessWorkspaceHeader
+              title={`Welcome back, ${workspace.business?.name || 'Business workspace'}!`}
               primaryActionHref="/business/opportunities/create"
               primaryActionLabel="Create Opportunity"
             />
+            {workspace.errorMessage ? <p className="business-dashboard-error">{workspace.errorMessage}</p> : null}
             <BusinessDashboardMetrics metrics={workspace.metrics} />
            
             <BusinessPipelineOverview stages={workspace.pipelineStages} />
@@ -37,6 +39,7 @@ function BusinessWorkspacePage() {
 
           <BusinessWorkspaceRail
             insights={workspace.insights}
+            kyc={workspace.kyc}
             upcomingActions={workspace.upcomingActions}
           />
         </div>

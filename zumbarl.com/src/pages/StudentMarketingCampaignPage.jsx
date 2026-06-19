@@ -1,21 +1,53 @@
-import { useState } from 'react'
-import { FiAward, FiCheckCircle, FiSend, FiUploadCloud } from 'react-icons/fi'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { FiAward, FiCheckCircle, FiDownload, FiSend, FiShare2, FiUploadCloud } from 'react-icons/fi'
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import CampusSidebar from '../components/layout/CampusSidebar'
 import Seo from '../components/Seo'
-import { getBusinessMarketingCampaign } from '../features/business/services/businessMarketingService'
+import {
+  acceptBusinessMarketingCampaign,
+  getBusinessMarketingCampaign,
+  getBusinessMarketingCampaignFromBackend,
+  submitBusinessMarketingCampaignProof,
+} from '../features/business/services/businessMarketingService'
 import { WorkflowStatusPanel } from '../features/workflows/components/WorkflowStatusPanel'
 import { MARKETING_WORKFLOW_MOCK } from '../features/workflows/workflowData'
 import '../styles/campus.css'
 import '../styles/opportunities.css'
 import '../styles/workflows.css'
 
+const MARKETING_MATERIAL_PREVIEWS = {
+  'level-up-skills': '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp',
+  'summer-collection-launch': '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
+  'stay-hydrated': '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
+}
+
+function getMarketingMaterialPreview(campaign) {
+  return campaign.previewImage || MARKETING_MATERIAL_PREVIEWS[campaign.id] || '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp'
+}
+
 function StudentMarketingCampaignPage() {
   const { campaignId } = useParams()
-  const campaign = getBusinessMarketingCampaign(campaignId)
-  const [accepted, setAccepted] = useState(false)
+  const location = useLocation()
+  const fallbackCampaign = getBusinessMarketingCampaign(campaignId)
+  const [backendCampaign, setBackendCampaign] = useState(null)
+  const [accepted, setAccepted] = useState(Boolean(location.state?.accepted))
   const [proofSubmitted, setProofSubmitted] = useState(false)
   const [endorsed, setEndorsed] = useState(false)
+  const campaign = backendCampaign || fallbackCampaign
+
+  useEffect(() => {
+    let isActive = true
+
+    getBusinessMarketingCampaignFromBackend(campaignId)
+      .then((result) => {
+        if (isActive && result) setBackendCampaign(result)
+      })
+      .catch(() => {})
+
+    return () => {
+      isActive = false
+    }
+  }, [campaignId])
 
   if (!campaign) return <Navigate to="/campus/opportunities" replace />
 
@@ -66,11 +98,30 @@ function StudentMarketingCampaignPage() {
               ]}
               actions={(
                 <>
-                  <button type="button" className="project-primary-btn" disabled={!isEligible || accepted} onClick={() => setAccepted(true)}>
+                  <button
+                    type="button"
+                    className="project-primary-btn"
+                    disabled={!isEligible || accepted}
+                    onClick={() => {
+                      setAccepted(true)
+                      acceptBusinessMarketingCampaign(campaign.id).catch(() => {})
+                    }}
+                  >
                     <FiCheckCircle aria-hidden="true" />
                     Accept campaign
                   </button>
-                  <button type="button" className="project-soft-btn" disabled={!accepted || proofSubmitted} onClick={() => setProofSubmitted(true)}>
+                  <button
+                    type="button"
+                    className="project-soft-btn"
+                    disabled={!accepted || proofSubmitted}
+                    onClick={() => {
+                      setProofSubmitted(true)
+                      submitBusinessMarketingCampaignProof(campaign.id, {
+                        links: ['https://www.instagram.com/reel/zetech-level-up'],
+                        notes: 'Posted approved campaign material and captured proof screenshots.',
+                      }).catch(() => {})
+                    }}
+                  >
                     <FiUploadCloud aria-hidden="true" />
                     Submit proof
                   </button>
@@ -81,6 +132,32 @@ function StudentMarketingCampaignPage() {
                 </>
               )}
             />
+
+            <section className="opportunities-bid-form-card student-marketing-materials">
+              <header>
+                <h2>Marketing materials</h2>
+                <p>Download the approved material, post it on your social channels, then submit the live links and screenshots as proof.</p>
+              </header>
+              <figure className="student-marketing-material-preview">
+                <img src={getMarketingMaterialPreview(campaign)} alt={`${campaign.title} marketing material preview`} />
+                <figcaption>
+                  <strong>{campaign.thumbnailTitle}</strong>
+                  <span>{campaign.thumbnailMeta}</span>
+                </figcaption>
+              </figure>
+              <div className="student-marketing-material-actions">
+                <button type="button" className="project-primary-btn" disabled={!accepted}>
+                  <FiDownload aria-hidden="true" />
+                  Download material pack
+                </button>
+                {['TikTok', 'WhatsApp Status', 'Instagram', 'YouTube Shorts'].map((platform) => (
+                  <button key={platform} type="button" className="project-soft-btn" disabled={!accepted}>
+                    <FiShare2 aria-hidden="true" />
+                    Upload to {platform}
+                  </button>
+                ))}
+              </div>
+            </section>
 
             <section className="opportunities-bid-form-card student-marketing-proof">
               <header>
@@ -99,7 +176,22 @@ function StudentMarketingCampaignPage() {
                 />
               </div>
               <footer className="opportunities-bid-form-foot">
-                <button type="button" className="opportunities-detail-bid-btn" disabled={!accepted} onClick={() => setProofSubmitted(true)}>
+                <button
+                  type="button"
+                  className="opportunities-detail-bid-btn"
+                  disabled={!accepted}
+                  onClick={() => {
+                    setProofSubmitted(true)
+                    submitBusinessMarketingCampaignProof(campaign.id, {
+                      links: ['https://www.instagram.com/reel/zetech-level-up'],
+                      screenshots: [],
+                      platformUploads: [
+                        { platform: 'Instagram', url: 'https://www.instagram.com/reel/zetech-level-up', status: 'posted' },
+                      ],
+                      notes: 'Posted an Instagram reel and TikTok story with approved hashtags, CTA, and product mention.',
+                    }).catch(() => {})
+                  }}
+                >
                   Submit proof package
                   <FiSend aria-hidden="true" />
                 </button>

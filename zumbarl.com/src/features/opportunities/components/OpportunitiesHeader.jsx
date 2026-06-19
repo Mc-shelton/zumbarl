@@ -4,11 +4,8 @@ import { Breadcrumb } from '../../../components/ui'
 import { OPPORTUNITY_TABS } from '../constants'
 
 function OpportunitiesHeader({
-  activeOpportunityIntentId,
   activeOpportunityTab,
-  intentOptions,
   newInvitesCount,
-  onIntentChange,
   onTabChange,
   opportunitySearchRef,
 }) {
@@ -49,25 +46,6 @@ function OpportunitiesHeader({
           <FiChevronDown aria-hidden="true" />
         </button>
         <button type="button" className="opportunities-search-btn">Search</button>
-      </section>
-
-      <section className="opportunities-intent-row" aria-label="Opportunity intent">
-        {intentOptions.map((intent) => {
-          const isActive = activeOpportunityIntentId === intent.id
-
-          return (
-            <button
-              key={intent.id}
-              type="button"
-              className={`opportunities-intent-option${isActive ? ' is-active' : ''}`}
-              aria-pressed={isActive}
-              onClick={() => onIntentChange(intent.id)}
-            >
-              <strong>{intent.label}</strong>
-              <span>{intent.summary}</span>
-            </button>
-          )
-        })}
       </section>
 
       <section className="opportunities-tabs-wrap">

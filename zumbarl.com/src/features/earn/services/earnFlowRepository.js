@@ -13,6 +13,7 @@ export function getDefaultEarnFlowState() {
       source: 'seed',
       ...bid,
     })),
+    opportunities: [],
     projects: ONGOING_PROJECTS.map((project) => ({ source: 'seed', ...project })),
     portfolioEvidence: [],
     projectReviews: [],
@@ -36,6 +37,7 @@ function normalizeEarnFlowState(parsed) {
     ...defaultState,
     ...parsed,
     bids: Array.isArray(parsed.bids) ? parsed.bids : defaultState.bids,
+    opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities : defaultState.opportunities,
     projects: Array.isArray(parsed.projects) ? parsed.projects : defaultState.projects,
     portfolioEvidence: Array.isArray(parsed.portfolioEvidence) ? parsed.portfolioEvidence : [],
     projectReviews: Array.isArray(parsed.projectReviews) ? parsed.projectReviews : [],
@@ -72,6 +74,7 @@ export function createEarnFlowSyncPayload(state) {
   return {
     version: state.version,
     bids: state.bids,
+    opportunities: state.opportunities,
     projects: state.projects,
     portfolioEvidence: state.portfolioEvidence,
     projectReviews: state.projectReviews,

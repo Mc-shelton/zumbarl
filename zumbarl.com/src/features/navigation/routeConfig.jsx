@@ -2,13 +2,17 @@ import { Navigate } from 'react-router-dom'
 import { ACCESS_KEYS } from '../auth/roleConfig'
 import {
   AuthPage,
-  BusinessApplicantProfilePage,
+  BusinessApplicantsBrowsePage,
   BusinessCreateMarketingCampaignPage,
   BusinessCreateOpportunityPage,
+  BusinessKycPage,
   BusinessMarketingCampaignPage,
   BusinessMarketingPage,
+  BusinessOnboardingPage,
   BusinessOpportunitiesPage,
   BusinessPage,
+  BusinessServicesBrowsePage,
+  BusinessSettingsPage,
   BusinessWorkspacePage,
   CampusCartOrderPlacedPage,
   CampusCartPage,
@@ -26,6 +30,7 @@ import {
   OpportunitiesPage,
   ProjectWorkspacePage,
   StudentMarketingCampaignPage,
+  SuperAdminPage,
 } from './routePages'
 
 export const APP_ROUTES = [
@@ -67,7 +72,9 @@ export const APP_ROUTES = [
   { path: '/campus/opportunities/jobs-gigs', element: <Navigate to="/campus/opportunities" replace /> },
   { path: '/campus/projects/:projectId', access: ACCESS_KEYS.projects.view, element: <ProjectWorkspacePage /> },
   { path: '/business', element: <BusinessPage /> },
+  { path: '/business/onboarding', access: ACCESS_KEYS.business.dashboard, element: <BusinessOnboardingPage /> },
   { path: '/business/workspace', access: ACCESS_KEYS.business.dashboard, element: <BusinessWorkspacePage /> },
+  { path: '/business/kyc', access: ACCESS_KEYS.business.dashboard, element: <BusinessKycPage /> },
   { path: '/business/marketing', access: ACCESS_KEYS.business.marketing, element: <BusinessMarketingPage /> },
   {
     path: '/business/marketing/create',
@@ -90,11 +97,27 @@ export const APP_ROUTES = [
     element: <BusinessCreateOpportunityPage />,
   },
   {
+    path: '/business/applicants',
+    access: [ACCESS_KEYS.business.applicantProfiles, ACCESS_KEYS.business.applicantProfilesLimited],
+    element: <BusinessApplicantsBrowsePage />,
+  },
+  {
+    path: '/business/services',
+    access: [ACCESS_KEYS.business.applicantProfiles, ACCESS_KEYS.business.applicantProfilesLimited],
+    element: <BusinessServicesBrowsePage />,
+  },
+  {
     path: '/business/applicant-profile',
     access: [ACCESS_KEYS.business.applicantProfiles, ACCESS_KEYS.business.applicantProfilesLimited],
-    element: <BusinessApplicantProfilePage />,
+    element: <CampusProfilePage viewContext="business" />,
+  },
+  {
+    path: '/business/settings',
+    access: ACCESS_KEYS.business.settings,
+    element: <BusinessSettingsPage />,
   },
   { path: '/help', element: <HelpPage /> },
+  { path: '/admin/super-admin', access: ACCESS_KEYS.platform.all, element: <SuperAdminPage /> },
   { path: '/login', element: <AuthPage defaultMode="login" /> },
   { path: '/register', element: <AuthPage defaultMode="register" /> },
   { path: '/web/login', element: <Navigate to="/login" replace /> },
