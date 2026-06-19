@@ -1025,18 +1025,3 @@ model AppRecord {
   @@index([collection, createdAt])
   @@map("app_records")
 }
-
-## Workflow Collections Stored In `app_records`
-
-The high-change product workflows use `AppRecord` so the frontend can evolve without forcing a migration for every new form field. Shape is enforced at the controller layer with Zod validators, then persisted through repositories only.
-
-| Collection | Purpose | Key fields |
-| --- | --- | --- |
-| `opportunities` | Business-created opportunities shown to students and business workspaces. | `businessId`, `title`, `summary`, `budgetAmount`, `scopeMode`, `deliverableMilestones`, `milestoneScopes`, `requiredAttachments`, `qualificationQuestions`, `duration`, `applicationDeadline`, `visibility`, `status`, `escrowStatus` |
-| `opportunityDeliverables` | Deliverables added to an opportunity after creation or during project setup. | `opportunityId`, `businessId`, `sequence`, `workflow`, `title`, `description`, `evidenceRequired`, `acceptanceCriteria`, `budget`, `paymentPercent`, `isSequential`, `status` |
-| `escrows` | Funding records for opportunities, campaigns, and deliverable batches. | `scope`, `scopeId`, `businessId`, `deliverableIds`, `amount`, `currency`, `method`, `reference`, `status` |
-| `bids` | Student applications/bids for business opportunities. | `opportunityId`, `studentId`, `status`, `proposal`, `answers`, `attachments`, `projectId` |
-| `reviewEvents` | Business audit trail for opportunity, applicant, and deliverable workflow actions. | `scope`, `action`, `actorId`, `opportunityId`, `bidId`, `projectId`, `count`, `note` |
-| `campaigns` | Business marketing campaigns displayed to students. | `businessId`, `title`, `type`, `description`, `budgetAmount`, `platforms`, `materials`, `previewImage`, `thumbnailTitle`, `thumbnailMeta`, `proofRequirements`, `status`, `acceptedBudget` |
-| `campaignAcceptances` | Student acceptance records for marketing campaigns. | `campaignId`, `studentId`, `status`, `payoutAmount` |
-| `campaignProofs` | Student proof submissions after campaign material is shared. | `campaignId`, `studentId`, `links`, `screenshots`, `videos`, `platformUploads`, `reach`, `engagement`, `notes`, `status` |

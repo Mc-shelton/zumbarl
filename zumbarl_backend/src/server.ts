@@ -1,7 +1,8 @@
 import { buildApp } from './app.js'
 import { env } from './config/env.js'
-import { seedDatabase } from './data/index.js'
+import { migrateLegacyAppRecords, seedDatabase } from './data/index.js'
 
+await migrateLegacyAppRecords()
 await seedDatabase()
 
 const app = await buildApp()

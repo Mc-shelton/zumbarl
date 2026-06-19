@@ -1,6 +1,7 @@
 export * from './admin/index.js'
 export * from './auth/index.js'
 export * from './business/index.js'
+export * from './campus/index.js'
 export * from './connect/index.js'
 export * from './earn/index.js'
 export * from './finance/index.js'

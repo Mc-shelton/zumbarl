@@ -1,4 +1,5 @@
 import { createPrismaRecordRepository, runPrismaRecordTransaction } from '../../../shared/repositories/index.js'
+import { prisma } from '../../../lib/prisma.js'
 
 const campaigns = createPrismaRecordRepository('campaigns')
 const campaignInvites = createPrismaRecordRepository('campaignInvites')
@@ -6,7 +7,6 @@ const campaignAcceptances = createPrismaRecordRepository('campaignAcceptances')
 const campaignProofs = createPrismaRecordRepository('campaignProofs')
 const escrows = createPrismaRecordRepository('escrows')
 const evidence = createPrismaRecordRepository('evidence')
-const students = createPrismaRecordRepository('students')
 
 class MarketingCampaignsRepository {
   listCampaigns(query: Record<string, unknown>) {
@@ -58,10 +58,6 @@ class MarketingCampaignsRepository {
     return evidence.create(payload)
   }
 
-  findStudent(id?: string) {
-    return id ? students.findById(id) : null
-  }
-
   fundCampaign(id: string) {
     return runPrismaRecordTransaction(async (createRepository) => {
       const transactionCampaigns = createRepository('campaigns')
@@ -87,20 +83,22 @@ class MarketingCampaignsRepository {
     })
   }
 
-  acceptCampaign(id: string, studentId: string | undefined) {
+  async acceptCampaign(id: string, studentId: string | undefined) {
+    const student = studentId ? await prisma.studentProfile.findUnique({ where: { id: studentId } }) : null
+    if (!student) return { accepted: false, reason: 'student_profile_not_found' }
+
     return runPrismaRecordTransaction(async (createRepository) => {
       const transactionCampaigns = createRepository('campaigns')
       const transactionAcceptances = createRepository('campaignAcceptances')
-      const transactionStudents = createRepository('students')
       const campaign = await transactionCampaigns.findById(id)
       if (!campaign) return null
-      const student = studentId ? await transactionStudents.findById(studentId) : null
-      if (!student) return { accepted: false, reason: 'student_profile_not_found', campaign }
 
-      if ((student.followers ?? 1000) < (campaign.minimumFollowers ?? 0)) return { accepted: false, reason: 'eligibility_criteria_not_met', campaign }
-      if ((campaign.acceptedBudget ?? 0) + campaign.payoutPerCampaigner > campaign.budgetAmount) return { accepted: false, reason: 'campaign_budget_limit_reached', campaign }
-      const acceptance = await transactionAcceptances.create({ campaignId: id, studentId, status: 'accepted', payoutAmount: campaign.payoutPerCampaigner })
-      await transactionCampaigns.updateById(id, { acceptedBudget: (campaign.acceptedBudget ?? 0) + campaign.payoutPerCampaigner })
+      const followerEstimate = student.isOpenToHire ? 1500 : 1000
+      const payoutPerCampaigner = Number(campaign.payoutPerCampaigner ?? 0)
+      if (followerEstimate < (campaign.minimumFollowers ?? 0)) return { accepted: false, reason: 'eligibility_criteria_not_met', campaign }
+      if ((campaign.acceptedBudget ?? 0) + payoutPerCampaigner > campaign.budgetAmount) return { accepted: false, reason: 'campaign_budget_limit_reached', campaign }
+      const acceptance = await transactionAcceptances.create({ campaignId: id, studentId, status: 'accepted', payoutAmount: payoutPerCampaigner })
+      await transactionCampaigns.updateById(id, { acceptedBudget: (campaign.acceptedBudget ?? 0) + payoutPerCampaigner })
       return acceptance
     })
   }

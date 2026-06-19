@@ -13,6 +13,7 @@ import { closeRedisCache, connectRedisCache, getRedisClient } from './adapters/c
 import { registerAdminRoutes } from './entrypoint/api/routes/admin/index.js'
 import { registerAuthRoutes } from './entrypoint/api/routes/auth/index.js'
 import { registerBusinessRoutes } from './entrypoint/api/routes/business/index.js'
+import { registerCampusRoutes } from './entrypoint/api/routes/campus/index.js'
 import { registerConnectRoutes } from './entrypoint/api/routes/connect/index.js'
 import { registerEarnRoutes } from './entrypoint/api/routes/earn/index.js'
 import { registerFinanceRoutes } from './entrypoint/api/routes/finance/index.js'
@@ -35,7 +36,8 @@ async function buildApp() {
   await app.register(helmet)
   await app.register(cors, {
     origin: env.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
-    credentials: true
+    credentials: true,
+    methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS']
   })
   await connectRedisCache()
 
@@ -56,6 +58,7 @@ async function buildApp() {
       tags: [
         { name: 'auth' },
         { name: 'business' },
+        { name: 'campus' },
         { name: 'earn' },
         { name: 'projects' },
         { name: 'marketing' },
@@ -97,6 +100,7 @@ async function buildApp() {
   await registerHealthRoutes(app)
   await app.register(registerAuthRoutes, { prefix: '/api/v1/auth' })
   await app.register(registerBusinessRoutes, { prefix: '/api/v1/business' })
+  await app.register(registerCampusRoutes, { prefix: '/api/v1/campus' })
   await app.register(registerEarnRoutes, { prefix: '/api/v1/earn' })
   await app.register(registerProjectRoutes, { prefix: '/api/v1/projects' })
   await app.register(registerMarketingRoutes, { prefix: '/api/v1/marketing' })

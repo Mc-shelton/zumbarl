@@ -81,11 +81,11 @@ enum ApplicationStatus {
 }
 
 enum PipelineStage {
-  EXPLORE_FOUNDATION    // Stage 1
-  BUILD_APPLY           // Stage 2
-  GROW_SPECIALIZE       // Stage 3
-  LEAD_IMPACT           // Stage 4
-  ADVANCE_MENTOR        // Stage 5
+  EXPLORE_FOUNDATION // Stage 1
+  BUILD_APPLY // Stage 2
+  GROW_SPECIALIZE // Stage 3
+  LEAD_IMPACT // Stage 4
+  ADVANCE_MENTOR // Stage 5
 }
 
 enum PipelineRelationshipStatus {
@@ -120,16 +120,16 @@ enum TransactionStatus {
 }
 
 enum MpesaDirection {
-  STK_PUSH      // Company paying in
-  B2C           // Student payout
-  C2B           // Chama contribution
+  STK_PUSH // Company paying in
+  B2C // Student payout
+  C2B // Chama contribution
 }
 
 enum ScoreTier {
-  BRONZE     // 0–24
-  SILVER     // 25–74
-  GOLD       // 75–89
-  PLATINUM   // 90–100
+  BRONZE // 0–24
+  SILVER // 25–74
+  GOLD // 75–89
+  PLATINUM // 90–100
 }
 
 enum SkillLevel {
@@ -167,25 +167,26 @@ enum PlacementType {
 // =============================================================================
 
 model User {
-  id                String    @id @default(cuid())
-  email             String    @unique
-  studentEmail      String?   @unique  // university email
-  phone             String    @unique
-  passwordHash      String
-  role              UserRole  @default(STUDENT_STANDARD)
-  isActive          Boolean   @default(true)
-  isVerified        Boolean   @default(false)
-  lastLoginAt       DateTime?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  name         String?
+  email        String    @unique
+  studentEmail String?   @unique // university email
+  phone        String    @unique
+  passwordHash String
+  role         UserRole  @default(STUDENT_STANDARD)
+  isActive     Boolean   @default(true)
+  isVerified   Boolean   @default(false)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   // Relations
-  studentProfile    StudentProfile?
-  companyContact    CompanyContact?
-  sessions          Session[]
-  notifications     Notification[]
-  sentMessages      Message[]        @relation("SentMessages")
-  receivedMessages  Message[]        @relation("ReceivedMessages")
+  studentProfile   StudentProfile?
+  companyContact   CompanyContact?
+  sessions         Session[]
+  notifications    Notification[]
+  sentMessages     Message[]       @relation("SentMessages")
+  receivedMessages Message[]       @relation("ReceivedMessages")
 
   @@index([email])
   @@index([phone])
@@ -193,16 +194,16 @@ model User {
 }
 
 model Session {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   userId       String
-  refreshToken String   @unique
+  refreshToken String    @unique
   deviceInfo   String?
   ipAddress    String?
   expiresAt    DateTime
   revokedAt    DateTime?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
 
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([refreshToken])
@@ -214,55 +215,61 @@ model Session {
 // =============================================================================
 
 model StudentProfile {
-  id                  String        @id @default(cuid())
-  userId              String        @unique
-  firstName           String
-  lastName            String
-  dateOfBirth         DateTime
-  gender              String?
-  locationCity        String        @default("Nairobi")
-  avatarUrl           String?
-  bio                 String?
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  firstName    String
+  lastName     String
+  dateOfBirth  DateTime
+  gender       String?
+  locationCity String   @default("Nairobi")
+  avatarUrl    String?
+  bio          String?
 
   // Campus
-  campusId            String
-  courseId            String
-  yearJoined          Int
-  courseDuration      Int           // years
-  expectedGraduation  DateTime
-  studentIdNumber     String?
+  campusId           String
+  courseId           String
+  yearJoined         Int
+  courseDuration     Int // years
+  expectedGraduation DateTime
+  studentIdNumber    String?
 
   // Career
-  careerPath          String?       // e.g. "Marketing & Design"
-  currentMode         String        @default("EARN") // EARN | CAREER
+  careerPath  String? // e.g. "Marketing & Design"
+  currentMode String  @default("EARN") // EARN | CAREER
 
   // Transition
-  transitionUnlockedAt DateTime?
+  transitionUnlockedAt  DateTime?
   alumniWindowExpiresAt DateTime?
-  isOpenToHire         Boolean      @default(false)
+  isOpenToHire          Boolean   @default(false)
 
   // KYC
-  kycStatus           KycStatus    @default(PENDING)
-  kycVerifiedAt       DateTime?
+  kycStatus     KycStatus @default(PENDING)
+  kycVerifiedAt DateTime?
 
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Relations
-  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  campus              Campus       @relation(fields: [campusId], references: [id])
-  course              Course       @relation(fields: [courseId], references: [id])
-  kycDocuments        KycDocument[]
-  zumbarl             ZumbarlScore?
-  skillLevels         SkillLevel_[]
-  gigApplications     GigApplication[]
+  user                  User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campus                Campus                     @relation(fields: [campusId], references: [id])
+  course                Course                     @relation(fields: [courseId], references: [id])
+  kycDocuments          KycDocument[]
+  zumbarl               ZumbarlScore?
+  skillLevels           SkillLevel_[]
+  gigApplications       GigApplication[]
   pipelineRelationships PipelineRelationship[]
-  endorsementsReceived  Endorsement[] @relation("EndorsementsReceived")
-  achievements        Achievement[]
-  portfolioItems      PortfolioItem[]
-  wallets             Wallet[]
-  certificates        Certificate[]
-  chamaMembers        ChamaMember[]
+  endorsementsReceived  Endorsement[]              @relation("EndorsementsReceived")
+  achievements          Achievement[]
+  portfolioItems        PortfolioItem[]
+  stories               StudentStory[]
+  posts                 CampusPost[]
+  marketplaceShops      MarketplaceShop[]
+  marketplaceListings   MarketplaceListing[]
+  eventRsvps            CampusEventRsvp[]
+  roadmapEnrollments    StudentRoadmapEnrollment[]
+  wallets               Wallet[]
+  certificates          Certificate[]
+  chamaMembers          ChamaMember[]
 
   @@index([campusId])
   @@index([kycStatus])
@@ -270,49 +277,261 @@ model StudentProfile {
 }
 
 model Campus {
-  id              String    @id @default(cuid())
-  name            String
-  branch          String?
-  city            String
-  latitude        Float?
-  longitude       Float?
-  isActive        Boolean   @default(true)
-  createdAt       DateTime  @default(now())
+  id        String   @id @default(cuid())
+  name      String
+  branch    String?
+  city      String
+  latitude  Float?
+  longitude Float?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
 
-  students        StudentProfile[]
-  campusManagers  CampusManager[]
+  students            StudentProfile[]
+  campusManagers      CampusManager[]
+  contentItems        CampusContentItem[]
+  stories             StudentStory[]
+  posts               CampusPost[]
+  marketplaceShops    MarketplaceShop[]
+  marketplaceListings MarketplaceListing[]
+  events              CampusEvent[]
+  careerRoadmaps      CareerRoadmap[]
 
   @@map("campuses")
 }
 
-model Course {
-  id          String    @id @default(cuid())
-  name        String
-  category    String    // STEM | COMMERCE | ARTS | OTHER
-  duration    Int       // years
+model CampusContentItem {
+  id          String   @id @default(cuid())
+  scope       String
+  section     String
+  title       String
+  subtitle    String?
+  description String?
+  org         String?
+  meta        String?
+  value       String?
+  imageUrl    String?
+  images      String[] @default([])
+  href        String?
+  actionLabel String?
+  tags        String[] @default([])
+  payload     Json?
+  studentId   String?
+  campusId    String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-  students    StudentProfile[]
+  campus Campus? @relation(fields: [campusId], references: [id])
+
+  @@index([scope, section])
+  @@index([studentId])
+  @@index([campusId])
+  @@map("campus_content_items")
+}
+
+model Course {
+  id       String @id @default(cuid())
+  name     String
+  category String // STEM | COMMERCE | ARTS | OTHER
+  duration Int // years
+
+  students StudentProfile[]
 
   @@map("courses")
 }
 
 model KycDocument {
-  id              String      @id @default(cuid())
+  id              String    @id @default(cuid())
   studentId       String
-  documentType    String      // NATIONAL_ID | STUDENT_ID | CV | OTHER
-  fileUrl         String      // signed R2 URL
-  fileKey         String      // R2 object key
-  status          KycStatus   @default(PENDING)
+  documentType    String // NATIONAL_ID | STUDENT_ID | CV | OTHER
+  fileUrl         String // signed R2 URL
+  fileKey         String // R2 object key
+  status          KycStatus @default(PENDING)
   reviewedAt      DateTime?
   reviewedBy      String?
   rejectionReason String?
   expiresAt       DateTime?
-  createdAt       DateTime    @default(now())
+  createdAt       DateTime  @default(now())
 
-  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
   @@map("kyc_documents")
+}
+
+// =============================================================================
+// CAMPUS EXPERIENCE
+// =============================================================================
+
+model StudentStory {
+  id            String    @id @default(cuid())
+  studentId     String
+  campusId      String?
+  title         String
+  caption       String?
+  mediaUrl      String
+  mediaType     String    @default("IMAGE") // IMAGE | VIDEO
+  thumbnailUrl  String?
+  visibility    String    @default("PUBLIC") // PUBLIC | CAMPUS | CONNECTIONS
+  status        String    @default("ACTIVE") // ACTIVE | ARCHIVED | REPORTED
+  viewCount     Int       @default(0)
+  reactionCount Int       @default(0)
+  expiresAt     DateTime?
+  publishedAt   DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  campus  Campus?        @relation(fields: [campusId], references: [id])
+
+  @@index([studentId])
+  @@index([campusId])
+  @@index([status, publishedAt])
+  @@map("student_stories")
+}
+
+model CampusPost {
+  id           String    @id @default(cuid())
+  studentId    String?
+  campusId     String?
+  title        String?
+  body         String
+  mediaUrls    String[]  @default([])
+  tags         String[]  @default([])
+  postType     String    @default("GENERAL") // GENERAL | QUESTION | SHOWCASE | ANNOUNCEMENT
+  visibility   String    @default("PUBLIC")
+  status       String    @default("PUBLISHED") // DRAFT | PUBLISHED | ARCHIVED | REPORTED
+  likeCount    Int       @default(0)
+  commentCount Int       @default(0)
+  shareCount   Int       @default(0)
+  pinnedUntil  DateTime?
+  publishedAt  DateTime  @default(now())
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  student StudentProfile? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  campus  Campus?         @relation(fields: [campusId], references: [id])
+
+  @@index([studentId])
+  @@index([campusId])
+  @@index([postType, status])
+  @@index([publishedAt])
+  @@map("campus_posts")
+}
+
+model MarketplaceShop {
+  id              String   @id @default(cuid())
+  ownerId         String
+  campusId        String?
+  name            String
+  slug            String   @unique
+  tagline         String?
+  description     String?
+  category        String
+  logoUrl         String?
+  coverImageUrl   String?
+  locationLabel   String?
+  deliveryOptions String[] @default([])
+  socialLinks     Json?
+  ratingAverage   Float    @default(0)
+  ratingCount     Int      @default(0)
+  orderCount      Int      @default(0)
+  status          String   @default("ACTIVE") // DRAFT | ACTIVE | PAUSED | SUSPENDED | ARCHIVED
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  owner    StudentProfile       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  campus   Campus?              @relation(fields: [campusId], references: [id])
+  listings MarketplaceListing[]
+
+  @@index([ownerId])
+  @@index([campusId])
+  @@index([category, status])
+  @@map("marketplace_shops")
+}
+
+model MarketplaceListing {
+  id              String   @id @default(cuid())
+  shopId          String?
+  sellerId        String
+  campusId        String?
+  title           String
+  description     String
+  category        String
+  listingType     String   @default("PRODUCT") // PRODUCT | SERVICE | DIGITAL | RENTAL
+  condition       String?
+  priceAmount     Float
+  currency        String   @default("KES")
+  images          String[] @default([])
+  locationLabel   String?
+  deliveryOptions String[] @default([])
+  status          String   @default("ACTIVE") // DRAFT | ACTIVE | RESERVED | SOLD | ARCHIVED
+  stockCount      Int      @default(1)
+  viewCount       Int      @default(0)
+  savedCount      Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  seller StudentProfile   @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  shop   MarketplaceShop? @relation(fields: [shopId], references: [id], onDelete: SetNull)
+  campus Campus?          @relation(fields: [campusId], references: [id])
+
+  @@index([shopId])
+  @@index([sellerId])
+  @@index([campusId])
+  @@index([category, status])
+  @@index([createdAt])
+  @@map("marketplace_listings")
+}
+
+model CampusEvent {
+  id              String    @id @default(cuid())
+  campusId        String?
+  title           String
+  description     String
+  category        String
+  organizerName   String
+  organizerType   String    @default("CAMPUS") // CAMPUS | STUDENT | BUSINESS | ZUMBARL
+  coverImageUrl   String?
+  locationName    String?
+  locationAddress String?
+  latitude        Float?
+  longitude       Float?
+  startsAt        DateTime
+  endsAt          DateTime?
+  capacity        Int?
+  priceAmount     Float     @default(0)
+  currency        String    @default("KES")
+  tags            String[]  @default([])
+  status          String    @default("PUBLISHED") // DRAFT | PUBLISHED | CANCELLED | COMPLETED
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  campus Campus?           @relation(fields: [campusId], references: [id])
+  rsvps  CampusEventRsvp[]
+
+  @@index([campusId])
+  @@index([category, status])
+  @@index([startsAt])
+  @@map("campus_events")
+}
+
+model CampusEventRsvp {
+  id          String    @id @default(cuid())
+  eventId     String
+  studentId   String
+  status      String    @default("GOING") // GOING | INTERESTED | CANCELLED | ATTENDED
+  checkedInAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  event   CampusEvent    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, studentId])
+  @@index([studentId])
+  @@map("campus_event_rsvps")
 }
 
 // =============================================================================
@@ -324,16 +543,18 @@ model Company {
   name                String
   registrationNumber  String?   @unique
   sector              String
-  size                String    // MICRO | SMALL | MEDIUM | LARGE
+  size                String // MICRO | SMALL | MEDIUM | LARGE
   website             String?
   logoUrl             String?
   description         String?
+  hiringGoals         String[]  @default([])
+  onboardingCompleted Boolean   @default(false)
   locationCity        String    @default("Nairobi")
   locationAddress     String?
   latitude            Float?
   longitude           Float?
   isPipelinePartner   Boolean   @default(false)
-  hiringScore         Float?    // calculated from gig history
+  hiringScore         Float? // calculated from gig history
   kycStatus           KycStatus @default(PENDING)
   kycVerifiedAt       DateTime?
   isActive            Boolean   @default(true)
@@ -341,45 +562,98 @@ model Company {
   updatedAt           DateTime  @updatedAt
 
   // Relations
-  contacts            CompanyContact[]
-  kycDocuments        CompanyKycDocument[]
-  gigs                Gig[]
+  contacts              CompanyContact[]
+  kycDocuments          CompanyKycDocument[]
+  kycProfile            BusinessKyc?
+  gigs                  Gig[]
   pipelineRelationships PipelineRelationship[]
-  endorsementsGiven   Endorsement[]   @relation("EndorsementsGiven")
-  placements          Placement[]
-  wallet              CompanyWallet?
+  endorsementsGiven     Endorsement[]          @relation("EndorsementsGiven")
+  placements            Placement[]
+  wallet                CompanyWallet?
 
   @@index([kycStatus])
   @@index([sector])
   @@map("companies")
 }
 
-model CompanyContact {
-  id          String    @id @default(cuid())
-  userId      String    @unique
-  companyId   String
-  jobTitle    String?
-  isOwner     Boolean   @default(false)
-  createdAt   DateTime  @default(now())
+model Industry {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  slug      String   @unique
+  status    String   @default("active")
+  source    String   @default("system")
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company     Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  @@index([status])
+  @@map("industries")
+}
+
+model BusinessKyc {
+  id                         String    @id @default(cuid())
+  companyId                  String    @unique
+  status                     KycStatus @default(UNDER_REVIEW)
+  registeredBusinessName     String
+  incorporationCertificate   String?
+  kraPinCertificate          String?
+  businessRegistrationNumber String
+  representativeFullName     String
+  representativeIdDocument   String?
+  representativePhone        String
+  representativeEmail        String
+  representativeRole         String
+  industry                   String
+  companySize                String
+  physicalAddress            String
+  geoCoordinates             String?
+  website                    String?
+  yearEstablished            Int
+  mpesaTillOrPaybill         String?
+  bankAccountDetails         String?
+  taxComplianceCertificate   String?
+  linkedInCompanyPage        String?
+  socialMediaPresence        String?
+  verifiedCompanyReferral    String?
+  submittedAt                DateTime  @default(now())
+  reviewedAt                 DateTime?
+  reviewedBy                 String?
+  rejectionReason            String?
+  createdAt                  DateTime  @default(now())
+  updatedAt                  DateTime  @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@map("business_kyc")
+}
+
+model CompanyContact {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  companyId String
+  jobTitle  String?
+  isOwner   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@map("company_contacts")
 }
 
 model CompanyKycDocument {
-  id              String    @id @default(cuid())
-  companyId       String
-  documentType    String    // CERTIFICATE_OF_INCORPORATION | OWNER_ID | OTHER
-  fileUrl         String
-  fileKey         String
-  status          KycStatus @default(PENDING)
-  reviewedAt      DateTime?
-  createdAt       DateTime  @default(now())
+  id           String    @id @default(cuid())
+  companyId    String
+  documentType String // CERTIFICATE_OF_INCORPORATION | OWNER_ID | OTHER
+  fileUrl      String
+  fileKey      String
+  status       KycStatus @default(PENDING)
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
 
-  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
   @@map("company_kyc_documents")
@@ -390,38 +664,38 @@ model CompanyKycDocument {
 // =============================================================================
 
 model Gig {
-  id                  String      @id @default(cuid())
-  companyId           String
-  postedByContactId   String
-  title               String
-  description         String
-  gigType             GigType
-  gigMode             GigMode     @default(REMOTE)
-  requiredSkills      String[]
-  requiredTierMin     ScoreTier   @default(BRONZE)
-  budgetMin           Float
-  budgetMax           Float
-  currency            String      @default("KES")
-  deadline            DateTime
-  estimatedHours      Float?
-  locationCity        String?
-  isPhysical          Boolean     @default(false)
-  status              GigStatus   @default(DRAFT)
-  maxApplicants       Int         @default(10)
-  selectedStudentId   String?
-  completedAt         DateTime?
-  cancelledAt         DateTime?
-  cancelReason        String?
-  createdAt           DateTime    @default(now())
-  updatedAt           DateTime    @updatedAt
+  id                String    @id @default(cuid())
+  companyId         String
+  postedByContactId String
+  title             String
+  description       String
+  gigType           GigType
+  gigMode           GigMode   @default(REMOTE)
+  requiredSkills    String[]
+  requiredTierMin   ScoreTier @default(BRONZE)
+  budgetMin         Float
+  budgetMax         Float
+  currency          String    @default("KES")
+  deadline          DateTime
+  estimatedHours    Float?
+  locationCity      String?
+  isPhysical        Boolean   @default(false)
+  status            GigStatus @default(DRAFT)
+  maxApplicants     Int       @default(10)
+  selectedStudentId String?
+  completedAt       DateTime?
+  cancelledAt       DateTime?
+  cancelReason      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   // Relations
-  company             Company     @relation(fields: [companyId], references: [id])
-  applications        GigApplication[]
-  submission          GigSubmission?
-  rating              GigRating?
-  escrow              EscrowHold?
-  safetyReports       SafetyReport[]
+  company       Company          @relation(fields: [companyId], references: [id])
+  applications  GigApplication[]
+  submission    GigSubmission?
+  rating        GigRating?
+  escrow        EscrowHold?
+  safetyReports SafetyReport[]
 
   @@index([companyId])
   @@index([status])
@@ -440,8 +714,8 @@ model GigApplication {
   respondedAt     DateTime?
   rejectionReason String?
 
-  gig             Gig               @relation(fields: [gigId], references: [id], onDelete: Cascade)
-  student         StudentProfile    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  gig     Gig            @relation(fields: [gigId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([gigId, studentId])
   @@index([gigId])
@@ -450,46 +724,46 @@ model GigApplication {
 }
 
 model GigSubmission {
-  id              String    @id @default(cuid())
-  gigId           String    @unique
-  studentId       String
-  description     String?
-  fileUrls        String[]
-  fileKeys        String[]
-  submittedAt     DateTime  @default(now())
-  revisionCount   Int       @default(0)
-  lastRevisionAt  DateTime?
-  acceptedAt      DateTime?
+  id             String    @id @default(cuid())
+  gigId          String    @unique
+  studentId      String
+  description    String?
+  fileUrls       String[]
+  fileKeys       String[]
+  submittedAt    DateTime  @default(now())
+  revisionCount  Int       @default(0)
+  lastRevisionAt DateTime?
+  acceptedAt     DateTime?
 
-  gig             Gig       @relation(fields: [gigId], references: [id], onDelete: Cascade)
+  gig Gig @relation(fields: [gigId], references: [id], onDelete: Cascade)
 
   @@map("gig_submissions")
 }
 
 model GigRating {
-  id                    String    @id @default(cuid())
-  gigId                 String    @unique
-  studentId             String
-  companyId             String
+  id        String @id @default(cuid())
+  gigId     String @unique
+  studentId String
+  companyId String
 
   // Six dimensions — all 1.0 to 5.0
-  communicationScore    Float
-  timeManagementScore   Float
-  skillsScore           Float
-  deliveryQualityScore  Float
-  creativityScore       Float
-  professionalismScore  Float
-  overallScore          Float     // computed average
+  communicationScore   Float
+  timeManagementScore  Float
+  skillsScore          Float
+  deliveryQualityScore Float
+  creativityScore      Float
+  professionalismScore Float
+  overallScore         Float // computed average
 
-  briefAdherence        Float     // 1–5: did work match the brief
-  revisionCycles        Int       // how many revision rounds
-  wouldHireAgain        Boolean
-  publicFeedback        String?   // visible on student profile
-  privateNote           String?   // company-only internal note
-  isHeld                Boolean   @default(false) // held during safety review
-  ratedAt               DateTime  @default(now())
+  briefAdherence Float // 1–5: did work match the brief
+  revisionCycles Int // how many revision rounds
+  wouldHireAgain Boolean
+  publicFeedback String? // visible on student profile
+  privateNote    String? // company-only internal note
+  isHeld         Boolean  @default(false) // held during safety review
+  ratedAt        DateTime @default(now())
 
-  gig                   Gig       @relation(fields: [gigId], references: [id], onDelete: Cascade)
+  gig Gig @relation(fields: [gigId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
   @@index([companyId])
@@ -501,63 +775,63 @@ model GigRating {
 // =============================================================================
 
 model ZumbarlScore {
-  id                    String      @id @default(cuid())
-  studentId             String      @unique
-  currentScore          Float       @default(0)
-  tier                  ScoreTier   @default(BRONZE)
+  id           String    @id @default(cuid())
+  studentId    String    @unique
+  currentScore Float     @default(0)
+  tier         ScoreTier @default(BRONZE)
 
   // Sub-scores (0–100 each)
-  qualityScore          Float       @default(0)
-  volumeScore           Float       @default(0)
-  loyaltyScore          Float       @default(0)
-  trustScore            Float       @default(0)
-  deliveryScore         Float       @default(0)
+  qualityScore  Float @default(0)
+  volumeScore   Float @default(0)
+  loyaltyScore  Float @default(0)
+  trustScore    Float @default(0)
+  deliveryScore Float @default(0)
 
   // Raw inputs for calculator
-  avgRating             Float       @default(0)
-  deliveryRate          Float       @default(0)
-  totalGigsCompleted    Int         @default(0)
-  repeatClientRate      Float       @default(0)
-  endorsementCount      Int         @default(0)
+  avgRating          Float @default(0)
+  deliveryRate       Float @default(0)
+  totalGigsCompleted Int   @default(0)
+  repeatClientRate   Float @default(0)
+  endorsementCount   Int   @default(0)
 
   // Penalty flags
-  deliveryPenaltyActive Boolean     @default(false)
-  qualityGateActive     Boolean     @default(true) // true until 3 gigs done
+  deliveryPenaltyActive Boolean @default(false)
+  qualityGateActive     Boolean @default(true) // true until 3 gigs done
 
   // Refresh cycle
-  lastRefreshedAt       DateTime?
-  nextRefreshAt         DateTime?
-  refreshCycleDays      Int         @default(18)
+  lastRefreshedAt  DateTime?
+  nextRefreshAt    DateTime?
+  refreshCycleDays Int       @default(18)
 
   // Momentum
-  previousScore         Float?
-  scoreVelocity         Float?      // points per refresh cycle
-  trendDirection        String?     // UP | FLAT | DOWN
+  previousScore  Float?
+  scoreVelocity  Float? // points per refresh cycle
+  trendDirection String? // UP | FLAT | DOWN
 
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  student               StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  snapshots             ScoreSnapshot[]
+  student   StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  snapshots ScoreSnapshot[]
 
   @@map("zumbarl_scores")
 }
 
 model ScoreSnapshot {
-  id              String    @id @default(cuid())
-  scoreId         String
-  studentId       String
-  score           Float
-  tier            ScoreTier
-  qualityScore    Float
-  volumeScore     Float
-  loyaltyScore    Float
-  trustScore      Float
-  deliveryScore   Float
-  snapshotReason  String    // REFRESH | GIG_COMPLETED | ENDORSEMENT | PENALTY
-  createdAt       DateTime  @default(now())
+  id             String    @id @default(cuid())
+  scoreId        String
+  studentId      String
+  score          Float
+  tier           ScoreTier
+  qualityScore   Float
+  volumeScore    Float
+  loyaltyScore   Float
+  trustScore     Float
+  deliveryScore  Float
+  snapshotReason String // REFRESH | GIG_COMPLETED | ENDORSEMENT | PENALTY
+  createdAt      DateTime  @default(now())
 
-  zumbarlScore    ZumbarlScore @relation(fields: [scoreId], references: [id], onDelete: Cascade)
+  zumbarlScore ZumbarlScore @relation(fields: [scoreId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
   @@index([createdAt])
@@ -565,16 +839,16 @@ model ScoreSnapshot {
 }
 
 model SkillLevel_ {
-  id              String      @id @default(cuid())
-  studentId       String
-  skillName       String
-  level           SkillLevel  @default(BEGINNER)
-  verifiedByGigs  Int         @default(0)
-  lastAdvancedAt  DateTime?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  id             String     @id @default(cuid())
+  studentId      String
+  skillName      String
+  level          SkillLevel @default(BEGINNER)
+  verifiedByGigs Int        @default(0)
+  lastAdvancedAt DateTime?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 
-  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([studentId, skillName])
   @@index([studentId])
@@ -582,18 +856,18 @@ model SkillLevel_ {
 }
 
 model Endorsement {
-  id              String    @id @default(cuid())
+  id              String   @id @default(cuid())
   studentId       String
   companyId       String
   endorsedByName  String
   endorsedByTitle String
   note            String?
-  currencyAwarded Int       @default(12) // EC points
-  gigId           String?   // the gig that triggered this
-  createdAt       DateTime  @default(now())
+  currencyAwarded Int      @default(12) // EC points
+  gigId           String? // the gig that triggered this
+  createdAt       DateTime @default(now())
 
-  student         StudentProfile @relation("EndorsementsReceived", fields: [studentId], references: [id], onDelete: Cascade)
-  company         Company        @relation("EndorsementsGiven", fields: [companyId], references: [id])
+  student StudentProfile @relation("EndorsementsReceived", fields: [studentId], references: [id], onDelete: Cascade)
+  company Company        @relation("EndorsementsGiven", fields: [companyId], references: [id])
 
   @@index([studentId])
   @@index([companyId])
@@ -601,15 +875,15 @@ model Endorsement {
 }
 
 model Achievement {
-  id              String    @id @default(cuid())
-  studentId       String
-  type            String    // STAGE_ADVANCE | TOP_RATED | STREAK | FIRST_GIG | etc.
-  title           String
-  description     String
-  iconKey         String?
-  earnedAt        DateTime  @default(now())
+  id          String   @id @default(cuid())
+  studentId   String
+  type        String // STAGE_ADVANCE | TOP_RATED | STREAK | FIRST_GIG | etc.
+  title       String
+  description String
+  iconKey     String?
+  earnedAt    DateTime @default(now())
 
-  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
   @@map("achievements")
@@ -620,22 +894,22 @@ model Achievement {
 // =============================================================================
 
 model PipelineRelationship {
-  id              String                      @id @default(cuid())
-  studentId       String
-  companyId       String
-  status          PipelineRelationshipStatus  @default(EARLY)
-  gigsCompleted   Int                         @default(0)
-  avgRatingGiven  Float?
-  isFlagged       Boolean                     @default(false) // company flagged student as pipeline candidate
-  flaggedAt       DateTime?
-  notes           String?                     // company internal note
-  readinessScore  Float?                      // role-specific fit score
-  targetRole      String?
-  createdAt       DateTime                    @default(now())
-  updatedAt       DateTime                    @updatedAt
+  id             String                     @id @default(cuid())
+  studentId      String
+  companyId      String
+  status         PipelineRelationshipStatus @default(EARLY)
+  gigsCompleted  Int                        @default(0)
+  avgRatingGiven Float?
+  isFlagged      Boolean                    @default(false) // company flagged student as pipeline candidate
+  flaggedAt      DateTime?
+  notes          String? // company internal note
+  readinessScore Float? // role-specific fit score
+  targetRole     String?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
 
-  student         StudentProfile              @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  company         Company                     @relation(fields: [companyId], references: [id])
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  company Company        @relation(fields: [companyId], references: [id])
 
   @@unique([studentId, companyId])
   @@index([studentId])
@@ -644,67 +918,136 @@ model PipelineRelationship {
 }
 
 model CareerStageProgress {
-  id                  String          @id @default(cuid())
+  id                  String        @id @default(cuid())
   studentId           String
   stage               PipelineStage
-  status              String          @default("LOCKED") // LOCKED | IN_PROGRESS | COMPLETED
-  progressPercent     Float           @default(0)
-  projectsCompleted   Int             @default(0)
-  companiesWorkedWith Int             @default(0)
+  status              String        @default("LOCKED") // LOCKED | IN_PROGRESS | COMPLETED
+  progressPercent     Float         @default(0)
+  projectsCompleted   Int           @default(0)
+  companiesWorkedWith Int           @default(0)
   startedAt           DateTime?
   completedAt         DateTime?
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
   @@unique([studentId, stage])
   @@index([studentId])
   @@map("career_stage_progress")
 }
 
+model CareerRoadmap {
+  id             String   @id @default(cuid())
+  campusId       String?
+  title          String
+  slug           String   @unique
+  description    String
+  careerFamily   String
+  level          String   @default("BEGINNER") // BEGINNER | INTERMEDIATE | ADVANCED
+  estimatedWeeks Int      @default(4)
+  coverImageUrl  String?
+  skills         String[] @default([])
+  outcomes       String[] @default([])
+  status         String   @default("PUBLISHED") // DRAFT | PUBLISHED | ARCHIVED
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  campus      Campus?                    @relation(fields: [campusId], references: [id])
+  steps       CareerRoadmapStep[]
+  enrollments StudentRoadmapEnrollment[]
+
+  @@index([campusId])
+  @@index([careerFamily, status])
+  @@map("career_roadmaps")
+}
+
+model CareerRoadmapStep {
+  id             String   @id @default(cuid())
+  roadmapId      String
+  title          String
+  description    String
+  stepType       String   @default("LEARNING") // LEARNING | PROJECT | QUIZ | PORTFOLIO | MENTORSHIP
+  resourceUrl    String?
+  evidenceType   String?
+  estimatedHours Float?
+  required       Boolean  @default(true)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  roadmap CareerRoadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+
+  @@index([roadmapId])
+  @@map("career_roadmap_steps")
+}
+
+model StudentRoadmapEnrollment {
+  id               String    @id @default(cuid())
+  studentId        String
+  roadmapId        String
+  status           String    @default("IN_PROGRESS") // IN_PROGRESS | COMPLETED | PAUSED
+  progressPercent  Float     @default(0)
+  currentStepOrder Int       @default(0)
+  completedStepIds String[]  @default([])
+  evidenceUrls     String[]  @default([])
+  startedAt        DateTime  @default(now())
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  roadmap CareerRoadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, roadmapId])
+  @@index([studentId])
+  @@index([roadmapId])
+  @@map("student_roadmap_enrollments")
+}
+
 model PortfolioItem {
-  id              String    @id @default(cuid())
-  studentId       String
-  gigId           String?
-  title           String
-  description     String
-  category        String    // mirrors GigType
-  thumbnailUrl    String?
-  fileUrls        String[]
-  companyName     String?
-  clientFeedback  String?
-  isFeatured      Boolean   @default(false)
-  isPublic        Boolean   @default(true)
+  id             String   @id @default(cuid())
+  studentId      String
+  gigId          String?
+  title          String
+  description    String
+  category       String // mirrors GigType
+  thumbnailUrl   String?
+  fileUrls       String[]
+  companyName    String?
+  clientFeedback String?
+  isFeatured     Boolean  @default(false)
+  isPublic       Boolean  @default(true)
 
   // Impact metrics (student-inputted, company-verified flag)
-  impactMetrics   Json?     // { label: string, value: string }[]
-  metricsVerified Boolean   @default(false)
+  impactMetrics   Json? // { label: string, value: string }[]
+  metricsVerified Boolean @default(false)
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  student         StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
   @@map("portfolio_items")
 }
 
 model Placement {
-  id              String        @id @default(cuid())
-  studentId       String
-  companyId       String
-  type            PlacementType
-  role            String
-  startDate       DateTime
-  endDate         DateTime?
-  salaryOffered   Float?
-  isLocked        Boolean       @default(true)  // student can't seek other placements
-  offeredAt       DateTime      @default(now())
-  acceptedAt      DateTime?
-  declinedAt      DateTime?
-  completedAt     DateTime?
-  platformFee     Float?
+  id            String        @id @default(cuid())
+  studentId     String
+  companyId     String
+  type          PlacementType
+  role          String
+  startDate     DateTime
+  endDate       DateTime?
+  salaryOffered Float?
+  isLocked      Boolean       @default(true) // student can't seek other placements
+  offeredAt     DateTime      @default(now())
+  acceptedAt    DateTime?
+  declinedAt    DateTime?
+  completedAt   DateTime?
+  platformFee   Float?
 
-  company         Company       @relation(fields: [companyId], references: [id])
+  company Company @relation(fields: [companyId], references: [id])
 
   @@index([studentId])
   @@index([companyId])
@@ -712,19 +1055,19 @@ model Placement {
 }
 
 model Certificate {
-  id                  String    @id @default(cuid())
-  studentId           String
-  type                String    // SKILL_VERIFIED | TIER_ACHIEVED | ZUMBARL_GRADUATE
-  title               String
-  skillName           String?
-  level               String?
-  fileUrl             String?   // signed PDF URL
-  fileKey             String?
-  verificationHash    String?   @unique  // tamper-evident
-  issuedAt            DateTime  @default(now())
-  expiresAt           DateTime?
+  id               String    @id @default(cuid())
+  studentId        String
+  type             String // SKILL_VERIFIED | TIER_ACHIEVED | ZUMBARL_GRADUATE
+  title            String
+  skillName        String?
+  level            String?
+  fileUrl          String? // signed PDF URL
+  fileKey          String?
+  verificationHash String?   @unique // tamper-evident
+  issuedAt         DateTime  @default(now())
+  expiresAt        DateTime?
 
-  student             StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
   @@map("certificates")
@@ -735,61 +1078,61 @@ model Certificate {
 // =============================================================================
 
 model Wallet {
-  id              String    @id @default(cuid())
-  studentId       String
-  type            String    @default("MAIN") // MAIN | SAVINGS
-  balance         Float     @default(0)
-  pendingBalance  Float     @default(0)      // in escrow, not yet released
-  currency        String    @default("KES")
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  id             String   @id @default(cuid())
+  studentId      String
+  type           String   @default("MAIN") // MAIN | SAVINGS
+  balance        Float    @default(0)
+  pendingBalance Float    @default(0) // in escrow, not yet released
+  currency       String   @default("KES")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  student         StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  transactions    Transaction[]
+  student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
 
   @@index([studentId])
   @@map("wallets")
 }
 
 model CompanyWallet {
-  id          String    @id @default(cuid())
-  companyId   String    @unique
-  balance     Float     @default(0)
-  currency    String    @default("KES")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  companyId String   @unique
+  balance   Float    @default(0)
+  currency  String   @default("KES")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  company     Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
   @@map("company_wallets")
 }
 
 model Transaction {
-  id                String            @id @default(cuid())
-  walletId          String?
-  companyWalletId   String?
-  chamaWalletId     String?
-  type              TransactionType
-  status            TransactionStatus @default(PENDING)
-  amount            Float
-  currency          String            @default("KES")
-  platformFee       Float             @default(0)
-  netAmount         Float             // amount - platformFee
-  reference         String            @unique @default(cuid())
-  mpesaRef          String?           // Safaricom transaction ID
-  mpesaDirection    MpesaDirection?
-  description       String?
-  gigId             String?
-  metadata          Json?             // flexible extra data
-  processedAt       DateTime?
-  failedAt          DateTime?
-  failureReason     String?
-  createdAt         DateTime          @default(now())
+  id              String            @id @default(cuid())
+  walletId        String?
+  companyWalletId String?
+  chamaWalletId   String?
+  type            TransactionType
+  status          TransactionStatus @default(PENDING)
+  amount          Float
+  currency        String            @default("KES")
+  platformFee     Float             @default(0)
+  netAmount       Float // amount - platformFee
+  reference       String            @unique @default(cuid())
+  mpesaRef        String? // Safaricom transaction ID
+  mpesaDirection  MpesaDirection?
+  description     String?
+  gigId           String?
+  metadata        Json? // flexible extra data
+  processedAt     DateTime?
+  failedAt        DateTime?
+  failureReason   String?
+  createdAt       DateTime          @default(now())
 
-  wallet            Wallet?           @relation(fields: [walletId], references: [id])
-  companyWallet     CompanyWallet?    @relation(fields: [companyWalletId], references: [id])
-  chamaWallet       ChamaWallet?      @relation(fields: [chamaWalletId], references: [id])
+  wallet        Wallet?        @relation(fields: [walletId], references: [id])
+  companyWallet CompanyWallet? @relation(fields: [companyWalletId], references: [id])
+  chamaWallet   ChamaWallet?   @relation(fields: [chamaWalletId], references: [id])
 
   @@index([walletId])
   @@index([companyWalletId])
@@ -800,19 +1143,19 @@ model Transaction {
 }
 
 model EscrowHold {
-  id              String            @id @default(cuid())
-  gigId           String            @unique
-  companyId       String
-  studentId       String
-  amount          Float
-  currency        String            @default("KES")
-  status          String            @default("HELD") // HELD | RELEASED | REFUNDED | DISPUTED
-  heldAt          DateTime          @default(now())
-  releasedAt      DateTime?
-  refundedAt      DateTime?
-  transactionRef  String?
+  id             String    @id @default(cuid())
+  gigId          String    @unique
+  companyId      String
+  studentId      String
+  amount         Float
+  currency       String    @default("KES")
+  status         String    @default("HELD") // HELD | RELEASED | REFUNDED | DISPUTED
+  heldAt         DateTime  @default(now())
+  releasedAt     DateTime?
+  refundedAt     DateTime?
+  transactionRef String?
 
-  gig             Gig               @relation(fields: [gigId], references: [id])
+  gig Gig @relation(fields: [gigId], references: [id])
 
   @@index([companyId])
   @@index([studentId])
@@ -820,15 +1163,15 @@ model EscrowHold {
 }
 
 model MicroAdvance {
-  id              String    @id @default(cuid())
-  studentId       String
-  gigId           String    // the gig whose payout backs this advance
-  amount          Float
-  currency        String    @default("KES")
-  status          String    @default("ACTIVE") // ACTIVE | REPAID | DEFAULTED
-  issuedAt        DateTime  @default(now())
-  repaidAt        DateTime?
-  repaymentRef    String?
+  id           String    @id @default(cuid())
+  studentId    String
+  gigId        String // the gig whose payout backs this advance
+  amount       Float
+  currency     String    @default("KES")
+  status       String    @default("ACTIVE") // ACTIVE | REPAID | DEFAULTED
+  issuedAt     DateTime  @default(now())
+  repaidAt     DateTime?
+  repaymentRef String?
 
   @@index([studentId])
   @@index([gigId])
@@ -840,33 +1183,33 @@ model MicroAdvance {
 // =============================================================================
 
 model Chama {
-  id                  String    @id @default(cuid())
+  id                  String   @id @default(cuid())
   name                String
   description         String?
   campusId            String
-  contributionPercent Float     @default(10) // % of each gig payout
-  isActive            Boolean   @default(true)
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  contributionPercent Float    @default(10) // % of each gig payout
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 
-  members             ChamaMember[]
-  wallet              ChamaWallet?
-  whitelistedPayees   ChamaWhitelistedPayee[]
+  members           ChamaMember[]
+  wallet            ChamaWallet?
+  whitelistedPayees ChamaWhitelistedPayee[]
 
   @@index([campusId])
   @@map("chamas")
 }
 
 model ChamaMember {
-  id              String    @id @default(cuid())
-  chamaId         String
-  studentId       String
-  isAdmin         Boolean   @default(false)
+  id               String   @id @default(cuid())
+  chamaId          String
+  studentId        String
+  isAdmin          Boolean  @default(false)
   totalContributed Float    @default(0)
-  joinedAt        DateTime  @default(now())
+  joinedAt         DateTime @default(now())
 
-  chama           Chama           @relation(fields: [chamaId], references: [id], onDelete: Cascade)
-  student         StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  chama   Chama          @relation(fields: [chamaId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@unique([chamaId, studentId])
   @@index([chamaId])
@@ -875,30 +1218,30 @@ model ChamaMember {
 }
 
 model ChamaWallet {
-  id          String    @id @default(cuid())
-  chamaId     String    @unique
-  balance     Float     @default(0)
-  currency    String    @default("KES")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id        String   @id @default(cuid())
+  chamaId   String   @unique
+  balance   Float    @default(0)
+  currency  String   @default("KES")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  chama       Chama         @relation(fields: [chamaId], references: [id], onDelete: Cascade)
+  chama        Chama         @relation(fields: [chamaId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
   @@map("chama_wallets")
 }
 
 model ChamaWhitelistedPayee {
-  id          String    @id @default(cuid())
-  chamaId     String
-  name        String
-  phone       String
-  type        String    // LANDLORD | HOSTEL | SUPPLIER | MEMBER | OTHER
-  addedBy     String
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
+  id        String   @id @default(cuid())
+  chamaId   String
+  name      String
+  phone     String
+  type      String // LANDLORD | HOSTEL | SUPPLIER | MEMBER | OTHER
+  addedBy   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
 
-  chama       Chama     @relation(fields: [chamaId], references: [id], onDelete: Cascade)
+  chama Chama @relation(fields: [chamaId], references: [id], onDelete: Cascade)
 
   @@index([chamaId])
   @@map("chama_whitelisted_payees")
@@ -909,25 +1252,25 @@ model ChamaWhitelistedPayee {
 // =============================================================================
 
 model SafetyReport {
-  id              String              @id @default(cuid())
-  reporterUserId  String              // not a FK — siloed by design
-  reportedEntity  String              // company ID or user ID
-  entityType      String              // COMPANY | USER
-  gigId           String?             // gig context if applicable
-  type            SafetyReportType
-  status          SafetyReportStatus  @default(RECEIVED)
-  description     String?
-  locationLat     Float?
-  locationLng     Float?
-  isAnonymous     Boolean             @default(false)
-  assignedTo      String?             // safety officer user ID
-  resolvedAt      DateTime?
-  resolution      String?
-  createdAt       DateTime            @default(now())
-  updatedAt       DateTime            @updatedAt
+  id             String             @id @default(cuid())
+  reporterUserId String // not a FK — siloed by design
+  reportedEntity String // company ID or user ID
+  entityType     String // COMPANY | USER
+  gigId          String? // gig context if applicable
+  type           SafetyReportType
+  status         SafetyReportStatus @default(RECEIVED)
+  description    String?
+  locationLat    Float?
+  locationLng    Float?
+  isAnonymous    Boolean            @default(false)
+  assignedTo     String? // safety officer user ID
+  resolvedAt     DateTime?
+  resolution     String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
 
   // Soft link to gig — not a hard FK to preserve silo
-  gig             Gig?    @relation(fields: [gigId], references: [id])
+  gig Gig? @relation(fields: [gigId], references: [id])
 
   @@index([reporterUserId])
   @@index([status])
@@ -939,18 +1282,18 @@ model SafetyReport {
 // =============================================================================
 
 model Notification {
-  id          String    @id @default(cuid())
-  userId      String
-  type        String    // GIG_MATCH | SCORE_REFRESH | ENDORSEMENT | SAFETY | etc.
-  title       String
-  body        String
-  data        Json?     // deep link data
-  isRead      Boolean   @default(false)
-  readAt      DateTime?
-  sentVia     String[]  // IN_APP | WHATSAPP | SMS | EMAIL
-  createdAt   DateTime  @default(now())
+  id        String    @id @default(cuid())
+  userId    String
+  type      String // GIG_MATCH | SCORE_REFRESH | ENDORSEMENT | SAFETY | etc.
+  title     String
+  body      String
+  data      Json? // deep link data
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  sentVia   String[] // IN_APP | WHATSAPP | SMS | EMAIL
+  createdAt DateTime  @default(now())
 
-  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([isRead])
@@ -959,18 +1302,18 @@ model Notification {
 }
 
 model Message {
-  id              String    @id @default(cuid())
-  gigId           String?
-  senderId        String
-  recipientId     String
-  body            String
-  fileUrls        String[]
-  isRead          Boolean   @default(false)
-  readAt          DateTime?
-  createdAt       DateTime  @default(now())
+  id          String    @id @default(cuid())
+  gigId       String?
+  senderId    String
+  recipientId String
+  body        String
+  fileUrls    String[]
+  isRead      Boolean   @default(false)
+  readAt      DateTime?
+  createdAt   DateTime  @default(now())
 
-  sender          User      @relation("SentMessages", fields: [senderId], references: [id])
-  recipient       User      @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  sender    User @relation("SentMessages", fields: [senderId], references: [id])
+  recipient User @relation("ReceivedMessages", fields: [recipientId], references: [id])
 
   @@index([gigId])
   @@index([senderId])
@@ -983,26 +1326,26 @@ model Message {
 // =============================================================================
 
 model CampusManager {
-  id        String    @id @default(cuid())
-  userId    String    @unique
+  id        String   @id @default(cuid())
+  userId    String   @unique
   campusId  String
-  createdAt DateTime  @default(now())
+  createdAt DateTime @default(now())
 
-  campus    Campus    @relation(fields: [campusId], references: [id])
+  campus Campus @relation(fields: [campusId], references: [id])
 
   @@map("campus_managers")
 }
 
 model AuditLog {
-  id          String    @id @default(cuid())
-  userId      String
-  action      String
-  entityType  String
-  entityId    String
-  before      Json?
-  after       Json?
-  ipAddress   String?
-  createdAt   DateTime  @default(now())
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  before     Json?
+  after      Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
 
   @@index([userId])
   @@index([entityType, entityId])
@@ -1014,14 +1357,14 @@ model AuditLog {
 // API WORKFLOW RECORDS
 // =============================================================================
 
-model AppRecord {
-  id          String   @id @default(cuid())
-  collection  String
-  data        Json
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model WorkflowRecord {
+  id         String   @id @default(cuid())
+  collection String
+  data       Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@index([collection])
   @@index([collection, createdAt])
-  @@map("app_records")
+  @@map("workflow_records")
 }

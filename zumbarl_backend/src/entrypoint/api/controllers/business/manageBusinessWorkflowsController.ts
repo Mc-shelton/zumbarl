@@ -3,17 +3,39 @@ import { idParamSchema, requireBody, requireParams } from '../../../../lib/http.
 import {
   createApplicantReviewEventService,
   createBusinessOpportunityService,
+  createBusinessIndustryService,
+  createOpportunityDeliverablesService,
   awardApplicantProjectService,
   fundBusinessOpportunityService,
   inviteOpportunityBiddersService,
   listBusinessOpportunitiesService,
+  listBusinessIndustriesService,
+  listOpportunityDeliverablesService,
   listOpportunityApplicantsService,
   publishBusinessOpportunityService,
+  readOpportunityDeliverableService,
   readBusinessDashboardService,
+  readBusinessKycService,
   readBusinessProfileService,
+  submitBusinessKycService,
   updateBusinessProfileService
 } from '../../../../adapters/services/business/index.js'
-import { createOpportunitySchema, fundOpportunitySchema, inviteOpportunityBiddersSchema, reviewApplicantSchema } from '../../../validators/business/index.js'
+import { z } from 'zod'
+import {
+  createOpportunityDeliverablesSchema,
+  createBusinessIndustrySchema,
+  createOpportunitySchema,
+  fundOpportunitySchema,
+  inviteOpportunityBiddersSchema,
+  reviewApplicantSchema,
+  submitBusinessKycSchema,
+  updateBusinessProfileSchema
+} from '../../../validators/business/index.js'
+
+const deliverableParamSchema = z.object({
+  id: z.string().min(1),
+  deliverableId: z.string().min(1)
+})
 
 async function readBusinessDashboardController(request: FastifyRequest, reply: FastifyReply) {
   return reply.send(await readBusinessDashboardService(request.authUser?.businessId))
@@ -24,7 +46,23 @@ async function readBusinessProfileController(request: FastifyRequest, reply: Fas
 }
 
 async function updateBusinessProfileController(request: FastifyRequest, reply: FastifyReply) {
-  return reply.send(await updateBusinessProfileService(request.authUser?.businessId, requireBody(createOpportunitySchema.partial(), request)))
+  return reply.send(await updateBusinessProfileService(request.authUser?.businessId, requireBody(updateBusinessProfileSchema, request)))
+}
+
+async function readBusinessKycController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await readBusinessKycService(request.authUser?.businessId))
+}
+
+async function submitBusinessKycController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await submitBusinessKycService(request.authUser?.businessId, requireBody(submitBusinessKycSchema, request), request.authUser?.id))
+}
+
+async function listBusinessIndustriesController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await listBusinessIndustriesService(request.query as Record<string, unknown>))
+}
+
+async function createBusinessIndustryController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.code(201).send(await createBusinessIndustryService(requireBody(createBusinessIndustrySchema, request), request.authUser?.id))
 }
 
 async function listBusinessOpportunitiesController(request: FastifyRequest, reply: FastifyReply) {
@@ -43,6 +81,21 @@ async function publishBusinessOpportunityController(request: FastifyRequest, rep
 async function fundBusinessOpportunityController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
   return reply.code(201).send(await fundBusinessOpportunityService(id, requireBody(fundOpportunitySchema, request)))
+}
+
+async function listOpportunityDeliverablesController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await listOpportunityDeliverablesService(id))
+}
+
+async function readOpportunityDeliverableController(request: FastifyRequest, reply: FastifyReply) {
+  const { id, deliverableId } = requireParams(deliverableParamSchema, request)
+  return reply.send(await readOpportunityDeliverableService(id, deliverableId))
+}
+
+async function createOpportunityDeliverablesController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.code(201).send(await createOpportunityDeliverablesService(id, requireBody(createOpportunityDeliverablesSchema, request), request.authUser?.id))
 }
 
 async function inviteOpportunityBiddersController(request: FastifyRequest, reply: FastifyReply) {
@@ -69,10 +122,17 @@ export {
   readBusinessDashboardController,
   readBusinessProfileController,
   updateBusinessProfileController,
+  readBusinessKycController,
+  submitBusinessKycController,
+  listBusinessIndustriesController,
+  createBusinessIndustryController,
   listBusinessOpportunitiesController,
   createBusinessOpportunityController,
   publishBusinessOpportunityController,
   fundBusinessOpportunityController,
+  listOpportunityDeliverablesController,
+  readOpportunityDeliverableController,
+  createOpportunityDeliverablesController,
   inviteOpportunityBiddersController,
   listOpportunityApplicantsController,
   createApplicantReviewEventController,

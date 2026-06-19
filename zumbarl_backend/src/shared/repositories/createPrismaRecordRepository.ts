@@ -3,7 +3,7 @@ import { pageEnvelope } from '../../lib/http.js'
 import { prisma } from '../../lib/prisma.js'
 
 type AnyRecord = Record<string, any> & { id: string; createdAt: string; updatedAt: string }
-type PrismaRecordClient = Pick<PrismaClient, 'appRecord'>
+type PrismaRecordClient = Pick<PrismaClient, 'workflowRecord'>
 type CreatePrismaRecordRepository = (collection: string) => PrismaRecordRepository
 
 function toRecord(record: { id: string; data: Prisma.JsonValue; createdAt: Date; updatedAt: Date }): AnyRecord {
@@ -27,12 +27,12 @@ class PrismaRecordRepository {
   ) {}
 
   async count(predicate?: (record: AnyRecord) => boolean) {
-    if (!predicate) return this.prismaClient.appRecord.count({ where: { collection: this.collection } })
+    if (!predicate) return this.prismaClient.workflowRecord.count({ where: { collection: this.collection } })
     return (await this.listAll(predicate)).length
   }
 
   async create(payload: Record<string, any>) {
-    const record = await this.prismaClient.appRecord.create({
+    const record = await this.prismaClient.workflowRecord.create({
       data: {
         collection: this.collection,
         data: toJsonInput(payload)
@@ -47,7 +47,7 @@ class PrismaRecordRepository {
   }
 
   async findById(id: string) {
-    const record = await this.prismaClient.appRecord.findUnique({ where: { id } })
+    const record = await this.prismaClient.workflowRecord.findUnique({ where: { id } })
     return record?.collection === this.collection ? toRecord(record) : null
   }
 
@@ -56,7 +56,7 @@ class PrismaRecordRepository {
   }
 
   async listAll(predicate: (record: AnyRecord) => boolean = () => true) {
-    const records = await this.prismaClient.appRecord.findMany({
+    const records = await this.prismaClient.workflowRecord.findMany({
       where: { collection: this.collection },
       orderBy: { createdAt: 'desc' }
     })
@@ -64,7 +64,7 @@ class PrismaRecordRepository {
   }
 
   async updateById(id: string, patch: Record<string, any>) {
-    const existing = await this.prismaClient.appRecord.findUnique({ where: { id } })
+    const existing = await this.prismaClient.workflowRecord.findUnique({ where: { id } })
     if (!existing || existing.collection !== this.collection) return null
 
     const current = toRecord(existing)
@@ -72,7 +72,7 @@ class PrismaRecordRepository {
     delete currentData.id
     delete currentData.createdAt
     delete currentData.updatedAt
-    const record = await this.prismaClient.appRecord.update({
+    const record = await this.prismaClient.workflowRecord.update({
       where: { id },
       data: {
         data: toJsonInput({ ...currentData, ...patch })

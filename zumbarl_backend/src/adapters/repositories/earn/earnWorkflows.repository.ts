@@ -1,4 +1,6 @@
 import { createPrismaRecordRepository, runPrismaRecordTransaction } from '../../../shared/repositories/index.js'
+import { pageEnvelope } from '../../../lib/http.js'
+import { prisma } from '../../../lib/prisma.js'
 
 const opportunities = createPrismaRecordRepository('opportunities')
 const bids = createPrismaRecordRepository('bids')
@@ -9,8 +11,54 @@ const reviews = createPrismaRecordRepository('reviews')
 const reviewEvents = createPrismaRecordRepository('reviewEvents')
 
 class EarnWorkflowsRepository {
-  listPublishedOpportunities(query: Record<string, unknown>) {
-    return opportunities.list(query, (opportunity) => opportunity.status === 'published' || opportunity.visibility === 'public')
+  async listPublishedOpportunities(query: Record<string, unknown>) {
+    const gigs = await prisma.gig.findMany({
+      where: { status: 'OPEN' },
+      include: {
+        company: true,
+        applications: true
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+
+    return pageEnvelope(gigs.map((gig) => ({
+      id: gig.id,
+      title: gig.title,
+      company: gig.company.name,
+      companyDescription: gig.company.description,
+      opportunityType: gig.gigType.replaceAll('_', ' ').toLowerCase(),
+      engagementMode: gig.gigMode.toLowerCase(),
+      category: gig.gigType.replaceAll('_', ' ').toLowerCase(),
+      status: 'published',
+      budget: `KES ${Math.round(gig.budgetMax).toLocaleString('en-KE')}`,
+      budgetAmount: gig.budgetMax,
+      budgetMin: gig.budgetMin,
+      budgetMax: gig.budgetMax,
+      currency: gig.currency,
+      paymentTerms: 'project',
+      summary: gig.description,
+      skills: gig.requiredSkills.join(', '),
+      requiredSkills: gig.requiredSkills,
+      applicants: gig.applications.length,
+      duration: gig.estimatedHours ? `${gig.estimatedHours} hours estimated` : 'Timeline to agree',
+      deadline: gig.deadline.toISOString(),
+      publishedAt: gig.createdAt.toISOString().slice(0, 10),
+      locationCity: gig.locationCity,
+      isPhysical: gig.isPhysical,
+      maxApplicants: gig.maxApplicants,
+      requiredTierMin: gig.requiredTierMin,
+      overview: gig.description,
+      responsibilities: [
+        'Review the business brief and submit a clear proposal.',
+        'Agree scope, deliverables, and timing with the business before work starts.',
+        'Submit work through Zumbarl for review and payment release.'
+      ],
+      requirements: [
+        `${gig.requiredTierMin.toLowerCase()} tier or higher`,
+        ...gig.requiredSkills
+      ],
+      source: 'database-gig'
+    })), query)
   }
 
   findOpportunity(id: string) {
