@@ -12,6 +12,8 @@ Jobs & gigs page:
 - business opportunity tabs should be Opportunities, Completed, Drafts, Archived
 - intead of top skills on the right bar, lets have top freelancers
 - for the tags of the status, lets have open, draft, pending
-- when i click review, it should take me to the review page just like the students side, but with business functionalities
 - the applicants tab shoudl be a list of people they've worked with or working with, with details like their progress, their projects, just profile altogether[GUI]
 - make the deliverables draggable, and collapsable, same with milestones
+- the total amount shoudl be calculated from the numbers in all the deliverables, and then %age recalculated as per the amount of the deliverable, so the amount inputed, does not really have to work towards making it 100%
+- the sampel work files are picking any file type even after picking the type as image
+- on the draft listing, we only have publish and review buttons, instead remove those and lets have one, continue.

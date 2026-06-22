@@ -25,16 +25,19 @@ function CampusPage() {
     handleMarketplaceHoverEnd,
     handleMarketplaceHoverStart,
     handlePromptSubmit,
+    hero,
     heroCardRef,
     mainScrollRef,
     openRecommendedGig,
     prompt,
     promptInputRef,
     promptPlaceholder,
+    quickActions,
     recommendationSections,
     resetChatSurface,
     setPrompt,
     showBackToAiButton,
+    trustPoints,
   } = useCampusHomeState()
 
   return (
@@ -65,6 +68,7 @@ function CampusPage() {
               chatMode={chatMode}
               discoveryChips={discoveryChips}
               discoverySuggestions={discoverySuggestions}
+              hero={hero}
               heroCardRef={heroCardRef}
               onResetChat={resetChatSurface}
             />
@@ -77,7 +81,7 @@ function CampusPage() {
               promptInputRef={promptInputRef}
               promptPlaceholder={promptPlaceholder}
             />
-            <CampusQuickActions />
+            <CampusQuickActions actions={quickActions} />
             <CampusRecommendations
               activeMarketplaceHover={activeMarketplaceHover}
               activeMarketplaceSlide={activeMarketplaceSlide}
@@ -86,7 +90,7 @@ function CampusPage() {
               onOpenRecommendedGig={openRecommendedGig}
               recommendationSections={recommendationSections}
             />
-            <CampusTrustStrip />
+            <CampusTrustStrip trustPoints={trustPoints} />
           </section>
 
           <CampusHomeRail />

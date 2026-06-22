@@ -1,6 +1,17 @@
 import { useState } from 'react'
-import { FiCode, FiFileText, FiImage, FiInfo, FiMapPin, FiPlus, FiTrendingUp, FiX } from 'react-icons/fi'
+import { FiCode, FiFileText, FiImage, FiInfo, FiMapPin, FiPlus, FiTrendingUp, FiUploadCloud, FiX } from 'react-icons/fi'
 import { BUSINESS_OPPORTUNITY_BRIEF_SELECTS } from '../opportunityBriefCreateData'
+
+const SAMPLE_WORK_FILE_TYPE_OPTIONS = [
+  'Any accepted file',
+  'Image',
+  'Video',
+  'PDF',
+  'DOCX',
+  'Spreadsheet',
+  'ZIP',
+  'Link',
+]
 
 const DELIVERABLE_TYPE_META = {
   'File Asset Deliverables': {
@@ -57,6 +68,31 @@ function numberValue(value) {
   return Number(String(value || '').replace(/[^\d.]/g, '')) || 0
 }
 
+function toFileMetadata(file) {
+  return {
+    id: `file-${file.name}-${file.lastModified}`,
+    name: file.name,
+    type: file.type || 'application/octet-stream',
+    size: file.size,
+    lastModified: file.lastModified,
+  }
+}
+
+function formatFileSize(size = 0) {
+  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`
+  if (size >= 1024) return `${Math.round(size / 1024)} KB`
+  return `${size} B`
+}
+
+function createSampleWork(index = 0) {
+  return {
+    id: `sample-work-${Date.now()}-${index}`,
+    label: '',
+    fileType: SAMPLE_WORK_FILE_TYPE_OPTIONS[0],
+    files: [],
+  }
+}
+
 function createDeliverableMilestone(type = 'File Asset Deliverables', index = 0) {
   const meta = DELIVERABLE_TYPE_META[type]
   return {
@@ -69,6 +105,7 @@ function createDeliverableMilestone(type = 'File Asset Deliverables', index = 0)
     verificationMethod: meta.verificationMethod,
     evidenceRequired: meta.evidenceRequired,
     acceptanceCriteria: meta.acceptanceCriteria,
+    sampleWork: [createSampleWork(index)],
     paymentRelease: 'Release after this deliverable is reviewed and approved.',
     budget: '',
     paymentPercent: '',
@@ -87,6 +124,7 @@ function createProjectMilestone(type = 'Hybrid Deliverables', index = 0) {
     verificationMethod: meta.verificationMethod,
     evidenceRequired: meta.evidenceRequired,
     acceptanceCriteria: 'Milestone scope is complete, reviewed, and accepted against the agreed brief.',
+    sampleWork: [createSampleWork(index)],
     paymentRelease: 'Release after this milestone is reviewed and approved.',
     budget: '',
     paymentPercent: '',
@@ -134,6 +172,7 @@ function DeliverableMilestoneCard({ index, milestone, onRemove, onUpdate, scopeM
   const isMilestoneScope = scopeMode === 'milestone'
   const workflow = milestone.workflow || milestone.type || (isMilestoneScope ? 'Hybrid Deliverables' : 'File Asset Deliverables')
   const meta = DELIVERABLE_TYPE_META[workflow] || DELIVERABLE_TYPE_META['File Asset Deliverables']
+  const sampleWorkItems = Array.isArray(milestone.sampleWork) ? milestone.sampleWork : []
 
   function updateMilestone(field, value) {
     if (field === 'workflow') {
@@ -150,6 +189,30 @@ function DeliverableMilestoneCard({ index, milestone, onRemove, onUpdate, scopeM
     }
 
     onUpdate({ ...milestone, [field]: value })
+  }
+
+  function updateSampleWork(nextSampleWork) {
+    onUpdate({ ...milestone, sampleWork: nextSampleWork })
+  }
+
+  function addSampleWork() {
+    updateSampleWork([...sampleWorkItems, createSampleWork(sampleWorkItems.length)])
+  }
+
+  function updateSampleWorkItem(sampleId, field, value) {
+    updateSampleWork(sampleWorkItems.map((sample) => (
+      sample.id === sampleId ? { ...sample, [field]: value } : sample
+    )))
+  }
+
+  function updateSampleFiles(sampleId, files) {
+    updateSampleWork(sampleWorkItems.map((sample) => (
+      sample.id === sampleId ? { ...sample, files } : sample
+    )))
+  }
+
+  function removeSampleWork(sampleId) {
+    updateSampleWork(sampleWorkItems.filter((sample) => sample.id !== sampleId))
   }
 
   return (
@@ -207,6 +270,71 @@ function DeliverableMilestoneCard({ index, milestone, onRemove, onUpdate, scopeM
           <span>Acceptance Criteria</span>
           <textarea value={milestone.acceptanceCriteria} onChange={(event) => updateMilestone('acceptanceCriteria', event.target.value)} />
         </label>
+        <div className="business-create-sample-work-field">
+          <header>
+            <div>
+              <h5>Sample Deliverables / Work</h5>
+              <p>Attach examples, references, templates, or links that show the quality and format expected.</p>
+            </div>
+            <button type="button" className="business-create-add-question" onClick={addSampleWork}>
+              <FiPlus aria-hidden="true" />
+              Add sample work
+            </button>
+          </header>
+          <div className="business-create-sample-work-list">
+            {sampleWorkItems.map((sample, sampleIndex) => (
+              <article key={sample.id} className="business-create-sample-work-row">
+                <label>
+                  <span>Sample {sampleIndex + 1}</span>
+                  <input
+                    type="text"
+                    value={sample.label}
+                    placeholder="e.g. Approved Instagram carousel example"
+                    onChange={(event) => updateSampleWorkItem(sample.id, 'label', event.target.value)}
+                  />
+                </label>
+                <label>
+                  <span>File type</span>
+                  <select
+                    value={sample.fileType}
+                    onChange={(event) => updateSampleWorkItem(sample.id, 'fileType', event.target.value)}
+                  >
+                    {SAMPLE_WORK_FILE_TYPE_OPTIONS.map((option) => (
+                      <option key={option} value={option}>{option}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="business-create-sample-upload">
+                  <span>Upload</span>
+                  <div>
+                    <FiUploadCloud aria-hidden="true" />
+                    <strong>{sample.files?.length ? `${sample.files.length} file${sample.files.length === 1 ? '' : 's'}` : 'Browse files'}</strong>
+                  </div>
+                  <input
+                    multiple
+                    type="file"
+                    onChange={(event) => updateSampleFiles(sample.id, Array.from(event.target.files || []).map(toFileMetadata))}
+                  />
+                </label>
+                <button
+                  type="button"
+                  aria-label={`Remove sample work ${sampleIndex + 1}`}
+                  onClick={() => removeSampleWork(sample.id)}
+                >
+                  <FiX aria-hidden="true" />
+                </button>
+                {sample.files?.length ? (
+                  <p className="business-create-sample-file-list">
+                    {sample.files.map((file) => `${file.name} (${formatFileSize(file.size)})`).join(', ')}
+                  </p>
+                ) : null}
+              </article>
+            ))}
+          </div>
+          {!sampleWorkItems.length ? (
+            <p className="business-create-sample-work-empty">No sample work added yet. Add one if creators need a reference before they start.</p>
+          ) : null}
+        </div>
         <label className="business-create-deliverable-lock">
           <input
             type="checkbox"

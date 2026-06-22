@@ -20,6 +20,7 @@ export const BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS = {
   experienceLevel: 'Any level',
   mustHave: ['Social Media', 'Content Creation', 'Canva'],
   opportunityType: 'Project',
+  opportunitySplash: null,
   paymentTerms: 'Milestone-based',
   portfolioRequired: 'Portfolio samples required',
   preferredQualifications: 'Experience managing Instagram or TikTok pages for clubs, student groups, or small businesses.',
@@ -43,6 +44,9 @@ export const BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS = {
       verificationMethod: 'Company review against the brief, comments, and approval checklist.',
       evidenceRequired: 'Content calendar, planned captions, platform schedule, and approval notes.',
       acceptanceCriteria: 'Plan covers all required platforms, dates, tone, and approval responsibilities.',
+      sampleWork: [
+        { id: 'milestone-planning-sample-calendar', label: 'Example content calendar', fileType: 'PDF', files: [] },
+      ],
       paymentRelease: 'Release after kickoff materials are approved.',
       budget: '3,000',
       paymentPercent: '20',
@@ -57,6 +61,9 @@ export const BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS = {
       verificationMethod: 'Each component is verified using its documented method before stage approval.',
       evidenceRequired: 'Final content assets, source links/files, and production notes.',
       acceptanceCriteria: 'All approved content is complete, usable, and aligned to the agreed campaign plan.',
+      sampleWork: [
+        { id: 'milestone-production-sample-assets', label: 'Approved asset direction sample', fileType: 'Image', files: [] },
+      ],
       paymentRelease: 'Release after production milestone approval.',
       budget: '7,500',
       paymentPercent: '50',
@@ -71,6 +78,9 @@ export const BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS = {
       verificationMethod: 'Baseline comparison, evidence review, and metric validation.',
       evidenceRequired: 'Posting proof, analytics screenshots, baseline, measurement window, and final report.',
       acceptanceCriteria: 'Evidence matches the approved campaign scope and measurement window.',
+      sampleWork: [
+        { id: 'milestone-reporting-sample-report', label: 'Reporting sample format', fileType: 'Spreadsheet', files: [] },
+      ],
       paymentRelease: 'Release after reporting milestone approval.',
       budget: '4,500',
       paymentPercent: '30',
@@ -88,6 +98,9 @@ export const BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS = {
       verificationMethod: 'Company review, originality check, and tracked revision cycle.',
       evidenceRequired: 'PNG, JPG, PDF, SVG, MP4, MOV, AI, PSD, Figma link, or Canva link.',
       acceptanceCriteria: 'No watermarks, follows brand assets, and includes editable source files for work above KES 5,000.',
+      sampleWork: [
+        { id: 'deliverable-file-assets-sample-brand', label: 'Brand asset reference', fileType: 'Image', files: [] },
+      ],
       paymentRelease: 'Release after company approval and file verification.',
       budget: '6,000',
       paymentPercent: '40',
@@ -103,6 +116,9 @@ export const BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS = {
       verificationMethod: 'Evidence review, timestamp validation, and recipient/platform confirmation.',
       evidenceRequired: 'Screenshots, geo-tagged photos, GPS check-in, or WhatsApp confirmation.',
       acceptanceCriteria: 'Evidence matches the agreed platform, location, recipient, and timeline.',
+      sampleWork: [
+        { id: 'deliverable-proof-posting-sample-proof', label: 'Accepted proof example', fileType: 'Image', files: [] },
+      ],
       paymentRelease: 'Release after proof is verified.',
       budget: '4,500',
       paymentPercent: '30',
@@ -118,6 +134,9 @@ export const BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS = {
       verificationMethod: 'Baseline comparison, analytics screenshot review, and API verification where supported.',
       evidenceRequired: 'Instagram Insights, TikTok Analytics, WhatsApp Channel Analytics, or accepted metric screenshots.',
       acceptanceCriteria: 'Includes baseline, measurement window, target metric, and accepted evidence format.',
+      sampleWork: [
+        { id: 'deliverable-metrics-sample-analytics', label: 'Analytics report sample', fileType: 'PDF', files: [] },
+      ],
       paymentRelease: 'Release after metric achievement is verified.',
       budget: '4,500',
       paymentPercent: '30',

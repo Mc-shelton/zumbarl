@@ -67,6 +67,13 @@ function hasCompleteRequiredAttachments(form) {
   ))
 }
 
+function hasReadyOpportunitySplash(form) {
+  const splash = form.opportunitySplash
+  if (!splash) return true
+  if (!String(splash.type || '').startsWith('image/')) return true
+  return splash.cropConfirmed === true
+}
+
 function getClarityChecks(form) {
   return [
     {
@@ -110,6 +117,12 @@ function getClarityChecks(form) {
       step: 1,
     },
     {
+      id: 'opportunity-splash',
+      complete: hasReadyOpportunitySplash(form),
+      label: 'Opportunity splash image is cropped for student cards',
+      step: 1,
+    },
+    {
       id: 'screening',
       complete: hasMinimumText(form.screeningFocus, 45),
       label: 'Screening focus tells the business how to review applicants',
@@ -145,6 +158,7 @@ function toPayload(form, status, clarityScore) {
     mode: `${form.opportunityType} - ${form.engagementMode}`,
     mustHave: form.mustHave,
     opportunityType: form.opportunityType,
+    opportunitySplash: form.opportunitySplash,
     paymentTerms: form.paymentTerms,
     portfolioRequired: form.portfolioRequired,
     preferredQualifications: form.preferredQualifications,
@@ -163,6 +177,9 @@ export function useBusinessOpportunityBriefCreate() {
   const navigate = useNavigate()
   const [activeStep, setActiveStep] = useState(1)
   const [form, setForm] = useState(BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS)
+  const [draftOpportunityId, setDraftOpportunityId] = useState(null)
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState('')
   const maxStep = BUSINESS_OPPORTUNITY_BRIEF_STEPS.length
   const activeStepMeta = BUSINESS_OPPORTUNITY_BRIEF_STEPS[activeStep - 1] || BUSINESS_OPPORTUNITY_BRIEF_STEPS[0]
   const clarityChecks = useMemo(() => getClarityChecks(form), [form])
@@ -181,6 +198,7 @@ export function useBusinessOpportunityBriefCreate() {
     deadline: form.applicationDeadline || 'Rolling',
     duration: form.duration,
     engagement: form.engagementMode,
+    opportunitySplash: form.opportunitySplash,
     paymentTerms: form.paymentTerms,
     requiredAttachments: form.requiredAttachments,
     readiness: `${completeClarityChecks}/${clarityChecks.length} checks complete`,
@@ -194,29 +212,49 @@ export function useBusinessOpportunityBriefCreate() {
     setForm((current) => ({ ...current, [name]: value }))
   }
 
-  function saveOpportunity(status, options = {}) {
+  async function saveOpportunity(status, options = {}) {
     if (options.requiresPublishReadiness && !isPublishReady) {
       setActiveStep(firstMissingDetail?.step || maxStep)
       return null
     }
 
-    const opportunity = createBusinessOpportunity(toPayload(form, status, clarityScore))
-    const isPublished = status === 'Open'
+    setIsSaving(true)
+    setSaveError('')
 
-    recordApplicantReviewEvent({
-      action: isPublished ? 'opportunity_published' : 'opportunity_draft_saved',
-      opportunityId: opportunity.id,
-      detail: `${opportunity.title} ${isPublished ? 'published' : 'saved as a draft'} from create opportunity brief.`,
-    })
+    try {
+      const opportunity = await createBusinessOpportunity(toPayload(form, status, clarityScore), {
+        existingId: draftOpportunityId,
+      })
+      const isPublished = status === 'Open'
 
-    if (!options.skipNavigate) {
-      navigate('/business/opportunities', options.navigateState ? { state: options.navigateState } : undefined)
+      setDraftOpportunityId(opportunity.id)
+      recordApplicantReviewEvent({
+        action: isPublished ? 'opportunity_published' : 'opportunity_draft_saved',
+        opportunityId: opportunity.id,
+        detail: `${opportunity.title} ${isPublished ? 'published' : 'saved as a draft'} from create opportunity brief.`,
+      })
+
+      if (!options.skipNavigate) {
+        navigate('/business/opportunities', options.navigateState ? { state: options.navigateState } : undefined)
+      }
+      return opportunity
+    } catch (error) {
+      setSaveError(error instanceof Error ? error.message : 'Could not save opportunity draft.')
+      return null
+    } finally {
+      setIsSaving(false)
     }
-    return opportunity
   }
 
-  function createAndPublishOpportunity() {
-    const opportunity = saveOpportunity('Draft', {
+  async function saveDraftAndContinue() {
+    const opportunity = await saveOpportunity('Draft', { skipNavigate: true })
+    if (!opportunity) return
+
+    setActiveStep((current) => Math.min(maxStep, current + 1))
+  }
+
+  async function createAndPublishOpportunity() {
+    const opportunity = await saveOpportunity('Draft', {
       requiresPublishReadiness: true,
       skipNavigate: true,
     })
@@ -240,12 +278,14 @@ export function useBusinessOpportunityBriefCreate() {
     clarityScore,
     form,
     isPublishReady,
+    isSaving,
     isFirstStep: activeStep <= 1,
     isFinalStep: activeStep >= maxStep,
     missingRequiredDetails: clarityChecks.filter((check) => !check.complete),
+    saveError,
     summary,
     onBack: () => setActiveStep((current) => Math.max(1, current - 1)),
-    onContinue: () => setActiveStep((current) => Math.min(maxStep, current + 1)),
+    onContinue: saveDraftAndContinue,
     onPublish: createAndPublishOpportunity,
     onReset: () => {
       setActiveStep(1)

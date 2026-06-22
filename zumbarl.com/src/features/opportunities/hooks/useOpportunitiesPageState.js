@@ -9,9 +9,7 @@ import {
   DEFAULT_OPPORTUNITY_THUMBNAIL,
   DEFAULT_OPPORTUNITY_INTENT_ID,
   OPPORTUNITY_INTENT_OPTIONS,
-  OPPORTUNITY_DETAIL_THUMBNAILS,
   OPPORTUNITY_INVITES,
-  OPPORTUNITY_LISTINGS,
   OPPORTUNITY_TAB_TO_QUERY,
   OPPORTUNITY_TABS,
   createDeterministicUuid,
@@ -76,6 +74,7 @@ function toStudentBusinessOpportunity(opportunity, bidCount = 0) {
     company: opportunity.company,
     meta: `${opportunity.opportunityType || 'Project'} · ${opportunity.engagementMode || 'Flexible'}`,
     description: opportunity.summary,
+    image: opportunity.image || opportunity.previewImage,
     tags: visibleSkills,
     pay: pay.pay,
     unit: pay.unit,
@@ -188,7 +187,7 @@ function useOpportunitiesPageState() {
       ))
   ), [earnFlow.opportunities])
   const allOpportunityListings = useMemo(() => (
-    [...databaseOpportunities, ...businessOpportunities, ...OPPORTUNITY_LISTINGS]
+    [...databaseOpportunities, ...businessOpportunities]
   ), [databaseOpportunities, businessOpportunities])
   const opportunityUuidSet = useMemo(() => (
     new Set(allOpportunityListings.map((item) => item.opportunityUuid))
@@ -217,9 +216,7 @@ function useOpportunitiesPageState() {
     : null
 
   const selectedOpportunity = opportunityUuidToListing.get(selectedOpportunityUuid) || null
-  const selectedOpportunityThumbnail = selectedOpportunity
-    ? OPPORTUNITY_DETAIL_THUMBNAILS[selectedOpportunity.id] || DEFAULT_OPPORTUNITY_THUMBNAIL
-    : DEFAULT_OPPORTUNITY_THUMBNAIL
+  const selectedOpportunityThumbnail = selectedOpportunity?.image
   const isDetailOpen = Boolean(selectedOpportunity)
   const isFilterCollapsed = isDetailOpen && !isFilterExpanded
   const isFilterPanelVisible = !isDetailOpen || isFilterExpanded

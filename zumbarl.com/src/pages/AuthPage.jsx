@@ -57,11 +57,27 @@ const AUTH_MODE_CONTENT = {
     switchPath: '/login',
     fields: [
       {
-        id: 'fullName',
-        label: 'Full name',
+        id: 'firstName',
+        label: 'First name',
         type: 'text',
-        autoComplete: 'name',
-        placeholder: 'Jane Doe',
+        autoComplete: 'given-name',
+        placeholder: 'Jane',
+        Icon: HiOutlineUser,
+      },
+      {
+        id: 'lastName',
+        label: 'Second name',
+        type: 'text',
+        autoComplete: 'family-name',
+        placeholder: 'Doe',
+        Icon: HiOutlineUser,
+      },
+      {
+        id: 'username',
+        label: 'Username',
+        type: 'text',
+        autoComplete: 'username',
+        placeholder: '@the_creator',
         Icon: HiOutlineUser,
       },
       {
@@ -110,7 +126,10 @@ function AuthPage({ defaultMode = 'login' }) {
     const payload = mode === 'register'
       ? {
           email: formData.get('email'),
-          name: formData.get('fullName'),
+          firstName: formData.get('firstName'),
+          lastName: formData.get('lastName'),
+          username: formData.get('username'),
+          name: `${formData.get('firstName')} ${formData.get('lastName')}`,
           password: formData.get('password'),
           role: accountType === 'business' ? 'COMPANY_STANDARD' : 'STUDENT_STANDARD',
           businessName: accountType === 'business' ? formData.get('businessName') : undefined,

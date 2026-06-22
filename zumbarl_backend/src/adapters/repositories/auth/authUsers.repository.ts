@@ -15,6 +15,18 @@ function splitName(name: string | undefined) {
   }
 }
 
+function normalizeUsername(username: string | undefined, fallback: string) {
+  const candidate = String(username || fallback)
+    .trim()
+    .replace(/^@+/, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 30)
+
+  return candidate.length >= 3 ? candidate : `user_${candidate || 'zumbarl'}`
+}
+
 function getUniquePhone(phone: string | undefined, email: string) {
   if (phone && phone !== '+254700000000') return phone
   const hash = createHash('sha256').update(email.toLowerCase()).digest('hex').slice(0, 15)
@@ -27,6 +39,9 @@ function toAuthUser(user: Record<string, any>, profileIds: Record<string, string
     id: user.id,
     email: user.email,
     name: user.name,
+    firstName: user.firstName,
+    lastName: user.lastName,
+    username: user.username,
     phone: user.phone,
     passwordHash: user.passwordHash,
     role: user.role,
@@ -91,6 +106,15 @@ class AuthUsersRepository {
     return user ? toAuthUser(user) : null
   }
 
+  async findUserByUsername(username: string) {
+    const normalizedUsername = normalizeUsername(username, username)
+    const user = await prisma.user.findUnique({
+      where: { username: normalizedUsername },
+      include: { companyContact: true, studentProfile: true }
+    })
+    return user ? toAuthUser(user) : null
+  }
+
   async findUserById(id: string) {
     const user = await prisma.user.findUnique({
       where: { id },
@@ -103,6 +127,9 @@ class AuthUsersRepository {
     const user = await prisma.user.create({
       data: {
         name: payload.name,
+        firstName: payload.firstName,
+        lastName: payload.lastName,
+        username: normalizeUsername(payload.username, payload.email),
         email: payload.email.toLowerCase(),
         phone: getUniquePhone(payload.phone, payload.email),
         passwordHash: payload.passwordHash,
@@ -114,7 +141,9 @@ class AuthUsersRepository {
   }
 
   async createUserWithStudentProfile(payload: Record<string, any>, campus?: string) {
-    const { firstName, lastName } = splitName(payload.name)
+    const split = splitName(payload.name)
+    const firstName = payload.firstName || split.firstName
+    const lastName = payload.lastName || split.lastName
     const result = await prisma.$transaction(async (transaction) => {
       const campusRecord = await transaction.campus.upsert({
         where: { id: `campus-${String(campus || 'unassigned').toLowerCase().replace(/[^a-z0-9]+/g, '-')}` },
@@ -138,6 +167,9 @@ class AuthUsersRepository {
       const user = await transaction.user.create({
         data: {
           name: payload.name,
+          firstName,
+          lastName,
+          username: normalizeUsername(payload.username, payload.email),
           email: payload.email.toLowerCase(),
           phone: getUniquePhone(payload.phone, payload.email),
           passwordHash: payload.passwordHash,
@@ -165,10 +197,14 @@ class AuthUsersRepository {
 
   async createUserWithBusinessProfile(payload: Record<string, any>, name?: string) {
     const businessName = name ?? payload.businessName ?? payload.companyName ?? payload.name ?? 'Zumbarl Business'
+    const split = splitName(payload.name)
     const result = await prisma.$transaction(async (transaction) => {
       const user = await transaction.user.create({
         data: {
           name: payload.name,
+          firstName: payload.firstName || split.firstName,
+          lastName: payload.lastName || split.lastName,
+          username: normalizeUsername(payload.username, payload.email),
           email: payload.email.toLowerCase(),
           phone: getUniquePhone(payload.phone, payload.email),
           passwordHash: payload.passwordHash,
@@ -229,6 +265,7 @@ class AuthUsersRepository {
 const authUsersRepository = new AuthUsersRepository()
 
 const findUserByEmail = authUsersRepository.findUserByEmail.bind(authUsersRepository)
+const findUserByUsername = authUsersRepository.findUserByUsername.bind(authUsersRepository)
 const findUserById = authUsersRepository.findUserById.bind(authUsersRepository)
 const createUserRecord = authUsersRepository.createUserRecord.bind(authUsersRepository)
 const createUserWithStudentProfile = authUsersRepository.createUserWithStudentProfile.bind(authUsersRepository)
@@ -241,6 +278,7 @@ export {
   AuthUsersRepository,
   authUsersRepository,
   findUserByEmail,
+  findUserByUsername,
   findUserById,
   createUserRecord,
   createUserWithStudentProfile,

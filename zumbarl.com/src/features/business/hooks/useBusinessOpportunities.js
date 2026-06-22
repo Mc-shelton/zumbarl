@@ -30,8 +30,21 @@ function getBudgetAmount(budget) {
   return Number(String(budget).replace(/[^\d]/g, '')) || 0
 }
 
+function getDisplayOpportunityStatus(status) {
+  const normalized = String(status || '').trim().toLowerCase()
+
+  if (normalized === 'draft' || normalized === 'draft ready' || normalized === 'ready') return 'Draft'
+  if (normalized === 'published' || normalized === 'open') return 'Open'
+  if (normalized === 'in_review' || normalized === 'in review') return 'In Review'
+  if (normalized === 'shortlisted') return 'Shortlisted'
+  if (normalized === 'completed') return 'Completed'
+  if (normalized === 'archived' || normalized === 'closed') return 'Archived'
+
+  return status || 'Draft'
+}
+
 function mapFlowOpportunity(opportunity, invitedCount = 0) {
-  const status = opportunity.status === 'Draft ready' ? 'Draft' : opportunity.status === 'Closed' ? 'Archived' : opportunity.status
+  const status = getDisplayOpportunityStatus(opportunity.status)
   const skills = splitSkills(opportunity.skills)
 
   return {

@@ -68,6 +68,8 @@ const createOpportunitySchema = z.object({
   visibility: z.enum(['draft', 'public', 'invite-only']).default('draft')
 }).passthrough()
 
+const updateOpportunitySchema = createOpportunitySchema.partial().passthrough()
+
 const updateBusinessProfileSchema = z.object({
   name: z.string().min(2).optional(),
   industry: z.string().min(2).optional(),
@@ -147,6 +149,7 @@ const reviewApplicantSchema = z.object({
 
 export {
   createOpportunitySchema,
+  updateOpportunitySchema,
   updateBusinessProfileSchema,
   createBusinessIndustrySchema,
   submitBusinessKycSchema,

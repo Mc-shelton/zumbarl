@@ -3,6 +3,7 @@ import {
   createBackendBusinessOpportunity,
   listBackendBusinessOpportunities,
   publishBackendBusinessOpportunity,
+  updateBackendBusinessOpportunity,
 } from './persistBusinessOpportunity'
 import { getOpportunityStatusForAction } from './businessPipelineService'
 
@@ -17,7 +18,9 @@ function mirrorBackendWrite(writeOperation, onSuccess) {
     .then((result) => {
       if (result && onSuccess) onSuccess(result)
     })
-    .catch(() => {})
+    .catch((error) => {
+      console.error('Zumbarl backend write failed:', error)
+    })
 }
 
 function getDefaultOpportunity() {
@@ -163,6 +166,20 @@ function normalizeOpportunity(opportunity) {
   }
 }
 
+function getDisplayOpportunityStatus(status) {
+  const normalized = String(status || '').trim().toLowerCase()
+
+  if (normalized === 'draft' || normalized === 'draft ready') return 'Draft'
+  if (normalized === 'published' || normalized === 'open') return 'Open'
+  if (normalized === 'ready') return 'Draft'
+  if (normalized === 'in_review' || normalized === 'in review') return 'In Review'
+  if (normalized === 'shortlisted') return 'Shortlisted'
+  if (normalized === 'completed') return 'Completed'
+  if (normalized === 'archived' || normalized === 'closed') return 'Archived'
+
+  return status || 'Draft'
+}
+
 export function getBusinessFlowSnapshot() {
   return currentState
 }
@@ -176,6 +193,7 @@ function mergeBackendOpportunities(opportunities) {
   const backendOpportunities = opportunities.map((opportunity) => normalizeOpportunity({
     ...opportunity,
     backendId: opportunity.id,
+    status: getDisplayOpportunityStatus(opportunity.status),
   }))
   const backendIds = new Set(backendOpportunities.map((opportunity) => opportunity.backendId))
 
@@ -198,37 +216,56 @@ export function hydrateBusinessOpportunitiesFromBackend() {
     .catch(() => [])
 }
 
-export function createBusinessOpportunity(payload) {
+function mergeSavedOpportunity(localOpportunity, backendOpportunity) {
+  const backendId = backendOpportunity?.id || localOpportunity.backendId
+  const savedOpportunity = normalizeOpportunity({
+    ...localOpportunity,
+    ...backendOpportunity,
+    id: localOpportunity.id,
+    backendId,
+    status: getDisplayOpportunityStatus(backendOpportunity?.status || localOpportunity.status),
+  })
+
+  setBusinessFlowState((state) => ({
+    ...state,
+    opportunities: state.opportunities.map((item) => (
+      item.id === localOpportunity.id ? savedOpportunity : item
+    )),
+    selectedOpportunityId: savedOpportunity.id,
+  }))
+
+  return savedOpportunity
+}
+
+export async function createBusinessOpportunity(payload, options = {}) {
+  const existingOpportunity = options.existingId
+    ? currentState.opportunities.find((item) => item.id === options.existingId)
+    : null
   const opportunity = {
-    id: createId('brief', `${payload.title}-${Date.now()}`),
+    ...(existingOpportunity || {}),
+    id: existingOpportunity?.id || createId('brief', `${payload.title}-${Date.now()}`),
     company: BUSINESS_APPLICANT_PROFILE.company,
     applicants: 0,
-    status: 'Draft ready',
-    createdAt: formatCreatedAt(),
+    createdAt: existingOpportunity?.createdAt || formatCreatedAt(),
     intentId: 'career',
     intentLabel: 'Build Career Mode',
     ...payload,
+    status: getDisplayOpportunityStatus(payload.status || existingOpportunity?.status || 'Draft'),
   }
 
   setBusinessFlowState((state) => ({
     ...state,
-    opportunities: [opportunity, ...state.opportunities],
+    opportunities: existingOpportunity
+      ? state.opportunities.map((item) => (item.id === existingOpportunity.id ? opportunity : item))
+      : [opportunity, ...state.opportunities],
     selectedOpportunityId: opportunity.id,
   }))
 
-  mirrorBackendWrite(
-    () => createBackendBusinessOpportunity(opportunity),
-    (backendOpportunity) => {
-      setBusinessFlowState((state) => ({
-        ...state,
-        opportunities: state.opportunities.map((item) => (
-          item.id === opportunity.id ? { ...item, backendId: backendOpportunity.id } : item
-        )),
-      }))
-    },
-  )
+  const backendOpportunity = opportunity.backendId
+    ? await updateBackendBusinessOpportunity(opportunity.backendId, opportunity)
+    : await createBackendBusinessOpportunity(opportunity)
 
-  return opportunity
+  return mergeSavedOpportunity(opportunity, backendOpportunity)
 }
 
 export function publishBusinessOpportunity(opportunityId) {

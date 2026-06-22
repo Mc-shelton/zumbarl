@@ -1,12 +1,15 @@
 import cors from '@fastify/cors'
 import helmet from '@fastify/helmet'
 import jwt from '@fastify/jwt'
+import multipart from '@fastify/multipart'
 import rateLimit from '@fastify/rate-limit'
+import fastifyStatic from '@fastify/static'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
 import Fastify from 'fastify'
 import { ZodError } from 'zod'
 import { env } from './config/env.js'
+import { LOCAL_STORAGE_PUBLIC_PREFIX, LOCAL_STORAGE_ROOT } from './adapters/storage/index.js'
 import { ApiError } from './lib/http.js'
 import { prisma } from './lib/prisma.js'
 import { closeRedisCache, connectRedisCache, getRedisClient } from './adapters/cache/index.js'
@@ -49,6 +52,17 @@ async function buildApp() {
     skipOnError: true
   })
   await app.register(jwt, { secret: env.JWT_SECRET })
+  await app.register(multipart, {
+    limits: {
+      fileSize: 50 * 1024 * 1024,
+      files: 10
+    }
+  })
+  await app.register(fastifyStatic, {
+    root: LOCAL_STORAGE_ROOT,
+    prefix: `${LOCAL_STORAGE_PUBLIC_PREFIX}/`,
+    decorateReply: false
+  })
   await app.register(swagger, {
     openapi: {
       info: {

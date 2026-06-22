@@ -18,12 +18,14 @@ export function BusinessOpportunityBriefForm({
   isFinalStep,
   isFirstStep,
   isPublishReady,
+  isSaving,
   onBack,
   onContinue,
   onPublish,
   onSaveDraft,
   onStepChange,
   onUpdateField,
+  saveError,
 }) {
   const ActiveStep = STEP_CONTENT[activeStepMeta.id] || BusinessOpportunityBriefDetailsStep
 
@@ -40,6 +42,9 @@ export function BusinessOpportunityBriefForm({
           onStepChange={onStepChange}
           onUpdateField={onUpdateField}
         />
+        {saveError ? (
+          <p className="business-create-save-error" role="alert">{saveError}</p>
+        ) : null}
         {!isFinalStep ? (
           <footer>
             {!isFirstStep ? (
@@ -48,8 +53,8 @@ export function BusinessOpportunityBriefForm({
                 Back
               </button>
             ) : <span />}
-            <button type="button" className="business-profile-primary-btn" onClick={onContinue}>
-              Save & Continue
+            <button type="button" className="business-profile-primary-btn" onClick={onContinue} disabled={isSaving}>
+              {isSaving ? 'Saving...' : 'Save & Continue'}
               <FiArrowRight aria-hidden="true" />
             </button>
           </footer>

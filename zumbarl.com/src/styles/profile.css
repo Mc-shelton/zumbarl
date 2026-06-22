@@ -1628,12 +1628,12 @@
 }
 
 .campus-profile-shell.is-portfolio-tab.is-portfolio-detail-open {
-  grid-template-columns: 262px minmax(0, 1.45fr) minmax(0, 0.55fr);
+  grid-template-columns: 262px minmax(0, 1fr) 360px;
   transition: grid-template-columns 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .campus-profile-shell.is-shop-detail-open {
-  grid-template-columns: 262px minmax(0, 1.22fr) minmax(380px, 0.78fr);
+  grid-template-columns: 262px minmax(0, 1fr) 360px;
   transition: grid-template-columns 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
@@ -4591,11 +4591,11 @@
   }
 
   .campus-profile-shell.is-portfolio-tab.is-portfolio-detail-open {
-    grid-template-columns: 262px minmax(0, 1.08fr) minmax(300px, 0.92fr);
+    grid-template-columns: 262px minmax(0, 1fr) 320px;
   }
 
   .campus-profile-shell.is-shop-detail-open {
-    grid-template-columns: 262px minmax(0, 1.06fr) minmax(330px, 0.94fr);
+    grid-template-columns: 262px minmax(0, 1fr) 320px;
   }
 
   .campus-portfolio-detail-rail {
@@ -4827,11 +4827,11 @@
   }
 
   .campus-profile-shell.is-portfolio-tab.is-portfolio-detail-open {
-    grid-template-columns: 262px minmax(0, 1fr) minmax(290px, 0.95fr);
+    grid-template-columns: 262px minmax(0, 1fr) 320px;
   }
 
   .campus-profile-shell.is-shop-detail-open {
-    grid-template-columns: 262px minmax(0, 1fr) minmax(300px, 0.95fr);
+    grid-template-columns: 262px minmax(0, 1fr) 320px;
   }
 }
 

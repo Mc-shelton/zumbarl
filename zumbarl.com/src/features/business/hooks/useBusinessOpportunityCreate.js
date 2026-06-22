@@ -104,14 +104,14 @@ export function useBusinessOpportunityCreate({ destination = '/business/opportun
     setForm(BUSINESS_CREATE_DEFAULTS)
   }
 
-  function saveOpportunity(status) {
+  async function saveOpportunity(status) {
     if (destination.includes('/marketing')) {
       const campaign = createBusinessMarketingCampaign(toCampaignPayload(form, status))
       navigate(destination)
       return campaign
     }
 
-    const opportunity = createBusinessOpportunity(toPayload(form, status))
+    const opportunity = await createBusinessOpportunity(toPayload(form, status))
     const isPublished = status === 'Open'
 
     recordApplicantReviewEvent({

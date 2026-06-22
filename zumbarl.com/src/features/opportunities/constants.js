@@ -508,6 +508,7 @@ export const OPPORTUNITY_LISTINGS = OPPORTUNITIES.filter((item, index) => {
     ...item,
     shareKey,
     opportunityUuid: item.opportunityUuid || createDeterministicUuid(shareKey),
+    image: item.image || OPPORTUNITY_DETAIL_THUMBNAILS[item.id] || DEFAULT_OPPORTUNITY_THUMBNAIL,
     ownerSlug: item.ownerSlug || slugifyOwner(item.owner?.name || item.company || ''),
   }
 })

@@ -2,83 +2,92 @@ import { createPrismaRecordRepository, runPrismaRecordTransaction } from '../../
 import { pageEnvelope } from '../../../lib/http.js'
 import { prisma } from '../../../lib/prisma.js'
 
-const opportunities = createPrismaRecordRepository('opportunities')
-const bids = createPrismaRecordRepository('bids')
-const invites = createPrismaRecordRepository('opportunityInvites')
 const projects = createPrismaRecordRepository('projects')
 const deliverables = createPrismaRecordRepository('deliverables')
 const reviews = createPrismaRecordRepository('reviews')
 const reviewEvents = createPrismaRecordRepository('reviewEvents')
 
+function toIso(value: Date | string | null | undefined) {
+  if (!value) return value
+  return value instanceof Date ? value.toISOString() : value
+}
+
+function toOpportunityCard(opportunity: Record<string, any>) {
+  return {
+    id: opportunity.id,
+    title: opportunity.title,
+    company: opportunity.companyName ?? opportunity.company?.name,
+    companyDescription: opportunity.companyDescription ?? opportunity.company?.description,
+    image: opportunity.opportunitySplash?.url ?? opportunity.opportunitySplash?.previewUrl,
+    previewImage: opportunity.opportunitySplash?.url ?? opportunity.opportunitySplash?.previewUrl,
+    opportunityType: opportunity.opportunityType,
+    engagementMode: opportunity.engagementMode ?? opportunity.mode,
+    category: opportunity.category,
+    status: opportunity.status,
+    budget: opportunity.budgetLabel ?? `KES ${Math.round(opportunity.budgetAmount ?? 0).toLocaleString('en-KE')}`,
+    budgetAmount: opportunity.budgetAmount,
+    currency: opportunity.currency,
+    paymentTerms: opportunity.paymentTerms,
+    summary: opportunity.summary,
+    description: opportunity.description,
+    skills: Array.isArray(opportunity.skills) ? opportunity.skills.join(', ') : opportunity.skills,
+    requiredSkills: opportunity.skills ?? [],
+    applicants: opportunity.applicants,
+    duration: opportunity.duration,
+    deadline: toIso(opportunity.applicationDeadline) ?? opportunity.deadlineLabel,
+    publishedAt: toIso(opportunity.publishedAt) ?? toIso(opportunity.createdAt),
+    overview: opportunity.description ?? opportunity.summary,
+    responsibilities: opportunity.requirements ?? [],
+    requirements: opportunity.mustHave ?? [],
+    source: 'database-opportunity'
+  }
+}
+
 class EarnWorkflowsRepository {
   async listPublishedOpportunities(query: Record<string, unknown>) {
-    const gigs = await prisma.gig.findMany({
-      where: { status: 'OPEN' },
+    const items = await prisma.opportunity.findMany({
+      where: {
+        OR: [
+          { status: { in: ['published', 'open', 'ready'] } },
+          { visibility: 'public' }
+        ]
+      },
       include: {
-        company: true,
-        applications: true
+        company: true
       },
       orderBy: { createdAt: 'desc' }
     })
 
-    return pageEnvelope(gigs.map((gig) => ({
-      id: gig.id,
-      title: gig.title,
-      company: gig.company.name,
-      companyDescription: gig.company.description,
-      opportunityType: gig.gigType.replaceAll('_', ' ').toLowerCase(),
-      engagementMode: gig.gigMode.toLowerCase(),
-      category: gig.gigType.replaceAll('_', ' ').toLowerCase(),
-      status: 'published',
-      budget: `KES ${Math.round(gig.budgetMax).toLocaleString('en-KE')}`,
-      budgetAmount: gig.budgetMax,
-      budgetMin: gig.budgetMin,
-      budgetMax: gig.budgetMax,
-      currency: gig.currency,
-      paymentTerms: 'project',
-      summary: gig.description,
-      skills: gig.requiredSkills.join(', '),
-      requiredSkills: gig.requiredSkills,
-      applicants: gig.applications.length,
-      duration: gig.estimatedHours ? `${gig.estimatedHours} hours estimated` : 'Timeline to agree',
-      deadline: gig.deadline.toISOString(),
-      publishedAt: gig.createdAt.toISOString().slice(0, 10),
-      locationCity: gig.locationCity,
-      isPhysical: gig.isPhysical,
-      maxApplicants: gig.maxApplicants,
-      requiredTierMin: gig.requiredTierMin,
-      overview: gig.description,
-      responsibilities: [
-        'Review the business brief and submit a clear proposal.',
-        'Agree scope, deliverables, and timing with the business before work starts.',
-        'Submit work through Zumbarl for review and payment release.'
-      ],
-      requirements: [
-        `${gig.requiredTierMin.toLowerCase()} tier or higher`,
-        ...gig.requiredSkills
-      ],
-      source: 'database-gig'
-    })), query)
+    return pageEnvelope(items.map(toOpportunityCard), query)
   }
 
   findOpportunity(id: string) {
-    return opportunities.findById(id)
+    return prisma.opportunity.findUnique({ where: { id }, include: { company: true, scopeItems: true, requiredAttachments: true } })
   }
 
   updateOpportunity(id: string, patch: Record<string, any>) {
-    return opportunities.updateById(id, patch)
+    return prisma.opportunity.update({ where: { id }, data: patch })
   }
 
   listStudentBids(studentId: string | undefined, query: Record<string, unknown>) {
-    return bids.list(query, (bid) => !studentId || bid.studentId === studentId)
+    return prisma.bid.findMany({
+      where: studentId ? { studentId } : undefined,
+      include: { opportunity: { include: { company: true } } },
+      orderBy: { appliedAt: 'desc' }
+    }).then((items) => pageEnvelope(items.map((item) => ({
+      ...item,
+      appliedAt: toIso(item.appliedAt),
+      respondedAt: toIso(item.respondedAt),
+      opportunity: toOpportunityCard(item.opportunity)
+    })), query))
   }
 
   createBid(payload: Record<string, any>) {
-    return bids.create(payload)
+    return prisma.bid.create({ data: payload as any })
   }
 
   acceptInvite(id: string) {
-    return invites.updateById(id, { status: 'accepted', acceptedAt: new Date().toISOString() })
+    return prisma.opportunityInvite.update({ where: { id }, data: { status: 'accepted', acceptedAt: new Date(), respondedAt: new Date() } })
   }
 
   listStudentProjects(studentId: string | undefined, query: Record<string, unknown>) {
@@ -114,34 +123,78 @@ class EarnWorkflowsRepository {
   }
 
   submitBid(opportunityId: string, studentId: string | undefined, payload: Record<string, any>) {
-    return runPrismaRecordTransaction(async (createRepository) => {
-      const transactionOpportunities = createRepository('opportunities')
-      const transactionBids = createRepository('bids')
-      const opportunity = await transactionOpportunities.findById(opportunityId)
+    return prisma.$transaction(async (transaction) => {
+      if (!studentId) return null
+      const opportunity = await transaction.opportunity.findUnique({ where: { id: opportunityId } })
       if (!opportunity) return null
 
-      const bid = await transactionBids.create({ ...payload, opportunityId, studentId, status: 'submitted' })
-      await transactionOpportunities.updateById(opportunityId, { applicants: (opportunity.applicants ?? 0) + 1 })
+      const bid = await transaction.bid.upsert({
+        where: { opportunityId_studentId: { opportunityId, studentId } },
+        update: {
+          proposal: payload.proposal,
+          bidAmount: payload.amount,
+          deliveryTime: payload.deliveryTime,
+          intentId: payload.intent,
+          intentLabel: payload.intent,
+          status: 'submitted',
+          appliedAt: new Date()
+        },
+        create: {
+          opportunityId,
+          studentId,
+          proposal: payload.proposal,
+          bidAmount: payload.amount,
+          deliveryTime: payload.deliveryTime,
+          intentId: payload.intent,
+          intentLabel: payload.intent,
+          status: 'submitted'
+        }
+      })
+      await transaction.opportunity.update({ where: { id: opportunityId }, data: { applicants: { increment: 1 } } })
       return { bid, opportunity }
     })
   }
 
   submitBidWithEvent(opportunityId: string, studentId: string | undefined, payload: Record<string, any>) {
-    return runPrismaRecordTransaction(async (createRepository) => {
-      const transactionOpportunities = createRepository('opportunities')
-      const transactionBids = createRepository('bids')
-      const transactionReviewEvents = createRepository('reviewEvents')
-      const opportunity = await transactionOpportunities.findById(opportunityId)
+    return prisma.$transaction(async (transaction) => {
+      if (!studentId) return null
+      const opportunity = await transaction.opportunity.findUnique({ where: { id: opportunityId } })
       if (!opportunity) return null
 
-      const bid = await transactionBids.create({ ...payload, opportunityId, studentId, status: 'submitted' })
-      await transactionOpportunities.updateById(opportunityId, { applicants: (opportunity.applicants ?? 0) + 1 })
-      await transactionReviewEvents.create({
-        scope: 'bid',
-        action: 'submitted',
-        bidId: bid.id,
-        opportunityId,
-        studentId
+      const bid = await transaction.bid.upsert({
+        where: { opportunityId_studentId: { opportunityId, studentId } },
+        update: {
+          proposal: payload.proposal,
+          bidAmount: payload.amount,
+          deliveryTime: payload.deliveryTime,
+          intentId: payload.intent,
+          intentLabel: payload.intent,
+          status: 'submitted',
+          appliedAt: new Date()
+        },
+        create: {
+          opportunityId,
+          studentId,
+          proposal: payload.proposal,
+          bidAmount: payload.amount,
+          deliveryTime: payload.deliveryTime,
+          intentId: payload.intent,
+          intentLabel: payload.intent,
+          status: 'submitted'
+        }
+      })
+      await transaction.opportunity.update({ where: { id: opportunityId }, data: { applicants: { increment: 1 } } })
+      await transaction.opportunityActivityEvent.create({
+        data: {
+          action: 'bid_submitted',
+          opportunityId,
+          actorId: studentId,
+          metadata: {
+            scope: 'bid',
+            bidId: bid.id,
+            studentId
+          }
+        }
       })
       return { bid, opportunity }
     })

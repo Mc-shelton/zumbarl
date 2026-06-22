@@ -1,6 +1,7 @@
 import { sendZumbarlApiRequest } from '../../../lib/sendZumbarlApiRequest'
 
 function normalizeOpportunityPayload(opportunity) {
+  const status = String(opportunity.status || '').toLowerCase()
   return {
     ...opportunity,
     budgetAmount: opportunity.budgetAmount || Number(String(opportunity.budget || '').replace(/[^\d.]/g, '')) || 0,
@@ -8,13 +9,20 @@ function normalizeOpportunityPayload(opportunity) {
     requirements: Array.isArray(opportunity.requirements) ? opportunity.requirements : [],
     deliverables: opportunity.deliverables || '',
     type: 'project',
-    visibility: opportunity.status === 'Draft' ? 'draft' : 'public',
+    visibility: status === 'draft' || status === 'draft ready' ? 'draft' : 'public',
   }
 }
 
 async function createBackendBusinessOpportunity(opportunity) {
   return sendZumbarlApiRequest('/business/opportunities', {
     method: 'POST',
+    body: JSON.stringify(normalizeOpportunityPayload(opportunity)),
+  })
+}
+
+async function updateBackendBusinessOpportunity(opportunityId, opportunity) {
+  return sendZumbarlApiRequest(`/business/opportunities/${opportunityId}`, {
+    method: 'PATCH',
     body: JSON.stringify(normalizeOpportunityPayload(opportunity)),
   })
 }
@@ -41,6 +49,7 @@ async function createBackendOpportunityDeliverables(opportunityId, deliverables,
 
 export {
   createBackendBusinessOpportunity,
+  updateBackendBusinessOpportunity,
   publishBackendBusinessOpportunity,
   createBackendOpportunityDeliverables,
   listBackendBusinessOpportunities,

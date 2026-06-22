@@ -1,63 +1,76 @@
 import { FiArrowRight, FiBookOpen, FiBriefcase, FiHeart } from 'react-icons/fi'
 
+const floatingIconRegistry = {
+  book: FiBookOpen,
+  briefcase: FiBriefcase,
+  heart: FiHeart,
+}
+
 function CampusHeroPanel({
   chatMessages,
   chatMode,
   discoveryChips,
   discoverySuggestions,
+  hero,
   heroCardRef,
   onResetChat,
 }) {
+  if (!hero && !chatMode) {
+    return null
+  }
+
+  const heroChips = Array.isArray(hero?.chips) ? hero.chips : []
+  const floatingIcons = Array.isArray(hero?.floatingIcons) ? hero.floatingIcons : []
+  const phoneImage = hero?.image ?? hero?.thumbnail
+
   return (
     <article ref={heroCardRef} className={`campus-hero-card${chatMode ? ' is-chat-mode' : ''}`}>
       {!chatMode ? (
         <section className="campus-splash-panel" aria-label="Campus splash">
           <div className="campus-hero-copy">
             <p className="campus-kicker">
-              <span className="growth-cta-highlight">simple</span>, sure{' '}
-              <span className="growth-cta-highlight growth-cta-underlined-dark">growth</span>
+              <span className="growth-cta-highlight">{hero.kickerStart}</span>, {hero.kickerMiddle}{' '}
+              <span className="growth-cta-highlight growth-cta-underlined-dark">{hero.kickerEnd}</span>
             </p>
             <h2>
-              Let me help you find things<br /> <span className="x_wd_yellow_highlight_bold_05">around!</span>
+              {hero.headline}<br /> <span className="x_wd_yellow_highlight_bold_05">{hero.highlight}</span>
             </h2>
-            <p>Earn, learn, connect, grow and thrive in your student journey at Zumbarl.</p>
+            <p>{hero.description}</p>
             <div className="campus-chip-row" role="list" aria-label="Student goals">
-              <span className="campus-chip chip-earn">Earn</span>
-              <span className="campus-chip chip-learn">Learn</span>
-              <span className="campus-chip chip-connect">Connect</span>
-              <span className="campus-chip chip-grow">Grow</span>
+              {heroChips.map((chip) => (
+                <span key={chip.label} className={`campus-chip chip-${chip.tone}`}>
+                  {chip.label}
+                </span>
+              ))}
             </div>
           </div>
           <div className="campus-phone-scene" aria-hidden="true">
             <div className="campus-orbit" />
             <div className="campus-orbit orbit-two" />
             <div className="campus-phone">
-              <img src="/assets/index/bee_nobg.png" alt="zumbarl logo" />
-              <p>zumbarl</p>
+              {phoneImage ? <img src={phoneImage} alt="" /> : null}
+              <p>{hero.phoneLabel}</p>
             </div>
-            <div className="campus-floating-icon icon-purple">
-              <FiBriefcase />
-            </div>
-            <div className="campus-floating-icon icon-green">
-              <FiBookOpen />
-            </div>
-            <div className="campus-floating-icon icon-orange">
-              <FiBookOpen />
-            </div>
-            <div className="campus-floating-icon icon-pink">
-              <FiHeart />
-            </div>
+            {floatingIcons.map((iconName, index) => {
+              const Icon = floatingIconRegistry[iconName] ?? FiBookOpen
+              const tones = ['purple', 'green', 'orange', 'pink']
+              return (
+                <div key={`${iconName}-${index}`} className={`campus-floating-icon icon-${tones[index % tones.length]}`}>
+                  <Icon />
+                </div>
+              )
+            })}
           </div>
         </section>
       ) : (
         <section className="campus-chat-panel" aria-label="AI search conversation">
           <header className="campus-chat-head">
             <div>
-              <p>Zumbarl AI Assistant</p>
-              <span>Type naturally and discover apps, products, people, books and gigs.</span>
+              <p>{hero?.chatTitle}</p>
+              <span>{hero?.chatSubtitle}</span>
             </div>
             <button type="button" className="campus-link-btn" onClick={onResetChat}>
-              Back to splash
+              {hero?.backLabel}
             </button>
           </header>
           <div className="campus-chat-thread" aria-live="polite">
@@ -76,11 +89,11 @@ function CampusHeroPanel({
 
       <aside className="campus-discovery-panel" aria-label="Smart suggestions">
         <div className="campus-discovery-head">
-          <h3>{chatMode ? 'Suggestions' : 'Quick start'}</h3>
+          <h3>{chatMode ? hero?.chatSuggestionsLabel : hero?.quickStartTitle}</h3>
           <p>
             {chatMode
-              ? 'Based on: chat'
-              : 'Apps, products, people, books, gigs and services.'}
+              ? hero?.chatSuggestionsSubtitle
+              : hero?.quickStartSubtitle}
           </p>
         </div>
         <div className="campus-discovery-chip-row" role="list" aria-label="Suggestion categories">
@@ -96,10 +109,12 @@ function CampusHeroPanel({
               <p className="campus-discovery-type">{item.type}</p>
               <h4>{item.title}</h4>
               <p>{item.summary}</p>
-              <span>
-                Explore
-                <FiArrowRight aria-hidden="true" />
-              </span>
+              {item.actionLabel || item.value ? (
+                <span>
+                  {item.actionLabel ?? item.value}
+                  <FiArrowRight aria-hidden="true" />
+                </span>
+              ) : null}
             </article>
           ))}
         </div>

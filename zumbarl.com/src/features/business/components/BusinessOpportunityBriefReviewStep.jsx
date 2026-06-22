@@ -42,6 +42,27 @@ function formatRequiredAttachments(requiredAttachments = []) {
     .join(', ')
 }
 
+function formatFileSize(size = 0) {
+  if (size >= 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`
+  if (size >= 1024) return `${Math.round(size / 1024)} KB`
+  return `${size} B`
+}
+
+function formatSampleWork(sampleWork = []) {
+  const visibleSamples = Array.isArray(sampleWork)
+    ? sampleWork.filter((sample) => sample.label || sample.fileType || sample.files?.length)
+    : []
+
+  if (!visibleSamples.length) return 'No sample work attached'
+
+  return visibleSamples.map((sample) => {
+    const fileList = sample.files?.length
+      ? ` · ${sample.files.map((file) => `${file.name} (${formatFileSize(file.size)})`).join(', ')}`
+      : ''
+    return `${sample.label || 'Sample work'} (${sample.fileType || 'Any accepted file'})${fileList}`
+  }).join('; ')
+}
+
 export function BusinessOpportunityBriefReviewStep({
   clarityChecks = [],
   form,
@@ -64,6 +85,14 @@ export function BusinessOpportunityBriefReviewStep({
           <div><dt>Type</dt><dd>{form.opportunityType}</dd></div>
           <div><dt>Description</dt><dd>{form.summary}</dd></div>
           <div><dt>Company</dt><dd>{form.companyName}</dd></div>
+          <div>
+            <dt>Opportunity Splash</dt>
+            <dd>
+              {form.opportunitySplash?.name
+                ? `${form.opportunitySplash.name}${form.opportunitySplash.cropConfirmed === false ? ' (crop not confirmed)' : ''}`
+                : 'No splash uploaded'}
+            </dd>
+          </div>
         </dl>
       </ReviewCard>
 
@@ -100,6 +129,7 @@ export function BusinessOpportunityBriefReviewStep({
                     <div><dt>Verification</dt><dd>{milestone.verificationMethod}</dd></div>
                     <div><dt>Evidence</dt><dd>{milestone.evidenceRequired}</dd></div>
                     <div><dt>Acceptance</dt><dd>{milestone.acceptanceCriteria}</dd></div>
+                    <div><dt>Sample Work</dt><dd>{formatSampleWork(milestone.sampleWork)}</dd></div>
                     <div><dt>Release</dt><dd>{milestone.paymentRelease}</dd></div>
                   </dl>
                 </article>

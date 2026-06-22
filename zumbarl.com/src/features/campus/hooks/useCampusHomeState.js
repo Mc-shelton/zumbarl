@@ -1,16 +1,57 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  CHAT_PROMPT_HINTS,
-  DISCOVERY_DEFAULT_CHIPS,
-  RECOMMENDATION_SECTIONS,
-  SEARCH_PROMPT_HINTS,
-  getAssistantReply,
-  getDiscoverySuggestions,
-} from '../homeData'
 import { readCampusHomeExperience } from '../services/readCampusExperience'
 import useMarketplaceSlideshow from './useMarketplaceSlideshow'
 import useTypewriterPromptHint from './useTypewriterPromptHint'
+
+const EMPTY_ARRAY = []
+
+function getSearchableText(item) {
+  return [
+    item.type,
+    item.title,
+    item.summary,
+    item.description,
+    item.meta,
+    ...(Array.isArray(item.tags) ? item.tags : []),
+    ...(Array.isArray(item.keywords) ? item.keywords : []),
+  ].filter(Boolean).join(' ').toLowerCase()
+}
+
+function getDiscoverySuggestions(prompt, discoveryLibrary) {
+  const normalizedPrompt = prompt.trim().toLowerCase()
+  if (!normalizedPrompt) {
+    return discoveryLibrary.slice(0, 5)
+  }
+
+  const terms = normalizedPrompt.split(/\s+/).filter(Boolean)
+  const ranked = discoveryLibrary.map((item) => {
+    const searchableText = getSearchableText(item)
+    const score = terms.reduce((total, term) => {
+      if (!searchableText.includes(term)) {
+        return total
+      }
+      return total + (Array.isArray(item.tags) && item.tags.includes(term) ? 3 : 1)
+    }, 0)
+    return { ...item, score }
+  })
+    .filter((item) => item.score > 0)
+    .sort((a, b) => b.score - a.score)
+
+  return ranked.slice(0, 5)
+}
+
+function formatAssistantReply(prompt, suggestions, assistant) {
+  const suggestionTitles = suggestions.slice(0, 2).map((item) => item.title).join(' and ')
+  const template = suggestionTitles ? assistant?.replyTemplate : assistant?.emptyReplyTemplate
+  if (!template) {
+    return ''
+  }
+
+  return template
+    .replaceAll('{prompt}', prompt)
+    .replaceAll('{suggestions}', suggestionTitles)
+}
 
 function useCampusHomeState() {
   const navigate = useNavigate()
@@ -24,8 +65,10 @@ function useCampusHomeState() {
   const [campusExperience, setCampusExperience] = useState(null)
   const [showBackToAiButton, setShowBackToAiButton] = useState(false)
 
-  const activeHints = chatMode ? CHAT_PROMPT_HINTS : SEARCH_PROMPT_HINTS
-  const { hintDeleting, hintText, resetHint } = useTypewriterPromptHint(activeHints)
+  const assistant = campusExperience?.assistant ?? {}
+  const activeHints = chatMode ? assistant.chatPromptHints ?? EMPTY_ARRAY : assistant.searchPromptHints ?? EMPTY_ARRAY
+  const typewriterHints = useMemo(() => (activeHints.length ? activeHints : ['']), [activeHints])
+  const { hintDeleting, hintText, resetHint } = useTypewriterPromptHint(typewriterHints)
   const {
     activeMarketplaceHover,
     activeMarketplaceSlide,
@@ -60,18 +103,22 @@ function useCampusHomeState() {
     }
   }, [])
 
+  const discoveryLibrary = useMemo(
+    () => campusExperience?.discoveryLibrary ?? EMPTY_ARRAY,
+    [campusExperience?.discoveryLibrary]
+  )
   const discoverySuggestions = useMemo(
-    () => getDiscoverySuggestions(chatMode ? activePrompt : ''),
-    [chatMode, activePrompt]
+    () => getDiscoverySuggestions(chatMode ? activePrompt : '', discoveryLibrary),
+    [chatMode, activePrompt, discoveryLibrary]
   )
 
   const discoveryChips = useMemo(() => {
     if (!chatMode) {
-      return DISCOVERY_DEFAULT_CHIPS
+      return assistant.defaultChips ?? []
     }
     const chips = discoverySuggestions.map((item) => item.chip)
     return [...new Set(chips)].slice(0, 5)
-  }, [chatMode, discoverySuggestions])
+  }, [assistant.defaultChips, chatMode, discoverySuggestions])
 
   const handlePromptSubmit = (event) => {
     event.preventDefault()
@@ -81,7 +128,7 @@ function useCampusHomeState() {
       return
     }
 
-    const suggestions = getDiscoverySuggestions(trimmedPrompt)
+    const suggestions = getDiscoverySuggestions(trimmedPrompt, discoveryLibrary)
     const userMessage = {
       id: `${Date.now()}-user`,
       role: 'user',
@@ -90,7 +137,7 @@ function useCampusHomeState() {
     const assistantMessage = {
       id: `${Date.now()}-assistant`,
       role: 'assistant',
-      content: getAssistantReply(trimmedPrompt, suggestions),
+      content: formatAssistantReply(trimmedPrompt, suggestions, assistant),
     }
 
     setActivePrompt(trimmedPrompt)
@@ -143,9 +190,10 @@ function useCampusHomeState() {
     promptInputRef.current?.focus()
   }
 
-  const promptPlaceholder = `${chatMode ? 'Ask Zumbarl AI: ' : 'Try: '}${hintText || activeHints[0]}${
-    hintDeleting ? '' : '|'
-  }`
+  const activeHint = hintText || activeHints[0] || ''
+  const promptPlaceholder = activeHint
+    ? `${chatMode ? 'Ask Zumbarl AI: ' : 'Try: '}${activeHint}${hintDeleting ? '' : '|'}`
+    : ''
 
   const openRecommendedGig = (opportunityUuid, owner) => {
     const params = new URLSearchParams()
@@ -165,6 +213,9 @@ function useCampusHomeState() {
     chatMode,
     discoveryChips,
     discoverySuggestions,
+    hero: campusExperience?.hero ?? null,
+    quickActions: campusExperience?.quickActions ?? [],
+    trustPoints: campusExperience?.trustPoints ?? [],
     focusPromptInput,
     handleBackToAi,
     handleMainScroll,
@@ -177,9 +228,7 @@ function useCampusHomeState() {
     prompt,
     promptInputRef,
     promptPlaceholder,
-    recommendationSections: campusExperience?.recommendationSections?.some((section) => section.items?.length)
-      ? campusExperience.recommendationSections
-      : RECOMMENDATION_SECTIONS,
+    recommendationSections: campusExperience?.recommendationSections || [],
     resetChatSurface,
     setPrompt,
     showBackToAiButton,

@@ -18,6 +18,7 @@ import {
   readBusinessKycController,
   readBusinessProfileController,
   submitBusinessKycController,
+  updateBusinessOpportunityController,
   updateBusinessProfileController
 } from '../../controllers/business/index.js'
 
@@ -32,6 +33,7 @@ async function registerBusinessRoutes(app: FastifyInstance) {
   app.post('/industries', { preHandler: businessOnly }, createBusinessIndustryController)
   app.get('/opportunities', { preHandler: businessOnly }, listBusinessOpportunitiesController)
   app.post('/opportunities', { preHandler: businessOnly }, createBusinessOpportunityController)
+  app.patch('/opportunities/:id', { preHandler: businessOnly }, updateBusinessOpportunityController)
   app.post('/opportunities/:id/publish', { preHandler: businessOnly }, publishBusinessOpportunityController)
   app.post('/opportunities/:id/fund', { preHandler: businessOnly }, fundBusinessOpportunityController)
   app.get('/opportunities/:id/deliverables', { preHandler: businessOnly }, listOpportunityDeliverablesController)

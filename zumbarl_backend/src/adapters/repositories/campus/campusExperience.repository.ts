@@ -9,7 +9,7 @@ function toProfileHeader(student: Record<string, any> | null) {
     headline: `${student.campus?.name ?? 'Campus'} · Year ${Math.max(new Date().getFullYear() - student.yearJoined + 1, 1)} · ${student.careerPath ?? student.course?.name ?? 'Student'}`,
     location: student.locationCity,
     handle: student.user?.email ? `@${student.user.email.split('@')[0].replace(/[^a-z0-9_]/gi, '_')}` : '@student',
-    avatar: student.avatarUrl ?? '/assets/profile/profile-team-photo.jpg',
+    avatar: student.avatarUrl,
     bio: student.bio,
     tags: student.skillLevels?.slice(0, 4).map((skill: Record<string, any>) => skill.skillName) ?? []
   }
@@ -56,8 +56,8 @@ function mapGig(gig: Record<string, any>) {
     org: gig.company?.name,
     meta: `${String(gig.gigType || '').replaceAll('_', ' ').toLowerCase()} · ${String(gig.gigMode || '').toLowerCase()}`,
     value: formatKes(gig.budgetMax ?? 0),
-    thumbnail: gig.company?.logoUrl ?? '/assets/index/bee_nobg.png',
-    image: gig.company?.logoUrl ?? '/assets/index/bee_nobg.png',
+    thumbnail: gig.imageUrl,
+    image: gig.imageUrl,
     tags: gig.requiredSkills ?? [],
     href: `/campus/opportunities?gig=${gig.id}`,
     actionLabel: 'View gig'
@@ -65,7 +65,7 @@ function mapGig(gig: Record<string, any>) {
 }
 
 function mapMarketplaceListing(listing: Record<string, any>) {
-  const image = listing.images?.[0] ?? listing.shop?.coverImageUrl ?? '/assets/marketplace/poster-kit.jpg'
+  const image = listing.images?.[0] ?? listing.shop?.coverImageUrl
   return {
     id: listing.id,
     section: listing.listingType === 'SERVICE' ? 'services' : 'marketplace',
@@ -217,8 +217,11 @@ class CampusExperienceRepository {
     const grouped = groupContentSections(items)
     const marketplaceItems = listings.filter((listing) => listing.listingType !== 'SERVICE').map(mapMarketplaceListing)
     const serviceItems = listings.filter((listing) => listing.listingType === 'SERVICE').map(mapMarketplaceListing)
+    const assistantConfig = grouped.get('assistant')?.[0] ?? {}
     return {
       viewer: student ? { campus: student.campus?.name, city: student.locationCity } : null,
+      hero: grouped.get('hero')?.[0] ?? null,
+      quickActions: grouped.get('quick_actions') ?? [],
       recommendationSections: [
         { id: 'stories', title: 'Stories', subtitle: 'Fresh updates from students around campus', items: stories.map(mapStudentStory) },
         { id: 'posts', title: 'Posts', subtitle: 'Campus ideas, questions and showcases', items: posts.map(mapCampusPost) },
@@ -230,7 +233,8 @@ class CampusExperienceRepository {
         { id: 'services', title: 'Services', subtitle: 'Student services available near you', items: serviceItems }
       ],
       trustPoints: grouped.get('trust') ?? [],
-      discoveryLibrary: grouped.get('discovery') ?? []
+      discoveryLibrary: grouped.get('discovery') ?? [],
+      assistant: assistantConfig
     }
   }
 

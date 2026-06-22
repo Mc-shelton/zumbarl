@@ -140,7 +140,7 @@ async function readBusinessDashboardService(businessId: string | undefined) {
   const cachedDashboard = await readCache<Record<string, any>>(cacheKey)
   if (cachedDashboard) return cachedDashboard
 
-  const opportunities = (await businessWorkflowsRepository.listBusinessOpportunities(businessId, {})).data
+  const opportunities = ((await businessWorkflowsRepository.listBusinessOpportunities(businessId, {})).data ?? []).filter(Boolean) as Record<string, any>[]
   const [businessProfile, kyc, campaigns, projects, bids, reviewEvents] = await Promise.all([
     businessWorkflowsRepository.findBusinessProfile(businessId),
     businessWorkflowsRepository.findBusinessKyc(businessId),
@@ -232,6 +232,24 @@ async function createBusinessOpportunityService(businessId: string | undefined, 
   return opportunity
 }
 
+async function updateBusinessOpportunityService(id: string, businessId: string | undefined, actorId: string | undefined, payload: Record<string, any>) {
+  const existingOpportunity = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
+  if (businessId && existingOpportunity.businessId && existingOpportunity.businessId !== businessId) notFound('Opportunity')
+
+  const budgetAmount = payload.budgetAmount ?? (
+    payload.budget === undefined ? existingOpportunity.budgetAmount : Number(String(payload.budget ?? '').replace(/[^\d.]/g, '')) || 0
+  )
+  const patch = {
+    ...payload,
+    budgetAmount,
+    businessId: existingOpportunity.businessId ?? businessId,
+    status: payload.visibility === 'draft' ? 'draft' : payload.status ?? existingOpportunity.status
+  }
+  const opportunity = await businessWorkflowsRepository.updateOpportunityWithEvent(id, patch, actorId) ?? notFound('Opportunity')
+  await deleteCacheByPattern(`business-dashboard:${businessId ?? '*'}*`)
+  return opportunity
+}
+
 async function publishBusinessOpportunityService(id: string, actorId: string | undefined) {
   const opportunity = await businessWorkflowsRepository.publishOpportunityWithEvent(id, { status: 'published', visibility: 'public', publishedAt: new Date().toISOString() }, actorId) ?? notFound('Opportunity')
   await deleteCacheByPattern('business-dashboard:*')
@@ -240,7 +258,7 @@ async function publishBusinessOpportunityService(id: string, actorId: string | u
 
 async function fundBusinessOpportunityService(id: string, payload: Record<string, any>) {
   const funded = await businessWorkflowsRepository.fundOpportunity(id, payload) ?? notFound('Opportunity')
-  const { opportunity, escrow } = funded
+  const { opportunity, escrow } = funded as { opportunity: Record<string, any>, escrow: Record<string, any> }
   await deleteCacheByPattern(`business-dashboard:${opportunity.businessId ?? '*'}*`)
   return escrow
 }
@@ -252,13 +270,14 @@ async function listOpportunityDeliverablesService(id: string) {
 
 async function readOpportunityDeliverableService(id: string, deliverableId: string) {
   await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
-  const deliverable = await businessWorkflowsRepository.findOpportunityDeliverable(deliverableId) ?? notFound('Deliverable')
+  const deliverable = await businessWorkflowsRepository.findOpportunityDeliverable(deliverableId) ?? notFound('Deliverable') as Record<string, any>
   if (deliverable.opportunityId !== id) notFound('Deliverable')
   return deliverable
 }
 
 async function createOpportunityDeliverablesService(id: string, payload: Record<string, any>, actorId: string | undefined) {
   const result = await businessWorkflowsRepository.createOpportunityDeliverablesWithEvent(id, payload, actorId) ?? notFound('Opportunity')
+  if (!result.opportunity) notFound('Opportunity')
   await deleteCacheByPattern(`business-dashboard:${result.opportunity.businessId ?? '*'}*`)
   return result
 }
@@ -294,6 +313,7 @@ export {
   createBusinessIndustryService,
   listBusinessOpportunitiesService,
   createBusinessOpportunityService,
+  updateBusinessOpportunityService,
   publishBusinessOpportunityService,
   fundBusinessOpportunityService,
   listOpportunityDeliverablesService,

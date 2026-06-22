@@ -1132,6 +1132,13 @@ font-size: clamp(10px, 1vw, 18px);
   gap: 8px;
 }
 
+.app-profile-menu-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .business-workspace-breadcrumb {
   font-size: 0.78rem;
 }
@@ -12258,6 +12265,22 @@ font-size: clamp(10px, 1vw, 18px);
   font-size: 0.65rem;
 }
 
+.business-profile-icon-btn .campus-badge {
+  position: absolute;
+  top: -6px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--theme-orange);
+  color: var(--theme-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
 .business-profile-icon-btn.plain {
   border-color: transparent;
   background: transparent;
@@ -12269,6 +12292,20 @@ font-size: clamp(10px, 1vw, 18px);
   border: 0;
   background: var(--theme-orange);
   color: var(--theme-dark);
+  overflow: hidden;
+}
+
+.business-profile-user-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6px;
+}
+
+.business-profile-user-btn span {
+  color: var(--theme-dark);
+  font-size: 0.82rem;
+  font-weight: 900;
 }
 
 .business-profile-menu {
@@ -13462,6 +13499,18 @@ font-size: clamp(10px, 1vw, 18px);
   font-weight: 850;
 }
 
+.business-create-save-error {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid #f1b7c0;
+  border-radius: var(--radius-md);
+  background: #fff4f6;
+  color: #9f2438;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
 .business-create-select-wrap,
 .business-create-date-wrap {
   display: grid;
@@ -13769,6 +13818,186 @@ font-size: clamp(10px, 1vw, 18px);
   padding-right: 0;
 }
 
+.business-create-splash-upload {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #fbfcff;
+}
+
+.business-create-splash-upload > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.business-create-splash-upload h3,
+.business-create-splash-upload p {
+  margin: 0;
+}
+
+.business-create-splash-upload h3 {
+  color: var(--theme-dark);
+  font-size: 0.94rem;
+  font-weight: 950;
+}
+
+.business-create-splash-upload > header p {
+  margin-top: 5px;
+  color: #626984;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  font-weight: 760;
+}
+
+.business-create-splash-upload .business-create-upload-card {
+  display: grid;
+  gap: 8px;
+}
+
+.business-create-selected-file {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  padding: 7px 9px;
+  border-radius: var(--radius-sm);
+  background: rgba(95, 36, 230, 0.08);
+  color: var(--theme-dark);
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.business-create-selected-file span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.business-create-selected-file button {
+  width: 22px;
+  height: 22px;
+  border: 0;
+  border-radius: 7px;
+  background: rgba(210, 47, 69, 0.08);
+  color: #d22f45;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.business-create-splash-cropper {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(260px, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.business-create-splash-preview {
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: #eef0f6;
+  overflow: hidden;
+  position: relative;
+}
+
+.business-create-splash-preview::after {
+  content: '';
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: calc(var(--radius-md) - 4px);
+  position: absolute;
+  inset: 10px;
+  pointer-events: none;
+}
+
+.business-create-splash-preview::before {
+  content: '';
+  background:
+    linear-gradient(to right, transparent calc(50% - 0.5px), rgba(255, 255, 255, 0.72) calc(50% - 0.5px), rgba(255, 255, 255, 0.72) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(to bottom, transparent calc(50% - 0.5px), rgba(255, 255, 255, 0.72) calc(50% - 0.5px), rgba(255, 255, 255, 0.72) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  border-radius: calc(var(--radius-md) - 4px);
+  position: absolute;
+  inset: 10px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.business-create-splash-preview img,
+.business-create-splash-preview video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.business-create-splash-preview img {
+  transform-origin: center;
+  will-change: transform, object-position;
+}
+
+.business-create-splash-controls {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+}
+
+.business-create-splash-controls label {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.business-create-splash-controls label > span {
+  color: var(--theme-dark);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.business-create-splash-controls input[type='range'] {
+  width: 100%;
+  accent-color: #5f24e6;
+}
+
+.business-create-splash-controls .business-profile-primary-btn {
+  justify-self: start;
+}
+
+.business-create-splash-controls > p {
+  color: #626984;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  font-weight: 760;
+}
+
+.business-create-splash-crop-status {
+  margin: 0;
+  padding: 9px 11px;
+  border: 1px solid rgba(244, 175, 66, 0.4);
+  border-radius: var(--radius-sm);
+  background: rgba(244, 175, 66, 0.12);
+  color: #7b5314 !important;
+  font-size: 0.76rem;
+  font-weight: 850 !important;
+}
+
+.business-create-splash-crop-status.is-confirmed {
+  border-color: rgba(84, 148, 153, 0.35);
+  background: rgba(84, 148, 153, 0.12);
+  color: #2e696d !important;
+}
+
+.business-create-splash-controls .business-profile-primary-btn.is-confirmed {
+  background: #549499;
+}
+
 .business-create-budget-card {
   grid-column: 1 / -1;
   padding: 18px;
@@ -14061,6 +14290,132 @@ font-size: clamp(10px, 1vw, 18px);
   font-size: 0.74rem;
   line-height: 1.4;
   font-weight: 780;
+}
+
+.business-create-sample-work-field {
+  grid-column: 1 / -1;
+  display: grid;
+  gap: 12px;
+}
+
+.business-create-sample-work-field > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.business-create-sample-work-field h5,
+.business-create-sample-work-field p {
+  margin: 0;
+}
+
+.business-create-sample-work-field h5 {
+  color: var(--theme-dark);
+  font-size: 0.82rem;
+  font-weight: 950;
+}
+
+.business-create-sample-work-field p {
+  margin-top: 4px;
+  color: #626984;
+  font-size: 0.76rem;
+  font-weight: 760;
+}
+
+.business-create-sample-work-list {
+  display: grid;
+  gap: 10px;
+}
+
+.business-create-sample-work-row {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 0.35fr) minmax(180px, 0.4fr) 34px;
+  gap: 10px;
+  align-items: end;
+}
+
+.business-create-sample-work-row label {
+  min-width: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.business-create-sample-work-row label > span {
+  color: var(--theme-dark);
+  font-size: 0.78rem;
+  font-weight: 950;
+}
+
+.business-create-sample-work-row input,
+.business-create-sample-work-row select {
+  width: 100%;
+  height: 44px;
+  padding: 0 13px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--theme-white);
+  color: var(--theme-dark);
+  font: inherit;
+  font-weight: 850;
+}
+
+.business-create-sample-upload > div {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--theme-white);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #5f24e6;
+  cursor: pointer;
+}
+
+.business-create-sample-upload strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--theme-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.business-create-sample-upload input {
+  display: none;
+}
+
+.business-create-sample-work-row > button {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 5px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: rgba(210, 47, 69, 0.08);
+  color: #d22f45;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.business-create-sample-file-list {
+  grid-column: 1 / -1;
+  margin: -2px 0 0;
+  color: #626984;
+  font-size: 0.74rem;
+  line-height: 1.4;
+  font-weight: 760;
+}
+
+.business-create-sample-work-empty {
+  margin: 0;
+  color: #626984;
+  font-size: 0.76rem;
+  font-weight: 760;
 }
 
 .business-create-deliverable-lock {
@@ -16039,30 +16394,35 @@ font-size: clamp(10px, 1vw, 18px);
   .business-create-bottom-grid,
   .business-create-budget-grid,
   .business-create-deliverable-milestone-grid,
-  .business-create-deliverable-totals,
-  .business-create-review-milestone-summary,
-  .business-create-review-milestones dl,
+	  .business-create-deliverable-totals,
+	  .business-create-splash-cropper,
+	  .business-create-review-milestone-summary,
+	  .business-create-review-milestones dl,
   .business-create-schedule-grid,
   .business-create-payment-grid,
   .business-create-target-grid,
   .business-create-review-grid,
   .business-create-review-next > div,
   .business-create-review-actions,
-  .business-create-type-field > div,
-  .business-create-required-attachment-row,
+	  .business-create-type-field > div,
+	  .business-create-sample-work-row,
+	  .business-create-required-attachment-row,
   .business-create-settings-card footer,
   .business-workspace-rail {
     grid-column: auto;
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .business-create-required-attachments-field > header {
-    display: grid;
-  }
+	  .business-create-splash-upload > header,
+	  .business-create-sample-work-field > header,
+	  .business-create-required-attachments-field > header {
+	    display: grid;
+	  }
 
-  .business-create-required-attachment-row button {
-    margin-bottom: 0;
-  }
+	  .business-create-sample-work-row > button,
+	  .business-create-required-attachment-row button {
+	    margin-bottom: 0;
+	  }
 
   .business-opportunities-search,
   .business-opportunities-sort,

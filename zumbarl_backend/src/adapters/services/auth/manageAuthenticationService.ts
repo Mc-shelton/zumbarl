@@ -9,6 +9,7 @@ import {
   findBusinessProfileById,
   findStudentProfileById,
   findUserByEmail,
+  findUserByUsername,
   findUserById
 } from '../../repositories/auth/index.js'
 
@@ -32,11 +33,25 @@ async function registerUserService(app: FastifyInstance, payload: Record<string,
   if (await findUserByEmail(payload.email)) {
     forbidden('Email is already registered')
   }
+  if (await findUserByUsername(payload.username)) {
+    forbidden('Username is already taken')
+  }
+
+  const firstName = String(payload.firstName || '').trim()
+  const lastName = String(payload.lastName || '').trim()
+  const name = String(payload.name || `${firstName} ${lastName}`).trim()
+  const username = String(payload.username || '')
+    .trim()
+    .replace(/^@+/, '')
+    .toLowerCase()
 
   const userPayload = {
     email: payload.email.toLowerCase(),
     phone: payload.phone,
-    name: payload.name,
+    firstName,
+    lastName,
+    username,
+    name,
     passwordHash: await hashPassword(payload.password),
     role: payload.role,
     status: 'active'

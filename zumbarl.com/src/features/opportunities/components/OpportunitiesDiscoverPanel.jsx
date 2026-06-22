@@ -124,7 +124,7 @@ function OpportunitiesDiscoverPanel({
               onKeyDown={(event) => handleKeyboardActivation(event, () => onOpportunitySelect(item.opportunityUuid))}
             >
               <div className="opportunities-job-avatar">
-                <img src="/assets/index/bee_nobg.png" alt={`${item.company} logo`} loading="lazy" />
+                <img src={item.image} alt={`${item.title} preview`} loading="lazy" />
               </div>
 
               <div className="opportunities-job-main">

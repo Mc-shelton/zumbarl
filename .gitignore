@@ -33,3 +33,9 @@ coverage/
 
 # Local migration backup
 .git.empty-parent-backup
+
+# Local backend bucket emulator
+zumbarl_backend/bucket/*
+!zumbarl_backend/bucket/.gitkeep
+!zumbarl_backend/bucket/**/
+!zumbarl_backend/bucket/**/.gitkeep

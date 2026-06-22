@@ -47,6 +47,7 @@ function BusinessCreateOpportunityPage() {
               clarityChecks={createOpportunity.clarityChecks}
               form={createOpportunity.form}
               isPublishReady={createOpportunity.isPublishReady}
+              isSaving={createOpportunity.isSaving}
               isFirstStep={createOpportunity.isFirstStep}
               isFinalStep={createOpportunity.isFinalStep}
               onBack={createOpportunity.onBack}
@@ -55,6 +56,7 @@ function BusinessCreateOpportunityPage() {
               onSaveDraft={createOpportunity.onSaveDraft}
               onStepChange={createOpportunity.onStepChange}
               onUpdateField={createOpportunity.onUpdateField}
+              saveError={createOpportunity.saveError}
             />
           </section>
 

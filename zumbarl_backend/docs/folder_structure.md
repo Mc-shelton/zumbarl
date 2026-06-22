@@ -87,6 +87,48 @@ All external services are wrapped in adapters:
 
 Services call adapters. Controllers and routes do not.
 
+## Temporary Local Bucket Storage
+
+Until Zumbarl moves to Cloudflare R2, the local adapter emulates the R2 bucket architecture from `docs/Zumbarl_Storage_Structure.pdf` under `bucket/` and exposes files through `/files/{bucket}/{storageKey}`.
+
+The local tree mirrors the five production buckets:
+
+```text
+bucket/
+  zumbarl-kyc-private/
+    students/{studentId}/
+    companies/{companyId}/
+    safety-reports/{reportId}/
+  zumbarl-gig-files/
+    gigs/{gigId}/brief/
+    gigs/{gigId}/submissions/
+    gigs/{gigId}/proof/
+    gigs/{gigId}/stats-evidence/
+    gigs/{gigId}/messages/
+  zumbarl-profile-private/
+    students/{studentId}/cv/
+    students/{studentId}/draft-uploads/
+    companies/{companyId}/internal-notes/
+    companies/{companyId}/team-documents/
+    chamas/{chamaId}/
+  zumbarl-public-assets/
+    students/{studentId}/
+    companies/{companyId}/
+    marketplace/{listingId}/
+    notes-library/{campusId}/{courseId}/
+    events/{eventId}/
+    clubs/{clubId}/
+    platform/
+  zumbarl-generated/
+    certificates/{studentId}/
+    invoices/{companyId}/
+    roadmap-exports/{studentId}/
+    placement-contracts/{placementId}/
+    reports/internal/
+```
+
+PostgreSQL stores `uploaded_files.bucket`, `uploaded_files.storageKey`, size, MIME type, upload status, and metadata only. It never stores binary file contents. Seeded files are not identified by a `seed/` folder; they live in their normal bucket location, usually `zumbarl-public-assets/platform/...`, and are marked in `uploaded_files.isSeed` with source details in `metadata`.
+
 ## Persistence Rule
 
 Postgres is accessed through Prisma only. Workflow records that do not yet have dedicated relational tables are stored in `app_records` with a `collection` key and JSON payload. That keeps the current frontend contracts durable while allowing high-volume domains to move into dedicated Prisma models later.

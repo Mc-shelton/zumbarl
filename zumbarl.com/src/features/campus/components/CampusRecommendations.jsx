@@ -1,5 +1,3 @@
-import { RECOMMENDATION_SECTIONS } from '../homeData'
-
 function handleKeyboardActivation(event, onActivate) {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
@@ -128,7 +126,7 @@ function CampusRecommendations({
   onMarketplaceHoverEnd,
   onMarketplaceHoverStart,
   onOpenRecommendedGig,
-  recommendationSections = RECOMMENDATION_SECTIONS,
+  recommendationSections = [],
 }) {
   return (
     <>

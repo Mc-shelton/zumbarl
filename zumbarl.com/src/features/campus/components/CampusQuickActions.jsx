@@ -1,15 +1,37 @@
-import { FiMoreHorizontal } from 'react-icons/fi'
+import {
+  FiBookOpen,
+  FiBriefcase,
+  FiCalendar,
+  FiMoreHorizontal,
+  FiShoppingBag,
+  FiTruck,
+  FiUsers,
+} from 'react-icons/fi'
 import { Link } from 'react-router-dom'
-import { QUICK_ACTIONS } from '../homeData'
 
-function CampusQuickActions() {
+const iconRegistry = {
+  book: FiBookOpen,
+  briefcase: FiBriefcase,
+  calendar: FiCalendar,
+  'more-horizontal': FiMoreHorizontal,
+  'shopping-bag': FiShoppingBag,
+  truck: FiTruck,
+  users: FiUsers,
+}
+
+function CampusQuickActions({ actions = [] }) {
+  if (!actions.length) {
+    return null
+  }
+
   return (
     <section className="campus-section">
       <h3>What would you like to do?</h3>
       <div className="campus-actions-grid">
-        {QUICK_ACTIONS.map(({ title, subtitle, Icon, href }) =>
-          href ? (
-            <Link key={title} to={href} className="campus-action-card" aria-label={`Open ${title}`}>
+        {actions.map(({ id, title, subtitle, Icon: ProvidedIcon, href, icon }) => {
+          const Icon = ProvidedIcon ?? iconRegistry[icon] ?? FiMoreHorizontal
+          return href ? (
+            <Link key={id ?? title} to={href} className="campus-action-card" aria-label={`Open ${title}`}>
               <div className="campus-action-icon">
                 <Icon aria-hidden="true" />
               </div>
@@ -17,7 +39,7 @@ function CampusQuickActions() {
               <p>{subtitle}</p>
             </Link>
           ) : (
-            <article key={title} className="campus-action-card">
+            <article key={id ?? title} className="campus-action-card">
               <div className="campus-action-icon">
                 <Icon aria-hidden="true" />
               </div>
@@ -25,14 +47,7 @@ function CampusQuickActions() {
               <p>{subtitle}</p>
             </article>
           )
-        )}
-        <article className="campus-action-card is-more">
-          <div className="campus-action-icon">
-            <FiMoreHorizontal aria-hidden="true" />
-          </div>
-          <h4>More</h4>
-          <p>Explore all</p>
-        </article>
+        })}
       </div>
     </section>
   )

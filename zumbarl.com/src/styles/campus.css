@@ -393,6 +393,13 @@
   gap: 12px;
 }
 
+.app-profile-menu-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .campus-cta-btn {
   border: 0;
   border-radius: 12px;

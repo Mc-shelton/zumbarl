@@ -49,6 +49,18 @@ function splitName(name: string | undefined) {
   }
 }
 
+function createUsername(value: string | undefined, fallback: string) {
+  const username = String(value || fallback)
+    .trim()
+    .replace(/^@+/, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 30)
+
+  return username.length >= 3 ? username : `user_${username || 'zumbarl'}`
+}
+
 async function readLegacyRecords() {
   const tableExists = await prisma.$queryRaw<Array<{ exists: boolean }>>`
     SELECT to_regclass('public.app_records') IS NOT NULL AS exists
@@ -131,10 +143,14 @@ async function migrateUsers(records: LegacyRecord[]) {
     })
     if (existingUser) continue
 
+    const { firstName, lastName } = splitName(record.data.name)
     await prisma.user.create({
       data: {
         id: record.id,
         name: record.data.name,
+        firstName,
+        lastName,
+        username: createUsername(record.data.username, email.split('@')[0]),
         email,
         phone: createUniquePhone(record.data.phone, email),
         passwordHash,

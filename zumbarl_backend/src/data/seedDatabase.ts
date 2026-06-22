@@ -1,13 +1,16 @@
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import { hashPassword } from '../lib/security.js'
 import { prisma } from '../lib/prisma.js'
-import { createPrismaRecordRepository, type AnyRecord } from '../shared/repositories/index.js'
+import { copyLocalSeedAsset } from '../adapters/storage/index.js'
+import { createPrismaRecordRepository } from '../shared/repositories/index.js'
 
-const opportunities = createPrismaRecordRepository('opportunities')
-const bids = createPrismaRecordRepository('bids')
 const projects = createPrismaRecordRepository('projects')
 const campaigns = createPrismaRecordRepository('campaigns')
 const shops = createPrismaRecordRepository('shops')
 const wallets = createPrismaRecordRepository('wallets')
+
+type SeedAssets = Awaited<ReturnType<typeof seedLocalFileAssets>>
 
 async function upsertWorkflowRecord(repository: ReturnType<typeof createPrismaRecordRepository>, seedKey: string, payload: Record<string, any>) {
   const existing = await repository.findByField('seedKey', seedKey)
@@ -15,7 +18,88 @@ async function upsertWorkflowRecord(repository: ReturnType<typeof createPrismaRe
   return repository.create({ ...payload, seedKey })
 }
 
-async function seedCampusContent(campusId: string) {
+function getPublicAssetPath(publicAssetPath: string) {
+  return path.resolve(process.cwd(), '../zumbarl.com/public', publicAssetPath.replace(/^\//, ''))
+}
+
+function getMimeType(filePath: string) {
+  const extension = path.extname(filePath).toLowerCase()
+  if (extension === '.webp') return 'image/webp'
+  if (extension === '.png') return 'image/png'
+  if (extension === '.svg') return 'image/svg+xml'
+  return 'image/jpeg'
+}
+
+async function copySeedImage(publicAssetPath: string) {
+  const bucket = 'zumbarl-public-assets'
+  const relativeAssetPath = publicAssetPath.replace(/^\/?assets\//, '')
+  const storageKey = relativeAssetPath === 'index/bee_nobg.png'
+    ? `platform/branding/${path.basename(relativeAssetPath)}`
+    : `platform/demo-assets/${relativeAssetPath}`
+  const sourcePath = getPublicAssetPath(publicAssetPath)
+  const fileStat = await fs.stat(sourcePath)
+  const url = await copyLocalSeedAsset(sourcePath, bucket, storageKey)
+  await prisma.uploadedFile.upsert({
+    where: { bucket_storageKey: { bucket, storageKey } },
+    update: {
+      fileName: path.basename(publicAssetPath),
+      mimeType: getMimeType(publicAssetPath),
+      bucket,
+      url,
+      provider: 'local',
+      status: 'complete',
+      isSeed: true,
+      metadata: { source: 'seedDatabase', publicAssetPath }
+    },
+    create: {
+      scope: 'zumbarl-assets',
+      fileName: path.basename(publicAssetPath),
+      mimeType: getMimeType(publicAssetPath),
+      sizeBytes: fileStat.size,
+      bucket,
+      storageKey,
+      url,
+      provider: 'local',
+      status: 'complete',
+      isSeed: true,
+      metadata: { source: 'seedDatabase', publicAssetPath }
+    }
+  })
+  return url
+}
+
+async function seedLocalFileAssets() {
+  await prisma.uploadedFile.deleteMany({
+    where: {
+      OR: [
+        { storageKey: { startsWith: 'seed/' } },
+        { storageKey: { startsWith: 'zumbarl/assets/' } },
+        { storageKey: { startsWith: 'platform/demo-assets/assets/' } }
+      ]
+    }
+  })
+
+  const beeLogo = await copySeedImage('/assets/index/bee_nobg.png')
+  const avatar = await copySeedImage('/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp')
+  const campaign = await copySeedImage('/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp')
+  const marketplace = await copySeedImage('/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp')
+  const event = await copySeedImage('/assets/index/business_page_images/optimized/product-school-XZkk5xT8Xrk-unsplash.webp')
+  const hydration = await copySeedImage('/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp')
+  const launch = await copySeedImage('/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp')
+
+  return {
+    beeLogo,
+    avatar,
+    campaign,
+    marketplace,
+    marketplacePreview: launch,
+    event,
+    hydration,
+    launch
+  }
+}
+
+async function seedCampusContent(campusId: string, assets: SeedAssets) {
   await prisma.campusContentItem.deleteMany({
     where: {
       id: {
@@ -28,13 +112,161 @@ async function seedCampusContent(campusId: string) {
           'student-profile-service-social-pack',
           'student-profile-shop-template-pack',
           'student-profile-activity-gig-completed',
-          'student-profile-earnings-this-month'
+          'student-profile-earnings-this-month',
+          'campus-home-hero',
+          'campus-home-assistant',
+          'campus-home-action-find-work',
+          'campus-home-action-marketplace',
+          'campus-home-action-services',
+          'campus-home-action-notes',
+          'campus-home-action-events',
+          'campus-home-action-communities',
+          'campus-home-action-more',
+          'campus-home-trust-students',
+          'campus-home-trust-save',
+          'campus-home-trust-grow',
+          'campus-home-discovery-wallet',
+          'campus-home-discovery-study-room',
+          'campus-home-discovery-marketplace',
+          'campus-home-discovery-people',
+          'campus-home-discovery-books',
+          'campus-home-discovery-gigs',
+          'campus-home-discovery-roadmaps'
         ]
       }
     }
   })
 
   const content = [
+    {
+      id: 'campus-home-hero',
+      scope: 'campus_home',
+      section: 'hero',
+      title: 'Let me help you find things',
+      subtitle: 'simple, sure growth',
+      description: 'Earn, learn, connect, grow and thrive in your student journey at Zumbarl.',
+      imageUrl: assets.beeLogo,
+      sortOrder: 1,
+      payload: {
+        kickerStart: 'simple',
+        kickerMiddle: 'sure',
+        kickerEnd: 'growth',
+        headline: 'Let me help you find things',
+        highlight: 'around!',
+        phoneLabel: 'zumbarl',
+        chips: [
+          { label: 'Earn', tone: 'earn' },
+          { label: 'Learn', tone: 'learn' },
+          { label: 'Connect', tone: 'connect' },
+          { label: 'Grow', tone: 'grow' }
+        ],
+        floatingIcons: ['briefcase', 'book', 'book', 'heart'],
+        quickStartTitle: 'Quick start',
+        quickStartSubtitle: 'Apps, products, people, books, gigs and services.',
+        chatTitle: 'Zumbarl AI Assistant',
+        chatSubtitle: 'Type naturally and discover apps, products, people, books and gigs.',
+        backLabel: 'Back to splash',
+        chatSuggestionsLabel: 'Suggestions',
+        chatSuggestionsSubtitle: 'Based on: chat'
+      }
+    },
+    {
+      id: 'campus-home-assistant',
+      scope: 'campus_home',
+      section: 'assistant',
+      title: 'Campus assistant prompts',
+      sortOrder: 1,
+      payload: {
+        defaultChips: ['Apps', 'Marketplace', 'People', 'Books', 'Gigs'],
+        searchPromptHints: [
+          'Find weekend gigs near me',
+          'Show affordable hostels near campus',
+          'Find used calculus books under KES 1,000',
+          'Connect me with product design mentors',
+          "What's happening on campus this week?"
+        ],
+        chatPromptHints: [
+          'Find 3 remote writing gigs for beginners',
+          'Show book deals and delivery options',
+          'Help me find mentors in software engineering',
+          'Recommend student groups for designers'
+        ],
+        replyTemplate: 'I found matches for "{prompt}". Start with {suggestions}. I can narrow by budget, location or urgency.',
+        emptyReplyTemplate: 'I can help you explore {prompt}. I can pull apps, people, products, books or gigs next.',
+        chatSuggestionsLabel: 'Suggestions',
+        chatSuggestionsSubtitle: 'Based on: chat'
+      }
+    },
+    {
+      id: 'campus-home-action-find-work',
+      scope: 'campus_home',
+      section: 'quick_actions',
+      title: 'Find Work',
+      subtitle: 'Jobs & gigs',
+      href: '/campus/opportunities',
+      sortOrder: 1,
+      payload: { icon: 'briefcase', tone: 'gold' }
+    },
+    {
+      id: 'campus-home-action-marketplace',
+      scope: 'campus_home',
+      section: 'quick_actions',
+      title: 'Buy & Sell',
+      subtitle: 'Marketplace',
+      href: '/campus/opportunities/buy-sell',
+      sortOrder: 2,
+      payload: { icon: 'shopping-bag', tone: 'purple' }
+    },
+    {
+      id: 'campus-home-action-services',
+      scope: 'campus_home',
+      section: 'quick_actions',
+      title: 'Campus Services',
+      subtitle: 'Food, print, laundry',
+      href: '/campus/services',
+      sortOrder: 3,
+      payload: { icon: 'truck', tone: 'mint' }
+    },
+    {
+      id: 'campus-home-action-notes',
+      scope: 'campus_home',
+      section: 'quick_actions',
+      title: 'Notes & Papers',
+      subtitle: 'Study resources',
+      href: '/campus/learn',
+      sortOrder: 4,
+      payload: { icon: 'book', tone: 'coral' }
+    },
+    {
+      id: 'campus-home-action-events',
+      scope: 'campus_home',
+      section: 'quick_actions',
+      title: 'Events',
+      subtitle: "What's happening",
+      href: '/campus/events',
+      sortOrder: 5,
+      payload: { icon: 'calendar', tone: 'pink' }
+    },
+    {
+      id: 'campus-home-action-communities',
+      scope: 'campus_home',
+      section: 'quick_actions',
+      title: 'Communities',
+      subtitle: 'Clubs & groups',
+      href: '/campus/community',
+      sortOrder: 6,
+      payload: { icon: 'users', tone: 'blue' }
+    },
+    {
+      id: 'campus-home-action-more',
+      scope: 'campus_home',
+      section: 'quick_actions',
+      title: 'More',
+      subtitle: 'Explore all',
+      href: '/campus/explore',
+      sortOrder: 7,
+      payload: { icon: 'more-horizontal', tone: 'neutral' }
+    },
     {
       id: 'campus-home-community-creators',
       scope: 'campus_home',
@@ -43,39 +275,143 @@ async function seedCampusContent(campusId: string) {
       org: 'Zetech University',
       meta: '426 members',
       value: 'Join group',
-      imageUrl: '/assets/profile/profile-team-photo.jpg',
+      imageUrl: assets.avatar,
       sortOrder: 1
     },
     {
       id: 'campus-home-trust-safe-payments',
       scope: 'campus_home',
       section: 'trust',
-      title: 'Escrow-backed campus work',
-      description: 'Zumbarl tracks delivery proof, reviews and payment readiness.',
+      title: 'Verified & Safe',
+      description: 'Trusted users, secure payments, real support.',
       meta: 'Trust signal',
       value: 'Protected',
-      sortOrder: 1
+      sortOrder: 1,
+      payload: { icon: 'shield', tone: 'purple' }
     },
     {
-      id: 'campus-home-discovery-roadmaps',
+      id: 'campus-home-trust-students',
+      scope: 'campus_home',
+      section: 'trust',
+      title: 'Made for Students',
+      description: 'Simple, mobile-first and data friendly.',
+      meta: 'Trust signal',
+      value: 'Student-ready',
+      sortOrder: 2,
+      payload: { icon: 'book', tone: 'lavender' }
+    },
+    {
+      id: 'campus-home-trust-save',
+      scope: 'campus_home',
+      section: 'trust',
+      title: 'Save & Plan',
+      description: 'Budget, save and achieve more with ease.',
+      meta: 'Trust signal',
+      value: 'Financial tools',
+      sortOrder: 3,
+      payload: { icon: 'credit-card', tone: 'mint' }
+    },
+    {
+      id: 'campus-home-trust-grow',
+      scope: 'campus_home',
+      section: 'trust',
+      title: 'Grow Together',
+      description: 'Communities that support your journey.',
+      meta: 'Trust signal',
+      value: 'Community',
+      sortOrder: 4,
+      payload: { icon: 'users', tone: 'pink' }
+    },
+    {
+      id: 'campus-home-discovery-wallet',
       scope: 'campus_home',
       section: 'discovery',
-      title: 'Roadmaps, events and campus services',
-      description: 'Discover work, learning paths and student shops from structured campus data.',
-      meta: 'Curated',
+      title: 'Student Wallet',
+      description: 'Send money, split hostel bills and pay campus vendors fast.',
+      meta: 'App',
       value: 'Explore',
-      sortOrder: 1
+      href: '/campus/finance',
+      sortOrder: 1,
+      tags: ['wallet', 'money', 'pay', 'finance', 'send', 'split'],
+      payload: { type: 'App', chip: 'Apps', summary: 'Send money, split hostel bills and pay campus vendors fast.' }
+    },
+    {
+      id: 'campus-home-discovery-study-room',
+      scope: 'campus_home',
+      section: 'discovery',
+      title: 'Study Room',
+      description: 'Find revision groups, tutors and curated notes by unit.',
+      meta: 'App',
+      value: 'Explore',
+      href: '/campus/learn',
+      sortOrder: 2,
+      tags: ['study', 'notes', 'book', 'revision', 'tutor', 'class'],
+      payload: { type: 'App', chip: 'Apps', summary: 'Find revision groups, tutors and curated notes by unit.' }
+    },
+    {
+      id: 'campus-home-discovery-marketplace',
+      scope: 'campus_home',
+      section: 'discovery',
+      title: 'Used MacBook Air M1',
+      description: 'Verified seller near campus, includes charger and carry bag.',
+      meta: 'Marketplace',
+      value: 'Explore',
+      href: '/campus/opportunities/buy-sell',
+      sortOrder: 3,
+      tags: ['product', 'marketplace', 'laptop', 'electronics', 'buy', 'sell'],
+      payload: { type: 'Marketplace', chip: 'Marketplace', summary: 'Verified seller near campus, includes charger and carry bag.' }
+    },
+    {
+      id: 'campus-home-discovery-people',
+      scope: 'campus_home',
+      section: 'discovery',
+      title: 'Grace Wanjiku · Product Mentor',
+      description: 'Helps students prepare portfolios and product case studies.',
+      meta: 'Person',
+      value: 'Explore',
+      href: '/campus/explore',
+      sortOrder: 4,
+      tags: ['people', 'person', 'mentor', 'coach', 'portfolio', 'career'],
+      payload: { type: 'Person', chip: 'People', summary: 'Helps students prepare portfolios and product case studies.' }
+    },
+    {
+      id: 'campus-home-discovery-books',
+      scope: 'campus_home',
+      section: 'discovery',
+      title: 'Soft Skills for Campus Leaders',
+      description: 'Practical guide for communication, teamwork and leadership.',
+      meta: 'Book',
+      value: 'Explore',
+      href: '/campus/learn',
+      sortOrder: 5,
+      tags: ['book', 'books', 'leadership', 'communication', 'learn', 'library'],
+      payload: { type: 'Book', chip: 'Books', summary: 'Practical guide for communication, teamwork and leadership.' }
+    },
+    {
+      id: 'campus-home-discovery-gigs',
+      scope: 'campus_home',
+      section: 'discovery',
+      title: 'Event Content Creator',
+      description: 'Part-time weekend role. Capture reels and run event socials.',
+      meta: 'Gig',
+      value: 'Explore',
+      href: '/campus/opportunities',
+      sortOrder: 6,
+      tags: ['gig', 'job', 'work', 'content', 'creator', 'part-time', 'remote'],
+      payload: { type: 'Gig', chip: 'Gigs', summary: 'Part-time weekend role. Capture reels and run event socials.' }
     }
   ]
 
-  await Promise.all(content.map((item) => prisma.campusContentItem.upsert({
-    where: { id: item.id },
-    update: { ...item, campusId },
-    create: { ...item, campusId }
-  })))
+  for (const item of content) {
+    await prisma.campusContentItem.upsert({
+      where: { id: item.id },
+      update: { ...item, campusId },
+      create: { ...item, campusId }
+    })
+  }
 }
 
-async function seedStructuredCampusExperience(campusId: string, studentId: string) {
+async function seedStructuredCampusExperience(campusId: string, studentId: string, assets: SeedAssets) {
   const shop = await prisma.marketplaceShop.upsert({
     where: { slug: 'aisha-campus-studio' },
     update: {
@@ -85,8 +421,8 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
       tagline: 'Canva templates, content audits and campaign-ready assets.',
       description: 'Student-run creative shop for campus campaign templates, content planning and social media support.',
       category: 'Digital Services',
-      logoUrl: '/assets/profile/student-profile-avatar.jpg',
-      coverImageUrl: '/assets/marketplace/poster-kit.jpg',
+      logoUrl: assets.avatar,
+      coverImageUrl: assets.marketplace,
       locationLabel: 'Zetech University',
       deliveryOptions: ['Instant download', 'Canva link', 'Remote consultation'],
       socialLinks: { instagram: '@aisha_studio' },
@@ -104,8 +440,8 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
       tagline: 'Canva templates, content audits and campaign-ready assets.',
       description: 'Student-run creative shop for campus campaign templates, content planning and social media support.',
       category: 'Digital Services',
-      logoUrl: '/assets/profile/student-profile-avatar.jpg',
-      coverImageUrl: '/assets/marketplace/poster-kit.jpg',
+      logoUrl: assets.avatar,
+      coverImageUrl: assets.marketplace,
       locationLabel: 'Zetech University',
       deliveryOptions: ['Instant download', 'Canva link', 'Remote consultation'],
       socialLinks: { instagram: '@aisha_studio' },
@@ -121,9 +457,9 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
       update: {
         title: 'Campaign shoot preview',
         caption: 'Behind the scenes from a campus content sprint.',
-        mediaUrl: '/assets/business/campaign-workshop.jpg',
+        mediaUrl: assets.campaign,
         mediaType: 'IMAGE',
-        thumbnailUrl: '/assets/business/campaign-workshop.jpg',
+        thumbnailUrl: assets.campaign,
         campusId,
         status: 'ACTIVE',
         viewCount: 128,
@@ -135,9 +471,9 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         campusId,
         title: 'Campaign shoot preview',
         caption: 'Behind the scenes from a campus content sprint.',
-        mediaUrl: '/assets/business/campaign-workshop.jpg',
+        mediaUrl: assets.campaign,
         mediaType: 'IMAGE',
-        thumbnailUrl: '/assets/business/campaign-workshop.jpg',
+        thumbnailUrl: assets.campaign,
         viewCount: 128,
         reactionCount: 24,
         expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
@@ -148,7 +484,7 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
       update: {
         title: 'How I plan weekly content',
         body: 'I use one content pillar for awareness, one for proof, and one for conversion before I design any posts.',
-        mediaUrls: ['/assets/business/campaign-workshop.jpg'],
+        mediaUrls: [assets.campaign],
         tags: ['Social Media', 'Canva', 'Planning'],
         postType: 'SHOWCASE',
         campusId,
@@ -163,7 +499,7 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         campusId,
         title: 'How I plan weekly content',
         body: 'I use one content pillar for awareness, one for proof, and one for conversion before I design any posts.',
-        mediaUrls: ['/assets/business/campaign-workshop.jpg'],
+        mediaUrls: [assets.campaign],
         tags: ['Social Media', 'Canva', 'Planning'],
         postType: 'SHOWCASE',
         likeCount: 42,
@@ -181,7 +517,7 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         listingType: 'DIGITAL',
         priceAmount: 750,
         currency: 'KES',
-        images: ['/assets/marketplace/poster-kit.jpg', '/assets/marketplace/poster-kit-preview.jpg'],
+        images: [assets.marketplace, assets.marketplacePreview],
         deliveryOptions: ['Instant download', 'Canva link'],
         campusId,
         status: 'ACTIVE',
@@ -198,7 +534,7 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         listingType: 'DIGITAL',
         priceAmount: 750,
         currency: 'KES',
-        images: ['/assets/marketplace/poster-kit.jpg', '/assets/marketplace/poster-kit-preview.jpg'],
+        images: [assets.marketplace, assets.marketplacePreview],
         deliveryOptions: ['Instant download', 'Canva link'],
         stockCount: 50
       }
@@ -213,7 +549,7 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         listingType: 'SERVICE',
         priceAmount: 1500,
         currency: 'KES',
-        images: ['/assets/business/campaign-workshop.jpg'],
+        images: [assets.campaign],
         deliveryOptions: ['Remote consultation', 'Written report'],
         campusId,
         status: 'ACTIVE',
@@ -230,7 +566,7 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         listingType: 'SERVICE',
         priceAmount: 1500,
         currency: 'KES',
-        images: ['/assets/business/campaign-workshop.jpg'],
+        images: [assets.campaign],
         deliveryOptions: ['Remote consultation', 'Written report'],
         stockCount: 10
       }
@@ -243,7 +579,7 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         category: 'Career',
         organizerName: 'Zetech Innovation Hub',
         organizerType: 'CAMPUS',
-        coverImageUrl: '/assets/business/interview-room.jpg',
+        coverImageUrl: assets.event,
         locationName: 'Innovation Hub',
         locationAddress: 'Zetech University, Nairobi',
         startsAt: new Date('2026-07-10T11:00:00.000Z'),
@@ -262,7 +598,7 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         category: 'Career',
         organizerName: 'Zetech Innovation Hub',
         organizerType: 'CAMPUS',
-        coverImageUrl: '/assets/business/interview-room.jpg',
+        coverImageUrl: assets.event,
         locationName: 'Innovation Hub',
         locationAddress: 'Zetech University, Nairobi',
         startsAt: new Date('2026-07-10T11:00:00.000Z'),
@@ -290,7 +626,7 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
       careerFamily: 'Marketing & Design',
       level: 'BEGINNER',
       estimatedWeeks: 6,
-      coverImageUrl: '/assets/business/campaign-workshop.jpg',
+      coverImageUrl: assets.campaign,
       skills: ['Content Strategy', 'Canva', 'Analytics', 'Client Communication'],
       outcomes: ['Publish a portfolio-ready campaign', 'Submit analytics proof', 'Prepare for paid creator gigs'],
       campusId,
@@ -306,7 +642,7 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
       careerFamily: 'Marketing & Design',
       level: 'BEGINNER',
       estimatedWeeks: 6,
-      coverImageUrl: '/assets/business/campaign-workshop.jpg',
+      coverImageUrl: assets.campaign,
       skills: ['Content Strategy', 'Canva', 'Analytics', 'Client Communication'],
       outcomes: ['Publish a portfolio-ready campaign', 'Submit analytics proof', 'Prepare for paid creator gigs'],
       sortOrder: 1
@@ -342,11 +678,13 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
     }
   ]
 
-  await Promise.all(steps.map((step) => prisma.careerRoadmapStep.upsert({
-    where: { id: step.id },
-    update: { ...step, roadmapId: roadmap.id },
-    create: { ...step, roadmapId: roadmap.id }
-  })))
+  for (const step of steps) {
+    await prisma.careerRoadmapStep.upsert({
+      where: { id: step.id },
+      update: { ...step, roadmapId: roadmap.id },
+      create: { ...step, roadmapId: roadmap.id }
+    })
+  }
 
   await prisma.studentRoadmapEnrollment.upsert({
     where: { studentId_roadmapId: { studentId, roadmapId: roadmap.id } },
@@ -387,13 +725,24 @@ async function seedDatabase() {
       duration: 4
     }
   })
+  const assets = await seedLocalFileAssets()
 
   const studentUser = await prisma.user.upsert({
     where: { email: 'student@zumbarl.test' },
-    update: { name: 'Aisha Mwangi', role: 'STUDENT_STANDARD', isActive: true },
+    update: {
+      name: 'Aisha Mwangi',
+      firstName: 'Aisha',
+      lastName: 'Mwangi',
+      username: 'aisha_mwangi',
+      role: 'STUDENT_STANDARD',
+      isActive: true
+    },
     create: {
       email: 'student@zumbarl.test',
       name: 'Aisha Mwangi',
+      firstName: 'Aisha',
+      lastName: 'Mwangi',
+      username: 'aisha_mwangi',
       phone: '+254700100001',
       passwordHash: await hashPassword('password123'),
       role: 'STUDENT_STANDARD',
@@ -402,10 +751,20 @@ async function seedDatabase() {
   })
   const businessUser = await prisma.user.upsert({
     where: { email: 'business@zumbarl.test' },
-    update: { name: 'Zetech Studios', role: 'COMPANY_STANDARD', isActive: true },
+    update: {
+      name: 'Zetech Studios',
+      firstName: 'Zetech',
+      lastName: 'Studios',
+      username: 'zetech_studios',
+      role: 'COMPANY_STANDARD',
+      isActive: true
+    },
     create: {
       email: 'business@zumbarl.test',
       name: 'Zetech Studios',
+      firstName: 'Zetech',
+      lastName: 'Studios',
+      username: 'zetech_studios',
       phone: '+254700100002',
       passwordHash: await hashPassword('password123'),
       role: 'COMPANY_STANDARD',
@@ -414,10 +773,20 @@ async function seedDatabase() {
   })
   await prisma.user.upsert({
     where: { email: 'admin@zumbarl.test' },
-    update: { name: 'Zumbarl Admin', role: 'SUPER_ADMIN', isActive: true },
+    update: {
+      name: 'Zumbarl Admin',
+      firstName: 'Zumbarl',
+      lastName: 'Admin',
+      username: 'zumbarl_admin',
+      role: 'SUPER_ADMIN',
+      isActive: true
+    },
     create: {
       email: 'admin@zumbarl.test',
       name: 'Zumbarl Admin',
+      firstName: 'Zumbarl',
+      lastName: 'Admin',
+      username: 'zumbarl_admin',
       phone: '+254700100003',
       passwordHash: await hashPassword('password123'),
       role: 'SUPER_ADMIN',
@@ -434,7 +803,7 @@ async function seedDatabase() {
       courseId: course.id,
       bio: 'Digital marketer and social media creator passionate about helping students and young professionals grow their skills and careers.',
       careerPath: 'Marketing & Design',
-      avatarUrl: '/assets/profile/student-profile-avatar.jpg',
+      avatarUrl: assets.avatar,
       kycStatus: 'APPROVED'
     },
     create: {
@@ -449,7 +818,7 @@ async function seedDatabase() {
       expectedGraduation: new Date(`${new Date().getFullYear() + 2}-12-31T00:00:00.000Z`),
       bio: 'Digital marketer and social media creator passionate about helping students and young professionals grow their skills and careers.',
       careerPath: 'Marketing & Design',
-      avatarUrl: '/assets/profile/student-profile-avatar.jpg',
+      avatarUrl: assets.avatar,
       isOpenToHire: true,
       kycStatus: 'APPROVED'
     }
@@ -496,6 +865,7 @@ async function seedDatabase() {
         postedByContactId: businessContact.id,
         title: 'Social Media Manager',
         description: 'Manage Instagram, TikTok and WhatsApp content for a student-facing campaign.',
+        imageUrl: assets.campaign,
         gigType: 'SOCIAL_MEDIA',
         gigMode: 'REMOTE',
         requiredSkills: ['Social Media', 'Canva', 'Copywriting'],
@@ -516,6 +886,7 @@ async function seedDatabase() {
         postedByContactId: businessContact.id,
         title: 'Social Media Manager',
         description: 'Manage Instagram, TikTok and WhatsApp content for a student-facing campaign.',
+        imageUrl: assets.campaign,
         gigType: 'SOCIAL_MEDIA',
         gigMode: 'REMOTE',
         requiredSkills: ['Social Media', 'Canva', 'Copywriting'],
@@ -538,6 +909,7 @@ async function seedDatabase() {
         postedByContactId: businessContact.id,
         title: 'Campus Activation Support',
         description: 'Support a campus launch activation, collect student feedback, and submit event engagement notes.',
+        imageUrl: assets.event,
         gigType: 'SALES_MARKETING',
         gigMode: 'HYBRID',
         requiredSkills: ['Events', 'Communication', 'Reporting'],
@@ -558,6 +930,7 @@ async function seedDatabase() {
         postedByContactId: businessContact.id,
         title: 'Campus Activation Support',
         description: 'Support a campus launch activation, collect student feedback, and submit event engagement notes.',
+        imageUrl: assets.event,
         gigType: 'SALES_MARKETING',
         gigMode: 'HYBRID',
         requiredSkills: ['Events', 'Communication', 'Reporting'],
@@ -580,6 +953,7 @@ async function seedDatabase() {
         postedByContactId: businessContact.id,
         title: 'Landing Page Designer',
         description: 'Design a concise campaign landing page and hand over responsive assets for implementation.',
+        imageUrl: assets.marketplace,
         gigType: 'WEB_DEVELOPMENT',
         gigMode: 'REMOTE',
         requiredSkills: ['UI/UX Design', 'Figma', 'Web Design'],
@@ -600,6 +974,7 @@ async function seedDatabase() {
         postedByContactId: businessContact.id,
         title: 'Landing Page Designer',
         description: 'Design a concise campaign landing page and hand over responsive assets for implementation.',
+        imageUrl: assets.marketplace,
         gigType: 'WEB_DEVELOPMENT',
         gigMode: 'REMOTE',
         requiredSkills: ['UI/UX Design', 'Figma', 'Web Design'],
@@ -663,7 +1038,7 @@ async function seedDatabase() {
         title: 'Instagram campaign growth sprint',
         description: 'Planned, designed and reported a two-week social campaign for a student learning product.',
         category: 'Social Media',
-        thumbnailUrl: '/assets/business/campaign-workshop.jpg',
+        thumbnailUrl: assets.campaign,
         companyName: business.name,
         clientFeedback: 'Aisha delivers high-quality work and understands our brand voice.',
         isFeatured: true,
@@ -675,7 +1050,7 @@ async function seedDatabase() {
         title: 'Instagram campaign growth sprint',
         description: 'Planned, designed and reported a two-week social campaign for a student learning product.',
         category: 'Social Media',
-        thumbnailUrl: '/assets/business/campaign-workshop.jpg',
+        thumbnailUrl: assets.campaign,
         fileUrls: [],
         companyName: business.name,
         clientFeedback: 'Aisha delivers high-quality work and understands our brand voice.',
@@ -689,7 +1064,7 @@ async function seedDatabase() {
         title: 'Campus event brand kit',
         description: 'Created event posters, WhatsApp status cards and Canva templates for a campus activation.',
         category: 'Graphic Design',
-        thumbnailUrl: '/assets/marketplace/poster-kit.jpg',
+        thumbnailUrl: assets.marketplace,
         companyName: 'BrandMasters Agency',
         isFeatured: true
       },
@@ -699,7 +1074,7 @@ async function seedDatabase() {
         title: 'Campus event brand kit',
         description: 'Created event posters, WhatsApp status cards and Canva templates for a campus activation.',
         category: 'Graphic Design',
-        thumbnailUrl: '/assets/marketplace/poster-kit.jpg',
+        thumbnailUrl: assets.marketplace,
         fileUrls: [],
         companyName: 'BrandMasters Agency',
         isFeatured: true
@@ -730,31 +1105,79 @@ async function seedDatabase() {
     })
   ])
 
-  await seedCampusContent(campus.id)
-  await seedStructuredCampusExperience(campus.id, student.id)
+  await seedCampusContent(campus.id, assets)
+  await seedStructuredCampusExperience(campus.id, student.id, assets)
 
-  const opportunity = await upsertWorkflowRecord(opportunities, 'seed-social-media-manager', {
-    businessId: business.id,
-    title: 'Social Media Manager',
-    type: 'gig',
-    status: 'published',
-    budgetAmount: 8000,
-    currency: 'KES',
-    summary: 'Manage Instagram, TikTok and WhatsApp content for a student-facing campaign.',
-    requirements: ['Social Media', 'Canva', 'Copywriting'],
-    acceptanceCriteria: 'Posts match brand voice and weekly analytics are submitted.',
-    revisionLimit: 3,
-    visibility: 'public'
+  const opportunity = await prisma.opportunity.upsert({
+    where: { id: 'opportunity-social-media-manager' },
+    update: {
+      companyId: business.id,
+      postedByContactId: businessContact.id,
+      title: 'Social Media Manager',
+      summary: 'Manage Instagram, TikTok and WhatsApp content for a student-facing campaign.',
+      description: 'Manage Instagram, TikTok and WhatsApp content for a student-facing campaign.',
+      opportunityType: 'gig',
+      category: 'Social Media',
+      status: 'published',
+      visibility: 'public',
+      scopeMode: 'deliverable',
+      opportunitySplash: { url: assets.campaign, alt: 'Social media campaign work preview' },
+      budgetAmount: 8000,
+      budgetLabel: 'KES 8,000',
+      currency: 'KES',
+      requirements: ['Social Media', 'Canva', 'Copywriting'],
+      skills: ['Social Media', 'Canva', 'Copywriting'],
+      acceptanceCriteria: 'Posts match brand voice and weekly analytics are submitted.',
+      revisionLimit: 3,
+      publishedAt: new Date(),
+      isSeed: true,
+      metadata: { seedKey: 'seed-social-media-manager' }
+    },
+    create: {
+      id: 'opportunity-social-media-manager',
+      companyId: business.id,
+      postedByContactId: businessContact.id,
+      title: 'Social Media Manager',
+      summary: 'Manage Instagram, TikTok and WhatsApp content for a student-facing campaign.',
+      description: 'Manage Instagram, TikTok and WhatsApp content for a student-facing campaign.',
+      opportunityType: 'gig',
+      category: 'Social Media',
+      status: 'published',
+      visibility: 'public',
+      scopeMode: 'deliverable',
+      opportunitySplash: { url: assets.campaign, alt: 'Social media campaign work preview' },
+      budgetAmount: 8000,
+      budgetLabel: 'KES 8,000',
+      currency: 'KES',
+      requirements: ['Social Media', 'Canva', 'Copywriting'],
+      skills: ['Social Media', 'Canva', 'Copywriting'],
+      acceptanceCriteria: 'Posts match brand voice and weekly analytics are submitted.',
+      revisionLimit: 3,
+      publishedAt: new Date(),
+      isSeed: true,
+      metadata: { seedKey: 'seed-social-media-manager' }
+    }
   })
   if (!opportunity) throw new Error('Failed to seed social media manager opportunity')
 
-  await upsertWorkflowRecord(bids, 'seed-aisha-social-media-bid', {
-    opportunityId: opportunity.id,
-    studentId: student.id,
-    status: 'submitted',
-    amount: 8000,
-    intent: 'build-career',
-    proposal: 'I can deliver weekly content and performance reports.'
+  await prisma.bid.upsert({
+    where: { opportunityId_studentId: { opportunityId: opportunity.id, studentId: student.id } },
+    update: {
+      status: 'submitted',
+      bidAmount: 8000,
+      intentId: 'build-career',
+      intentLabel: 'Build Career',
+      proposal: 'I can deliver weekly content and performance reports.'
+    },
+    create: {
+      opportunityId: opportunity.id,
+      studentId: student.id,
+      status: 'submitted',
+      bidAmount: 8000,
+      intentId: 'build-career',
+      intentLabel: 'Build Career',
+      proposal: 'I can deliver weekly content and performance reports.'
+    }
   })
   await upsertWorkflowRecord(projects, 'seed-social-media-project', {
     opportunityId: opportunity.id,
@@ -782,13 +1205,13 @@ async function seedDatabase() {
     proofRequirements: ['Live social link', 'Screenshot proof', 'Reach and engagement stats'],
     acceptedBudget: 0,
     workflow: { proofSubmitted: false, statsGenerated: false, endorsed: false },
-    previewImage: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp',
+    previewImage: assets.campaign,
     thumbnailTitle: 'LEVEL UP YOUR SKILLS',
     thumbnailMeta: '#ZetechPower',
     timelineLabel: 'Ends in',
     timelineValue: '5 days',
     creatorsLimit: 10,
-    materials: [{ type: 'image', url: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp', label: 'Campaign creative' }]
+    materials: [{ type: 'image', url: assets.campaign, label: 'Campaign creative' }]
   })
   await upsertWorkflowRecord(shops, 'seed-aisha-campus-shop', {
     studentId: student.id,
@@ -806,7 +1229,16 @@ async function seedDatabase() {
   })
 }
 
+if (import.meta.url === `file://${process.argv[1]}`) {
+  seedDatabase()
+    .then(() => prisma.$disconnect())
+    .catch(async (error) => {
+      process.stderr.write(`${error instanceof Error ? error.stack ?? error.message : String(error)}\n`)
+      await prisma.$disconnect()
+      process.exit(1)
+    })
+}
+
 export {
-  seedDatabase,
-  type AnyRecord
+  seedDatabase
 }

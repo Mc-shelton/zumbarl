@@ -3,12 +3,10 @@ import { pageEnvelope } from '../../../lib/http.js'
 import { prisma } from '../../../lib/prisma.js'
 import { createPrismaRecordRepository } from '../../../shared/repositories/index.js'
 
-const opportunities = createPrismaRecordRepository('opportunities')
 const projects = createPrismaRecordRepository('projects')
 const campaigns = createPrismaRecordRepository('campaigns')
 const orders = createPrismaRecordRepository('orders')
 const cases = createPrismaRecordRepository('moderationCases')
-const bids = createPrismaRecordRepository('bids')
 const escrows = createPrismaRecordRepository('escrows')
 const platformConfigurations = createPrismaRecordRepository('platformConfigurations')
 const featureFlags = createPrismaRecordRepository('featureFlags')
@@ -109,7 +107,7 @@ class AdminOperationsRepository {
       prisma.user.count(),
       prisma.studentProfile.count(),
       prisma.company.count(),
-      opportunities.count(),
+      prisma.opportunity.count(),
       projects.count(),
       campaigns.count(),
       orders.count(),
@@ -154,6 +152,9 @@ class AdminOperationsRepository {
       ? {
           OR: [
             { name: { contains: search, mode: 'insensitive' } },
+            { firstName: { contains: search, mode: 'insensitive' } },
+            { lastName: { contains: search, mode: 'insensitive' } },
+            { username: { contains: search, mode: 'insensitive' } },
             { email: { contains: search, mode: 'insensitive' } },
             { phone: { contains: search, mode: 'insensitive' } },
             { studentProfile: { studentIdNumber: { contains: search, mode: 'insensitive' } } },
@@ -181,6 +182,9 @@ class AdminOperationsRepository {
       where: { id },
       data: {
         name: patch.name,
+        firstName: patch.firstName,
+        lastName: patch.lastName,
+        username: patch.username ? String(patch.username).replace(/^@+/, '').toLowerCase() : undefined,
         phone: patch.phone,
         role,
         isActive: patch.status ? patch.status === 'active' : patch.isActive,
@@ -226,7 +230,7 @@ class AdminOperationsRepository {
 
     await prisma.$transaction([
       prisma.portfolioItem.updateMany({ where: { studentId: source.studentProfile.id }, data: { studentId: target.studentProfile.id } }),
-      prisma.gigApplication.updateMany({ where: { studentId: source.studentProfile.id }, data: { studentId: target.studentProfile.id } }),
+      prisma.bid.updateMany({ where: { studentId: source.studentProfile.id }, data: { studentId: target.studentProfile.id } }),
       prisma.wallet.updateMany({ where: { studentId: source.studentProfile.id }, data: { studentId: target.studentProfile.id } }),
       prisma.user.update({ where: { id: source.id }, data: { isActive: false } })
     ])
@@ -237,14 +241,14 @@ class AdminOperationsRepository {
   async readFinancialOversight(query: Record<string, unknown>) {
     const [transactions, escrowHolds, companyWallets, studentWallets, chamaWallets, advances, workflowEscrows] = await Promise.all([
       prisma.transaction.findMany({ orderBy: { createdAt: 'desc' }, take: 25 }),
-      prisma.escrowHold.findMany({ orderBy: { heldAt: 'desc' }, take: 25 }),
+      prisma.opportunityEscrowHold.findMany({ orderBy: { heldAt: 'desc' }, take: 25 }),
       prisma.companyWallet.findMany({ orderBy: { updatedAt: 'desc' }, take: 25, include: { company: { select: { name: true } } } }),
       prisma.wallet.findMany({ orderBy: { updatedAt: 'desc' }, take: 25 }),
       prisma.chamaWallet.findMany({ orderBy: { updatedAt: 'desc' }, take: 25, include: { chama: { select: { name: true } } } }),
       prisma.microAdvance.findMany({ orderBy: { issuedAt: 'desc' }, take: 25 }),
       escrows.listAll()
     ])
-    const totalVolume = transactions.reduce((sum, item) => sum + item.amount, 0) + workflowEscrows.reduce((sum, item) => sum + Number(item.amount ?? 0), 0)
+    const totalVolume = transactions.reduce((sum: number, item) => sum + item.amount, 0) + workflowEscrows.reduce((sum: number, item) => sum + Number(item.amount ?? 0), 0)
     return {
       summary: {
         transactions: transactions.length,
@@ -279,24 +283,25 @@ class AdminOperationsRepository {
   }
 
   async readGigOversight(query: Record<string, unknown>) {
-    const [gigs, workflowOpportunities, workflowBids, workflowProjects] = await Promise.all([
+    const [gigs, opportunities, bidCount, workflowProjects] = await Promise.all([
       prisma.gig.findMany({ orderBy: { createdAt: 'desc' }, take: 25, include: { company: { select: { name: true } } } }),
-      opportunities.listAll(),
-      bids.listAll(),
+      prisma.opportunity.findMany({ orderBy: { createdAt: 'desc' }, take: 25, include: { company: { select: { name: true } } } }),
+      prisma.bid.count(),
       projects.listAll()
     ])
     const disputedGigs = gigs.filter((gig) => ['DISPUTED', 'REVISION_REQUESTED'].includes(gig.status))
+    const disputedOpportunities = opportunities.filter((item) => item.status === 'disputed')
     return {
       summary: {
         structuredGigs: gigs.length,
-        workflowOpportunities: workflowOpportunities.length,
-        open: gigs.filter((gig) => gig.status === 'OPEN').length + workflowOpportunities.filter((item) => item.status === 'published' || item.status === 'open').length,
-        disputed: disputedGigs.length + workflowOpportunities.filter((item) => item.status === 'disputed').length,
-        bids: workflowBids.length,
+        opportunities: opportunities.length,
+        open: gigs.filter((gig) => gig.status === 'OPEN').length + opportunities.filter((item) => item.status === 'published' || item.status === 'open').length,
+        disputed: disputedGigs.length + disputedOpportunities.length,
+        bids: bidCount,
         projects: workflowProjects.length
       },
-      gigs: pageEnvelope([...gigs, ...workflowOpportunities], query),
-      disputes: [...disputedGigs, ...workflowOpportunities.filter((item) => item.status === 'disputed')]
+      gigs: pageEnvelope([...gigs, ...opportunities], query),
+      disputes: [...disputedGigs, ...disputedOpportunities]
     }
   }
 
@@ -414,14 +419,14 @@ class AdminOperationsRepository {
   }
 
   async readAnalyticsReport() {
-    const [students, companies, gigs, completedGigs, placements, transactions, workflowOpportunities, workflowProjects] = await Promise.all([
+    const [students, companies, gigs, completedGigs, placements, transactions, opportunityCount, workflowProjects] = await Promise.all([
       prisma.studentProfile.count(),
       prisma.company.count(),
       prisma.gig.count(),
       prisma.gig.count({ where: { status: 'COMPLETED' } }),
       prisma.placement.count(),
       prisma.transaction.findMany(),
-      opportunities.listAll(),
+      prisma.opportunity.count(),
       projects.listAll()
     ])
     const revenue = transactions.reduce((sum, item) => sum + item.platformFee, 0)
@@ -430,7 +435,7 @@ class AdminOperationsRepository {
       summary: {
         activeStudents: students,
         activeCompanies: companies,
-        gigsPosted: gigs + workflowOpportunities.length,
+        gigsPosted: gigs + opportunityCount,
         gigsCompleted: completedGigs + workflowProjects.filter((item) => item.status === 'completed').length,
         grossMerchandiseValue: gmv,
         revenue,

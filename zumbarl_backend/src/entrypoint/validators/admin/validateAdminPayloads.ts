@@ -2,6 +2,9 @@ import { z } from 'zod'
 
 const updateUserSchema = z.object({
   name: z.string().min(2).optional(),
+  firstName: z.string().min(2).optional(),
+  lastName: z.string().min(2).optional(),
+  username: z.string().min(3).max(30).regex(/^@?[a-zA-Z0-9_]+$/).optional(),
   phone: z.string().min(6).optional(),
   status: z.enum(['active', 'suspended']).optional(),
   role: z.string().optional(),

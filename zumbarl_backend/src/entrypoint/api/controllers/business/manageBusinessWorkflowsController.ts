@@ -18,6 +18,7 @@ import {
   readBusinessKycService,
   readBusinessProfileService,
   submitBusinessKycService,
+  updateBusinessOpportunityService,
   updateBusinessProfileService
 } from '../../../../adapters/services/business/index.js'
 import { z } from 'zod'
@@ -29,6 +30,7 @@ import {
   inviteOpportunityBiddersSchema,
   reviewApplicantSchema,
   submitBusinessKycSchema,
+  updateOpportunitySchema,
   updateBusinessProfileSchema
 } from '../../../validators/business/index.js'
 
@@ -71,6 +73,11 @@ async function listBusinessOpportunitiesController(request: FastifyRequest, repl
 
 async function createBusinessOpportunityController(request: FastifyRequest, reply: FastifyReply) {
   return reply.code(201).send(await createBusinessOpportunityService(request.authUser?.businessId, request.authUser?.id, requireBody(createOpportunitySchema, request)))
+}
+
+async function updateBusinessOpportunityController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await updateBusinessOpportunityService(id, request.authUser?.businessId, request.authUser?.id, requireBody(updateOpportunitySchema, request)))
 }
 
 async function publishBusinessOpportunityController(request: FastifyRequest, reply: FastifyReply) {
@@ -128,6 +135,7 @@ export {
   createBusinessIndustryController,
   listBusinessOpportunitiesController,
   createBusinessOpportunityController,
+  updateBusinessOpportunityController,
   publishBusinessOpportunityController,
   fundBusinessOpportunityController,
   listOpportunityDeliverablesController,

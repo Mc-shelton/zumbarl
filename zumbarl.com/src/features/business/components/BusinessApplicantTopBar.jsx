@@ -1,18 +1,20 @@
-import {
-  FiBell,
-  FiChevronDown,
-  FiMessageCircle,
-  FiPlus,
-} from 'react-icons/fi'
+import { FiChevronDown, FiPlus } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import CampusTopActions from '../../../components/layout/CampusTopActions'
 import { Breadcrumb } from '../../../components/ui'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
+import { BUSINESS_VIEWER } from '../../auth/viewerProfile'
 import { BUSINESS_APPLICANT_PROFILE } from '../applicantProfileData'
 
 export function BusinessApplicantTopBar({ onCreateOpportunity }) {
   const canCreateOpportunity = hasAccess(ACCESS_KEYS.business.postOpportunities)
-  const canOpenMessages = hasAccess(ACCESS_KEYS.business.messages)
-  const canOpenNotifications = hasAccess(ACCESS_KEYS.business.notifications)
+  const primaryAction = canCreateOpportunity ? (
+    <Link to="/business/opportunities/create" className="business-profile-primary-btn" onClick={onCreateOpportunity}>
+      <FiPlus aria-hidden="true" />
+      Create Opportunity
+      <FiChevronDown aria-hidden="true" />
+    </Link>
+  ) : null
 
   return (
     <header className="business-profile-topbar">
@@ -25,31 +27,19 @@ export function BusinessApplicantTopBar({ onCreateOpportunity }) {
         ]}
       />
 
-      <div className="business-profile-top-actions">
-        {canCreateOpportunity ? (
-          <Link to="/business/opportunities/create" className="business-profile-primary-btn" onClick={onCreateOpportunity}>
-            <FiPlus aria-hidden="true" />
-            Create Opportunity
-            <FiChevronDown aria-hidden="true" />
-          </Link>
-        ) : null}
-        {canOpenMessages ? (
-          <button type="button" className="business-profile-icon-btn" aria-label="Open messages">
-            <FiMessageCircle aria-hidden="true" />
-            <b>6</b>
-          </button>
-        ) : null}
-        {canOpenNotifications ? (
-          <button type="button" className="business-profile-icon-btn" aria-label="Open notifications">
-            <FiBell aria-hidden="true" />
-            <b>3</b>
-          </button>
-        ) : null}
-        <button type="button" className="business-profile-user-btn" aria-label="Open profile menu">ZS</button>
-        <button type="button" className="business-profile-chevron-btn" aria-label="Expand user menu">
-          <FiChevronDown aria-hidden="true" />
-        </button>
-      </div>
+      <CampusTopActions
+        className="business-profile-top-actions"
+        iconButtonClassName="business-profile-icon-btn"
+        menuItems={[
+          { label: 'Business profile', href: '/business/workspace' },
+          { label: 'Settings', href: '/business/settings' },
+        ]}
+        primaryAction={primaryAction}
+        scope="business"
+        showMenu
+        userButtonClassName="business-profile-user-btn"
+        viewer={BUSINESS_VIEWER}
+      />
     </header>
   )
 }
