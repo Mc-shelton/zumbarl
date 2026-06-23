@@ -1,6 +1,7 @@
 import { KycStatus, type Prisma } from '@prisma/client'
 import { prisma } from '../../../lib/prisma.js'
 import { createPrismaRecordRepository } from '../../../shared/repositories/index.js'
+import { createSkillSlug, normalizeSkillName as normalizeCanonicalSkillName } from '../skills/index.js'
 
 const campaigns = createPrismaRecordRepository('campaigns')
 const projects = createPrismaRecordRepository('projects')
@@ -102,6 +103,67 @@ function toJson(value: unknown): Prisma.InputJsonValue | undefined {
 
 function getScopeItemBudget(item: Record<string, any>) {
   return toNumber(item.budgetAmount ?? item.budget)
+}
+
+async function syncOpportunitySkills(transaction: Prisma.TransactionClient, opportunityId: string, skillNames: string[], actorId: string | undefined) {
+  const uniqueSkillNames = Array.from(new Map(skillNames
+    .map((skillName) => normalizeCanonicalSkillName(String(skillName ?? '')))
+    .filter(Boolean)
+    .map((skillName) => [createSkillSlug(skillName), skillName])).values())
+
+  if (!uniqueSkillNames.length) {
+    await transaction.opportunitySkill.deleteMany({ where: { opportunityId } })
+    return []
+  }
+
+  const skills = []
+  for (const skillName of uniqueSkillNames) {
+    const slug = createSkillSlug(skillName)
+    const skill = await transaction.skill.upsert({
+      where: { slug },
+      update: { status: 'active' },
+      create: {
+        name: skillName,
+        slug,
+        status: 'active',
+        source: 'opportunity',
+        createdByUserId: actorId,
+        usageCount: 1
+      }
+    })
+    skills.push(skill)
+  }
+
+  const skillIds = skills.map((skill) => skill.id)
+  await transaction.opportunitySkill.deleteMany({
+    where: {
+      opportunityId,
+      skillId: { notIn: skillIds }
+    }
+  })
+
+  const existingLinks = await transaction.opportunitySkill.findMany({
+    where: {
+      opportunityId,
+      skillId: { in: skillIds }
+    },
+    select: { skillId: true }
+  })
+  const existingSkillIds = new Set(existingLinks.map((link) => link.skillId))
+  const missingSkillIds = skillIds.filter((skillId) => !existingSkillIds.has(skillId))
+  if (missingSkillIds.length) {
+    await transaction.opportunitySkill.createMany({
+      data: missingSkillIds.map((skillId) => ({
+        opportunityId,
+        skillId,
+        required: true,
+        source: 'opportunity'
+      })),
+      skipDuplicates: true
+    })
+  }
+
+  return skills
 }
 
 function toOpportunityScopeItem(scopeItem: Record<string, any>) {
@@ -312,6 +374,57 @@ function toOpportunityPatchData(payload: Record<string, any>, businessId?: strin
     isSeed: payload.isSeed === undefined ? undefined : Boolean(payload.isSeed),
     metadata: payload.metadata === undefined ? undefined : toJson(payload.metadata)
   })
+}
+
+async function syncOpportunityRequiredAttachments(transaction: any, opportunityId: string, requiredAttachments: Record<string, any>[]) {
+  await transaction.opportunityRequiredAttachment.deleteMany({
+    where: { opportunityId }
+  })
+
+  if (!requiredAttachments.length) return
+
+  await transaction.opportunityRequiredAttachment.createMany({
+    data: requiredAttachments.map((attachment: Record<string, any>, index: number) => ({
+      opportunityId,
+      label: attachment.label ?? '',
+      fileType: attachment.fileType ?? '',
+      required: attachment.required !== false,
+      sortOrder: index + 1
+    }))
+  })
+}
+
+async function syncOpportunityScopeItems(transaction: any, opportunityId: string, payload: Record<string, any>) {
+  const hasDeliverables = payload.deliverableMilestones !== undefined
+  const hasMilestones = payload.milestoneScopes !== undefined
+  if (!hasDeliverables && !hasMilestones) return
+
+  await transaction.opportunityScopeItem.deleteMany({
+    where: { opportunityId }
+  })
+
+  const scopeItems = [
+    ...(Array.isArray(payload.deliverableMilestones) ? payload.deliverableMilestones.map((item: Record<string, any>) => ({ item, scopeType: 'deliverable' })) : []),
+    ...(Array.isArray(payload.milestoneScopes) ? payload.milestoneScopes.map((item: Record<string, any>) => ({ item, scopeType: 'milestone' })) : [])
+  ]
+
+  await Promise.all(scopeItems.map(async ({ item, scopeType }, index) => {
+    const scopeItem = await transaction.opportunityScopeItem.create({
+      data: toScopeItemCreateData(opportunityId, item, scopeType, index + 1)
+    })
+    const sampleWork = Array.isArray(item.sampleWork) ? item.sampleWork : []
+    if (sampleWork.length) {
+      await transaction.opportunitySampleWork.createMany({
+        data: sampleWork.map((sample: Record<string, any>, sampleIndex: number) => ({
+          scopeItemId: scopeItem.id,
+          label: sample.label ?? `Sample ${sampleIndex + 1}`,
+          fileType: sample.fileType ?? 'any',
+          files: toJson(sample.files ?? []),
+          sortOrder: sampleIndex + 1
+        }))
+      })
+    }
+  }))
 }
 
 function toScopeItemCreateData(opportunityId: string, item: Record<string, any>, scopeType: string, sequence: number) {
@@ -604,19 +717,34 @@ class BusinessWorkflowsRepository {
   }
 
   async updateOpportunity(id: string, patch: Record<string, any>) {
-    const existing = await prisma.opportunity.findUnique({ where: { id } })
-    if (!existing) return null
+    return prisma.$transaction(async (transaction) => {
+      const existing = await transaction.opportunity.findUnique({ where: { id } })
+      if (!existing) return null
 
-    const opportunity = await prisma.opportunity.update({
-      where: { id },
-      data: toOpportunityPatchData({ ...patch, businessId: existing.companyId }, existing.companyId),
-      include: {
-        company: true,
-        scopeItems: { include: { sampleWork: true }, orderBy: { sequence: 'asc' } },
-        requiredAttachments: { orderBy: { sortOrder: 'asc' } }
+      await transaction.opportunity.update({
+        where: { id },
+        data: toOpportunityPatchData({ ...patch, businessId: existing.companyId }, existing.companyId)
+      })
+
+      if (patch.requiredAttachments !== undefined) {
+        await syncOpportunityRequiredAttachments(
+          transaction,
+          id,
+          Array.isArray(patch.requiredAttachments) ? patch.requiredAttachments : []
+        )
       }
+      await syncOpportunityScopeItems(transaction, id, patch)
+
+      const opportunity = await transaction.opportunity.findUnique({
+        where: { id },
+        include: {
+          company: true,
+          scopeItems: { include: { sampleWork: true }, orderBy: { sequence: 'asc' } },
+          requiredAttachments: { orderBy: { sortOrder: 'asc' } }
+        }
+      })
+      return toOpportunity(opportunity)
     })
-    return toOpportunity(opportunity)
   }
 
   updateOpportunityWithEvent(id: string, patch: Record<string, any>, actorId: string | undefined) {
@@ -624,21 +752,35 @@ class BusinessWorkflowsRepository {
       const existing = await transaction.opportunity.findUnique({ where: { id } })
       if (!existing) return null
 
-      const opportunity = await transaction.opportunity.update({
+      await transaction.opportunity.update({
         where: { id },
-        data: toOpportunityPatchData({ ...patch, businessId: existing.companyId }, existing.companyId),
-        include: {
-          company: true,
-          scopeItems: { include: { sampleWork: true }, orderBy: { sequence: 'asc' } },
-          requiredAttachments: { orderBy: { sortOrder: 'asc' } }
-        }
+        data: toOpportunityPatchData({ ...patch, businessId: existing.companyId }, existing.companyId)
       })
+      if (patch.skills !== undefined) {
+        await syncOpportunitySkills(transaction, id, toStringList(patch.skills), actorId)
+      }
+      if (patch.requiredAttachments !== undefined) {
+        await syncOpportunityRequiredAttachments(
+          transaction,
+          id,
+          Array.isArray(patch.requiredAttachments) ? patch.requiredAttachments : []
+        )
+      }
+      await syncOpportunityScopeItems(transaction, id, patch)
       await transaction.opportunityActivityEvent.create({
         data: {
           action: 'updated',
           opportunityId: id,
           actorId,
           metadata: toJson({ changedFields: Object.keys(patch) })
+        }
+      })
+      const opportunity = await transaction.opportunity.findUnique({
+        where: { id },
+        include: {
+          company: true,
+          scopeItems: { include: { sampleWork: true }, orderBy: { sequence: 'asc' } },
+          requiredAttachments: { orderBy: { sortOrder: 'asc' } }
         }
       })
       return toOpportunity(opportunity)
@@ -797,6 +939,7 @@ class BusinessWorkflowsRepository {
           requiredAttachments: { orderBy: { sortOrder: 'asc' } }
         }
       })
+      await syncOpportunitySkills(transaction, opportunity.id, toStringList(payload.skills), actorId)
       const scopeItems = [
         ...(Array.isArray(payload.deliverableMilestones) ? payload.deliverableMilestones.map((item: Record<string, any>) => ({ item, scopeType: 'deliverable' })) : []),
         ...(Array.isArray(payload.milestoneScopes) ? payload.milestoneScopes.map((item: Record<string, any>) => ({ item, scopeType: 'milestone' })) : [])

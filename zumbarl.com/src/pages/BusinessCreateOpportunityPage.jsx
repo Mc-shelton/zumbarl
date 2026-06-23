@@ -3,6 +3,7 @@ import Seo from '../components/Seo'
 import { BusinessOpportunityBriefForm } from '../features/business/components/BusinessOpportunityBriefForm'
 import { BusinessOpportunityBriefRail } from '../features/business/components/BusinessOpportunityBriefRail'
 import { BusinessOpportunityBriefSteps } from '../features/business/components/BusinessOpportunityBriefSteps'
+import { BusinessOpportunityLeavePrompt } from '../features/business/components/BusinessOpportunityLeavePrompt'
 import { BusinessWorkspaceHeader } from '../features/business/components/BusinessWorkspaceHeader'
 import { BusinessWorkspaceSidebar } from '../features/business/components/BusinessApplicantSidebar'
 import { useBusinessOpportunityBriefCreate } from '../features/business/hooks/useBusinessOpportunityBriefCreate'
@@ -60,16 +61,19 @@ function BusinessCreateOpportunityPage() {
             />
           </section>
 
-          <BusinessOpportunityBriefRail
-            clarityChecks={createOpportunity.clarityChecks}
-            clarityScore={createOpportunity.clarityScore}
-            isPublishReady={createOpportunity.isPublishReady}
-            onPublish={createOpportunity.onPublish}
-            onSaveDraft={createOpportunity.onSaveDraft}
-            summary={createOpportunity.summary}
-          />
+            <BusinessOpportunityBriefRail
+              clarityChecks={createOpportunity.clarityChecks}
+              clarityScore={createOpportunity.clarityScore}
+              isPublishReady={createOpportunity.isPublishReady}
+              onPublish={createOpportunity.onPublish}
+              onSaveDraft={createOpportunity.onSaveDraft}
+              onStepChange={createOpportunity.onStepChange}
+              summary={createOpportunity.summary}
+            />
         </div>
       </div>
+
+      <BusinessOpportunityLeavePrompt {...createOpportunity.leavePrompt} />
     </main>
   )
 }

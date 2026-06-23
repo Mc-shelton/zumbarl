@@ -88,9 +88,7 @@ export function BusinessOpportunityBriefReviewStep({
           <div>
             <dt>Opportunity Splash</dt>
             <dd>
-              {form.opportunitySplash?.name
-                ? `${form.opportunitySplash.name}${form.opportunitySplash.cropConfirmed === false ? ' (crop not confirmed)' : ''}`
-                : 'No splash uploaded'}
+              {form.opportunitySplash?.name || 'No splash uploaded'}
             </dd>
           </div>
         </dl>
@@ -155,12 +153,24 @@ export function BusinessOpportunityBriefReviewStep({
         onEdit={() => onStepChange(firstMissingDetail?.step || 1)}
       >
         <ul className="business-create-readiness-list">
-          {clarityChecks.map((check) => (
-            <li key={check.id} className={check.complete ? 'is-complete' : 'is-missing'}>
-              {check.complete ? <FiCheckCircle aria-hidden="true" /> : <FiAlertCircle aria-hidden="true" />}
-              <span>{check.label}</span>
-            </li>
-          ))}
+          {clarityChecks.map((check) => {
+            const content = (
+              <>
+                {check.complete ? <FiCheckCircle aria-hidden="true" /> : <FiAlertCircle aria-hidden="true" />}
+                <span>{check.label}</span>
+              </>
+            )
+
+            return (
+              <li key={check.id} className={check.complete ? 'is-complete' : 'is-missing'}>
+                {check.complete ? content : (
+                  <button type="button" onClick={() => onStepChange(check.step)}>
+                    {content}
+                  </button>
+                )}
+              </li>
+            )
+          })}
         </ul>
         {!isPublishReady ? (
           <p className="business-create-readiness-note">

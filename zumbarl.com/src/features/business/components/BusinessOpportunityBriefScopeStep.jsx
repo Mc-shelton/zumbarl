@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiCode, FiFileText, FiImage, FiInfo, FiMapPin, FiPlus, FiTrendingUp, FiUploadCloud, FiX } from 'react-icons/fi'
+import { FiChevronDown, FiChevronUp, FiCode, FiFileText, FiImage, FiInfo, FiMapPin, FiMove, FiPlus, FiTrendingUp, FiUploadCloud, FiX } from 'react-icons/fi'
 import { BUSINESS_OPPORTUNITY_BRIEF_SELECTS } from '../opportunityBriefCreateData'
 
 const SAMPLE_WORK_FILE_TYPE_OPTIONS = [
@@ -152,6 +152,38 @@ function getTotalPercent(milestones) {
   return milestones.reduce((total, milestone) => total + numberValue(milestone.paymentPercent), 0)
 }
 
+function formatPaymentPercent(value) {
+  if (!Number.isFinite(value)) return ''
+  return Number(value.toFixed(2)).toString()
+}
+
+function normalizePaymentPercents(milestones) {
+  const totalBudget = getTotalBudget(milestones)
+  if (!totalBudget) {
+    return milestones.map((milestone) => ({ ...milestone, paymentPercent: '' }))
+  }
+
+  const lastBudgetedIndex = milestones.reduce((lastIndex, milestone, index) => (
+    numberValue(milestone.budget) > 0 ? index : lastIndex
+  ), -1)
+  let assignedPercent = 0
+
+  return milestones.map((milestone, index) => {
+    const itemBudget = numberValue(milestone.budget)
+    if (!itemBudget) return { ...milestone, paymentPercent: '' }
+
+    const paymentPercent = index === lastBudgetedIndex
+      ? Math.max(0, 100 - assignedPercent)
+      : (itemBudget / totalBudget) * 100
+    assignedPercent += paymentPercent
+
+    return {
+      ...milestone,
+      paymentPercent: formatPaymentPercent(paymentPercent),
+    }
+  })
+}
+
 function getMilestoneSummary(milestones) {
   return {
     acceptanceCriteria: summarizeAcceptanceCriteria(milestones),
@@ -168,7 +200,50 @@ function getScopeItems(form, scopeMode) {
   return form.deliverableMilestones?.length ? form.deliverableMilestones : [createDeliverableMilestone('File Asset Deliverables', 0)]
 }
 
-function DeliverableMilestoneCard({ index, milestone, onRemove, onUpdate, scopeMode }) {
+function getAcceptedSampleFileTypes(fileType) {
+  const normalized = String(fileType || '').toLowerCase()
+
+  if (normalized === 'image') return 'image/*'
+  if (normalized === 'video') return 'video/*'
+  if (normalized === 'pdf') return 'application/pdf'
+  if (normalized === 'docx') return '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+  if (normalized === 'spreadsheet') return '.xls,.xlsx,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'
+  if (normalized === 'zip') return '.zip,application/zip,application/x-zip-compressed'
+  if (normalized === 'link') return ''
+
+  return ''
+}
+
+function isAcceptedSampleFile(file, fileType) {
+  const normalized = String(fileType || '').toLowerCase()
+  const name = file.name.toLowerCase()
+  const mimeType = file.type.toLowerCase()
+
+  if (!normalized || normalized === 'any accepted file') return true
+  if (normalized === 'image') return mimeType.startsWith('image/')
+  if (normalized === 'video') return mimeType.startsWith('video/')
+  if (normalized === 'pdf') return mimeType === 'application/pdf' || name.endsWith('.pdf')
+  if (normalized === 'docx') return name.endsWith('.doc') || name.endsWith('.docx')
+  if (normalized === 'spreadsheet') return ['.xls', '.xlsx', '.csv'].some((extension) => name.endsWith(extension))
+  if (normalized === 'zip') return name.endsWith('.zip')
+  if (normalized === 'link') return false
+
+  return true
+}
+
+function DeliverableMilestoneCard({
+  dragState,
+  index,
+  isCollapsed,
+  milestone,
+  onDragEnd,
+  onDragEnter,
+  onDragStart,
+  onRemove,
+  onToggleCollapse,
+  onUpdate,
+  scopeMode,
+}) {
   const isMilestoneScope = scopeMode === 'milestone'
   const workflow = milestone.workflow || milestone.type || (isMilestoneScope ? 'Hybrid Deliverables' : 'File Asset Deliverables')
   const meta = DELIVERABLE_TYPE_META[workflow] || DELIVERABLE_TYPE_META['File Asset Deliverables']
@@ -216,17 +291,38 @@ function DeliverableMilestoneCard({ index, milestone, onRemove, onUpdate, scopeM
   }
 
   return (
-    <article className="business-create-deliverable-milestone-card">
+    <article
+      className={`business-create-deliverable-milestone-card${isCollapsed ? ' is-collapsed' : ''}${dragState?.overIndex === index ? ' is-drag-over' : ''}`}
+      draggable
+      onDragEnd={onDragEnd}
+      onDragEnter={(event) => onDragEnter(event, index)}
+      onDragOver={(event) => event.preventDefault()}
+      onDragStart={(event) => onDragStart(event, index)}
+    >
       <header>
+        <button
+          type="button"
+          className="business-create-deliverable-drag-handle"
+          aria-label={`Drag ${isMilestoneScope ? 'milestone' : 'deliverable'} ${index + 1}`}
+          title="Drag to reorder"
+        >
+          <FiMove aria-hidden="true" />
+        </button>
         <div>
           <span>{isMilestoneScope ? 'Milestone' : 'Deliverable'} {index + 1}</span>
           <h4>{milestone.title || (isMilestoneScope ? 'Untitled milestone' : 'Untitled deliverable')}</h4>
         </div>
-        <button type="button" aria-label={`Remove stage ${index + 1}`} onClick={onRemove}>
-          <FiX aria-hidden="true" />
-        </button>
+        <div className="business-create-deliverable-header-actions">
+          <button type="button" aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} stage ${index + 1}`} onClick={onToggleCollapse}>
+            {isCollapsed ? <FiChevronDown aria-hidden="true" /> : <FiChevronUp aria-hidden="true" />}
+          </button>
+          <button type="button" aria-label={`Remove stage ${index + 1}`} onClick={onRemove}>
+            <FiX aria-hidden="true" />
+          </button>
+        </div>
       </header>
 
+      {!isCollapsed ? (
       <div className="business-create-deliverable-milestone-grid">
         {!isMilestoneScope ? (
           <div className="business-create-workflow-field">
@@ -263,7 +359,7 @@ function DeliverableMilestoneCard({ index, milestone, onRemove, onUpdate, scopeM
         </label>
         <label>
           <span>Payment %</span>
-          <input value={milestone.paymentPercent} disabled onChange={(event) => updateMilestone('paymentPercent', event.target.value)} />
+          <input value={milestone.paymentPercent} readOnly />
           <span>recalculates based on total deliverables</span>
         </label>
         <label className="is-wide">
@@ -312,8 +408,13 @@ function DeliverableMilestoneCard({ index, milestone, onRemove, onUpdate, scopeM
                   </div>
                   <input
                     multiple
+                    accept={getAcceptedSampleFileTypes(sample.fileType)}
                     type="file"
-                    onChange={(event) => updateSampleFiles(sample.id, Array.from(event.target.files || []).map(toFileMetadata))}
+                    onChange={(event) => {
+                      const acceptedFiles = Array.from(event.target.files || []).filter((file) => isAcceptedSampleFile(file, sample.fileType))
+                      updateSampleFiles(sample.id, acceptedFiles.map(toFileMetadata))
+                      event.target.value = ''
+                    }}
                   />
                 </label>
                 <button
@@ -344,36 +445,52 @@ function DeliverableMilestoneCard({ index, milestone, onRemove, onUpdate, scopeM
           <span>Lock later {isMilestoneScope ? 'milestones' : 'deliverable submissions'} until this {isMilestoneScope ? 'milestone' : 'deliverable'} is approved</span>
         </label>
       </div>
+      ) : null}
     </article>
   )
 }
 
 function syncMilestoneFields(onUpdateField, scopeMode, milestones) {
-  const summary = getMilestoneSummary(milestones)
+  const normalizedMilestones = normalizePaymentPercents(milestones)
+  const summary = getMilestoneSummary(normalizedMilestones)
   onUpdateField('scopeMode', scopeMode)
-  onUpdateField(scopeMode === 'milestone' ? 'milestoneScopes' : 'deliverableMilestones', milestones)
+  onUpdateField(scopeMode === 'milestone' ? 'milestoneScopes' : 'deliverableMilestones', normalizedMilestones)
+  onUpdateField(scopeMode === 'milestone' ? 'deliverableMilestones' : 'milestoneScopes', [])
   onUpdateField('deliverables', summary.deliverables)
   onUpdateField('acceptanceCriteria', summary.acceptanceCriteria)
   onUpdateField('budget', summary.budget)
 }
 
 export function BusinessOpportunityBriefScopeStep({ form, onUpdateField }) {
-  const [activeScopeMode, setActiveScopeMode] = useState(form.scopeMode || 'deliverable')
+  const isTaskOpportunity = String(form.opportunityType || '').toLowerCase() === 'task'
+  const canUseMilestones = !isTaskOpportunity
+  const [selectedScopeMode, setSelectedScopeMode] = useState(form.scopeMode || 'deliverable')
+  const [expandedMilestoneId, setExpandedMilestoneId] = useState()
+  const [dragState, setDragState] = useState(null)
+  const activeScopeMode = canUseMilestones ? selectedScopeMode : 'deliverable'
   const isMilestoneScope = activeScopeMode === 'milestone'
   const milestones = getScopeItems(form, activeScopeMode)
+  const visibleExpandedMilestoneId = expandedMilestoneId === undefined
+    ? milestones[0]?.id
+    : milestones.some((milestone) => milestone.id === expandedMilestoneId)
+    ? expandedMilestoneId
+    : null
   const totalBudget = getTotalBudget(milestones)
   const totalPercent = getTotalPercent(milestones)
 
   function changeScopeMode(scopeMode) {
-    const nextMilestones = getScopeItems(form, scopeMode)
-    setActiveScopeMode(scopeMode)
-    syncMilestoneFields(onUpdateField, scopeMode, nextMilestones)
+    const nextScopeMode = canUseMilestones ? scopeMode : 'deliverable'
+    const nextMilestones = getScopeItems(form, nextScopeMode)
+    setSelectedScopeMode(nextScopeMode)
+    setExpandedMilestoneId(nextMilestones[0]?.id || null)
+    syncMilestoneFields(onUpdateField, nextScopeMode, nextMilestones)
   }
 
   function addMilestone(type = isMilestoneScope ? 'Hybrid Deliverables' : 'File Asset Deliverables') {
     const nextMilestone = isMilestoneScope
       ? createProjectMilestone(type, milestones.length)
       : createDeliverableMilestone(type, milestones.length)
+    setExpandedMilestoneId(nextMilestone.id)
     syncMilestoneFields(onUpdateField, activeScopeMode, [...milestones, nextMilestone])
   }
 
@@ -384,32 +501,69 @@ export function BusinessOpportunityBriefScopeStep({ form, onUpdateField }) {
   function removeMilestone(index) {
     const nextMilestones = milestones.filter((_, itemIndex) => itemIndex !== index)
     const fallback = isMilestoneScope ? [createProjectMilestone('Hybrid Deliverables', 0)] : [createDeliverableMilestone('File Asset Deliverables', 0)]
-    syncMilestoneFields(onUpdateField, activeScopeMode, nextMilestones.length ? nextMilestones : fallback)
+    const scopedMilestones = nextMilestones.length ? nextMilestones : fallback
+    setExpandedMilestoneId((current) => {
+      if (current && scopedMilestones.some((milestone) => milestone.id === current)) return current
+      return scopedMilestones[0]?.id || null
+    })
+    syncMilestoneFields(onUpdateField, activeScopeMode, scopedMilestones)
+  }
+
+  function toggleMilestoneCollapse(milestoneId) {
+    setExpandedMilestoneId((current) => (current === milestoneId ? null : milestoneId))
+  }
+
+  function startMilestoneDrag(event, index) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(index))
+    setDragState({ fromIndex: index, overIndex: index })
+  }
+
+  function enterMilestoneDrag(event, overIndex) {
+    event.preventDefault()
+    setDragState((current) => current ? { ...current, overIndex } : current)
+  }
+
+  function endMilestoneDrag() {
+    if (dragState && dragState.fromIndex !== dragState.overIndex) {
+      const reorderedMilestones = [...milestones]
+      const [movedMilestone] = reorderedMilestones.splice(dragState.fromIndex, 1)
+      reorderedMilestones.splice(dragState.overIndex, 0, movedMilestone)
+      syncMilestoneFields(onUpdateField, activeScopeMode, reorderedMilestones)
+    }
+
+    setDragState(null)
   }
 
   return (
     <>
-      <section className="business-create-scope-tabs" aria-label="Scope type">
-        <button
-          type="button"
-          className={!isMilestoneScope ? 'is-active' : ''}
-          onClick={() => changeScopeMode('deliverable')}
-        >
-          <strong>Deliverable Scope</strong>
-        </button>
-        <button
-          type="button"
-          className={isMilestoneScope ? 'is-active' : ''}
-          onClick={() => changeScopeMode('milestone')}
-        >
-          <strong>Milestone Scope</strong>
-        </button>
-      </section>
+      {canUseMilestones ? (
+        <section className="business-create-scope-tabs" aria-label="Scope type">
+          <button
+            type="button"
+            className={!isMilestoneScope ? 'is-active' : ''}
+            onClick={() => changeScopeMode('deliverable')}
+          >
+            <strong>Deliverable Scope</strong>
+          </button>
+          <button
+            type="button"
+            className={isMilestoneScope ? 'is-active' : ''}
+            onClick={() => changeScopeMode('milestone')}
+          >
+            <strong>Milestone Scope</strong>
+          </button>
+        </section>
+      ) : null}
 
       {!isMilestoneScope ? (
         <section className="business-create-budget-card business-create-deliverable-builder-card">
-          <h3>Deliverables</h3>
-          <p>Add the deliverables first. Choose the workflow inside each deliverable to customize submission, evidence, verification, and payment release rules.</p>
+          <h3>{isTaskOpportunity ? 'Task Deliverables' : 'Deliverables'}</h3>
+          <p>
+            {isTaskOpportunity
+              ? 'Tasks use direct deliverables only. Define what the student must submit, the evidence required, and the payment release rules.'
+              : 'Add the deliverables first. Choose the workflow inside each deliverable to customize submission, evidence, verification, and payment release rules.'}
+          </p>
         </section>
       ) : null}
 
@@ -431,10 +585,16 @@ export function BusinessOpportunityBriefScopeStep({ form, onUpdateField }) {
         <div className="business-create-deliverable-milestone-list">
           {milestones.map((milestone, index) => (
             <DeliverableMilestoneCard
+              dragState={dragState}
               key={milestone.id}
               index={index}
+              isCollapsed={visibleExpandedMilestoneId !== milestone.id}
               milestone={milestone}
+              onDragEnd={endMilestoneDrag}
+              onDragEnter={enterMilestoneDrag}
+              onDragStart={startMilestoneDrag}
               onRemove={() => removeMilestone(index)}
+              onToggleCollapse={() => toggleMilestoneCollapse(milestone.id)}
               onUpdate={(nextMilestone) => updateMilestone(index, nextMilestone)}
               scopeMode={activeScopeMode}
             />
@@ -448,7 +608,7 @@ export function BusinessOpportunityBriefScopeStep({ form, onUpdateField }) {
           <article className={totalPercent === 100 ? 'is-balanced' : 'is-warning'}>
             <span>Payment Split</span>
             <strong>{totalPercent}%</strong>
-            <em>{totalPercent === 100 ? 'Balanced' : 'Should total 100%'}</em>
+            <em>{totalBudget ? 'Auto-calculated from budgets' : 'Add budgets to calculate'}</em>
           </article>
           <article>
             <span>{isMilestoneScope ? 'Milestones' : 'Deliverables'}</span>

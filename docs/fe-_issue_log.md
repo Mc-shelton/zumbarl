@@ -17,3 +17,11 @@ Jobs & gigs page:
 - the total amount shoudl be calculated from the numbers in all the deliverables, and then %age recalculated as per the amount of the deliverable, so the amount inputed, does not really have to work towards making it 100%
 - the sampel work files are picking any file type even after picking the type as image
 - on the draft listing, we only have publish and review buttons, instead remove those and lets have one, continue.
+- redundance on the database
+- remember the listing style, if list or grid, and then remeber the crop position
+- the spashes are not using the cropping positioning
+- pagination not working - atleast in some places
+- to avoid much traffic with the autosave, ask if they really want to leave the creation page, and that it will make them loose data, that is if they had changes, but have not clicked save & continue
+- wallets should be created upon user creation
+- when at stage 2, i get this when i click save and continue bidderInstructions: Expected string, received null
+- for deliverables need output,it says deliverable 1 efven if its the 2nd one

@@ -224,7 +224,7 @@ async function createBusinessOpportunityService(businessId: string | undefined, 
     ...payload,
     budgetAmount,
     businessId,
-    status: payload.visibility === 'draft' ? 'draft' : 'ready',
+    status: payload.visibility === 'draft' ? 'draft' : payload.status ?? 'open',
     applicants: 0,
     escrowStatus: 'unfunded'
   }, actorId)

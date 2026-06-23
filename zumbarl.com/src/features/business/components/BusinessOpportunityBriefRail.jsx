@@ -27,6 +27,7 @@ export function BusinessOpportunityBriefRail({
   isPublishReady = false,
   onPublish,
   onSaveDraft,
+  onStepChange,
   summary,
 }) {
   return (
@@ -59,12 +60,24 @@ export function BusinessOpportunityBriefRail({
           <span style={{ width: `${clarityScore}%` }} />
         </div>
         <ul>
-          {clarityChecks.map((check) => (
-            <li key={check.id} className={check.complete ? 'is-complete' : 'is-missing'}>
-              {check.complete ? <FiCheckCircle aria-hidden="true" /> : <FiList aria-hidden="true" />}
-              <span>{check.label}</span>
-            </li>
-          ))}
+          {clarityChecks.map((check) => {
+            const content = (
+              <>
+                {check.complete ? <FiCheckCircle aria-hidden="true" /> : <FiList aria-hidden="true" />}
+                <span>{check.label}</span>
+              </>
+            )
+
+            return (
+              <li key={check.id} className={check.complete ? 'is-complete' : 'is-missing'}>
+                {check.complete ? content : (
+                  <button type="button" onClick={() => onStepChange?.(check.step)}>
+                    {content}
+                  </button>
+                )}
+              </li>
+            )
+          })}
         </ul>
       </section>
 

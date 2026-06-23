@@ -25,6 +25,7 @@ import { registerLearnRoutes } from './entrypoint/api/routes/learn/index.js'
 import { registerMarketplaceRoutes } from './entrypoint/api/routes/marketplace/index.js'
 import { registerMarketingRoutes } from './entrypoint/api/routes/marketing/index.js'
 import { registerProjectRoutes } from './entrypoint/api/routes/projects/index.js'
+import { registerSkillRoutes } from './entrypoint/api/routes/skills/index.js'
 import { registerSupportRoutes } from './entrypoint/api/routes/support/index.js'
 import { registerUploadRoutes } from './entrypoint/api/routes/uploads/index.js'
 
@@ -36,7 +37,11 @@ async function buildApp() {
     requestIdHeader: 'x-request-id'
   })
 
-  await app.register(helmet)
+  await app.register(helmet, {
+    crossOriginResourcePolicy: {
+      policy: 'cross-origin'
+    }
+  })
   await app.register(cors, {
     origin: env.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
     credentials: true,
@@ -80,6 +85,7 @@ async function buildApp() {
         { name: 'connect' },
         { name: 'marketplace' },
         { name: 'finance' },
+        { name: 'skills' },
         { name: 'support' },
         { name: 'uploads' },
         { name: 'admin' }
@@ -103,6 +109,13 @@ async function buildApp() {
         details: error.details
       })
     }
+    const httpError = error as { code?: string; message?: string; statusCode?: number }
+    if (typeof httpError.statusCode === 'number' && httpError.statusCode >= 400 && httpError.statusCode < 500) {
+      return reply.code(httpError.statusCode).send({
+        error: httpError.code ?? 'REQUEST_ERROR',
+        message: httpError.message ?? 'Request failed'
+      })
+    }
 
     app.log.error(error)
     return reply.code(500).send({
@@ -122,6 +135,7 @@ async function buildApp() {
   await app.register(registerConnectRoutes, { prefix: '/api/v1/connect' })
   await app.register(registerMarketplaceRoutes, { prefix: '/api/v1/marketplace' })
   await app.register(registerFinanceRoutes, { prefix: '/api/v1/finance' })
+  await app.register(registerSkillRoutes, { prefix: '/api/v1/skills' })
   await app.register(registerSupportRoutes, { prefix: '/api/v1/support' })
   await app.register(registerUploadRoutes, { prefix: '/api/v1/uploads' })
   await app.register(registerAdminRoutes, { prefix: '/api/v1/admin' })

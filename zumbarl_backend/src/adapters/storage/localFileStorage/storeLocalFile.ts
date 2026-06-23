@@ -54,7 +54,7 @@ function resolveLocalStorageObject(payload: {
   const safeScope = sanitizePathPart(payload.scope).replace(/\./g, '-')
   const targetType = sanitizeOptionalPathPart(readMetadataString(payload.metadata, ['targetType', 'entityType', 'ownerType']))
   const targetId = sanitizeOptionalPathPart(readMetadataString(payload.metadata, ['targetId', 'entityId', 'businessId', 'companyId', 'studentId', 'userId']))
-  const gigId = sanitizeOptionalPathPart(readMetadataString(payload.metadata, ['gigId', 'projectId', 'opportunityId']))
+  const opportunityId = sanitizeOptionalPathPart(readMetadataString(payload.metadata, ['opportunityId', 'projectId']))
   const listingId = sanitizeOptionalPathPart(readMetadataString(payload.metadata, ['listingId', 'marketplaceListingId']))
   const eventId = sanitizeOptionalPathPart(readMetadataString(payload.metadata, ['eventId']))
   const clubId = sanitizeOptionalPathPart(readMetadataString(payload.metadata, ['clubId']))
@@ -91,16 +91,16 @@ function resolveLocalStorageObject(payload: {
     return { bucket: 'zumbarl-kyc-private', storageKey: `${entityPrefix}/${targetId || ownerId}/${category}/${datedFileName}` }
   }
 
-  if (hasScopeMatch(safeScope, ['gig', 'deliverable', 'submission', 'proof', 'stats-evidence', 'message-attachment', 'brief-attachment'])) {
-    const gigPrefix = `gigs/${gigId || targetId || ownerId}`
+  if (hasScopeMatch(safeScope, ['gig', 'opportunity', 'deliverable', 'submission', 'proof', 'stats-evidence', 'message-attachment', 'brief-attachment'])) {
+    const opportunityPrefix = `opportunities/${opportunityId || targetId || ownerId}`
     if (hasScopeMatch(safeScope, ['submission', 'deliverable'])) {
       const version = sanitizeOptionalPathPart(readMetadataString(payload.metadata, ['version'])) ?? 'v1'
-      return { bucket: 'zumbarl-gig-files', storageKey: `${gigPrefix}/submissions/${version}/${datedFileName}` }
+      return { bucket: 'zumbarl-opportunity-files', storageKey: `${opportunityPrefix}/submissions/${version}/${datedFileName}` }
     }
-    if (hasScopeMatch(safeScope, ['proof'])) return { bucket: 'zumbarl-gig-files', storageKey: `${gigPrefix}/proof/${datedFileName}` }
-    if (hasScopeMatch(safeScope, ['stats-evidence'])) return { bucket: 'zumbarl-gig-files', storageKey: `${gigPrefix}/stats-evidence/${datedFileName}` }
-    if (hasScopeMatch(safeScope, ['message'])) return { bucket: 'zumbarl-gig-files', storageKey: `${gigPrefix}/messages/${datedFileName}` }
-    return { bucket: 'zumbarl-gig-files', storageKey: `${gigPrefix}/brief/${datedFileName}` }
+    if (hasScopeMatch(safeScope, ['proof'])) return { bucket: 'zumbarl-opportunity-files', storageKey: `${opportunityPrefix}/proof/${datedFileName}` }
+    if (hasScopeMatch(safeScope, ['stats-evidence'])) return { bucket: 'zumbarl-opportunity-files', storageKey: `${opportunityPrefix}/stats-evidence/${datedFileName}` }
+    if (hasScopeMatch(safeScope, ['message'])) return { bucket: 'zumbarl-opportunity-files', storageKey: `${opportunityPrefix}/messages/${datedFileName}` }
+    return { bucket: 'zumbarl-opportunity-files', storageKey: `${opportunityPrefix}/brief/${datedFileName}` }
   }
 
   if (hasScopeMatch(safeScope, ['cv', 'draft-upload', 'internal-note', 'team-document', 'chama', 'meeting-minute'])) {

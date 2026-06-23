@@ -30,6 +30,7 @@ function getDefaultOpportunity() {
     applicants: 12,
     availability: 'Weekdays',
     id: 'brief-social-media-manager',
+    image: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp',
     title: 'Social Media Manager',
     company: 'Zetech Studios',
     category: 'Social Media',
@@ -218,11 +219,32 @@ export function hydrateBusinessOpportunitiesFromBackend() {
 
 function mergeSavedOpportunity(localOpportunity, backendOpportunity) {
   const backendId = backendOpportunity?.id || localOpportunity.backendId
+  const keepLocalArrayIfBackendEmpty = (fieldName) => {
+    const backendItems = Array.isArray(backendOpportunity?.[fieldName])
+      ? backendOpportunity[fieldName]
+      : undefined
+    const localItems = Array.isArray(localOpportunity[fieldName])
+      ? localOpportunity[fieldName]
+      : []
+
+    return backendItems?.length || !localItems.length ? backendItems : localItems
+  }
+  const backendRequiredAttachments = Array.isArray(backendOpportunity?.requiredAttachments)
+    ? backendOpportunity.requiredAttachments
+    : undefined
+  const localRequiredAttachments = Array.isArray(localOpportunity.requiredAttachments)
+    ? localOpportunity.requiredAttachments
+    : []
   const savedOpportunity = normalizeOpportunity({
     ...localOpportunity,
     ...backendOpportunity,
     id: localOpportunity.id,
     backendId,
+    deliverableMilestones: keepLocalArrayIfBackendEmpty('deliverableMilestones'),
+    milestoneScopes: keepLocalArrayIfBackendEmpty('milestoneScopes'),
+    requiredAttachments: backendRequiredAttachments?.length || !localRequiredAttachments.length
+      ? backendRequiredAttachments
+      : localRequiredAttachments,
     status: getDisplayOpportunityStatus(backendOpportunity?.status || localOpportunity.status),
   })
 

@@ -43,9 +43,14 @@ const REVIEW_TABS = [
 ]
 
 function getReviewTabs(opportunity) {
-  if (opportunity?.scopeMode === 'milestone') return REVIEW_TABS
+  const scopeCount = getOpportunityPaymentScopeItems(opportunity).length
+  const tabs = REVIEW_TABS.map((tab) => (
+    tab.id === 'deliverables' && scopeCount ? { ...tab, count: scopeCount } : tab
+  ))
 
-  return REVIEW_TABS.filter((tab) => tab.id !== 'performance')
+  if (opportunity?.scopeMode === 'milestone') return tabs
+
+  return tabs.filter((tab) => tab.id !== 'performance')
 }
 
 const PLATFORM_BUDGETS = [
@@ -942,7 +947,89 @@ function DeliverableIcon({ icon }) {
     return <span className="business-review-deliverable-icon tone-tiktok"><FiVideo aria-hidden="true" /></span>
   }
 
+  if (icon === 'scope') {
+    return <span className="business-review-deliverable-icon tone-x"><FiFileText aria-hidden="true" /></span>
+  }
+
   return <span className="business-review-deliverable-icon tone-x">X</span>
+}
+
+function getCurrencyAmount(value) {
+  return Number(String(value || '').replace(/[^\d.]/g, '')) || 0
+}
+
+function formatKesAmount(value) {
+  return `KES ${getCurrencyAmount(value).toLocaleString()}`
+}
+
+function formatOpportunityDate(value, fallback = 'Not set') {
+  if (!value || value === 'Rolling') return fallback
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+function getOpportunityCoverImage(opportunity) {
+  return opportunity?.opportunitySplash?.previewUrl
+    || opportunity?.opportunitySplash?.url
+    || opportunity?.imageUrl
+    || opportunity?.image
+    || REVIEW_IMAGE
+}
+
+function getOpportunityPaymentScopeItems(opportunity) {
+  const milestoneScopes = Array.isArray(opportunity?.milestoneScopes) ? opportunity.milestoneScopes : []
+  const deliverableMilestones = Array.isArray(opportunity?.deliverableMilestones) ? opportunity.deliverableMilestones : []
+  const usesMilestones = opportunity?.scopeMode === 'milestone' && milestoneScopes.length
+  const scopeItems = usesMilestones ? milestoneScopes : deliverableMilestones
+
+  return scopeItems.map((item, index) => {
+    const budgetAmount = getCurrencyAmount(item.budgetAmount ?? item.budget)
+    return {
+      budgetAmount,
+      description: item.description || item.requirement || item.submissionMethod || 'Defined in the opportunity scope.',
+      id: item.id || `scope-${index}`,
+      paymentPercent: item.paymentPercent || '',
+      release: item.paymentRelease || `Release after ${usesMilestones ? 'milestone' : 'deliverable'} approval.`,
+      source: item,
+      title: item.title || item.type || `${usesMilestones ? 'Milestone' : 'Deliverable'} ${index + 1}`,
+      typeLabel: usesMilestones ? 'Milestone' : 'Deliverable',
+    }
+  })
+}
+
+function getOpportunityDeliverableRows(opportunity) {
+  const scopeItems = getOpportunityPaymentScopeItems(opportunity)
+  if (!scopeItems.length) return DELIVERABLE_ROWS
+
+  return scopeItems.map((item, index) => {
+    const source = item.source || {}
+    return {
+      id: item.id,
+      title: item.title,
+      required: true,
+      type: `${item.typeLabel} ${index + 1}`,
+      description: item.description,
+      dueDate: opportunity?.deadline || 'Scheduled after agreement',
+      dueMeta: opportunity?.deadline ? 'From brief deadline' : 'No fixed due date',
+      submissions: '0',
+      status: opportunity?.status === 'Open' ? 'Ready' : opportunity?.status || 'Draft',
+      tone: opportunity?.status === 'Open' ? 'green' : 'gray',
+      icon: 'scope',
+      format: source.evidenceRequired || 'Defined in the opportunity scope',
+      evidenceRequired: source.evidenceRequired || 'Defined in the opportunity scope',
+      acceptanceCriteria: source.acceptanceCriteria || 'Acceptance criteria can be confirmed during review.',
+      paymentRelease: item.release,
+      budget: formatKesAmount(item.budgetAmount),
+      paymentPercent: item.paymentPercent ? `${item.paymentPercent}%` : 'Auto',
+      requirement: item.description,
+      workflow: source.workflow || source.type || item.typeLabel,
+      workflowLabel: source.workflow || source.type || item.typeLabel,
+      acceptedEvidence: source.evidenceRequired || 'Defined in the opportunity scope',
+      lockedUntilApproved: source.lockedUntilApproved || source.isSequential,
+      reference: source.reference || 'Reference files are managed from the brief.',
+    }
+  })
 }
 
 function AttachmentPreview({ attachment }) {
@@ -1825,11 +1912,14 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
     },
   }
   const selectedPaymentMethod = paymentMethods[paymentMethod]
-  const services = [
-    { icon: 'instagram', milestone: 'Instagram Feed Post', description: '1 feed post to promote the campaign and brand message.', quantity: '1 post', unitCost: '10,000', total: '10,000' },
-    { icon: 'tiktok', milestone: 'TikTok Video', description: '1 short-form video highlighting the campaign.', quantity: '1 video', unitCost: '10,000', total: '10,000' },
-    { icon: 'youtube', milestone: 'YouTube Short', description: '1 short video for YouTube Shorts.', quantity: '1 short', unitCost: '5,000', total: '5,000' },
-  ]
+  const paymentScopeItems = getOpportunityPaymentScopeItems(opportunity)
+  const scopedBudgetTotal = paymentScopeItems.reduce((total, item) => total + item.budgetAmount, 0)
+  const fallbackBudgetTotal = getCurrencyAmount(opportunity.budget || opportunity.budgetAmount)
+  const paymentBudgetTotal = scopedBudgetTotal || fallbackBudgetTotal
+  const paymentBudgetLabel = formatKesAmount(paymentBudgetTotal)
+  const skills = getSkillList(opportunity)
+  const modalObjective = opportunity.opportunityType || type
+  const modalDeadline = opportunity.deadline === 'Rolling' ? 'Rolling' : formatOpportunityDate(opportunity.deadline, 'Rolling')
   const savedCards = [
     { id: 'visa-8421', label: 'Visa ending 8421', meta: 'Expires 08/28', brand: 'Visa' },
     { id: 'mastercard-1134', label: 'Mastercard ending 1134', meta: 'Expires 11/27', brand: 'Mastercard' },
@@ -1858,22 +1948,22 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
             <h2>Opportunity Summary</h2>
             <div>
               <figure>
-                <img src={REVIEW_IMAGE} alt={`${opportunity.title} cover`} />
+                <img src={getOpportunityCoverImage(opportunity)} alt={`${opportunity.title} cover`} />
                 <figcaption>{opportunity.title}</figcaption>
               </figure>
               <dl>
                 <div><dt>Type</dt><dd>{type}</dd></div>
-                <div><dt>Objective</dt><dd>Brand Awareness</dd></div>
+                <div><dt>Objective</dt><dd>{modalObjective}</dd></div>
                 <div><dt>Category</dt><dd>{opportunity.category || 'Education & Learning'}</dd></div>
               </dl>
               <dl>
                 <div><dt>Engagement Mode</dt><dd>{opportunity.engagementMode || 'Remote'}</dd></div>
                 <div><dt>Visibility</dt><dd>Visible to all creators</dd></div>
-                <div><dt>Deadline</dt><dd>{opportunity.deadline || 'May 27, 2025'} (5 days left)</dd></div>
+                <div><dt>Deadline</dt><dd>{modalDeadline}</dd></div>
               </dl>
               <dl>
-                <div><dt>Budget</dt><dd>{opportunity.budget || 'KES 25,000'}</dd></div>
-                <div><dt>Applications</dt><dd>{opportunity.applicants || 18} ({Math.max(0, (opportunity.applicants || 18) - 18)} new)</dd></div>
+                <div><dt>Budget</dt><dd>{paymentBudgetLabel}</dd></div>
+                <div><dt>Skills</dt><dd>{skills.length ? skills.slice(0, 3).join(', ') : 'Not specified'}</dd></div>
               </dl>
             </div>
           </section>
@@ -1890,7 +1980,7 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
                   </div>
                   <section className="business-review-publish-amount">
                     <span>Amount to Pay</span>
-                    <strong>KES 25,000</strong>
+                    <strong>{paymentBudgetLabel}</strong>
                     <p>{selectedPaymentMethod.amountCopy}</p>
                   </section>
                   {paymentMethod === 'wallet' ? (
@@ -1905,7 +1995,7 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
                       <label>
                         <span>Wallet Balance</span>
                         <div><strong>KES</strong><input type="text" defaultValue="32,450" readOnly /><StatusPill tone="green">Enough funds</StatusPill></div>
-                        <em>KES 25,000 will move into escrow after confirmation.</em>
+                        <em>{paymentBudgetLabel} will move into escrow after confirmation.</em>
                       </label>
                     </section>
                   ) : paymentMethod === 'mobile-money' ? (
@@ -1972,7 +2062,7 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
                 <aside className="business-review-publish-phone-preview" aria-label={`${selectedPaymentMethod.stepLabel} preview`}>
                   <div>
                     <span>{selectedPaymentMethod.stepLabel}</span>
-                    <strong>Zumbarl<br />KES 25,000</strong>
+                    <strong>Zumbarl<br />{paymentBudgetLabel}</strong>
                     <p>{selectedPaymentMethod.summary}</p>
                   </div>
                   <b><FiLock aria-hidden="true" /></b>
@@ -2024,44 +2114,53 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
                 <header>
                   <div>
                     <h2>Budget & Services Breakdown</h2>
-                    <p>Define the services required and allocate budget.</p>
+                    <p>Review the payment schedule from this opportunity&apos;s saved scope and budget.</p>
                   </div>
                 </header>
                 <div className="business-review-publish-table">
                   <div className="business-review-publish-table-head">
                     <span>Milestone / Deliverable</span>
                     <span>Description</span>
-                    <span>Quantity</span>
-                    <span>Unit Cost (KES)</span>
+                    <span>Type</span>
+                    <span>Payment Split</span>
                     <span>Total (KES)</span>
                     <span />
                   </div>
-                  {services.map((service) => (
-                    <article key={service.milestone} className="business-review-publish-table-row">
+                  {paymentScopeItems.length ? paymentScopeItems.map((service, index) => (
+                    <article key={service.id} className="business-review-publish-table-row">
                       <div>
-                        <DeliverableIcon icon={service.icon} />
-                        <strong>{service.milestone}</strong>
+                        <DeliverableIcon icon="scope" />
+                        <strong>{service.title}</strong>
                       </div>
                       <p>{service.description}</p>
-                      <select defaultValue={service.quantity} aria-label={`${service.milestone} quantity`}>
-                        <option>{service.quantity}</option>
-                      </select>
-                      <input type="text" defaultValue={service.unitCost} aria-label={`${service.milestone} unit cost`} />
-                      <strong>{service.total}</strong>
-                      <button type="button" aria-label={`Remove ${service.milestone}`}><FiX aria-hidden="true" /></button>
+                      <span>{service.typeLabel} {index + 1}</span>
+                      <span>{service.paymentPercent ? `${service.paymentPercent}%` : 'Auto'}</span>
+                      <strong>{service.budgetAmount.toLocaleString()}</strong>
+                      <span />
                     </article>
-                  ))}
+                  )) : (
+                    <article className="business-review-publish-table-row">
+                      <div>
+                        <DeliverableIcon icon="scope" />
+                        <strong>{opportunity.title || 'Opportunity budget'}</strong>
+                      </div>
+                      <p>No scoped deliverables were found, so the saved opportunity budget is being used.</p>
+                      <span>Budget</span>
+                      <span>100%</span>
+                      <strong>{paymentBudgetTotal.toLocaleString()}</strong>
+                      <span />
+                    </article>
+                  )}
                 </div>
                 <footer>
-                  <button type="button" className="business-profile-ghost-btn"><FiPlus aria-hidden="true" /> Add Milestone / Deliverable</button>
-                  <p><span>Subtotal</span><strong>KES 25,000</strong></p>
+                  <p><span>Subtotal</span><strong>{paymentBudgetLabel}</strong></p>
                 </footer>
               </section>
 
               <section className="business-review-publish-total">
                 <span>Total Budget</span>
-                <strong>KES 25,000</strong>
-                <p>This is the total amount that will be paid to creators upon completion.</p>
+                <strong>{paymentBudgetLabel}</strong>
+                <p>This is derived from the opportunity&apos;s deliverable or milestone budgets.</p>
               </section>
             </>
           )}
@@ -2588,15 +2687,16 @@ function BusinessDeliverableMessagesPanel() {
   )
 }
 
-function DeliverablesPanel({ onRequestPayment }) {
+function DeliverablesPanel({ onRequestPayment, opportunity }) {
   const [activeDeliverableTab, setActiveDeliverableTab] = useState('deliverables')
   const [selectedSubmission, setSelectedSubmission] = useState(null)
   const [selectedDeliverable, setSelectedDeliverable] = useState(null)
-  const [deliverableRows, setDeliverableRows] = useState(DELIVERABLE_ROWS)
+  const [addedDeliverableRows, setAddedDeliverableRows] = useState([])
   const [isAddingDeliverable, setIsAddingDeliverable] = useState(false)
   const isSubmittedWork = activeDeliverableTab === 'submitted-work'
   const isFiles = activeDeliverableTab === 'files'
   const isMessages = activeDeliverableTab === 'messages'
+  const deliverableRows = [...addedDeliverableRows, ...getOpportunityDeliverableRows(opportunity)]
   const deliverableCount = deliverableRows.length
 
   function getDeliverableIcon(type) {
@@ -2637,7 +2737,7 @@ function DeliverablesPanel({ onRequestPayment }) {
       }
     })
 
-    setDeliverableRows((items) => [...rows, ...items])
+    setAddedDeliverableRows((items) => [...rows, ...items])
     onRequestPayment?.()
   }
 
@@ -2668,7 +2768,7 @@ function DeliverablesPanel({ onRequestPayment }) {
             onClick={() => setActiveDeliverableTab(filter.id)}
           >
             {filter.label}
-            <span>{filter.count}</span>
+            <span>{filter.id === 'deliverables' ? deliverableCount : filter.count}</span>
           </button>
         ))}
       </div>
@@ -3102,8 +3202,10 @@ function DetailBlock({ items, title }) {
 }
 
 function OverviewPanel({ opportunity, skills, type }) {
-  const deadline = opportunity.deadline || 'Rolling'
-  const budget = opportunity.budget || 'KES 25,000'
+  const deadline = opportunity.deadline === 'Rolling' ? 'Rolling' : formatOpportunityDate(opportunity.deadline, 'Rolling')
+  const paymentScopeItems = getOpportunityPaymentScopeItems(opportunity)
+  const scopedBudgetTotal = paymentScopeItems.reduce((total, item) => total + item.budgetAmount, 0)
+  const budget = formatKesAmount(scopedBudgetTotal || opportunity.budget || opportunity.budgetAmount)
   const upcomingInterviews = [
     { id: 'aisha-mwangi', icon: FiVideo, name: 'Aisha Mwangi', time: 'Today, 2:00 PM', note: 'Portfolio review', status: 'Needs link' },
     { id: 'brian-otieno', icon: FiPhone, name: 'Brian Otieno', time: 'Tomorrow, 10:30 AM', note: 'Phone screen', status: 'Confirmed' },
@@ -3194,9 +3296,11 @@ function OverviewPanel({ opportunity, skills, type }) {
         <section className="business-review-detail-block">
           <h3>Scope & Deliverables</h3>
           <ul>
-            {DELIVERABLES.map((item) => (
-              <li key={item.label}><span>{item.label}</span><strong>{item.value}</strong></li>
-            ))}
+            {paymentScopeItems.length ? paymentScopeItems.map((item, index) => (
+              <li key={item.id}><span>{item.title}</span><strong>{item.paymentPercent ? `${item.paymentPercent}%` : `#${index + 1}`}</strong></li>
+            )) : (
+              <li><span>Scoped deliverables</span><strong>Not set</strong></li>
+            )}
           </ul>
           <p>{opportunity.deliverables || 'Deliverables are listed in the scoped brief.'}</p>
         </section>
@@ -3209,9 +3313,11 @@ function OverviewPanel({ opportunity, skills, type }) {
             <div><dt>Duration</dt><dd>{opportunity.duration || 'Flexible'}</dd></div>
           </dl>
           <ul>
-            {PLATFORM_BUDGETS.map((item) => (
-              <li key={item.label}><span>{item.label}</span><strong>{item.value}</strong><em>{item.share}</em></li>
-            ))}
+            {paymentScopeItems.length ? paymentScopeItems.map((item) => (
+              <li key={item.id}><span>{item.title}</span><strong>{formatKesAmount(item.budgetAmount)}</strong><em>{item.paymentPercent ? `${item.paymentPercent}%` : 'Auto'}</em></li>
+            )) : (
+              <li><span>Saved budget</span><strong>{budget}</strong><em>100%</em></li>
+            )}
           </ul>
         </section>
 
@@ -3234,6 +3340,7 @@ export function BusinessOpportunityReviewWorkspace({
   onBack,
   onChangeApplicationStatus,
   onChangeReviewTab,
+  onPublishOpportunity,
   openPublishPayment = false,
   opportunity,
 }) {
@@ -3245,6 +3352,18 @@ export function BusinessOpportunityReviewWorkspace({
   const type = opportunity.category === 'Social Media' ? 'Campaign' : opportunity.mode || 'Project'
   const reviewTabs = getReviewTabs(opportunity)
   const canShowPerformance = opportunity.scopeMode === 'milestone'
+  const coverImage = getOpportunityCoverImage(opportunity)
+  const createdOn = formatOpportunityDate(opportunity.createdAt, 'Just now')
+  const deadline = opportunity.deadline === 'Rolling' ? 'Rolling' : formatOpportunityDate(opportunity.deadline, 'Rolling')
+  const objective = opportunity.opportunityType || type
+  const skillSummary = skills.length ? `${skills.slice(0, 3).join(', ')}${skills.length > 3 ? ` +${skills.length - 3}` : ''}` : 'Not specified'
+
+  function startPublishPayment() {
+    if (opportunity.status === 'Draft') {
+      onPublishOpportunity?.(opportunity)
+    }
+    setIsPublishingOpportunity(true)
+  }
 
   return (
     <>
@@ -3260,7 +3379,7 @@ export function BusinessOpportunityReviewWorkspace({
         </div>
         <p>{opportunity.description}</p>
         <aside>
-          <button type="button" className="business-profile-primary-btn" onClick={() => setIsPublishingOpportunity(true)}>
+          <button type="button" className="business-profile-primary-btn" onClick={startPublishPayment}>
             <FiPlus aria-hidden="true" />
             Publish Opportunity
           </button>
@@ -3273,25 +3392,25 @@ export function BusinessOpportunityReviewWorkspace({
 
       <section className="business-profile-card business-review-overview-card">
         <div className="business-review-cover">
-          <img src={REVIEW_IMAGE} alt={`${opportunity.title} opportunity`} />
+          <img src={coverImage} alt={`${opportunity.title} opportunity`} />
         </div>
         <dl>
           <div><dt>Type</dt><dd>{type}</dd></div>
-          <div><dt>Objective</dt><dd>Brand Awareness</dd></div>
+          <div><dt>Objective</dt><dd>{objective}</dd></div>
           <div><dt>Category</dt><dd>{opportunity.category}</dd></div>
-          <div><dt>Platforms</dt><dd>Instagram, TikTok, YouTube +1</dd></div>
+          <div><dt>Skills</dt><dd>{skillSummary}</dd></div>
         </dl>
         <dl>
           <div><dt>Budget</dt><dd>{opportunity.budget}</dd></div>
           <div><dt>Applications</dt><dd>{opportunity.applicants} ({Math.max(0, opportunity.applicants - 12)} new)</dd></div>
           <div><dt>Status</dt><dd><span>{opportunity.status}</span></dd></div>
-          <div><dt>Deadline</dt><dd>{opportunity.deadline || 'Rolling'}</dd></div>
+          <div><dt>Deadline</dt><dd>{deadline}</dd></div>
         </dl>
         <dl>
-          <div><dt>Created by</dt><dd>Brian Mwangi</dd></div>
-          <div><dt>Created on</dt><dd>May 12, 2025</dd></div>
+          <div><dt>Created by</dt><dd>{opportunity.company || 'Business account'}</dd></div>
+          <div><dt>Created on</dt><dd>{createdOn}</dd></div>
           <div><dt>Engagement Mode</dt><dd>{opportunity.engagementMode || 'Remote'}</dd></div>
-          <div><dt>Visible to</dt><dd>All creators</dd></div>
+          <div><dt>Visible to</dt><dd>{opportunity.visibility || 'All creators'}</dd></div>
         </dl>
       </section>
 
@@ -3317,7 +3436,7 @@ export function BusinessOpportunityReviewWorkspace({
           onChangeApplicationStatus={onChangeApplicationStatus}
         />
       ) : activeReviewTab === 'deliverables' ? (
-        <DeliverablesPanel onRequestPayment={() => setIsPublishingOpportunity(true)} />
+        <DeliverablesPanel onRequestPayment={startPublishPayment} opportunity={opportunity} />
       ) : activeReviewTab === 'payments' ? (
         <PaymentsPanel />
       ) : activeReviewTab === 'performance' && canShowPerformance ? (

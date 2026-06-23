@@ -4,6 +4,7 @@ import {
   FiCheckCircle,
   FiCode,
   FiEdit3,
+  FiArrowRight,
   FiRadio,
   FiSend,
   FiVideo,
@@ -28,7 +29,41 @@ function OpportunityIcon({ icon, tone }) {
   )
 }
 
+function getOpportunityImage(opportunity) {
+  const splash = opportunity.opportunitySplash || {}
+  const upload = splash.upload || splash.data || {}
+
+  return (
+    splash.previewUrl
+    || splash.url
+    || splash.src
+    || upload.previewUrl
+    || upload.url
+    || upload.src
+    || opportunity.image
+    || opportunity.imageUrl
+    || opportunity.thumbnail
+    || opportunity.thumbnailUrl
+    || ''
+  )
+}
+
+function OpportunityMedia({ opportunity }) {
+  const imageUrl = getOpportunityImage(opportunity)
+
+  if (!imageUrl) {
+    return <OpportunityIcon icon={opportunity.icon} tone={opportunity.tone} />
+  }
+
+  return (
+    <figure className="business-opportunity-media">
+      <img src={imageUrl} alt="" loading="lazy" />
+    </figure>
+  )
+}
+
 export function BusinessOpportunityBoard({
+  onContinueDraftOpportunity,
   onOpenInvitePanel,
   onPublishOpportunity,
   onReviewOpportunity,
@@ -51,7 +86,7 @@ export function BusinessOpportunityBoard({
     >
       {opportunities.map((opportunity) => (
         <article key={opportunity.id} className="business-profile-card business-opportunities-card">
-          <OpportunityIcon icon={opportunity.icon} tone={opportunity.tone} />
+          <OpportunityMedia opportunity={opportunity} />
 
           <div className="business-opportunities-card-main">
             <h2>{opportunity.title}</h2>
@@ -92,26 +127,34 @@ export function BusinessOpportunityBoard({
           </aside>
 
           <div className="business-opportunities-card-actions">
-            {opportunity.canPublish ? (
+            {opportunity.status === 'Draft' ? (
+              <button type="button" onClick={() => onContinueDraftOpportunity?.(opportunity)}>
+                <FiArrowRight aria-hidden="true" />
+                Continue
+              </button>
+            ) : null}
+            {opportunity.status !== 'Draft' && opportunity.canPublish ? (
               <button type="button" onClick={() => onPublishOpportunity?.(opportunity)}>
                 <FiCheckCircle aria-hidden="true" />
                 Publish
               </button>
             ) : null}
-            {opportunity.canInvite ? (
+            {opportunity.status !== 'Draft' && opportunity.canInvite ? (
               <button type="button" onClick={() => onOpenInvitePanel?.(opportunity)}>
                 <FiSend aria-hidden="true" />
                 Invite bidders
               </button>
             ) : null}
-            <button
-              type="button"
-              className="business-opportunities-review-btn"
-              onClick={() => onReviewOpportunity?.(opportunity)}
-              aria-label={`Review applicants for ${opportunity.title}`}
-            >
-              Review
-            </button>
+            {opportunity.status !== 'Draft' ? (
+              <button
+                type="button"
+                className="business-opportunities-review-btn"
+                onClick={() => onReviewOpportunity?.(opportunity)}
+                aria-label={`Review applicants for ${opportunity.title}`}
+              >
+                Review
+              </button>
+            ) : null}
           </div>
         </article>
       ))}

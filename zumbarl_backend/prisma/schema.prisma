@@ -42,37 +42,6 @@ enum KycStatus {
   EXPIRED
 }
 
-enum GigStatus {
-  DRAFT
-  OPEN
-  IN_PROGRESS
-  SUBMITTED
-  REVISION_REQUESTED
-  COMPLETED
-  DISPUTED
-  CANCELLED
-  EXPIRED
-}
-
-enum GigType {
-  SOCIAL_MEDIA
-  GRAPHIC_DESIGN
-  COPYWRITING
-  VIDEO
-  DATA_ENTRY
-  WEB_DEVELOPMENT
-  SALES_MARKETING
-  ERRAND
-  TUTORING
-  OTHER
-}
-
-enum GigMode {
-  REMOTE
-  PHYSICAL
-  HYBRID
-}
-
 enum PipelineStage {
   EXPLORE_FOUNDATION // Stage 1
   BUILD_APPLY // Stage 2
@@ -265,6 +234,7 @@ model StudentProfile {
   marketplaceListings   MarketplaceListing[]
   eventRsvps            CampusEventRsvp[]
   roadmapEnrollments    StudentRoadmapEnrollment[]
+  studentSkills         StudentSkill[]
   wallets               Wallet[]
   certificates          Certificate[]
   chamaMembers          ChamaMember[]
@@ -564,7 +534,6 @@ model Company {
   kycDocuments          CompanyKycDocument[]
   kycProfile            BusinessKyc?
   opportunities         Opportunity[]
-  gigs                  Gig[]
   pipelineRelationships PipelineRelationship[]
   endorsementsGiven     Endorsement[]          @relation("EndorsementsGiven")
   placements            Placement[]
@@ -635,8 +604,8 @@ model CompanyContact {
   isOwner   Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company             Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   postedOpportunities Opportunity[]
 
   @@index([companyId])
@@ -682,12 +651,12 @@ model UploadedFile {
 
   owner User? @relation(fields: [ownerId], references: [id], onDelete: SetNull)
 
+  @@unique([bucket, storageKey])
   @@index([ownerId])
   @@index([bucket])
   @@index([scope])
   @@index([status])
   @@index([isSeed])
-  @@unique([bucket, storageKey])
   @@map("uploaded_files")
 }
 
@@ -696,59 +665,60 @@ model UploadedFile {
 // =============================================================================
 
 model Opportunity {
-  id                  String    @id @default(cuid())
-  companyId           String
-  postedByContactId   String?
-  title               String
-  summary             String
-  description         String?
-  opportunityType     String    @default("Project")
-  category            String?
-  status              String    @default("draft")
-  visibility          String    @default("draft")
-  scopeMode           String    @default("deliverable")
-  opportunitySplash   Json?
-  budgetAmount        Float     @default(0)
-  budgetLabel         String?
-  currency            String    @default("KES")
-  paymentTerms        String?
-  applicants          Int       @default(0)
-  invitedCount        Int       @default(0)
-  escrowStatus        String    @default("unfunded")
-  deliverablesStatus  String?
-  deliverableCount    Int       @default(0)
-  skills              String[]  @default([])
-  mustHave            String[]  @default([])
-  requirements        String[]  @default([])
-  qualificationQuestions String[] @default([])
+  id                      String    @id @default(cuid())
+  companyId               String
+  postedByContactId       String?
+  title                   String
+  summary                 String
+  description             String?
+  opportunityType         String    @default("Project")
+  category                String?
+  status                  String    @default("draft")
+  visibility              String    @default("draft")
+  scopeMode               String    @default("deliverable")
+  opportunitySplash       Json?
+  budgetAmount            Float     @default(0)
+  budgetLabel             String?
+  currency                String    @default("KES")
+  paymentTerms            String?
+  applicants              Int       @default(0)
+  invitedCount            Int       @default(0)
+  escrowStatus            String    @default("unfunded")
+  deliverablesStatus      String?
+  deliverableCount        Int       @default(0)
+  skills                  String[]  @default([])
+  mustHave                String[]  @default([])
+  requirements            String[]  @default([])
+  qualificationQuestions  String[]  @default([])
   preferredQualifications Json?
-  portfolioRequired   String?
-  requiredExperience  String?
-  engagementMode      String?
-  availability        String?
-  duration            String?
-  mode                String?
-  applicationDeadline DateTime?
-  deadlineLabel       String?
-  companyName         String?
-  companyDescription  String?
-  acceptanceCriteria  String?
-  deliverablesSummary String?
-  screeningFocus      String?
-  bidderInstructions  String?
-  clarityScore        Int       @default(0)
-  revisionLimit       Int       @default(3)
-  publishedAt         DateTime?
-  completedAt         DateTime?
-  archivedAt          DateTime?
-  isSeed              Boolean   @default(false)
-  metadata            Json?
-  createdAt           DateTime  @default(now())
-  updatedAt           DateTime  @updatedAt
+  portfolioRequired       String?
+  requiredExperience      String?
+  engagementMode          String?
+  availability            String?
+  duration                String?
+  mode                    String?
+  applicationDeadline     DateTime?
+  deadlineLabel           String?
+  companyName             String?
+  companyDescription      String?
+  acceptanceCriteria      String?
+  deliverablesSummary     String?
+  screeningFocus          String?
+  bidderInstructions      String?
+  clarityScore            Int       @default(0)
+  revisionLimit           Int       @default(3)
+  publishedAt             DateTime?
+  completedAt             DateTime?
+  archivedAt              DateTime?
+  isSeed                  Boolean   @default(false)
+  metadata                Json?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
 
-  company             Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  postedByContact     CompanyContact?  @relation(fields: [postedByContactId], references: [id], onDelete: SetNull)
+  company             Company                         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  postedByContact     CompanyContact?                 @relation(fields: [postedByContactId], references: [id], onDelete: SetNull)
   scopeItems          OpportunityScopeItem[]
+  opportunitySkills   OpportunitySkill[]
   requiredAttachments OpportunityRequiredAttachment[]
   activityEvents      OpportunityActivityEvent[]
   invites             OpportunityInvite[]
@@ -768,34 +738,51 @@ model Opportunity {
   @@map("opportunities")
 }
 
-model OpportunityScopeItem {
-  id                 String   @id @default(cuid())
-  opportunityId      String
-  scopeType          String   @default("deliverable") // deliverable | milestone
-  sequence           Int      @default(1)
-  title              String
-  workflow           String?
-  itemType           String?
-  description        String?
-  requirement        String?
-  submissionMethod   String?
-  verificationMethod String?
-  evidenceRequired   String?
-  acceptanceCriteria String?
-  paymentRelease     String?
-  budgetAmount       Float    @default(0)
-  budgetLabel        String?
-  paymentPercent     Float    @default(0)
-  maxSubmissions     Int?
-  lockedUntilApproved Boolean @default(false)
-  isSequential       Boolean  @default(true)
-  status             String   @default("draft")
-  referenceFiles     Json?
-  metadata           Json?
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+model OpportunitySkill {
+  id            String   @id @default(cuid())
+  opportunityId String
+  skillId       String
+  required      Boolean  @default(true)
+  source        String   @default("opportunity")
+  createdAt     DateTime @default(now())
 
-  opportunity Opportunity              @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  skill       Skill       @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, skillId])
+  @@index([opportunityId])
+  @@index([skillId])
+  @@map("opportunity_skills")
+}
+
+model OpportunityScopeItem {
+  id                  String   @id @default(cuid())
+  opportunityId       String
+  scopeType           String   @default("deliverable") // deliverable | milestone
+  sequence            Int      @default(1)
+  title               String
+  workflow            String?
+  itemType            String?
+  description         String?
+  requirement         String?
+  submissionMethod    String?
+  verificationMethod  String?
+  evidenceRequired    String?
+  acceptanceCriteria  String?
+  paymentRelease      String?
+  budgetAmount        Float    @default(0)
+  budgetLabel         String?
+  paymentPercent      Float    @default(0)
+  maxSubmissions      Int?
+  lockedUntilApproved Boolean  @default(false)
+  isSequential        Boolean  @default(true)
+  status              String   @default("draft")
+  referenceFiles      Json?
+  metadata            Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  opportunity Opportunity             @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
   sampleWork  OpportunitySampleWork[]
   submissions OpportunitySubmission[]
 
@@ -856,17 +843,17 @@ model OpportunityActivityEvent {
 }
 
 model OpportunityInvite {
-  id            String   @id @default(cuid())
+  id            String    @id @default(cuid())
   opportunityId String
   studentId     String
   note          String?
-  status        String   @default("sent")
-  sentAt        DateTime @default(now())
+  status        String    @default("sent")
+  sentAt        DateTime  @default(now())
   acceptedAt    DateTime?
   respondedAt   DateTime?
   metadata      Json?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
 
@@ -876,80 +863,31 @@ model OpportunityInvite {
   @@map("opportunity_invites")
 }
 
-// =============================================================================
-// GIGS
-// =============================================================================
-
-model Gig {
-  id                String    @id @default(cuid())
-  companyId         String
-  postedByContactId String
-  title             String
-  description       String
-  imageUrl          String?
-  gigType           GigType
-  gigMode           GigMode   @default(REMOTE)
-  requiredSkills    String[]
-  requiredTierMin   ScoreTier @default(BRONZE)
-  budgetMin         Float
-  budgetMax         Float
-  currency          String    @default("KES")
-  deadline          DateTime
-  estimatedHours    Float?
-  locationCity      String?
-  isPhysical        Boolean   @default(false)
-  status            GigStatus @default(DRAFT)
-  maxApplicants     Int       @default(10)
-  selectedStudentId String?
-  completedAt       DateTime?
-  cancelledAt       DateTime?
-  cancelReason      String?
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
-
-  // Relations
-  company       Company          @relation(fields: [companyId], references: [id])
-  bids          Bid[]
-  submissions   OpportunitySubmission[]
-  ratings       OpportunityRating[]
-  escrowHolds   OpportunityEscrowHold[]
-  safetyReports SafetyReport[]
-
-  @@index([companyId])
-  @@index([status])
-  @@index([gigType])
-  @@index([deadline])
-  @@map("gigs")
-}
-
 model Bid {
-  id              String            @id @default(cuid())
+  id              String    @id @default(cuid())
   opportunityId   String
-  gigId           String?
   studentId       String
-  status          String            @default("pending")
+  status          String    @default("pending")
   coverNote       String?
   proposal        String?
   bidAmount       Float?
-  currency        String            @default("KES")
+  currency        String    @default("KES")
   deliveryTime    String?
   intentId        String?
   intentLabel     String?
   inviteId        String?
-  appliedAt       DateTime          @default(now())
+  appliedAt       DateTime  @default(now())
   respondedAt     DateTime?
   rejectionReason String?
   projectId       String?
   metadata        Json?
 
-  opportunity Opportunity     @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-  gig         Gig?            @relation(fields: [gigId], references: [id], onDelete: SetNull)
-  student     StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  opportunity Opportunity             @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  student     StudentProfile          @relation(fields: [studentId], references: [id], onDelete: Cascade)
   submissions OpportunitySubmission[]
 
   @@unique([opportunityId, studentId])
   @@index([opportunityId])
-  @@index([gigId])
   @@index([studentId])
   @@index([status])
   @@map("bids")
@@ -960,7 +898,6 @@ model OpportunitySubmission {
   opportunityId  String
   scopeItemId    String?
   bidId          String?
-  gigId          String?
   studentId      String
   title          String?
   description    String?
@@ -976,23 +913,20 @@ model OpportunitySubmission {
   opportunity Opportunity           @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
   scopeItem   OpportunityScopeItem? @relation(fields: [scopeItemId], references: [id], onDelete: SetNull)
   bid         Bid?                  @relation(fields: [bidId], references: [id], onDelete: SetNull)
-  gig         Gig?                  @relation(fields: [gigId], references: [id], onDelete: SetNull)
 
   @@index([opportunityId])
   @@index([scopeItemId])
   @@index([bidId])
-  @@index([gigId])
   @@index([studentId])
   @@index([status])
   @@map("opportunity_submissions")
 }
 
 model OpportunityRating {
-  id        String @id @default(cuid())
+  id            String @id @default(cuid())
   opportunityId String
-  gigId     String?
-  studentId String
-  companyId String
+  studentId     String
+  companyId     String
 
   // Six dimensions — all 1.0 to 5.0
   communicationScore   Float
@@ -1012,10 +946,8 @@ model OpportunityRating {
   ratedAt        DateTime @default(now())
 
   opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-  gig Gig? @relation(fields: [gigId], references: [id], onDelete: SetNull)
 
   @@index([opportunityId])
-  @@index([gigId])
   @@index([studentId])
   @@index([companyId])
   @@map("opportunity_ratings")
@@ -1106,6 +1038,86 @@ model SkillLevel_ {
   @@map("skill_levels")
 }
 
+model SkillCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  status      String   @default("active")
+  isSeed      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  skills Skill[]
+
+  @@index([status])
+  @@map("skill_categories")
+}
+
+model Skill {
+  id                String   @id @default(cuid())
+  categoryId        String?
+  name              String
+  slug              String   @unique
+  description       String?
+  status            String   @default("active")
+  source            String   @default("seed")
+  mergedIntoSkillId String?
+  usageCount        Int      @default(0)
+  createdByUserId   String?
+  isSeed            Boolean  @default(false)
+  metadata          Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  category          SkillCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  mergedIntoSkill   Skill?             @relation("MergedSkills", fields: [mergedIntoSkillId], references: [id], onDelete: SetNull)
+  mergedSkills      Skill[]            @relation("MergedSkills")
+  aliases           SkillAlias[]
+  opportunitySkills OpportunitySkill[]
+  studentSkills     StudentSkill[]
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([source])
+  @@index([usageCount])
+  @@map("skills")
+}
+
+model SkillAlias {
+  id        String   @id @default(cuid())
+  skillId   String
+  name      String
+  slug      String   @unique
+  source    String   @default("system")
+  isSeed    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@index([skillId])
+  @@map("skill_aliases")
+}
+
+model StudentSkill {
+  id             String     @id @default(cuid())
+  studentId      String
+  skillId        String
+  level          SkillLevel @default(BEGINNER)
+  verifiedByGigs Int        @default(0)
+  source         String     @default("student_profile")
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  skill   Skill          @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, skillId])
+  @@index([studentId])
+  @@index([skillId])
+  @@map("student_skills")
+}
+
 model Endorsement {
   id              String   @id @default(cuid())
   studentId       String
@@ -1114,7 +1126,7 @@ model Endorsement {
   endorsedByTitle String
   note            String?
   currencyAwarded Int      @default(12) // EC points
-  gigId           String? // the gig that triggered this
+  opportunityId   String? // the opportunity that triggered this
   createdAt       DateTime @default(now())
 
   student StudentProfile @relation("EndorsementsReceived", fields: [studentId], references: [id], onDelete: Cascade)
@@ -1258,10 +1270,10 @@ model StudentRoadmapEnrollment {
 model PortfolioItem {
   id             String   @id @default(cuid())
   studentId      String
-  gigId          String?
+  opportunityId  String?
   title          String
   description    String
-  category       String // mirrors GigType
+  category       String
   thumbnailUrl   String?
   fileUrls       String[]
   companyName    String?
@@ -1374,7 +1386,7 @@ model Transaction {
   mpesaRef        String? // Safaricom transaction ID
   mpesaDirection  MpesaDirection?
   description     String?
-  gigId           String?
+  opportunityId   String?
   metadata        Json? // flexible extra data
   processedAt     DateTime?
   failedAt        DateTime?
@@ -1387,7 +1399,7 @@ model Transaction {
 
   @@index([walletId])
   @@index([companyWalletId])
-  @@index([gigId])
+  @@index([opportunityId])
   @@index([status])
   @@index([createdAt])
   @@map("transactions")
@@ -1396,7 +1408,6 @@ model Transaction {
 model OpportunityEscrowHold {
   id             String    @id @default(cuid())
   opportunityId  String
-  gigId          String?
   companyId      String
   studentId      String?
   amount         Float
@@ -1408,28 +1419,26 @@ model OpportunityEscrowHold {
   transactionRef String?
 
   opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-  gig Gig? @relation(fields: [gigId], references: [id], onDelete: SetNull)
 
   @@index([opportunityId])
-  @@index([gigId])
   @@index([companyId])
   @@index([studentId])
   @@map("opportunity_escrow_holds")
 }
 
 model MicroAdvance {
-  id           String    @id @default(cuid())
-  studentId    String
-  gigId        String // the gig whose payout backs this advance
-  amount       Float
-  currency     String    @default("KES")
-  status       String    @default("ACTIVE") // ACTIVE | REPAID | DEFAULTED
-  issuedAt     DateTime  @default(now())
-  repaidAt     DateTime?
-  repaymentRef String?
+  id            String    @id @default(cuid())
+  studentId     String
+  opportunityId String // the opportunity whose payout backs this advance
+  amount        Float
+  currency      String    @default("KES")
+  status        String    @default("ACTIVE") // ACTIVE | REPAID | DEFAULTED
+  issuedAt      DateTime  @default(now())
+  repaidAt      DateTime?
+  repaymentRef  String?
 
   @@index([studentId])
-  @@index([gigId])
+  @@index([opportunityId])
   @@map("micro_advances")
 }
 
@@ -1511,7 +1520,7 @@ model SafetyReport {
   reporterUserId String // not a FK — siloed by design
   reportedEntity String // company ID or user ID
   entityType     String // COMPANY | USER
-  gigId          String? // gig context if applicable
+  opportunityId  String? // opportunity context if applicable
   type           SafetyReportType
   status         SafetyReportStatus @default(RECEIVED)
   description    String?
@@ -1524,11 +1533,9 @@ model SafetyReport {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
-  // Soft link to gig — not a hard FK to preserve silo
-  gig Gig? @relation(fields: [gigId], references: [id])
-
   @@index([reporterUserId])
   @@index([status])
+  @@index([opportunityId])
   @@map("safety_reports")
 }
 
@@ -1557,20 +1564,20 @@ model Notification {
 }
 
 model Message {
-  id          String    @id @default(cuid())
-  gigId       String?
-  senderId    String
-  recipientId String
-  body        String
-  fileUrls    String[]
-  isRead      Boolean   @default(false)
-  readAt      DateTime?
-  createdAt   DateTime  @default(now())
+  id            String    @id @default(cuid())
+  opportunityId String?
+  senderId      String
+  recipientId   String
+  body          String
+  fileUrls      String[]
+  isRead        Boolean   @default(false)
+  readAt        DateTime?
+  createdAt     DateTime  @default(now())
 
   sender    User @relation("SentMessages", fields: [senderId], references: [id])
   recipient User @relation("ReceivedMessages", fields: [recipientId], references: [id])
 
-  @@index([gigId])
+  @@index([opportunityId])
   @@index([senderId])
   @@index([recipientId])
   @@map("messages")

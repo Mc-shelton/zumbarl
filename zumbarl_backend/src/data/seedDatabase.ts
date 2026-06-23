@@ -12,10 +12,126 @@ const wallets = createPrismaRecordRepository('wallets')
 
 type SeedAssets = Awaited<ReturnType<typeof seedLocalFileAssets>>
 
+const SKILL_CATEGORY_SEEDS = [
+  {
+    name: 'Marketing & Content',
+    skills: ['Social Media', 'Content Creation', 'Content Strategy', 'Copywriting', 'Analytics', 'Video Editing', 'Reporting']
+  },
+  {
+    name: 'Design & Product',
+    skills: ['Graphic Design', 'UI/UX Design', 'Figma', 'Canva', 'Web Design', 'Prototyping']
+  },
+  {
+    name: 'Events & Community',
+    skills: ['Events', 'Communication', 'Client Communication', 'Campus Activation']
+  },
+  {
+    name: 'Technology',
+    skills: ['Web Development', 'Data Analysis', 'HTML', 'CSS']
+  }
+]
+
 async function upsertWorkflowRecord(repository: ReturnType<typeof createPrismaRecordRepository>, seedKey: string, payload: Record<string, any>) {
   const existing = await repository.findByField('seedKey', seedKey)
   if (existing) return repository.updateById(existing.id, { ...payload, seedKey })
   return repository.create({ ...payload, seedKey })
+}
+
+function normalizeSkillName(name: string) {
+  return name.trim().replace(/\s+/g, ' ')
+}
+
+function createSkillSlug(name: string) {
+  return normalizeSkillName(name)
+    .toLowerCase()
+    .replace(/&/g, ' and ')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '')
+}
+
+async function ensureSeedSkill(skillName: string, categoryId?: string) {
+  const name = normalizeSkillName(skillName)
+  return prisma.skill.upsert({
+    where: { slug: createSkillSlug(name) },
+    update: {
+      categoryId,
+      status: 'active',
+      source: 'seed',
+      isSeed: true
+    },
+    create: {
+      categoryId,
+      name,
+      slug: createSkillSlug(name),
+      status: 'active',
+      source: 'seed',
+      isSeed: true
+    }
+  })
+}
+
+async function seedSkillsCatalog() {
+  for (const categorySeed of SKILL_CATEGORY_SEEDS) {
+    const categoryName = normalizeSkillName(categorySeed.name)
+    const category = await prisma.skillCategory.upsert({
+      where: { slug: createSkillSlug(categoryName) },
+      update: {
+        name: categoryName,
+        status: 'active',
+        isSeed: true
+      },
+      create: {
+        name: categoryName,
+        slug: createSkillSlug(categoryName),
+        status: 'active',
+        isSeed: true
+      }
+    })
+
+    for (const skillName of categorySeed.skills) {
+      await ensureSeedSkill(skillName, category.id)
+    }
+  }
+}
+
+async function syncSeedOpportunitySkills(opportunityId: string, skillNames: string[]) {
+  for (const skillName of skillNames) {
+    const skill = await ensureSeedSkill(skillName)
+    await prisma.opportunitySkill.upsert({
+      where: { opportunityId_skillId: { opportunityId, skillId: skill.id } },
+      update: {
+        required: true,
+        source: 'seed'
+      },
+      create: {
+        opportunityId,
+        skillId: skill.id,
+        required: true,
+        source: 'seed'
+      }
+    })
+  }
+}
+
+async function syncSeedStudentSkills(studentId: string, skillNames: string[]) {
+  for (const skillName of skillNames) {
+    const skill = await ensureSeedSkill(skillName)
+    await prisma.studentSkill.upsert({
+      where: { studentId_skillId: { studentId, skillId: skill.id } },
+      update: {
+        level: skillName === 'Social Media' || skillName === 'Graphic Design' ? 'ADVANCED' : 'INTERMEDIATE',
+        verifiedByGigs: 3,
+        source: 'seed'
+      },
+      create: {
+        studentId,
+        skillId: skill.id,
+        level: skillName === 'Social Media' || skillName === 'Graphic Design' ? 'ADVANCED' : 'INTERMEDIATE',
+        verifiedByGigs: 3,
+        source: 'seed'
+      }
+    })
+  }
 }
 
 function getPublicAssetPath(publicAssetPath: string) {
@@ -393,12 +509,12 @@ async function seedCampusContent(campusId: string, assets: SeedAssets) {
       section: 'discovery',
       title: 'Event Content Creator',
       description: 'Part-time weekend role. Capture reels and run event socials.',
-      meta: 'Gig',
+      meta: 'Opportunity',
       value: 'Explore',
       href: '/campus/opportunities',
       sortOrder: 6,
       tags: ['gig', 'job', 'work', 'content', 'creator', 'part-time', 'remote'],
-      payload: { type: 'Gig', chip: 'Gigs', summary: 'Part-time weekend role. Capture reels and run event socials.' }
+      payload: { type: 'Opportunity', chip: 'Paid work', summary: 'Part-time weekend role. Capture reels and run event socials.' }
     }
   ]
 
@@ -706,6 +822,8 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
 }
 
 async function seedDatabase() {
+  await seedSkillsCatalog()
+
   const campus = await prisma.campus.upsert({
     where: { id: 'campus-zetech-university' },
     update: { name: 'Zetech University', city: 'Nairobi', isActive: true },
@@ -857,140 +975,107 @@ async function seedDatabase() {
     create: { companyId: business.id }
   })
 
-  await Promise.all([
-    prisma.gig.upsert({
-      where: { id: 'gig-social-media-manager-zetech' },
+  const seedOpportunities = [
+    {
+      id: 'opportunity-social-media-manager-zetech',
+      title: 'Social Media Manager',
+      description: 'Manage Instagram, TikTok and WhatsApp content for a student-facing campaign.',
+      image: assets.campaign,
+      category: 'Social Media',
+      engagementMode: 'Remote',
+      skills: ['Social Media', 'Canva', 'Copywriting'],
+      budgetAmount: 15000,
+      applicationDeadline: new Date('2026-07-24T00:00:00.000Z'),
+      duration: '40 hours estimated',
+      maxApplicants: 18
+    },
+    {
+      id: 'opportunity-campus-activation-brandmasters',
+      title: 'Campus Activation Support',
+      description: 'Support a campus launch activation, collect student feedback, and submit event engagement notes.',
+      image: assets.event,
+      category: 'Sales Marketing',
+      engagementMode: 'Hybrid',
+      skills: ['Events', 'Communication', 'Reporting'],
+      budgetAmount: 8000,
+      applicationDeadline: new Date('2026-07-18T00:00:00.000Z'),
+      duration: '24 hours estimated',
+      maxApplicants: 12
+    },
+    {
+      id: 'opportunity-web-design-zetech',
+      title: 'Landing Page Designer',
+      description: 'Design a concise campaign landing page and hand over responsive assets for implementation.',
+      image: assets.marketplace,
+      category: 'Web Development',
+      engagementMode: 'Remote',
+      skills: ['UI/UX Design', 'Figma', 'Web Design'],
+      budgetAmount: 25000,
+      applicationDeadline: new Date('2026-08-02T00:00:00.000Z'),
+      duration: '32 hours estimated',
+      maxApplicants: 10
+    }
+  ]
+
+  for (const item of seedOpportunities) {
+    const seededOpportunity = await prisma.opportunity.upsert({
+      where: { id: item.id },
       update: {
         companyId: business.id,
         postedByContactId: businessContact.id,
-        title: 'Social Media Manager',
-        description: 'Manage Instagram, TikTok and WhatsApp content for a student-facing campaign.',
-        imageUrl: assets.campaign,
-        gigType: 'SOCIAL_MEDIA',
-        gigMode: 'REMOTE',
-        requiredSkills: ['Social Media', 'Canva', 'Copywriting'],
-        requiredTierMin: 'BRONZE',
-        budgetMin: 8000,
-        budgetMax: 15000,
+        title: item.title,
+        summary: item.description,
+        description: item.description,
+        opportunityType: 'gig',
+        category: item.category,
+        status: 'published',
+        visibility: 'public',
+        scopeMode: 'deliverable',
+        opportunitySplash: { url: item.image, alt: `${item.title} thumbnail` },
+        budgetAmount: item.budgetAmount,
+        budgetLabel: `KES ${item.budgetAmount.toLocaleString('en-KE')}`,
         currency: 'KES',
-        deadline: new Date('2026-07-24T00:00:00.000Z'),
-        estimatedHours: 40,
-        locationCity: 'Nairobi',
-        isPhysical: false,
-        status: 'OPEN',
-        maxApplicants: 18
+        skills: item.skills,
+        requirements: item.skills,
+        engagementMode: item.engagementMode,
+        mode: item.engagementMode,
+        duration: item.duration,
+        applicationDeadline: item.applicationDeadline,
+        deadlineLabel: item.applicationDeadline.toISOString(),
+        publishedAt: new Date(),
+        isSeed: true,
+        metadata: { seedKey: item.id, maxApplicants: item.maxApplicants }
       },
       create: {
-        id: 'gig-social-media-manager-zetech',
+        id: item.id,
         companyId: business.id,
         postedByContactId: businessContact.id,
-        title: 'Social Media Manager',
-        description: 'Manage Instagram, TikTok and WhatsApp content for a student-facing campaign.',
-        imageUrl: assets.campaign,
-        gigType: 'SOCIAL_MEDIA',
-        gigMode: 'REMOTE',
-        requiredSkills: ['Social Media', 'Canva', 'Copywriting'],
-        requiredTierMin: 'BRONZE',
-        budgetMin: 8000,
-        budgetMax: 15000,
+        title: item.title,
+        summary: item.description,
+        description: item.description,
+        opportunityType: 'gig',
+        category: item.category,
+        status: 'published',
+        visibility: 'public',
+        scopeMode: 'deliverable',
+        opportunitySplash: { url: item.image, alt: `${item.title} thumbnail` },
+        budgetAmount: item.budgetAmount,
+        budgetLabel: `KES ${item.budgetAmount.toLocaleString('en-KE')}`,
         currency: 'KES',
-        deadline: new Date('2026-07-24T00:00:00.000Z'),
-        estimatedHours: 40,
-        locationCity: 'Nairobi',
-        isPhysical: false,
-        status: 'OPEN',
-        maxApplicants: 18
-      }
-    }),
-    prisma.gig.upsert({
-      where: { id: 'gig-campus-activation-brandmasters' },
-      update: {
-        companyId: business.id,
-        postedByContactId: businessContact.id,
-        title: 'Campus Activation Support',
-        description: 'Support a campus launch activation, collect student feedback, and submit event engagement notes.',
-        imageUrl: assets.event,
-        gigType: 'SALES_MARKETING',
-        gigMode: 'HYBRID',
-        requiredSkills: ['Events', 'Communication', 'Reporting'],
-        requiredTierMin: 'BRONZE',
-        budgetMin: 6000,
-        budgetMax: 8000,
-        currency: 'KES',
-        deadline: new Date('2026-07-18T00:00:00.000Z'),
-        estimatedHours: 24,
-        locationCity: 'Nairobi',
-        isPhysical: true,
-        status: 'OPEN',
-        maxApplicants: 12
-      },
-      create: {
-        id: 'gig-campus-activation-brandmasters',
-        companyId: business.id,
-        postedByContactId: businessContact.id,
-        title: 'Campus Activation Support',
-        description: 'Support a campus launch activation, collect student feedback, and submit event engagement notes.',
-        imageUrl: assets.event,
-        gigType: 'SALES_MARKETING',
-        gigMode: 'HYBRID',
-        requiredSkills: ['Events', 'Communication', 'Reporting'],
-        requiredTierMin: 'BRONZE',
-        budgetMin: 6000,
-        budgetMax: 8000,
-        currency: 'KES',
-        deadline: new Date('2026-07-18T00:00:00.000Z'),
-        estimatedHours: 24,
-        locationCity: 'Nairobi',
-        isPhysical: true,
-        status: 'OPEN',
-        maxApplicants: 12
-      }
-    }),
-    prisma.gig.upsert({
-      where: { id: 'gig-web-design-zetech' },
-      update: {
-        companyId: business.id,
-        postedByContactId: businessContact.id,
-        title: 'Landing Page Designer',
-        description: 'Design a concise campaign landing page and hand over responsive assets for implementation.',
-        imageUrl: assets.marketplace,
-        gigType: 'WEB_DEVELOPMENT',
-        gigMode: 'REMOTE',
-        requiredSkills: ['UI/UX Design', 'Figma', 'Web Design'],
-        requiredTierMin: 'SILVER',
-        budgetMin: 12000,
-        budgetMax: 25000,
-        currency: 'KES',
-        deadline: new Date('2026-08-02T00:00:00.000Z'),
-        estimatedHours: 32,
-        locationCity: 'Nairobi',
-        isPhysical: false,
-        status: 'OPEN',
-        maxApplicants: 10
-      },
-      create: {
-        id: 'gig-web-design-zetech',
-        companyId: business.id,
-        postedByContactId: businessContact.id,
-        title: 'Landing Page Designer',
-        description: 'Design a concise campaign landing page and hand over responsive assets for implementation.',
-        imageUrl: assets.marketplace,
-        gigType: 'WEB_DEVELOPMENT',
-        gigMode: 'REMOTE',
-        requiredSkills: ['UI/UX Design', 'Figma', 'Web Design'],
-        requiredTierMin: 'SILVER',
-        budgetMin: 12000,
-        budgetMax: 25000,
-        currency: 'KES',
-        deadline: new Date('2026-08-02T00:00:00.000Z'),
-        estimatedHours: 32,
-        locationCity: 'Nairobi',
-        isPhysical: false,
-        status: 'OPEN',
-        maxApplicants: 10
+        skills: item.skills,
+        requirements: item.skills,
+        engagementMode: item.engagementMode,
+        mode: item.engagementMode,
+        duration: item.duration,
+        applicationDeadline: item.applicationDeadline,
+        deadlineLabel: item.applicationDeadline.toISOString(),
+        publishedAt: new Date(),
+        isSeed: true,
+        metadata: { seedKey: item.id, maxApplicants: item.maxApplicants }
       }
     })
-  ])
+    await syncSeedOpportunitySkills(seededOpportunity.id, item.skills)
+  }
 
   await prisma.zumbarlScore.upsert({
     where: { studentId: student.id },
@@ -1030,6 +1115,7 @@ async function seedDatabase() {
     update: { level: index < 2 ? 'ADVANCED' : 'INTERMEDIATE', verifiedByGigs: 3 + index },
     create: { studentId: student.id, skillName, level: index < 2 ? 'ADVANCED' : 'INTERMEDIATE', verifiedByGigs: 3 + index }
   })))
+  await syncSeedStudentSkills(student.id, ['Social Media', 'Graphic Design', 'Canva', 'Copywriting', 'Analytics', 'Video Editing'])
 
   await Promise.all([
     prisma.portfolioItem.upsert({
@@ -1159,6 +1245,7 @@ async function seedDatabase() {
     }
   })
   if (!opportunity) throw new Error('Failed to seed social media manager opportunity')
+  await syncSeedOpportunitySkills(opportunity.id, ['Social Media', 'Canva', 'Copywriting'])
 
   await prisma.bid.upsert({
     where: { opportunityId_studentId: { opportunityId: opportunity.id, studentId: student.id } },

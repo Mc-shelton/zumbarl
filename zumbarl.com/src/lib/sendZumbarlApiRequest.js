@@ -33,6 +33,8 @@ async function sendZumbarlApiRequest(path, options = {}) {
 }
 
 export {
+  API_BASE_URL,
   AUTH_TOKEN_KEY,
+  readZumbarlAuthToken,
   sendZumbarlApiRequest,
 }

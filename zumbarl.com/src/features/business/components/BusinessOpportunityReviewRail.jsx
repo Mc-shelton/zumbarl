@@ -124,7 +124,16 @@ function ApplicationsRail({ activeApplicationStatus, opportunity }) {
   )
 }
 
-function DeliverablesRail() {
+function getReviewScopeCount(opportunity) {
+  const milestoneScopes = Array.isArray(opportunity?.milestoneScopes) ? opportunity.milestoneScopes : []
+  const deliverableMilestones = Array.isArray(opportunity?.deliverableMilestones) ? opportunity.deliverableMilestones : []
+  return opportunity?.scopeMode === 'milestone' && milestoneScopes.length ? milestoneScopes.length : deliverableMilestones.length
+}
+
+function DeliverablesRail({ opportunity }) {
+  const scopeCount = getReviewScopeCount(opportunity)
+  const totalDeliverables = scopeCount || 6
+
   return (
     <>
       <section className="business-profile-card business-review-summary-card">
@@ -133,7 +142,7 @@ function DeliverablesRail() {
           <button type="button"><FiEdit3 aria-hidden="true" /> Edit</button>
         </header>
         <dl>
-          <div><dt>Total Deliverables</dt><dd>6</dd></div>
+          <div><dt>Total Deliverables</dt><dd>{totalDeliverables}</dd></div>
           <div><dt>Submitted Work</dt><dd>7</dd></div>
           <div><dt>Files</dt><dd>12</dd></div>
           <div><dt>Overdue</dt><dd>1</dd></div>
@@ -344,7 +353,7 @@ export function BusinessOpportunityReviewRail({ activeApplicationStatus, activeR
       {activeReviewTab === 'applications' ? (
         <ApplicationsRail activeApplicationStatus={activeApplicationStatus} opportunity={opportunity} />
       ) : activeReviewTab === 'deliverables' ? (
-        <DeliverablesRail />
+        <DeliverablesRail opportunity={opportunity} />
       ) : activeReviewTab === 'payments' ? (
         <PaymentsRail />
       ) : activeReviewTab === 'performance' ? (

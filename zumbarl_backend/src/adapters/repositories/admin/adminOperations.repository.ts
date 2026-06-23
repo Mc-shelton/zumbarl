@@ -127,7 +127,7 @@ class AdminOperationsRepository {
   }
 
   async readSuperAdminDashboard() {
-    const [metrics, finance, gigs, safety, analytics, recentAuditLogs] = await Promise.all([
+    const [metrics, finance, opportunities, safety, analytics, recentAuditLogs] = await Promise.all([
       this.readMetrics(),
       this.readFinancialOversight({ pageSize: 5 }),
       this.readGigOversight({ pageSize: 5 }),
@@ -139,7 +139,7 @@ class AdminOperationsRepository {
     return {
       metrics,
       finance: finance.summary,
-      gigs: gigs.summary,
+      gigs: opportunities.summary,
       safety: safety.summary,
       analytics: analytics.summary,
       recentAuditLogs: recentAuditLogs.data
@@ -283,25 +283,22 @@ class AdminOperationsRepository {
   }
 
   async readGigOversight(query: Record<string, unknown>) {
-    const [gigs, opportunities, bidCount, workflowProjects] = await Promise.all([
-      prisma.gig.findMany({ orderBy: { createdAt: 'desc' }, take: 25, include: { company: { select: { name: true } } } }),
+    const [opportunities, bidCount, workflowProjects] = await Promise.all([
       prisma.opportunity.findMany({ orderBy: { createdAt: 'desc' }, take: 25, include: { company: { select: { name: true } } } }),
       prisma.bid.count(),
       projects.listAll()
     ])
-    const disputedGigs = gigs.filter((gig) => ['DISPUTED', 'REVISION_REQUESTED'].includes(gig.status))
     const disputedOpportunities = opportunities.filter((item) => item.status === 'disputed')
     return {
       summary: {
-        structuredGigs: gigs.length,
         opportunities: opportunities.length,
-        open: gigs.filter((gig) => gig.status === 'OPEN').length + opportunities.filter((item) => item.status === 'published' || item.status === 'open').length,
-        disputed: disputedGigs.length + disputedOpportunities.length,
+        open: opportunities.filter((item) => item.status === 'published' || item.status === 'open').length,
+        disputed: disputedOpportunities.length,
         bids: bidCount,
         projects: workflowProjects.length
       },
-      gigs: pageEnvelope([...gigs, ...opportunities], query),
-      disputes: [...disputedGigs, ...disputedOpportunities]
+      gigs: pageEnvelope(opportunities, query),
+      disputes: disputedOpportunities
     }
   }
 
@@ -372,7 +369,7 @@ class AdminOperationsRepository {
       cases.listAll(),
       contentQueue.listAll(),
       prisma.portfolioItem.findMany({ where: { isPublic: true }, orderBy: { createdAt: 'desc' }, take: 25 }),
-      prisma.message.findMany({ orderBy: { createdAt: 'desc' }, take: 25, select: { id: true, gigId: true, senderId: true, recipientId: true, isRead: true, createdAt: true } })
+      prisma.message.findMany({ orderBy: { createdAt: 'desc' }, take: 25, select: { id: true, opportunityId: true, senderId: true, recipientId: true, isRead: true, createdAt: true } })
     ])
     return {
       summary: {
@@ -419,11 +416,10 @@ class AdminOperationsRepository {
   }
 
   async readAnalyticsReport() {
-    const [students, companies, gigs, completedGigs, placements, transactions, opportunityCount, workflowProjects] = await Promise.all([
+    const [students, companies, completedOpportunities, placements, transactions, opportunityCount, workflowProjects] = await Promise.all([
       prisma.studentProfile.count(),
       prisma.company.count(),
-      prisma.gig.count(),
-      prisma.gig.count({ where: { status: 'COMPLETED' } }),
+      prisma.opportunity.count({ where: { status: 'completed' } }),
       prisma.placement.count(),
       prisma.transaction.findMany(),
       prisma.opportunity.count(),
@@ -435,15 +431,15 @@ class AdminOperationsRepository {
       summary: {
         activeStudents: students,
         activeCompanies: companies,
-        gigsPosted: gigs + opportunityCount,
-        gigsCompleted: completedGigs + workflowProjects.filter((item) => item.status === 'completed').length,
+        gigsPosted: opportunityCount,
+        gigsCompleted: completedOpportunities + workflowProjects.filter((item) => item.status === 'completed').length,
         grossMerchandiseValue: gmv,
         revenue,
         placements
       },
       campusBreakdown: [],
       pipelineFunnel: {
-        gigCompletion: completedGigs,
+        gigCompletion: completedOpportunities,
         pipelineFlags: 0,
         rehearsalSprints: 0,
         placementOffers: placements,

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiCheck, FiUploadCloud, FiX } from 'react-icons/fi'
+import { FiUploadCloud, FiX } from 'react-icons/fi'
 import {
   BUSINESS_OPPORTUNITY_BRIEF_SELECTS,
   BUSINESS_OPPORTUNITY_BRIEF_TYPE_OPTIONS,
@@ -10,6 +10,7 @@ import {
   BusinessCreateSelectField,
   BusinessCreateTextareaField,
 } from './BusinessOpportunityCreateFields'
+import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
 
 const DEFAULT_SPLASH_CROP = {
   positionX: 50,
@@ -17,16 +18,21 @@ const DEFAULT_SPLASH_CROP = {
   zoom: 1.15,
 }
 
-function toFileMetadata(file, previewUrl) {
+function toFileMetadata(file, upload, localPreviewUrl = '') {
+  const uploadUrl = upload?.url || ''
+
   return {
-    id: `file-${file.name}-${file.lastModified}`,
-    name: file.name,
-    previewUrl,
+    id: upload?.id || `file-${file.name}-${file.lastModified}`,
+    name: upload?.fileName || file.name,
+    previewUrl: uploadUrl || localPreviewUrl,
+    url: uploadUrl,
+    uploadId: upload?.id,
     type: file.type || 'application/octet-stream',
-    size: file.size,
+    size: upload?.sizeBytes || file.size,
     lastModified: file.lastModified,
+    bucket: upload?.bucket,
     crop: DEFAULT_SPLASH_CROP,
-    cropConfirmed: !file.type?.startsWith('image/'),
+    cropConfirmed: true,
   }
 }
 
@@ -38,8 +44,12 @@ function formatFileSize(size = 0) {
 
 function BusinessOpportunitySplashField({ splash, onUpdateField }) {
   const [fileInputKey, setFileInputKey] = useState(0)
+  const [previewFailed, setPreviewFailed] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadError, setUploadError] = useState('')
   const selectedSplash = splash?.name ? splash : null
   const isImage = selectedSplash?.type?.startsWith('image/')
+  const previewUrl = selectedSplash?.previewUrl || selectedSplash?.url || selectedSplash?.src || ''
   const crop = selectedSplash?.crop || DEFAULT_SPLASH_CROP
   const cropZoom = Number(crop.zoom) || DEFAULT_SPLASH_CROP.zoom
   const maxCropShift = ((cropZoom - 1) / (2 * cropZoom)) * 100
@@ -55,12 +65,13 @@ function BusinessOpportunitySplashField({ splash, onUpdateField }) {
         ...crop,
         [field]: Number(value),
       },
-      cropConfirmed: false,
+      cropConfirmed: true,
     })
   }
 
   function clearSplash() {
     onUpdateField('opportunitySplash', null)
+    setPreviewFailed(false)
     setFileInputKey((current) => current + 1)
   }
 
@@ -85,27 +96,54 @@ function BusinessOpportunitySplashField({ splash, onUpdateField }) {
           key={fileInputKey}
           accept="image/*,video/*"
           type="file"
-          onChange={(event) => {
+          onChange={async (event) => {
             const file = event.target.files?.[0]
             if (!file) return
-            onUpdateField('opportunitySplash', toFileMetadata(file, URL.createObjectURL(file)))
+            const localPreviewUrl = URL.createObjectURL(file)
+
+            setPreviewFailed(false)
+            onUpdateField('opportunitySplash', toFileMetadata(file, null, localPreviewUrl))
+            setIsUploading(true)
+            setUploadError('')
+            try {
+              const upload = await uploadZumbarlFile(file, {
+                scope: 'opportunity-splash',
+                metadata: { placement: 'opportunity_splash' },
+              })
+              setPreviewFailed(false)
+              onUpdateField('opportunitySplash', toFileMetadata(file, upload, localPreviewUrl))
+              URL.revokeObjectURL(localPreviewUrl)
+            } catch (error) {
+              setUploadError(error instanceof Error ? error.message : 'Could not upload splash file.')
+            } finally {
+              setIsUploading(false)
+              event.target.value = ''
+            }
           }}
         />
       </label>
+      {isUploading ? <p className="business-create-upload-status">Uploading splash preview...</p> : null}
+      {uploadError ? <p className="business-create-upload-error">{uploadError}</p> : null}
       {selectedSplash ? (
         <div className="business-create-splash-cropper">
           <div className="business-create-splash-preview" aria-label="Opportunity splash card crop preview">
-            {isImage ? (
+            {previewFailed ? (
+              <div className="business-create-splash-preview-empty">
+                <strong>Preview unavailable</strong>
+                <span>Re-upload the splash so the draft can save a durable preview.</span>
+              </div>
+            ) : isImage ? (
               <img
-                src={selectedSplash.previewUrl}
+                src={previewUrl}
                 alt=""
+                onError={() => setPreviewFailed(true)}
                 style={{
                   objectPosition: `${crop.positionX}% ${crop.positionY}%`,
                   transform: `translate(${translateX}%, ${translateY}%) scale(${cropZoom})`,
                 }}
               />
             ) : (
-              <video src={selectedSplash.previewUrl} muted playsInline />
+              <video src={previewUrl} muted playsInline onError={() => setPreviewFailed(true)} />
             )}
           </div>
           <div className="business-create-splash-controls">
@@ -118,7 +156,7 @@ function BusinessOpportunitySplashField({ splash, onUpdateField }) {
             {isImage ? (
               <>
                 <p className={`business-create-splash-crop-status${cropConfirmed ? ' is-confirmed' : ''}`}>
-                  {cropConfirmed ? 'Crop saved for opportunity cards.' : 'Adjust the crop, then save it before publishing.'}
+                  Crop is applied automatically for opportunity cards.
                 </p>
                 <label>
                   <span>Horizontal crop</span>
@@ -151,14 +189,6 @@ function BusinessOpportunitySplashField({ splash, onUpdateField }) {
                     onChange={(event) => updateSplashCrop('zoom', event.target.value)}
                   />
                 </label>
-                <button
-                  type="button"
-                  className={`business-profile-primary-btn${cropConfirmed ? ' is-confirmed' : ''}`}
-                  onClick={() => onUpdateField('opportunitySplash', { ...selectedSplash, cropConfirmed: true })}
-                >
-                  <FiCheck aria-hidden="true" />
-                  {cropConfirmed ? 'Crop saved' : 'Use this crop'}
-                </button>
               </>
             ) : (
               <p>Video splash selected. It will be fitted to the opportunity card preview area.</p>

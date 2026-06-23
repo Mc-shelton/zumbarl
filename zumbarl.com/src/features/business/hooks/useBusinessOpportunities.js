@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { useLocation } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import {
   BUSINESS_OPPORTUNITY_ACTIVITY,
   BUSINESS_OPPORTUNITY_BIDDER_CANDIDATES,
@@ -10,6 +10,7 @@ import {
 } from '../opportunitiesData'
 import {
   inviteBusinessOpportunityBidders,
+  publishBusinessOpportunity,
 } from '../services/businessFlowService'
 import { useBusinessFlowState } from './useBusinessFlowState'
 
@@ -56,17 +57,25 @@ function mapFlowOpportunity(opportunity, invitedCount = 0) {
     category: opportunity.category,
     clarityScore: opportunity.clarityScore || 0,
     company: opportunity.company,
+    companyDescription: opportunity.companyDescription,
     canInvite: status === 'Open',
     canPublish: status === 'Draft',
+    createdAt: opportunity.createdAt,
     description: opportunity.summary,
     deadline: opportunity.deadline || opportunity.applicationDeadline,
+    deliverableMilestones: Array.isArray(opportunity.deliverableMilestones) ? opportunity.deliverableMilestones : [],
     deliverables: opportunity.deliverables,
     duration: opportunity.duration,
     icon: 'briefcase',
     engagementMode: opportunity.engagementMode,
+    image: opportunity.image,
+    imageUrl: opportunity.imageUrl,
     invitedCount: invitedCount || opportunity.invitedCount || 0,
     isOwned: true,
     mode: opportunity.mode,
+    milestoneScopes: Array.isArray(opportunity.milestoneScopes) ? opportunity.milestoneScopes : [],
+    opportunitySplash: opportunity.opportunitySplash,
+    opportunityType: opportunity.opportunityType,
     paymentTerms: opportunity.paymentTerms,
     screeningFocus: opportunity.screeningFocus,
     skills,
@@ -75,6 +84,9 @@ function mapFlowOpportunity(opportunity, invitedCount = 0) {
     time: opportunity.createdAt === 'Seed brief' ? 'Seed brief' : 'Just now',
     title: opportunity.title,
     tone: status === 'Draft' ? 'neutral' : 'purple',
+    thumbnail: opportunity.thumbnail,
+    thumbnailUrl: opportunity.thumbnailUrl,
+    visibility: opportunity.visibility,
   }
 }
 
@@ -101,6 +113,7 @@ function matchesBudget(opportunity, budgetFilter) {
 
 export function useBusinessOpportunities() {
   const location = useLocation()
+  const navigate = useNavigate()
   const incomingReviewOpportunityId = location.state?.reviewOpportunityId || null
   const shouldOpenPublishPayment = Boolean(location.state?.openPublishPayment && incomingReviewOpportunityId)
   const businessFlow = useBusinessFlowState()
@@ -252,10 +265,21 @@ export function useBusinessOpportunities() {
   function publishOpportunity(opportunity) {
     if (!opportunity?.canPublish) return
 
+    publishBusinessOpportunity(opportunity.id)
     setReviewOpportunityId(opportunity.id)
     setActiveReviewTab('overview')
     setActiveApplicationStatus('all')
     setPublishPaymentOpportunityId(opportunity.id)
+  }
+
+  function continueDraftOpportunity(opportunity) {
+    if (!opportunity || opportunity.status !== 'Draft') return
+
+    navigate('/business/opportunities/create', {
+      state: {
+        draftOpportunityId: opportunity.id,
+      },
+    })
   }
 
   function changeReviewTab(tabId) {
@@ -306,6 +330,7 @@ export function useBusinessOpportunities() {
       setActiveReviewTab('overview')
       setActiveApplicationStatus('all')
     },
+    onContinueDraftOpportunity: continueDraftOpportunity,
     onOpenInvitePanel: openInvitePanel,
     onReviewOpportunity: (opportunity) => {
       setReviewOpportunityId(opportunity?.id ?? null)

@@ -47,20 +47,24 @@ function formatKes(value: number) {
   return `KES ${Math.round(value).toLocaleString('en-KE')}`
 }
 
-function mapGig(gig: Record<string, any>) {
+function mapOpportunity(opportunity: Record<string, any>) {
+  const splash = opportunity.opportunitySplash && typeof opportunity.opportunitySplash === 'object'
+    ? opportunity.opportunitySplash
+    : {}
+
   return {
-    id: gig.id,
+    id: opportunity.id,
     section: 'gigs',
-    title: gig.title,
-    description: gig.description,
-    org: gig.company?.name,
-    meta: `${String(gig.gigType || '').replaceAll('_', ' ').toLowerCase()} · ${String(gig.gigMode || '').toLowerCase()}`,
-    value: formatKes(gig.budgetMax ?? 0),
-    thumbnail: gig.imageUrl,
-    image: gig.imageUrl,
-    tags: gig.requiredSkills ?? [],
-    href: `/campus/opportunities?gig=${gig.id}`,
-    actionLabel: 'View gig'
+    title: opportunity.title,
+    description: opportunity.description ?? opportunity.summary,
+    org: opportunity.companyName ?? opportunity.company?.name,
+    meta: `${String(opportunity.category || opportunity.opportunityType || 'opportunity').toLowerCase()} · ${String(opportunity.engagementMode || opportunity.mode || 'remote').toLowerCase()}`,
+    value: formatKes(opportunity.budgetAmount ?? 0),
+    thumbnail: splash.url ?? splash.previewUrl,
+    image: splash.url ?? splash.previewUrl,
+    tags: opportunity.skills ?? [],
+    href: `/campus/opportunities?opportunity=${opportunity.id}`,
+    actionLabel: 'View opportunity'
   }
 }
 
@@ -165,7 +169,7 @@ class CampusExperienceRepository {
   async readHomeExperience(studentId?: string) {
     const student = studentId ? await prisma.studentProfile.findUnique({ where: { id: studentId }, include: { campus: true } }) : null
     const campusWhere = student?.campusId ? { OR: [{ campusId: student.campusId }, { campusId: null }] } : {}
-    const [items, gigs, listings, events, posts, stories, roadmaps] = await Promise.all([
+    const [items, opportunities, listings, events, posts, stories, roadmaps] = await Promise.all([
       prisma.campusContentItem.findMany({
         where: {
           scope: 'campus_home',
@@ -178,8 +182,13 @@ class CampusExperienceRepository {
         },
         orderBy: [{ section: 'asc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }]
       }),
-      prisma.gig.findMany({
-        where: { status: 'OPEN' },
+      prisma.opportunity.findMany({
+        where: {
+          OR: [
+            { status: { in: ['published', 'open'] } },
+            { visibility: 'public' }
+          ]
+        },
         include: { company: true },
         orderBy: { createdAt: 'desc' },
         take: 6
@@ -225,7 +234,7 @@ class CampusExperienceRepository {
       recommendationSections: [
         { id: 'stories', title: 'Stories', subtitle: 'Fresh updates from students around campus', items: stories.map(mapStudentStory) },
         { id: 'posts', title: 'Posts', subtitle: 'Campus ideas, questions and showcases', items: posts.map(mapCampusPost) },
-        { id: 'gigs', title: 'Recommended for you', subtitle: 'Gigs and paid work matched to your campus activity', items: gigs.map(mapGig) },
+        { id: 'gigs', title: 'Recommended for you', subtitle: 'Gigs and paid work matched to your campus activity', items: opportunities.map(mapOpportunity) },
         { id: 'marketplace', title: 'Marketplace picks', subtitle: 'Student shops, products and useful campus items', items: marketplaceItems },
         { id: 'communities', title: 'Communities', subtitle: 'Groups and chamas you may want to join', items: grouped.get('communities') ?? [] },
         { id: 'events', title: 'Events', subtitle: 'Campus activity worth showing up for', items: events.map(mapCampusEvent) },

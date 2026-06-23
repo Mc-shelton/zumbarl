@@ -1,16 +1,47 @@
-import { useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useBlocker, useLocation, useNavigate } from 'react-router-dom'
 import {
   BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS,
   BUSINESS_OPPORTUNITY_BRIEF_STEPS,
 } from '../opportunityBriefCreateData'
 import {
   createBusinessOpportunity,
+  getBusinessFlowSnapshot,
   recordApplicantReviewEvent,
 } from '../services/businessFlowService'
 
+const BUSINESS_OPPORTUNITY_BRIEF_DRAFT_FALLBACKS = {
+  acceptanceCriteria: '',
+  applicationDeadline: '',
+  availability: '',
+  budget: '',
+  bidderInstructions: '',
+  category: '',
+  companyDescription: '',
+  companyName: '',
+  deliverables: '',
+  duration: '',
+  engagementMode: '',
+  experienceLevel: '',
+  mustHave: [],
+  opportunityType: 'Project',
+  opportunitySplash: null,
+  paymentTerms: '',
+  portfolioRequired: '',
+  preferredQualifications: '',
+  requiredAttachments: [],
+  screeningFocus: '',
+  skills: '',
+  summary: '',
+  title: '',
+  visibility: 'Visible to all students',
+  scopeMode: 'deliverable',
+  milestoneScopes: [],
+  deliverableMilestones: [],
+}
+
 function getBudgetLabel(form) {
-  return `KES ${String(form.budget).replace(/^KES\\s*/i, '')}`
+  return `KES ${String(form.budget).replace(/^(KES\\s*)+/i, '')}`
 }
 
 function getNumberValue(value) {
@@ -18,7 +49,9 @@ function getNumberValue(value) {
 }
 
 function getDeliverableMilestones(form) {
-  if (form.scopeMode === 'milestone') {
+  const isTaskOpportunity = String(form.opportunityType || '').toLowerCase() === 'task'
+
+  if (!isTaskOpportunity && form.scopeMode === 'milestone') {
     return Array.isArray(form.milestoneScopes) ? form.milestoneScopes : []
   }
 
@@ -29,8 +62,12 @@ function getDeliverableBudgetTotal(form) {
   return getDeliverableMilestones(form).reduce((total, milestone) => total + getNumberValue(milestone.budget), 0)
 }
 
-function getDeliverablePaymentPercentTotal(form) {
-  return getDeliverableMilestones(form).reduce((total, milestone) => total + getNumberValue(milestone.paymentPercent), 0)
+function getMilestoneRequirementText(milestone) {
+  return milestone.description || milestone.requirement || ''
+}
+
+function hasOptionalMinimumText(value, minimumLength) {
+  return !getTextLength(value) || hasMinimumText(value, minimumLength)
 }
 
 function hasCompleteDeliverableMilestones(form) {
@@ -38,13 +75,9 @@ function hasCompleteDeliverableMilestones(form) {
 
   return milestones.length > 0 && milestones.every((milestone) => (
     hasMinimumText(milestone.title, 3)
-    && hasMinimumText(milestone.description, 20)
-    && hasMinimumText(milestone.submissionMethod, 20)
-    && hasMinimumText(milestone.verificationMethod, 20)
-    && hasMinimumText(milestone.evidenceRequired, 15)
-    && hasMinimumText(milestone.acceptanceCriteria, 20)
+    && hasMinimumText(getMilestoneRequirementText(milestone), 20)
+    && hasOptionalMinimumText(milestone.acceptanceCriteria, 20)
     && getNumberValue(milestone.budget) > 0
-    && getNumberValue(milestone.paymentPercent) > 0
   ))
 }
 
@@ -59,6 +92,55 @@ function hasMinimumText(value, minimumLength) {
   return String(value || '').trim().length >= minimumLength
 }
 
+function getTextLength(value) {
+  return String(value || '').trim().length
+}
+
+function getOverviewReadinessLabel(form) {
+  const missing = []
+  if (!hasMinimumText(form.title, 8)) missing.push(`title needs ${Math.max(0, 8 - getTextLength(form.title))} more characters`)
+  if (!hasMinimumText(form.summary, 60)) missing.push(`short description needs ${Math.max(0, 60 - getTextLength(form.summary))} more characters`)
+  return missing.length ? `Opportunity ${missing.join(' and ')}` : 'Opportunity title and summary explain the job clearly'
+}
+
+function getScopeReadinessLabel(form) {
+  const milestones = getDeliverableMilestones(form)
+  const itemLabel = String(form.opportunityType || '').toLowerCase() !== 'task' && form.scopeMode === 'milestone'
+    ? 'milestone'
+    : 'deliverable'
+  const incompleteIndex = milestones.findIndex((milestone) => (
+    !hasMinimumText(milestone.title, 3)
+    || !hasMinimumText(getMilestoneRequirementText(milestone), 20)
+    || !hasOptionalMinimumText(milestone.acceptanceCriteria, 20)
+    || getNumberValue(milestone.budget) <= 0
+  ))
+
+  if (!milestones.length) return `Add at least one ${itemLabel}`
+  if (incompleteIndex === -1) return `Each ${itemLabel} has requirements and budget ready`
+
+  const milestone = milestones[incompleteIndex]
+  const missing = []
+  const titleLength = getTextLength(milestone.title)
+  const requirement = getMilestoneRequirementText(milestone)
+  const requirementLength = getTextLength(requirement)
+  if (!titleLength) missing.push('title')
+  else if (!hasMinimumText(milestone.title, 3)) missing.push(`title needs ${Math.max(0, 3 - titleLength)} more characters`)
+  if (!requirementLength) missing.push('requirement')
+  else if (!hasMinimumText(requirement, 20)) missing.push(`requirement needs ${Math.max(0, 20 - requirementLength)} more characters`)
+  if (!hasOptionalMinimumText(milestone.acceptanceCriteria, 20)) {
+    missing.push(`acceptance criteria needs ${Math.max(0, 20 - getTextLength(milestone.acceptanceCriteria))} more characters`)
+  }
+  if (getNumberValue(milestone.budget) <= 0) missing.push('budget')
+
+  return `${itemLabel[0].toUpperCase()}${itemLabel.slice(1)} ${incompleteIndex + 1} needs ${missing.join(', ')}`
+}
+
+function getScreeningReadinessLabel(form) {
+  if (!getTextLength(form.screeningFocus)) return 'Screening focus can be left blank'
+  if (hasMinimumText(form.screeningFocus, 45)) return 'Screening focus tells the business how to review applicants'
+  return `Screening focus needs ${Math.max(0, 45 - getTextLength(form.screeningFocus))} more characters`
+}
+
 function hasCompleteRequiredAttachments(form) {
   const requiredAttachments = Array.isArray(form.requiredAttachments) ? form.requiredAttachments : []
 
@@ -71,7 +153,7 @@ function hasReadyOpportunitySplash(form) {
   const splash = form.opportunitySplash
   if (!splash) return true
   if (!String(splash.type || '').startsWith('image/')) return true
-  return splash.cropConfirmed === true
+  return true
 }
 
 function getClarityChecks(form) {
@@ -79,7 +161,7 @@ function getClarityChecks(form) {
     {
       id: 'overview',
       complete: hasMinimumText(form.title, 8) && hasMinimumText(form.summary, 60),
-      label: 'Opportunity title and summary explain the job clearly',
+      label: getOverviewReadinessLabel(form),
       step: 1,
     },
     {
@@ -97,17 +179,14 @@ function getClarityChecks(form) {
     {
       id: 'scope',
       complete: hasCompleteDeliverableMilestones(form),
-      label: form.scopeMode === 'milestone'
-        ? 'Each milestone has scope, evidence, verification, and acceptance criteria'
-        : 'Each deliverable has requirements, evidence, verification, and acceptance criteria',
+      label: getScopeReadinessLabel(form),
       step: 3,
     },
     {
       id: 'commercials',
       complete: getDeliverableBudgetTotal(form) > 0
-        && getDeliverablePaymentPercentTotal(form) === 100
         && hasMinimumText(form.duration, 3),
-      label: 'Budgets, payment splits, and estimated duration are ready',
+      label: 'Budgets and estimated duration are ready',
       step: 3,
     },
     {
@@ -124,8 +203,8 @@ function getClarityChecks(form) {
     },
     {
       id: 'screening',
-      complete: hasMinimumText(form.screeningFocus, 45),
-      label: 'Screening focus tells the business how to review applicants',
+      complete: !getTextLength(form.screeningFocus) || hasMinimumText(form.screeningFocus, 45),
+      label: getScreeningReadinessLabel(form),
       step: 2,
     },
     {
@@ -137,35 +216,41 @@ function getClarityChecks(form) {
   ]
 }
 
-function toPayload(form, status, clarityScore) {
+function toPayload(form, status, clarityScore, options = {}) {
+  const stageLimit = options.stageLimit ?? BUSINESS_OPPORTUNITY_BRIEF_STEPS.length
+  const includeRequirements = stageLimit >= 2
+  const includeScope = stageLimit >= 3
+  const isTaskOpportunity = String(form.opportunityType || '').toLowerCase() === 'task'
+  const scopeMode = isTaskOpportunity ? 'deliverable' : form.scopeMode
+
   return {
-    acceptanceCriteria: form.acceptanceCriteria,
+    acceptanceCriteria: includeScope ? form.acceptanceCriteria : undefined,
     applicationDeadline: form.applicationDeadline,
     availability: form.availability,
-    budget: getBudgetLabel(form),
-    bidderInstructions: form.bidderInstructions,
+    budget: includeScope ? getBudgetLabel(form) : undefined,
+    bidderInstructions: includeRequirements ? form.bidderInstructions : undefined,
     category: form.category,
     company: form.companyName,
     companyDescription: form.companyDescription,
     clarityScore,
     deadline: form.applicationDeadline || 'Rolling',
-    deliverables: form.deliverables,
-    deliverableMilestones: form.deliverableMilestones,
-    milestoneScopes: form.milestoneScopes,
+    deliverables: includeScope ? form.deliverables : undefined,
+    deliverableMilestones: includeScope ? (scopeMode === 'milestone' ? [] : form.deliverableMilestones) : undefined,
+    milestoneScopes: includeScope ? (scopeMode === 'milestone' ? form.milestoneScopes : []) : undefined,
     duration: form.duration,
     engagementMode: form.engagementMode,
     experienceLevel: form.experienceLevel,
     mode: `${form.opportunityType} - ${form.engagementMode}`,
-    mustHave: form.mustHave,
+    mustHave: includeRequirements ? form.mustHave : undefined,
     opportunityType: form.opportunityType,
     opportunitySplash: form.opportunitySplash,
-    paymentTerms: form.paymentTerms,
-    portfolioRequired: form.portfolioRequired,
-    preferredQualifications: form.preferredQualifications,
-    requiredAttachments: form.requiredAttachments,
-    scopeMode: form.scopeMode,
-    screeningFocus: form.screeningFocus,
-    skills: form.skills,
+    paymentTerms: includeScope ? form.paymentTerms : undefined,
+    portfolioRequired: includeRequirements ? form.portfolioRequired : undefined,
+    preferredQualifications: includeRequirements ? form.preferredQualifications : undefined,
+    requiredAttachments: includeRequirements ? form.requiredAttachments : undefined,
+    scopeMode: includeScope ? scopeMode : undefined,
+    screeningFocus: includeRequirements ? form.screeningFocus : undefined,
+    skills: includeRequirements ? form.skills : undefined,
     status,
     summary: form.summary,
     title: form.title,
@@ -173,13 +258,58 @@ function toPayload(form, status, clarityScore) {
   }
 }
 
+function normalizeScopeItemsForForm(scopeItems) {
+  return Array.isArray(scopeItems)
+    ? scopeItems.map((item) => ({
+        ...item,
+        description: item.description || item.requirement || '',
+      }))
+    : []
+}
+
+function getOpportunityFormDraft(opportunity) {
+  if (!opportunity) return BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS
+
+  return {
+    ...BUSINESS_OPPORTUNITY_BRIEF_DRAFT_FALLBACKS,
+    ...opportunity,
+    applicationDeadline: opportunity.applicationDeadline || (opportunity.deadline === 'Rolling' ? '' : opportunity.deadline) || '',
+    budget: opportunity.budget || opportunity.budgetLabel || '',
+    companyName: opportunity.companyName || opportunity.company || '',
+    deliverableMilestones: normalizeScopeItemsForForm(opportunity.deliverableMilestones),
+    milestoneScopes: normalizeScopeItemsForForm(opportunity.milestoneScopes),
+    mustHave: Array.isArray(opportunity.mustHave) ? opportunity.mustHave : [],
+    requiredAttachments: Array.isArray(opportunity.requiredAttachments) ? opportunity.requiredAttachments : [],
+  }
+}
+
+function getFirstMissingStep(form) {
+  const firstMissing = getClarityChecks(form)
+    .filter((check) => !check.complete)
+    .sort((first, second) => first.step - second.step)[0]
+
+  return firstMissing?.step || BUSINESS_OPPORTUNITY_BRIEF_STEPS.length
+}
+
 export function useBusinessOpportunityBriefCreate() {
   const navigate = useNavigate()
-  const [activeStep, setActiveStep] = useState(1)
-  const [form, setForm] = useState(BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS)
-  const [draftOpportunityId, setDraftOpportunityId] = useState(null)
+  const location = useLocation()
+  const draftToContinue = location.state?.draftOpportunityId
+  const existingDraft = draftToContinue
+    ? getBusinessFlowSnapshot().opportunities.find((opportunity) => opportunity.id === draftToContinue)
+    : null
+  const initialForm = useMemo(() => getOpportunityFormDraft(existingDraft), [existingDraft])
+  const [activeStep, setActiveStep] = useState(() => existingDraft ? getFirstMissingStep(initialForm) : 1)
+  const [form, setForm] = useState(() => initialForm)
+  const [draftOpportunityId, setDraftOpportunityId] = useState(existingDraft?.id || null)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [isLeavePromptOpen, setIsLeavePromptOpen] = useState(false)
+  const saveDraftBeforeLeaveRef = useRef(null)
+  const leaveBlocker = useBlocker(({ currentLocation, nextLocation }) => (
+    hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname
+  ))
   const maxStep = BUSINESS_OPPORTUNITY_BRIEF_STEPS.length
   const activeStepMeta = BUSINESS_OPPORTUNITY_BRIEF_STEPS[activeStep - 1] || BUSINESS_OPPORTUNITY_BRIEF_STEPS[0]
   const clarityChecks = useMemo(() => getClarityChecks(form), [form])
@@ -209,6 +339,7 @@ export function useBusinessOpportunityBriefCreate() {
   }), [clarityChecks.length, completeClarityChecks, form])
 
   function updateField(name, value) {
+    setHasUnsavedChanges(true)
     setForm((current) => ({ ...current, [name]: value }))
   }
 
@@ -222,12 +353,15 @@ export function useBusinessOpportunityBriefCreate() {
     setSaveError('')
 
     try {
-      const opportunity = await createBusinessOpportunity(toPayload(form, status, clarityScore), {
+      const opportunity = await createBusinessOpportunity(toPayload(form, status, clarityScore, {
+        stageLimit: options.stageLimit ?? maxStep,
+      }), {
         existingId: draftOpportunityId,
       })
       const isPublished = status === 'Open'
 
       setDraftOpportunityId(opportunity.id)
+      setHasUnsavedChanges(false)
       recordApplicantReviewEvent({
         action: isPublished ? 'opportunity_published' : 'opportunity_draft_saved',
         opportunityId: opportunity.id,
@@ -246,15 +380,56 @@ export function useBusinessOpportunityBriefCreate() {
     }
   }
 
+  useEffect(() => {
+    saveDraftBeforeLeaveRef.current = () => saveOpportunity('Draft', {
+      skipNavigate: true,
+      stageLimit: activeStep,
+    })
+  })
+
+  useEffect(() => {
+    if (leaveBlocker.state !== 'blocked') return
+    setIsLeavePromptOpen(true)
+  }, [leaveBlocker])
+
+  useEffect(() => {
+    function handleBeforeUnload(event) {
+      if (!hasUnsavedChanges) return
+      event.preventDefault()
+      event.returnValue = ''
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [hasUnsavedChanges])
+
+  function stayOnPage() {
+    setIsLeavePromptOpen(false)
+    if (leaveBlocker.state === 'blocked') leaveBlocker.reset()
+  }
+
+  function leaveWithoutSaving() {
+    setIsLeavePromptOpen(false)
+    if (leaveBlocker.state === 'blocked') leaveBlocker.proceed()
+  }
+
+  async function saveDraftAndLeave() {
+    const opportunity = await saveDraftBeforeLeaveRef.current?.()
+    if (!opportunity) return
+
+    setIsLeavePromptOpen(false)
+    if (leaveBlocker.state === 'blocked') leaveBlocker.proceed()
+  }
+
   async function saveDraftAndContinue() {
-    const opportunity = await saveOpportunity('Draft', { skipNavigate: true })
+    const opportunity = await saveOpportunity('Draft', { skipNavigate: true, stageLimit: activeStep })
     if (!opportunity) return
 
     setActiveStep((current) => Math.min(maxStep, current + 1))
   }
 
   async function createAndPublishOpportunity() {
-    const opportunity = await saveOpportunity('Draft', {
+    const opportunity = await saveOpportunity('Open', {
       requiresPublishReadiness: true,
       skipNavigate: true,
     })
@@ -284,14 +459,23 @@ export function useBusinessOpportunityBriefCreate() {
     missingRequiredDetails: clarityChecks.filter((check) => !check.complete),
     saveError,
     summary,
+    leavePrompt: {
+      isOpen: isLeavePromptOpen,
+      isSaving,
+      onLeaveWithoutSaving: leaveWithoutSaving,
+      onSaveAndLeave: saveDraftAndLeave,
+      onStay: stayOnPage,
+      saveError,
+    },
     onBack: () => setActiveStep((current) => Math.max(1, current - 1)),
     onContinue: saveDraftAndContinue,
     onPublish: createAndPublishOpportunity,
     onReset: () => {
       setActiveStep(1)
       setForm(BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS)
+      setHasUnsavedChanges(false)
     },
-    onSaveDraft: () => saveOpportunity('Draft'),
+    onSaveDraft: () => saveOpportunity('Draft', { stageLimit: activeStep }),
     onStepChange: (step) => setActiveStep(Math.min(maxStep, Math.max(1, step))),
     onUpdateField: updateField,
   }

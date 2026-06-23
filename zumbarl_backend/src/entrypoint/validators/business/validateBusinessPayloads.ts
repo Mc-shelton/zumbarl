@@ -1,70 +1,105 @@
 import { z } from 'zod'
 
-const stringListSchema = z.array(z.string()).default([])
+function emptyStringToUndefined(value: unknown) {
+  return value === '' || value === null ? undefined : value
+}
+
+function nullToUndefined(value: unknown) {
+  return value === null ? undefined : value
+}
+
+function nullishToEmptyArray(value: unknown) {
+  return value === '' || value === null || value === undefined ? [] : value
+}
+
+const optionalStringSchema = z.preprocess(
+  nullToUndefined,
+  z.string().optional()
+)
+
+const stringListSchema = z.preprocess(
+  nullishToEmptyArray,
+  z.array(z.string()).default([])
+)
+
+const requiredAttachmentsSchema = z.preprocess(
+  nullishToEmptyArray,
+  z.array(z.lazy(() => requiredAttachmentSchema)).default([])
+)
+
+const scopeItemsSchema = z.preprocess(
+  nullishToEmptyArray,
+  z.array(z.lazy(() => scopeItemSchema)).default([])
+)
+
+const optionalPositiveIntegerSchema = z.preprocess(
+  emptyStringToUndefined,
+  z.coerce.number().int().positive().optional()
+)
 
 const requiredAttachmentSchema = z.object({
   id: z.string().optional(),
-  label: z.string().min(2),
-  fileType: z.string().min(2),
+  label: z.string().default(''),
+  fileType: z.string().default(''),
   required: z.coerce.boolean().default(true)
 })
 
 const scopeItemSchema = z.object({
   id: z.string().optional(),
-  title: z.string().min(3),
-  workflow: z.string().optional(),
-  type: z.string().optional(),
-  description: z.string().min(10),
-  submissionMethod: z.string().optional(),
-  verificationMethod: z.string().optional(),
-  evidenceRequired: z.string().optional(),
-  acceptanceCriteria: z.string().optional(),
-  paymentRelease: z.string().optional(),
+  title: z.string().default(''),
+  workflow: optionalStringSchema,
+  type: optionalStringSchema,
+  description: z.string().default(''),
+  submissionMethod: optionalStringSchema,
+  verificationMethod: optionalStringSchema,
+  evidenceRequired: optionalStringSchema,
+  acceptanceCriteria: optionalStringSchema,
+  paymentRelease: optionalStringSchema,
   budget: z.union([z.string(), z.number()]).optional(),
   budgetAmount: z.coerce.number().nonnegative().optional(),
   paymentPercent: z.union([z.string(), z.number()]).optional(),
-  isSequential: z.coerce.boolean().default(true),
-  status: z.string().optional(),
-  maxSubmissions: z.coerce.number().int().positive().optional(),
-  referenceFiles: z.array(z.record(z.any())).default([])
+  isSequential: z.preprocess((value) => value === null ? undefined : value, z.coerce.boolean().default(true)),
+  status: optionalStringSchema,
+  maxSubmissions: optionalPositiveIntegerSchema,
+  referenceFiles: z.preprocess(nullishToEmptyArray, z.array(z.record(z.any())).default([]))
 }).passthrough()
 
 const createOpportunitySchema = z.object({
-  title: z.string().min(3),
+  title: z.string().default(''),
   type: z.enum(['gig', 'job', 'project', 'attachment', 'internship']).default('gig'),
-  summary: z.string().min(10),
+  summary: z.string().default(''),
   budgetAmount: z.coerce.number().nonnegative().optional(),
-  budget: z.string().optional(),
+  budget: optionalStringSchema,
   currency: z.string().length(3).default('KES'),
   requirements: stringListSchema,
-  deliverables: z.union([z.array(z.string()), z.string()]).default([]),
-  deliverableMilestones: z.array(scopeItemSchema).default([]),
-  milestoneScopes: z.array(scopeItemSchema).default([]),
+  deliverables: z.preprocess(nullishToEmptyArray, z.union([z.array(z.string()), z.string()]).default([])),
+  deliverableMilestones: scopeItemsSchema,
+  milestoneScopes: scopeItemsSchema,
   scopeMode: z.enum(['deliverable', 'milestone']).default('deliverable'),
-  acceptanceCriteria: z.string().optional(),
-  applicationDeadline: z.string().optional(),
-  availability: z.string().optional(),
-  bidderInstructions: z.string().optional(),
-  category: z.string().optional(),
+  acceptanceCriteria: optionalStringSchema,
+  applicationDeadline: optionalStringSchema,
+  availability: optionalStringSchema,
+  bidderInstructions: optionalStringSchema,
+  category: optionalStringSchema,
   clarityScore: z.coerce.number().int().min(0).max(100).optional(),
-  company: z.string().optional(),
-  companyDescription: z.string().optional(),
-  deadline: z.string().optional(),
-  duration: z.string().optional(),
-  engagementMode: z.string().optional(),
-  experienceLevel: z.string().optional(),
-  mode: z.string().optional(),
+  company: optionalStringSchema,
+  companyDescription: optionalStringSchema,
+  deadline: optionalStringSchema,
+  duration: optionalStringSchema,
+  engagementMode: optionalStringSchema,
+  experienceLevel: optionalStringSchema,
+  mode: optionalStringSchema,
   mustHave: stringListSchema,
-  opportunityType: z.string().optional(),
-  paymentTerms: z.string().optional(),
-  portfolioRequired: z.string().optional(),
-  preferredQualifications: z.union([z.string(), z.array(z.string())]).optional(),
+  opportunityType: optionalStringSchema,
+  paymentTerms: optionalStringSchema,
+  portfolioRequired: optionalStringSchema,
+  preferredQualifications: z.preprocess(nullToUndefined, z.union([z.string(), z.array(z.string())]).optional()),
   qualificationQuestions: stringListSchema,
-  requiredAttachments: z.array(requiredAttachmentSchema).default([]),
+  requiredAttachments: requiredAttachmentsSchema,
   revisionLimit: z.coerce.number().int().min(0).max(5).default(3),
-  screeningFocus: z.string().optional(),
-  skills: z.union([z.string(), z.array(z.string())]).optional(),
-  status: z.string().optional(),
+  screeningFocus: optionalStringSchema,
+  skills: z.preprocess(nullToUndefined, z.union([z.string(), z.array(z.string())]).optional()),
+  status: optionalStringSchema,
   visibility: z.enum(['draft', 'public', 'invite-only']).default('draft')
 }).passthrough()
 

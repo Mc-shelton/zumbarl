@@ -2,6 +2,43 @@ import { FiArrowRight, FiBriefcase, FiClock } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { BusinessOpportunityTabs } from './BusinessOpportunityTabs'
 
+function getOpportunityImage(opportunity) {
+  const splash = opportunity.opportunitySplash || {}
+  const upload = splash.upload || splash.data || {}
+
+  return (
+    splash.previewUrl
+    || splash.url
+    || splash.src
+    || upload.previewUrl
+    || upload.url
+    || upload.src
+    || opportunity.image
+    || opportunity.imageUrl
+    || opportunity.thumbnail
+    || opportunity.thumbnailUrl
+    || ''
+  )
+}
+
+function OpportunityRowMedia({ opportunity }) {
+  const imageUrl = getOpportunityImage(opportunity)
+
+  if (!imageUrl) {
+    return (
+      <span className="business-opportunity-row-icon" aria-hidden="true">
+        <FiBriefcase />
+      </span>
+    )
+  }
+
+  return (
+    <figure className="business-opportunity-row-media">
+      <img src={imageUrl} alt="" loading="lazy" />
+    </figure>
+  )
+}
+
 export function BusinessOpportunityList({ activeTab, onChangeTab, opportunities }) {
   return (
     <section className="business-profile-card business-workspace-list" aria-labelledby="business-opportunities-title">
@@ -20,9 +57,7 @@ export function BusinessOpportunityList({ activeTab, onChangeTab, opportunities 
           <div className="business-opportunity-list">
             {opportunities.map((opportunity) => (
               <article key={opportunity.id} className="business-opportunity-row">
-                <span aria-hidden="true">
-                  <FiBriefcase />
-                </span>
+                <OpportunityRowMedia opportunity={opportunity} />
                 <div>
                   <h3>{opportunity.title}</h3>
                   <p>{opportunity.summary}</p>

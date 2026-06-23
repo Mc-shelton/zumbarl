@@ -36,6 +36,7 @@ function BusinessOpportunitiesPage() {
                 onBack={opportunities.onCloseReviewOpportunity}
                 onChangeApplicationStatus={opportunities.onChangeApplicationStatus}
                 onChangeReviewTab={opportunities.onChangeReviewTab}
+                onPublishOpportunity={opportunities.onPublishOpportunity}
                 opportunity={opportunities.reviewOpportunity}
                 openPublishPayment={opportunities.openPublishPaymentForReview}
               />
@@ -60,6 +61,7 @@ function BusinessOpportunitiesPage() {
                   onChangeViewMode={opportunities.onChangeViewMode}
                 />
                 <BusinessOpportunityBoard
+                  onContinueDraftOpportunity={opportunities.onContinueDraftOpportunity}
                   onOpenInvitePanel={opportunities.onOpenInvitePanel}
                   onPublishOpportunity={opportunities.onPublishOpportunity}
                   onReviewOpportunity={opportunities.onReviewOpportunity}

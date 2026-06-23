@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FiPlus, FiX } from 'react-icons/fi'
 import {
   BUSINESS_OPPORTUNITY_BRIEF_SELECTS,
-  BUSINESS_OPPORTUNITY_BRIEF_SKILLS,
 } from '../opportunityBriefCreateData'
+import { createBusinessSkill, listBusinessSkills } from '../services/persistSkills'
 import {
   BusinessCreateSelectField,
   BusinessCreateTextareaField,
@@ -42,13 +42,41 @@ function getQualificationQuestions(value) {
 
 function BusinessOpportunitySkillsField({ form, onUpdateField }) {
   const [skillInput, setSkillInput] = useState('')
+  const [skillOptions, setSkillOptions] = useState([])
+  const [isLoadingSkills, setIsLoadingSkills] = useState(false)
   const selectedSkills = useMemo(() => getUniqueItems(getSkillList(form.skills)), [form.skills])
   const availableSuggestions = useMemo(() => {
     const query = skillInput.trim().toLowerCase()
-    return BUSINESS_OPPORTUNITY_BRIEF_SKILLS
+    return skillOptions
       .filter((skill) => !selectedSkills.some((item) => item.toLowerCase() === skill.toLowerCase()))
       .filter((skill) => !query || skill.toLowerCase().includes(query))
-  }, [selectedSkills, skillInput])
+  }, [selectedSkills, skillInput, skillOptions])
+
+  useEffect(() => {
+    let isCurrent = true
+    const timeoutId = window.setTimeout(() => {
+      setIsLoadingSkills(true)
+      listBusinessSkills(skillInput)
+        .then((payload) => {
+          if (!isCurrent) return
+          const nextSkills = Array.isArray(payload?.data)
+            ? payload.data.map((skill) => skill.name).filter(Boolean)
+            : []
+          setSkillOptions(nextSkills)
+        })
+        .catch(() => {
+          if (isCurrent) setSkillOptions([])
+        })
+        .finally(() => {
+          if (isCurrent) setIsLoadingSkills(false)
+        })
+    }, 180)
+
+    return () => {
+      isCurrent = false
+      window.clearTimeout(timeoutId)
+    }
+  }, [skillInput])
 
   function updateSkills(skills) {
     const nextSkills = getUniqueItems(skills)
@@ -56,10 +84,11 @@ function BusinessOpportunitySkillsField({ form, onUpdateField }) {
     onUpdateField('mustHave', nextSkills)
   }
 
-  function addSkill(skill) {
+  async function addSkill(skill) {
     const nextSkill = skill.trim()
     if (!nextSkill) return
-    updateSkills([...selectedSkills, nextSkill])
+    const savedSkill = await createBusinessSkill(nextSkill).catch(() => null)
+    updateSkills([...selectedSkills, savedSkill?.name ?? nextSkill])
     setSkillInput('')
   }
 
@@ -70,7 +99,7 @@ function BusinessOpportunitySkillsField({ form, onUpdateField }) {
   function handleSkillInputKeyDown(event) {
     if (event.key !== 'Enter') return
     event.preventDefault()
-    addSkill(skillInput)
+    void addSkill(skillInput)
   }
 
   return (
@@ -89,14 +118,16 @@ function BusinessOpportunitySkillsField({ form, onUpdateField }) {
       {availableSuggestions.length ? (
         <div className="business-create-skill-suggestions" aria-label="Skill suggestions">
           {availableSuggestions.map((skill) => (
-            <button key={skill} type="button" onClick={() => addSkill(skill)}>
+            <button key={skill} type="button" onClick={() => void addSkill(skill)}>
               <FiPlus aria-hidden="true" />
               {skill}
             </button>
           ))}
         </div>
       ) : skillInput.trim() ? (
-        <p className="business-create-skill-empty">Press Enter to add "{skillInput.trim()}".</p>
+        <p className="business-create-skill-empty">Press Enter to create and add "{skillInput.trim()}".</p>
+      ) : isLoadingSkills ? (
+        <p className="business-create-skill-empty">Loading skills...</p>
       ) : null}
       <div className="business-create-chip-box business-create-selected-skills">
         {selectedSkills.map((skill) => (
