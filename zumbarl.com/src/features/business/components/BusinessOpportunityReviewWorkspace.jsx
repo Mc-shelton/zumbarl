@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { TabNav } from '../../../components/ui'
+import { getSplashCropStyle } from '../../../lib/getSplashCropStyle'
 import {
   FiBarChart2,
   FiCalendar,
@@ -22,7 +24,6 @@ import {
   FiSearch,
   FiSend,
   FiSettings,
-  FiSmile,
   FiStar,
   FiUpload,
   FiTrendingUp,
@@ -31,6 +32,10 @@ import {
   FiX,
 } from 'react-icons/fi'
 import { Button, MetricCard, PersonRow, StatusPill } from '../../../components/ui'
+import { cancelCall, createCall, readCall } from '../../calls/services/callService'
+import { openCallOverlay } from '../../calls/getCallMeetingUrl'
+import { listConversations, listMessages, sendMessage } from '../../messages/services/messageService'
+import { playCallRingtone, playMessageSentSound } from '../../communications/services/communicationSounds'
 
 const REVIEW_TABS = [
   { id: 'overview', label: 'Overview' },
@@ -42,11 +47,13 @@ const REVIEW_TABS = [
   { id: 'activity', label: 'Activity' },
 ]
 
-function getReviewTabs(opportunity) {
+function getReviewTabs(opportunity, applicationCount = 0) {
   const scopeCount = getOpportunityPaymentScopeItems(opportunity).length
-  const tabs = REVIEW_TABS.map((tab) => (
-    tab.id === 'deliverables' && scopeCount ? { ...tab, count: scopeCount } : tab
-  ))
+  const tabs = REVIEW_TABS.map((tab) => {
+    if (tab.id === 'applications') return { ...tab, count: applicationCount }
+    if (tab.id === 'deliverables' && scopeCount) return { ...tab, count: scopeCount }
+    return tab
+  })
 
   if (opportunity?.scopeMode === 'milestone') return tabs
 
@@ -78,6 +85,8 @@ const APPLICATION_FILTERS = [
   { id: 'accepted', label: 'Accepted', count: 3 },
   { id: 'rejected', label: 'Rejected', count: 4 },
 ]
+
+void SAMPLE_APPLICATION_PDF_PREVIEW
 
 const APPLICATION_ROWS = [
   {
@@ -282,34 +291,10 @@ const BUSINESS_DELIVERABLE_FILES = [
   { name: 'Launch_Workflow_Submission.zip', type: 'ZIP', owner: 'Grace Wanjiku', updated: 'May 18, 2025', size: '31.6 MB', tone: 'zip' },
 ]
 
-const BUSINESS_DELIVERABLE_MESSAGES = [
-  {
-    author: 'Wanjiru M.',
-    date: 'May 20, 2:14 PM',
-    text: 'I uploaded the final exports and editable source files. Please review the asset pack and let me know if any format is missing.',
-    files: BUSINESS_DELIVERABLE_FILES.slice(0, 1),
-    mine: false,
-  },
-  {
-    author: 'Brian Mwangi',
-    date: 'May 20, 2:22 PM',
-    text: 'Thanks Wanjiru. I am checking the source files and originality status now.',
-    mine: true,
-  },
-  {
-    author: 'Kevin The Creator',
-    date: 'May 20, 4:40 PM',
-    text: 'The GitHub repo, deployment URL and Loom walkthrough are ready for the landing page build.',
-    files: BUSINESS_DELIVERABLE_FILES.slice(1, 2),
-    mine: false,
-  },
-  {
-    author: 'Zumbarl Support',
-    date: 'May 20, 5:05 PM',
-    text: 'Reminder: approve only after the evidence matches the brief. Scope additions after acceptance should be handled as a new requirement.',
-    mine: false,
-  },
-]
+void PLATFORM_BUDGETS
+void DELIVERABLES
+void APPLICATION_ROWS
+void SHORTLISTED_APPLICATION_ROWS
 
 const DELIVERABLE_ROWS = [
   {
@@ -1032,6 +1017,100 @@ function getOpportunityDeliverableRows(opportunity) {
   })
 }
 
+function getApplicationStatus(status) {
+  const normalized = String(status || 'submitted').toLowerCase()
+  if (['shortlisted', 'interview_scheduled'].includes(normalized)) return { id: 'shortlisted', label: 'Shortlisted', tone: 'orange' }
+  if (['accepted', 'awarded'].includes(normalized)) return { id: 'accepted', label: 'Accepted', tone: 'green' }
+  if (['rejected', 'removed'].includes(normalized)) return { id: 'rejected', label: 'Rejected', tone: 'red' }
+  return { id: 'new', label: 'New', tone: 'blue' }
+}
+
+function formatApplicationDate(value) {
+  if (!value) return { date: 'Recently', relative: 'Submission time unavailable' }
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return { date: String(value), relative: '' }
+
+  const elapsedMs = Math.max(0, Date.now() - date.getTime())
+  const elapsedHours = Math.floor(elapsedMs / 3_600_000)
+  const relative = elapsedHours < 1
+    ? 'Less than an hour ago'
+    : elapsedHours < 24
+      ? `${elapsedHours} hour${elapsedHours === 1 ? '' : 's'} ago`
+      : `${Math.floor(elapsedHours / 24)} day${Math.floor(elapsedHours / 24) === 1 ? '' : 's'} ago`
+
+  return {
+    date: date.toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' }),
+    relative,
+  }
+}
+
+function toApplicationRow(bid) {
+  const student = bid.student || {}
+  const applicationStatus = getApplicationStatus(bid.status)
+  const submitted = formatApplicationDate(bid.appliedAt || bid.createdAt)
+  const name = student.name || bid.bidderName || 'Student applicant'
+  const username = student.username ? `@${student.username}` : student.email || 'Zumbarl student'
+
+  return {
+    ...bid,
+    avatar: student.avatarUrl || '/assets/index/bee_nobg.png',
+    bio: student.bio || 'This student has not added a profile summary yet.',
+    campus: student.campus || 'Campus not provided',
+    completedGigs: student.completedGigs || 0,
+    course: student.course || student.careerPath || 'Course not provided',
+    creator: name,
+    handle: username,
+    joined: formatApplicationDate(student.joinedAt).date,
+    location: student.locationCity || 'Location not provided',
+    questionAnswers: Array.isArray(bid.questionAnswers) ? bid.questionAnswers : [],
+    attachments: Array.isArray(bid.attachments) ? bid.attachments : [],
+    score: Math.round(student.score || 0),
+    skills: Array.isArray(student.skills) ? student.skills : [],
+    status: applicationStatus.label,
+    statusId: applicationStatus.id,
+    submitted: submitted.date,
+    submittedAgo: submitted.relative,
+    tone: applicationStatus.tone,
+  }
+}
+
+function toSubmittedAttachment(attachment, index) {
+  const mimeType = String(attachment.mimeType || '').toLowerCase()
+  const configuredFileType = String(attachment.fileType || 'File')
+  const fileName = String(attachment.fileName || '')
+  const extension = fileName.split('.').pop()?.toLowerCase()
+  let previewType = 'file'
+  let fileType = configuredFileType
+
+  if (mimeType.startsWith('image/') || ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(extension)) {
+    previewType = 'image'
+    fileType = `${(mimeType.split('/')[1] || extension || 'image').toUpperCase()} image`
+  } else if (mimeType.startsWith('video/') || ['mp4', 'mov', 'webm'].includes(extension)) {
+    previewType = 'video'
+    fileType = `${(mimeType.split('/')[1] || extension || 'video').toUpperCase()} video`
+  } else if (mimeType === 'application/pdf' || extension === 'pdf') {
+    previewType = 'pdf'
+    fileType = 'PDF'
+  } else if (configuredFileType.toLowerCase() === 'image') {
+    previewType = 'image'
+  } else if (configuredFileType.toLowerCase() === 'video') {
+    previewType = 'video'
+  } else if (configuredFileType.toLowerCase() === 'pdf') {
+    previewType = 'pdf'
+  }
+
+  return {
+    id: attachment.uploadId || attachment.requirementId || `attachment-${index}`,
+    title: attachment.label || attachment.fileName || `Attachment ${index + 1}`,
+    fileType,
+    meta: fileName || (configuredFileType.toLowerCase() === 'link' ? 'Submitted link' : 'Submitted file'),
+    mimeType: attachment.mimeType,
+    previewLabel: configuredFileType.toLowerCase() === 'link' ? 'Open link' : 'View attachment',
+    previewType,
+    src: attachment.url,
+  }
+}
+
 function AttachmentPreview({ attachment }) {
   if (!attachment) return null
 
@@ -1061,50 +1140,73 @@ function AttachmentPreview({ attachment }) {
   )
 }
 
-function ApplicationReviewModal({ application, initialStep = 'review', onClose }) {
+function ApplicationReviewModal({ application, initialStep = 'review', onClose, onScheduleInterview, onStartInterview }) {
   const [reviewStep, setReviewStep] = useState(initialStep)
   const [previewAttachment, setPreviewAttachment] = useState(null)
+  const [interviewType, setInterviewType] = useState('video')
+  const [interviewDate, setInterviewDate] = useState(() => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return tomorrow.toISOString().slice(0, 10)
+  })
+  const [interviewTime, setInterviewTime] = useState('11:00')
+  const [interviewDuration, setInterviewDuration] = useState('30')
+  const [meetingOption, setMeetingOption] = useState('generated')
+  const [customMeetingUrl, setCustomMeetingUrl] = useState('')
+  const [interviewNote, setInterviewNote] = useState('')
+  const [isSchedulingInterview, setIsSchedulingInterview] = useState(false)
+  const [isStartingInterview, setIsStartingInterview] = useState(false)
+  const [scheduleError, setScheduleError] = useState('')
+  const [scheduledInterview, setScheduledInterview] = useState(null)
 
   if (!application) return null
 
   const isScheduling = reviewStep === 'schedule'
-  const qualificationAnswers = [
-    { id: 'over-18', question: 'Are you above 18 years old?', answer: true, detail: 'Yes, I am 22 years old.' },
-    { id: 'weekly-availability', question: 'Can you commit to the expected weekly availability?', answer: true, detail: 'Yes, I can commit 12-15 hours weekly and attend one weekly check-in.' },
-    { id: 'social-experience', question: 'Have you managed Instagram or TikTok pages for a group, club, or small business?', answer: true, detail: 'Yes, I have managed two student association pages and one small business page.' },
-    { id: 'source-files', question: 'Can you submit editable source files where required?', answer: true, detail: 'Yes, I can submit Canva links and exported source files.' },
-  ]
-  const submittedAttachments = [
-    {
-      id: 'portfolio-pdf',
-      title: 'Portfolio samples',
-      fileType: 'PDF',
-      meta: 'Required attachment · 4 pages',
-      src: SAMPLE_APPLICATION_PDF_PREVIEW,
-      previewType: 'pdf',
-      previewLabel: 'Preview portfolio',
-    },
-    {
-      id: 'content-example-image',
-      title: 'Instagram content example',
-      fileType: 'Image',
-      meta: 'Required content example · JPG',
-      src: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp',
-      previewType: 'image',
-      previewLabel: 'Preview image',
-    },
-    {
-      id: 'video-example',
-      title: 'Short-form video sample',
-      fileType: 'Video',
-      meta: 'Required content example · MP4',
-      src: '/assets/index/Zumbarl__Campus_Survival.mp4',
-      poster: '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
-      mimeType: 'video/mp4',
-      previewType: 'video',
-      previewLabel: 'Preview video',
-    },
-  ]
+  const interviewStatus = String(application.interview?.status || '').toLowerCase()
+  const hasInterview = Boolean(application.interview)
+  const canStartInterview = interviewStatus === 'confirmed' && Boolean(application.interview?.meetingUrl)
+  const qualificationAnswers = application.questionAnswers
+  const submittedAttachments = application.attachments.map(toSubmittedAttachment)
+
+  async function startInterview() {
+    if (!application.interview?.meetingUrl) return
+    window.open(application.interview.meetingUrl, '_blank', 'noopener,noreferrer')
+    setIsStartingInterview(true)
+    setScheduleError('')
+    try {
+      await onStartInterview(application.id)
+    } catch (error) {
+      setScheduleError(error instanceof Error ? error.message : 'Could not start the interview.')
+    } finally {
+      setIsStartingInterview(false)
+    }
+  }
+
+  async function scheduleInterview() {
+    if (meetingOption === 'custom' && !customMeetingUrl.trim()) {
+      setScheduleError('Enter the custom meeting link.')
+      return
+    }
+
+    setIsSchedulingInterview(true)
+    setScheduleError('')
+    try {
+      const result = await onScheduleInterview(application.id, {
+        interviewType,
+        interviewAt: new Date(`${interviewDate}T${interviewTime}:00`).toISOString(),
+        durationMinutes: Number(interviewDuration),
+        timezone: 'Africa/Nairobi',
+        meetingOption: interviewType === 'audio' ? 'phone' : meetingOption,
+        meetingUrl: meetingOption === 'custom' ? customMeetingUrl.trim() : undefined,
+        note: interviewNote.trim() || undefined,
+      })
+      setScheduledInterview(result?.interview || result)
+    } catch (error) {
+      setScheduleError(error instanceof Error ? error.message : 'Could not schedule the interview.')
+    } finally {
+      setIsSchedulingInterview(false)
+    }
+  }
 
   return (
     <div className="business-review-modal-backdrop" role="presentation">
@@ -1132,31 +1234,30 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose }
                 <img src={application.avatar} alt={`${application.creator} avatar`} />
                 <div>
                   <h3>{application.creator} <StatusPill tone={application.tone}>{application.status}</StatusPill></h3>
-                  <p>{application.handle} <PlatformBadge platform={application.platform} /></p>
+                  <p>{application.handle}</p>
                 </div>
               </div>
               <div className="business-review-applicant-meta">
-                <span><FiMapPin aria-hidden="true" /> Nairobi, Kenya</span>
-                <span><FiCalendar aria-hidden="true" /> Joined Apr 2023</span>
+                <span><FiMapPin aria-hidden="true" /> {application.location}</span>
+                <span><FiCalendar aria-hidden="true" /> Joined {application.joined}</span>
               </div>
-              <p>Education content creator passionate about helping students and young professionals grow their skills and careers.</p>
+              <p>{application.bio}</p>
               <dl className="business-review-applicant-stats">
-                <div><dt>{application.followers}</dt><dd>Followers</dd></div>
-                <div><dt>{application.engagementRate}</dt><dd>Eng. Rate</dd></div>
-                <div><dt>120.3K</dt><dd>Avg. Views</dd></div>
+                <div><dt>{application.score}/100</dt><dd>Zumbarl score</dd></div>
+                <div><dt>{application.completedGigs}</dt><dd>Completed gigs</dd></div>
+                <div><dt>{application.skills.length}</dt><dd>Verified skills</dd></div>
               </dl>
               <div className="business-review-applicant-platforms">
-                <h4>Top Platforms</h4>
-                <span><PlatformBadge platform="Instagram" />68%</span>
-                <span><PlatformBadge platform="TikTok" />22%</span>
-                <span><PlatformBadge platform="YouTube" />10%</span>
+                <h4>Profile</h4>
+                <span>{application.course}</span>
+                <span>{application.campus}</span>
               </div>
             </section>
 
             <section className="business-profile-card business-review-applicant-mini-card">
               <header>
                 <h3>Jobs Done</h3>
-                <span>12</span>
+                <span>{application.completedGigs}</span>
               </header>
               <p>Completed Campaigns</p>
               <Link className="ui-button is-ghost" to="/business/applicant-profile">View Portfolio</Link>
@@ -1165,8 +1266,8 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose }
             <section className="business-profile-card business-review-applicant-score">
               <h3>Generally Competitiveness</h3>
               <div>
-                <figure><span>72/100</span></figure>
-                <p><StatusPill tone="green">High</StatusPill>Strong engagement, quality content and audience match.</p>
+                <figure><span>{application.score}/100</span></figure>
+                <p><StatusPill tone={application.score >= 70 ? 'green' : 'orange'}>{application.score >= 70 ? 'High' : 'Developing'}</StatusPill>Calculated from the student&apos;s current Zumbarl score.</p>
               </div>
               <button type="button">See how score is calculated</button>
             </section>
@@ -1176,20 +1277,25 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose }
             <section className="business-review-schedule-panel">
               <div className="business-review-schedule-notice">
                 <FiCheckCircle aria-hidden="true" />
-                <p><strong>{application.creator} will be moved to Shortlisted.</strong><span>You can always change this later.</span></p>
+                <p>
+                  <strong>{scheduledInterview ? `${application.creator} was shortlisted and notified.` : `${application.creator} will be moved to Shortlisted.`}</strong>
+                  <span>{scheduledInterview ? 'The student can RSVP, suggest a new time, or cancel with a note.' : 'An email and in-app notification will be sent when you schedule.'}</span>
+                </p>
               </div>
 
-              <section className="business-review-schedule-section">
+              {!scheduledInterview ? (
+                <>
+                <section className="business-review-schedule-section">
                 <h3>1. Interview Type</h3>
                 <div className="business-review-interview-type-grid">
-                  <label className="is-selected">
-                    <input type="radio" name="interview-type" defaultChecked />
+                  <label className={interviewType === 'video' ? 'is-selected' : ''}>
+                    <input type="radio" name="interview-type" checked={interviewType === 'video'} onChange={() => setInterviewType('video')} />
                     <span><FiVideo aria-hidden="true" /></span>
                     <strong>Video Call</strong>
-                    <em>Google Meet or Zoom interview</em>
+                    <em>Generated room or custom meeting link</em>
                   </label>
-                  <label>
-                    <input type="radio" name="interview-type" />
+                  <label className={interviewType === 'audio' ? 'is-selected' : ''}>
+                    <input type="radio" name="interview-type" checked={interviewType === 'audio'} onChange={() => setInterviewType('audio')} />
                     <span><FiPhone aria-hidden="true" /></span>
                     <strong>Audio Call</strong>
                     <em>Phone call interview</em>
@@ -1200,10 +1306,10 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose }
               <section className="business-review-schedule-section">
                 <h3>2. Interview Details</h3>
                 <div className="business-review-schedule-fields">
-                  <label><span>Date</span><select defaultValue="may-22"><option value="may-22">May 22, 2025</option></select></label>
-                  <label><span>Time</span><select defaultValue="11"><option value="11">11:00 AM</option></select></label>
-                  <label><span>Duration</span><select defaultValue="30"><option value="30">30 mins</option></select></label>
-                  <label><span>Time Zone</span><select defaultValue="eat"><option value="eat">EAT (UTC+3)</option></select></label>
+                  <label><span>Date</span><input type="date" required value={interviewDate} onChange={(event) => setInterviewDate(event.target.value)} /></label>
+                  <label><span>Time</span><input type="time" required value={interviewTime} onChange={(event) => setInterviewTime(event.target.value)} /></label>
+                  <label><span>Duration</span><select value={interviewDuration} onChange={(event) => setInterviewDuration(event.target.value)}><option value="15">15 mins</option><option value="30">30 mins</option><option value="45">45 mins</option><option value="60">60 mins</option></select></label>
+                  <label><span>Time Zone</span><select value="Africa/Nairobi" disabled><option value="Africa/Nairobi">EAT (UTC+3)</option></select></label>
                 </div>
               </section>
 
@@ -1216,16 +1322,27 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose }
                 </div>
               </section>
 
-              <section className="business-review-schedule-section">
+              {interviewType === 'video' ? (
+                <section className="business-review-schedule-section">
                 <h3>4. Meeting Link (Optional)</h3>
-                <label className="business-review-radio-row"><input type="radio" name="meeting-link" defaultChecked /> <span><strong>Generate Google Meet link</strong><em>A new Google Meet link will be generated and shared.</em></span></label>
-                <label className="business-review-radio-row"><input type="radio" name="meeting-link" /> <span><strong>Add custom meeting link</strong></span></label>
-              </section>
+                <label className="business-review-radio-row"><input type="radio" name="meeting-link" checked={meetingOption === 'generated'} onChange={() => setMeetingOption('generated')} /> <span><strong>Generate secure video room</strong><em>A meeting link will be generated and shared.</em></span></label>
+                <label className="business-review-radio-row"><input type="radio" name="meeting-link" checked={meetingOption === 'custom'} onChange={() => setMeetingOption('custom')} /> <span><strong>Add custom meeting link</strong></span></label>
+                {meetingOption === 'custom' ? (
+                  <label className="business-review-custom-meeting-link">
+                    <span>Custom meeting URL</span>
+                    <input type="url" required value={customMeetingUrl} placeholder="https://meet.google.com/..." onChange={(event) => setCustomMeetingUrl(event.target.value)} />
+                  </label>
+                ) : null}
+                </section>
+              ) : null}
 
               <section className="business-review-schedule-section">
                 <h3>5. Add a Note (Optional)</h3>
-                <textarea defaultValue="Let's discuss your content ideas, past campaigns and how you plan to deliver results for this campaign." />
+                <textarea value={interviewNote} placeholder="Add preparation notes or interview context..." onChange={(event) => setInterviewNote(event.target.value)} />
               </section>
+              {scheduleError ? <p className="business-review-schedule-error" role="alert">{scheduleError}</p> : null}
+                </>
+              ) : null}
             </section>
           ) : (
             <section className="business-profile-card business-review-application-form-card">
@@ -1238,82 +1355,66 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose }
               </header>
               <ol>
                 <li>
-                  <h4>Why are you interested in this opportunity?</h4>
-                  <p>I&apos;m passionate about education and believe in the mission of Zetech Power to empower learners with practical skills. This opportunity aligns perfectly with my content and audience.</p>
+                  <h4>Proposal</h4>
+                  <p>{application.proposal || 'No proposal text was provided.'}</p>
                 </li>
                 <li>
-                  <h4>How do you plan to promote this campaign?</h4>
-                  <p>I will create engaging Instagram Reels and Stories, a TikTok video, and a YouTube Short highlighting the benefits of the course and encouraging sign-ups.</p>
+                  <h4>Commercial offer</h4>
+                  <p>{application.currency || 'KES'} {Number(application.bidAmount || 0).toLocaleString()} · {application.deliveryTime || 'Delivery time not specified'}</p>
                 </li>
-                <li>
-                  <h4>Which platforms will you use?</h4>
-                  <div className="business-review-application-platform-choice">
-                    <span><PlatformBadge platform="Instagram" />Instagram</span>
-                    <span><PlatformBadge platform="TikTok" />TikTok</span>
-                    <span><PlatformBadge platform="YouTube" />YouTube</span>
-                  </div>
-                </li>
-                <li>
-                  <h4>Estimated deliverables</h4>
-                  <ul>
-                    <li>2 Instagram Reels</li>
-                    <li>3 Instagram Stories</li>
-                    <li>1 TikTok Video</li>
-                    <li>1 YouTube Short</li>
-                  </ul>
-                </li>
-                <li>
-                  <h4>Any previous experience promoting similar campaigns?</h4>
-                  <p>Yes, I&apos;ve worked with eLearn Kenya and CareerHub on similar education campaigns.</p>
-                </li>
-                <li>
-                  <h4>Additional comments (optional)</h4>
-                  <p>Excited to be part of this and deliver impactful results!</p>
-                </li>
+                {application.coverNote ? (
+                  <li>
+                    <h4>Message to the business</h4>
+                    <p>{application.coverNote}</p>
+                  </li>
+                ) : null}
               </ol>
 
-              <section className="business-review-qualification-answers">
-                <header>
-                  <h3>Qualification Answers</h3>
-                  <p>Answers to the qualification questions configured for this opportunity.</p>
-                </header>
-                <div>
-                  {qualificationAnswers.map((item) => (
-                    <article key={item.id}>
-                      <span aria-hidden="true"><FiCheckCircle /></span>
-                      <div>
-                        <h4>{item.question}</h4>
-                        <p>{item.detail}</p>
-                      </div>
-                      <StatusPill tone={item.answer ? 'green' : 'orange'}>{item.answer ? 'Yes' : 'No'}</StatusPill>
-                    </article>
-                  ))}
-                </div>
-              </section>
+              {qualificationAnswers.length ? (
+                <section className="business-review-qualification-answers">
+                  <header>
+                    <h3>Application Answers</h3>
+                    <p>Answers to the questions configured for this opportunity.</p>
+                  </header>
+                  <div>
+                    {qualificationAnswers.map((item, index) => (
+                      <article key={`${item.question}-${index}`}>
+                        <span aria-hidden="true"><FiCheckCircle /></span>
+                        <div>
+                          <h4>{item.question}</h4>
+                          <p>{item.answer}</p>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
 
-              <section className="business-review-application-attachments">
-                <header>
-                  <h3>Required Attachments</h3>
-                  <p>Files and proof submitted against the required attachments in the brief.</p>
-                </header>
-                <div>
-                  {submittedAttachments.map((attachment) => (
-                    <article key={attachment.id}>
-                      <span aria-hidden="true">
-                        {attachment.previewType === 'video' ? <FiVideo /> : attachment.previewType === 'image' ? <FiImage /> : <FiFileText />}
-                      </span>
-                      <div>
-                        <h4>{attachment.title}</h4>
-                        <p>{attachment.fileType} · {attachment.meta}</p>
-                      </div>
-                      <button type="button" onClick={() => setPreviewAttachment(attachment)}>
-                        <FiEye aria-hidden="true" />
-                        {attachment.previewLabel}
-                      </button>
-                    </article>
-                  ))}
-                </div>
-              </section>
+              {submittedAttachments.length ? (
+                <section className="business-review-application-attachments">
+                  <header>
+                    <h3>Submitted Attachments</h3>
+                    <p>Files and links saved with this application.</p>
+                  </header>
+                  <div>
+                    {submittedAttachments.map((attachment) => (
+                      <article key={attachment.id}>
+                        <span aria-hidden="true">
+                          {attachment.previewType === 'video' ? <FiVideo /> : attachment.previewType === 'image' ? <FiImage /> : <FiFileText />}
+                        </span>
+                        <div>
+                          <h4>{attachment.title}</h4>
+                          <p>{attachment.fileType} · {attachment.meta}</p>
+                        </div>
+                        <button type="button" onClick={() => setPreviewAttachment(attachment)}>
+                          <FiEye aria-hidden="true" />
+                          {attachment.previewLabel}
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                </section>
+              ) : null}
             </section>
           )}
         </div>
@@ -1345,15 +1446,37 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose }
         <footer>
           {isScheduling ? (
             <>
-              <Button tone="ghost" onClick={onClose}>Cancel</Button>
-              <Button tone="ghost" onClick={() => setReviewStep('review')}>Back</Button>
-              <Button tone="brand">Shortlist & Schedule Interview</Button>
+              <Button tone="ghost" onClick={onClose}>{scheduledInterview ? 'Close' : 'Cancel'}</Button>
+              {!scheduledInterview ? (
+                <>
+                  <Button tone="ghost" onClick={() => setReviewStep('review')}>Back</Button>
+                  <Button tone="brand" disabled={isSchedulingInterview} onClick={scheduleInterview}>
+                    {isSchedulingInterview ? 'Scheduling...' : 'Shortlist & Schedule Interview'}
+                  </Button>
+                </>
+              ) : null}
             </>
           ) : (
             <>
               <Button tone="ghost" onClick={onClose}>Close</Button>
               <Button className="business-review-modal-reject" tone="ghost">Reject</Button>
-              <Button className="business-review-modal-shortlist" tone="ghost" onClick={() => setReviewStep('schedule')}>Shortlist</Button>
+              {!hasInterview ? (
+                <Button className="business-review-modal-shortlist" tone="ghost" onClick={() => setReviewStep('schedule')}>Shortlist</Button>
+              ) : null}
+              {interviewStatus === 'confirmed' ? (
+                <Button tone="brand" disabled={!canStartInterview || isStartingInterview} onClick={startInterview}>
+                  {isStartingInterview ? 'Starting...' : canStartInterview ? 'Start Interview' : 'Interview Confirmed'}
+                </Button>
+              ) : null}
+              {interviewStatus === 'pending' ? (
+                <Button tone="ghost" disabled>Awaiting RSVP</Button>
+              ) : null}
+              {interviewStatus === 'proposed_new_time' ? (
+                <Button tone="brand" onClick={() => setReviewStep('schedule')}>Review Proposed Time</Button>
+              ) : null}
+              {interviewStatus === 'cancelled' ? (
+                <Button tone="brand" onClick={() => setReviewStep('schedule')}>Reschedule Interview</Button>
+              ) : null}
               <Button tone="brand">Accept</Button>
             </>
           )}
@@ -1735,26 +1858,16 @@ function AddDeliverableModal({ isOpen, onClose, onCreate }) {
           </button>
         </header>
 
-        <div className="business-review-add-tabs" role="tablist" aria-label="Add deliverable steps">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'deliverables'}
-            className={activeTab === 'deliverables' ? 'is-active' : ''}
-            onClick={() => setActiveTab('deliverables')}
-          >
-            Deliverables
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'review'}
-            className={activeTab === 'review' ? 'is-active' : ''}
-            onClick={() => setActiveTab('review')}
-          >
-            Review
-          </button>
-        </div>
+        <TabNav
+          activeId={activeTab}
+          ariaLabel="Add deliverable steps"
+          className="business-review-add-tabs"
+          items={[
+            { id: 'deliverables', label: 'Deliverables' },
+            { id: 'review', label: 'Review' },
+          ]}
+          onChange={setActiveTab}
+        />
 
         <div className="business-review-add-deliverable-body">
           {activeTab === 'deliverables' ? (
@@ -1948,7 +2061,7 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
             <h2>Opportunity Summary</h2>
             <div>
               <figure>
-                <img src={getOpportunityCoverImage(opportunity)} alt={`${opportunity.title} cover`} />
+                <img src={getOpportunityCoverImage(opportunity)} alt={`${opportunity.title} cover`} style={getSplashCropStyle(opportunity.opportunitySplash) || undefined} />
                 <figcaption>{opportunity.title}</figcaption>
               </figure>
               <dl>
@@ -2368,14 +2481,71 @@ function SubmittedWorkReviewModal({ submission, onClose }) {
   )
 }
 
-function ApplicationsPanel({ activeApplicationStatus, onChangeApplicationStatus }) {
+function ApplicationsPanel({
+  activeApplicationStatus,
+  applications,
+  applicationsError,
+  isLoadingApplications,
+  onChangeApplicationStatus,
+  onScheduleApplicantInterview,
+  onStartApplicantInterview,
+}) {
   const [selectedApplication, setSelectedApplication] = useState(null)
   const [initialReviewStep, setInitialReviewStep] = useState('review')
+  const [searchQuery, setSearchQuery] = useState('')
+  const [startError, setStartError] = useState('')
   const isShortlisted = activeApplicationStatus === 'shortlisted'
+  const applicationRows = applications.map(toApplicationRow)
+  const normalizedSearch = searchQuery.trim().toLowerCase()
+  const filteredApplications = applicationRows.filter((application) => {
+    if (activeApplicationStatus !== 'all' && application.statusId !== activeApplicationStatus) return false
+    if (!normalizedSearch) return true
+    return [
+      application.creator,
+      application.handle,
+      application.course,
+      application.campus,
+      application.skills.join(' '),
+    ].some((value) => String(value || '').toLowerCase().includes(normalizedSearch))
+  })
+  const applicationCounts = applicationRows.reduce((counts, application) => ({
+    ...counts,
+    all: counts.all + 1,
+    [application.statusId]: (counts[application.statusId] || 0) + 1,
+  }), { all: 0, new: 0, shortlisted: 0, accepted: 0, rejected: 0 })
 
   function openApplicationReview(application, step = 'review') {
     setInitialReviewStep(step)
     setSelectedApplication(application)
+  }
+
+  async function handleInterviewAction(application) {
+    const interviewStatus = String(application.interview?.status || '').toLowerCase()
+    if (interviewStatus === 'confirmed' && application.interview?.meetingUrl) {
+      window.open(application.interview.meetingUrl, '_blank', 'noopener,noreferrer')
+      setStartError('')
+      try {
+        await onStartApplicantInterview(application.id)
+      } catch (error) {
+        setStartError(error instanceof Error ? error.message : 'Could not start the interview.')
+      }
+      return
+    }
+    openApplicationReview(application, 'schedule')
+  }
+
+  function getInterviewAction(application) {
+    const interviewStatus = String(application.interview?.status || '').toLowerCase()
+    if (interviewStatus === 'confirmed') {
+      return {
+        disabled: !application.interview?.meetingUrl,
+        label: application.interview?.meetingUrl ? 'Start Interview' : 'Interview Confirmed',
+      }
+    }
+    if (interviewStatus === 'pending') return { disabled: true, label: 'Awaiting RSVP' }
+    if (interviewStatus === 'proposed_new_time') return { disabled: false, label: 'Review Proposed Time' }
+    if (interviewStatus === 'cancelled') return { disabled: false, label: 'Reschedule Interview' }
+    return { disabled: false, label: 'Schedule Interview' }
   }
 
   return (
@@ -2387,32 +2557,30 @@ function ApplicationsPanel({ activeApplicationStatus, onChangeApplicationStatus 
         </div>
       </header>
 
-      <div className="business-review-application-tabs" role="tablist" aria-label="Application status filters">
-        {APPLICATION_FILTERS.map((filter) => (
-          <button
-            key={filter.id}
-            type="button"
-            className={activeApplicationStatus === filter.id ? 'is-active' : ''}
-            onClick={() => onChangeApplicationStatus(filter.id)}
-          >
+      <TabNav
+        activeId={activeApplicationStatus}
+        ariaLabel="Application status filters"
+        className="business-review-application-tabs"
+        items={APPLICATION_FILTERS}
+        onChange={onChangeApplicationStatus}
+        renderTab={(filter) => (
+          <>
             {filter.label}
-            <span>{filter.count}</span>
-          </button>
-        ))}
-      </div>
+            <span>{applicationCounts[filter.id] || 0}</span>
+          </>
+        )}
+      />
 
       <div className={isShortlisted ? 'business-review-shortlisted-toolbar' : 'business-review-application-toolbar'}>
         <label>
           <FiSearch aria-hidden="true" />
-          <input type="search" placeholder="Search creators by name or username..." />
+          <input
+            type="search"
+            value={searchQuery}
+            placeholder="Search applicants by name, course, campus or skill..."
+            onChange={(event) => setSearchQuery(event.target.value)}
+          />
         </label>
-        <select defaultValue="all-platforms" aria-label="Filter by platform">
-          <option value="all-platforms">Platform: All</option>
-        </select>
-        <select defaultValue={isShortlisted ? 'shortlisted' : 'all-statuses'} aria-label="Filter by status">
-          <option value="all-statuses">Status: All</option>
-          <option value="shortlisted">Status: Shortlisted</option>
-        </select>
         <select defaultValue={isShortlisted ? 'recently-shortlisted' : 'newest'} aria-label="Sort applications">
           <option value="newest">Sort by: Newest</option>
           <option value="recently-shortlisted">Sort by: Recently Shortlisted</option>
@@ -2423,18 +2591,38 @@ function ApplicationsPanel({ activeApplicationStatus, onChangeApplicationStatus 
         </button>
       </div>
 
-      {isShortlisted ? (
+      {isLoadingApplications ? (
+        <div className="business-review-applications-empty">
+          <FiUsers aria-hidden="true" />
+          <strong>Loading applicants...</strong>
+          <p>Fetching applications saved for this opportunity.</p>
+        </div>
+      ) : applicationsError ? (
+        <div className="business-review-applications-empty is-error" role="alert">
+          <FiUsers aria-hidden="true" />
+          <strong>Applicants could not be loaded</strong>
+          <p>{applicationsError}</p>
+        </div>
+      ) : !filteredApplications.length ? (
+        <div className="business-review-applications-empty">
+          <FiUsers aria-hidden="true" />
+          <strong>No matching applications</strong>
+          <p>{applicationRows.length ? 'Try another status or search term.' : 'No students have applied for this opportunity yet.'}</p>
+        </div>
+      ) : isShortlisted ? (
         <div className="business-review-shortlisted-table">
           <div className="business-review-shortlisted-head">
             <span><input type="checkbox" aria-label="Select all shortlisted applications" /></span>
-            <span>Creator</span>
-            <span>Platform</span>
-            <span>Followers</span>
-            <span>Eng. Rate</span>
-            <span>Shortlisted On</span>
+            <span>Applicant</span>
+            <span>Course</span>
+            <span>Campus</span>
+            <span>Bid</span>
+            <span>Submitted</span>
             <span>Actions</span>
           </div>
-          {SHORTLISTED_APPLICATION_ROWS.map((row) => (
+          {filteredApplications.map((row) => {
+            const interviewAction = getInterviewAction(row)
+            return (
             <article key={row.id} className="business-review-shortlisted-row">
               <span><input type="checkbox" aria-label={`Select ${row.creator}`} /></span>
               <PersonRow
@@ -2444,31 +2632,34 @@ function ApplicationsPanel({ activeApplicationStatus, onChangeApplicationStatus 
                 subtitle={row.handle}
                 badge={row.status === 'New' ? <em>New</em> : null}
               />
-              <span><PlatformBadge platform={row.platform} /></span>
-              <strong>{row.followers}</strong>
-              <strong className="business-review-engagement-rate">{row.engagementRate}</strong>
-              <time>{row.shortlistedOn}<span>{row.shortlistedTime}</span></time>
+              <span>{row.course}</span>
+              <strong>{row.campus}</strong>
+              <strong className="business-review-engagement-rate">{row.currency || 'KES'} {Number(row.bidAmount || 0).toLocaleString()}</strong>
+              <time>{row.submitted}<span>{row.submittedAgo}</span></time>
               <div className="business-review-shortlisted-actions">
                 <button type="button" onClick={() => openApplicationReview(row)}>Review</button>
-                <button type="button" onClick={() => openApplicationReview(row, 'schedule')}>Start Interview</button>
+                <button type="button" disabled={interviewAction.disabled} onClick={() => handleInterviewAction(row)}>
+                  {interviewAction.label}
+                </button>
                 <button type="button" aria-label={`More actions for ${row.creator}`}><FiMoreVertical aria-hidden="true" /></button>
               </div>
             </article>
-          ))}
+            )
+          })}
         </div>
       ) : (
         <div className="business-review-application-table">
         <div className="business-review-application-head">
           <span><input type="checkbox" aria-label="Select all applications" /></span>
-          <span>Creator</span>
-          <span>Platform</span>
-          <span>Followers</span>
-          <span>Eng. Rate</span>
+          <span>Applicant</span>
+          <span>Course</span>
+          <span>Campus</span>
+          <span>Bid</span>
           <span>Submitted</span>
           <span>Status</span>
           <span>Actions</span>
         </div>
-        {APPLICATION_ROWS.map((row) => (
+        {filteredApplications.map((row) => (
           <article key={row.id} className="business-review-application-row">
             <span><input type="checkbox" aria-label={`Select ${row.creator}`} /></span>
             <PersonRow
@@ -2478,9 +2669,9 @@ function ApplicationsPanel({ activeApplicationStatus, onChangeApplicationStatus 
               subtitle={row.handle}
               badge={row.status === 'New' ? <em>New</em> : null}
             />
-            <span><PlatformBadge platform={row.platform} /></span>
-            <strong>{row.followers}</strong>
-            <strong className="business-review-engagement-rate">{row.engagementRate}</strong>
+            <span>{row.course}</span>
+            <strong>{row.campus}</strong>
+            <strong className="business-review-engagement-rate">{row.currency || 'KES'} {Number(row.bidAmount || 0).toLocaleString()}</strong>
             <time>{row.submitted}<span>{row.submittedAgo}</span></time>
             <StatusPill className="business-review-status-pill" tone={row.tone}>{row.status}</StatusPill>
             <div className="business-review-application-actions">
@@ -2493,19 +2684,15 @@ function ApplicationsPanel({ activeApplicationStatus, onChangeApplicationStatus 
       )}
 
       <footer className="business-review-application-pagination">
-        <p>{isShortlisted ? 'Showing 1-6 of 6 shortlisted applications' : 'Showing 1-7 of 18 applications'}</p>
-        <div>
-          <button type="button" aria-label="Previous page">←</button>
-          <button type="button" className="is-active">1</button>
-          <button type="button">2</button>
-          <button type="button">3</button>
-          <button type="button" aria-label="Next page">→</button>
-        </div>
+        <p>Showing {filteredApplications.length} of {applicationRows.length} applications</p>
+        {startError ? <span role="alert">{startError}</span> : null}
       </footer>
       <ApplicationReviewModal
         application={selectedApplication}
         initialStep={initialReviewStep}
         onClose={() => setSelectedApplication(null)}
+        onScheduleInterview={onScheduleApplicantInterview}
+        onStartInterview={onStartApplicantInterview}
       />
     </section>
   )
@@ -2617,7 +2804,165 @@ function BusinessDeliverableFilesPanel() {
   )
 }
 
-function BusinessDeliverableMessagesPanel() {
+function BusinessDeliverableMessagesPanel({ conversation = null, opportunity = null }) {
+  const [activeCall, setActiveCall] = useState(null)
+  const [callMessage, setCallMessage] = useState('')
+  const [conversations, setConversations] = useState([])
+  const [activeConversationId, setActiveConversationId] = useState('')
+  const [messages, setMessages] = useState([])
+  const [draft, setDraft] = useState('')
+  const [messageError, setMessageError] = useState('')
+  const [isSending, setIsSending] = useState(false)
+  const opportunityId = conversation?.opportunityId || opportunity?.backendId || null
+  const activeConversation = conversations.find((item) => item.id === activeConversationId) || conversations[0] || null
+
+  async function loadOpportunityConversations(preferredConversation = conversation) {
+    const response = await listConversations()
+    const matching = (response?.data || []).filter((item) => (
+      !opportunityId || item.opportunityId === opportunityId
+    ))
+    setConversations(matching)
+    setActiveConversationId((current) => {
+      const preferredId = preferredConversation
+        ? `${preferredConversation.participant.id}:${preferredConversation.opportunityId || ''}`
+        : ''
+      if (preferredId && matching.some((item) => item.id === preferredId)) return preferredId
+      if (matching.some((item) => item.id === current)) return current
+      return matching[0]?.id || ''
+    })
+  }
+
+  useEffect(() => {
+    listConversations()
+      .then((response) => {
+        const matching = (response?.data || []).filter((item) => (
+          !opportunityId || item.opportunityId === opportunityId
+        ))
+        setConversations(matching)
+        const preferredId = conversation
+          ? `${conversation.participant.id}:${conversation.opportunityId || ''}`
+          : ''
+        setActiveConversationId(
+          matching.some((item) => item.id === preferredId) ? preferredId : matching[0]?.id || '',
+        )
+      })
+      .catch((error) => setMessageError(error.message))
+  }, [conversation?.participant?.id, opportunityId])
+
+  useEffect(() => {
+    if (!activeConversation) return
+    listMessages({
+      participantId: activeConversation.participant.id,
+      opportunityId: activeConversation.opportunityId,
+    })
+      .then((response) => setMessages(response || []))
+      .catch((error) => setMessageError(error.message))
+  }, [activeConversation?.id])
+
+  useEffect(() => {
+    const handleMessage = (event) => {
+      const message = event.detail
+      loadOpportunityConversations().catch(() => {})
+      if (
+        activeConversation
+        && message.senderId === activeConversation.participant.id
+        && (message.opportunityId || null) === (activeConversation.opportunityId || null)
+      ) {
+        listMessages({
+          participantId: activeConversation.participant.id,
+          opportunityId: activeConversation.opportunityId,
+        }).then((response) => setMessages(response || [])).catch(() => {})
+      }
+    }
+    const handleReceipt = (event) => {
+      setMessages((current) => current.map((message) => (
+        message.id === event.detail.messageId
+          ? { ...message, ...event.detail, isRead: Boolean(event.detail.readAt) }
+          : message
+      )))
+    }
+    window.addEventListener('zumbarl:message-created', handleMessage)
+    window.addEventListener('zumbarl:message-receipt', handleReceipt)
+    return () => {
+      window.removeEventListener('zumbarl:message-created', handleMessage)
+      window.removeEventListener('zumbarl:message-receipt', handleReceipt)
+    }
+  }, [activeConversation?.id, opportunityId])
+
+  useEffect(() => {
+    if (!activeCall?.id || activeCall.status !== 'ringing') return undefined
+    playCallRingtone()
+    const ringtoneIntervalId = window.setInterval(playCallRingtone, 2200)
+    const intervalId = window.setInterval(async () => {
+      try {
+        const call = await readCall(activeCall.id)
+        setActiveCall(call)
+        if (call.status === 'accepted') {
+          setActiveCall(null)
+          setCallMessage('')
+          openCallOverlay(call)
+        } else if (call.status !== 'ringing') {
+          setCallMessage(`Call ${call.status}.`)
+        }
+      } catch (error) {
+        setCallMessage(error.message)
+      }
+    }, 1500)
+    return () => {
+      window.clearInterval(ringtoneIntervalId)
+      window.clearInterval(intervalId)
+    }
+  }, [activeCall?.id, activeCall?.status])
+
+  async function startCall(callType) {
+    if (!activeConversation?.participant?.id) {
+      setCallMessage('This conversation does not have a real recipient yet.')
+      return
+    }
+    setCallMessage(`Starting ${callType} call…`)
+    try {
+      const call = await createCall({
+        recipientId: activeConversation.participant.id,
+        opportunityId: activeConversation.opportunityId,
+        callType,
+      })
+      setActiveCall(call)
+      setCallMessage(`Calling ${activeConversation.participant.name || 'student'}…`)
+    } catch (error) {
+      setCallMessage(error.message)
+    }
+  }
+
+  async function stopCalling() {
+    if (!activeCall?.id) return
+    await cancelCall(activeCall.id).catch(() => {})
+    setActiveCall(null)
+    setCallMessage('Call cancelled.')
+  }
+
+  async function submitMessage(event) {
+    event.preventDefault()
+    const body = draft.trim()
+    if (!body || !activeConversation || isSending) return
+    setIsSending(true)
+    setMessageError('')
+    try {
+      const message = await sendMessage({
+        recipientId: activeConversation.participant.id,
+        opportunityId: activeConversation.opportunityId,
+        body,
+      })
+      setMessages((current) => [...current, message])
+      setDraft('')
+      playMessageSentSound()
+      await loadOpportunityConversations()
+    } catch (error) {
+      setMessageError(error.message)
+    } finally {
+      setIsSending(false)
+    }
+  }
+
   return (
     <section className="business-review-messages-grid">
       <aside className="business-review-message-list">
@@ -2626,63 +2971,86 @@ function BusinessDeliverableMessagesPanel() {
           <FiMessageSquare aria-hidden="true" />
           <input type="search" placeholder="Search messages" />
         </label>
-        {BUSINESS_DELIVERABLE_MESSAGES.map((message, index) => (
-          <button key={`${message.author}-${message.date}`} type="button" className={index === 0 ? 'is-active' : ''}>
-            <img src={message.mine ? '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp' : '/assets/index/bee_nobg.png'} alt="" />
+        {conversations.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={item.id === activeConversation?.id ? 'is-active' : ''}
+            onClick={() => setActiveConversationId(item.id)}
+          >
+            <img src={item.participant.avatarUrl || '/assets/index/bee_nobg.png'} alt="" />
             <span>
-              <strong>{message.author}</strong>
-              <em>{message.files ? 'Shared a file' : message.text}</em>
+              <strong>{item.participant.name}</strong>
+              <em>{item.latestMessage.body}</em>
             </span>
-            <small>{index === 0 ? '2:14 PM' : index === 1 ? '2:22 PM' : 'May 20'}</small>
+            {item.unreadCount ? <small>{item.unreadCount}</small> : null}
           </button>
         ))}
+        {!conversations.length ? <p>No real conversations for this opportunity yet.</p> : null}
       </aside>
 
-      <section className="business-review-chat">
-        <header>
-          <img src="/assets/index/bee_nobg.png" alt="" />
-          <div>
-            <h3>Deliverables Thread</h3>
-            <p>Online</p>
-          </div>
-          <button type="button" aria-label="Call"><FiPhone aria-hidden="true" /></button>
-          <button type="button" aria-label="Video call"><FiVideo aria-hidden="true" /></button>
-          <button type="button" aria-label="Thread info"><FiSettings aria-hidden="true" /></button>
-        </header>
+      {activeConversation ? (
+        <section className="business-review-chat">
+          <header>
+            <img src={activeConversation.participant.avatarUrl || '/assets/index/bee_nobg.png'} alt="" />
+            <div>
+              <h3>{activeConversation.participant.name || 'Student applicant'}</h3>
+              <p>{opportunity?.title || 'Opportunity conversation'}</p>
+            </div>
+            <button type="button" aria-label="Call" onClick={() => startCall('audio')}><FiPhone aria-hidden="true" /></button>
+            <button type="button" aria-label="Video call" onClick={() => startCall('video')}><FiVideo aria-hidden="true" /></button>
+            <button type="button" aria-label="Thread info"><FiSettings aria-hidden="true" /></button>
+          </header>
 
-        <div className="business-review-chat-body">
-          <p className="business-review-chat-start">This is the beginning of your deliverables conversation for Level Up Your Skills.</p>
-          {BUSINESS_DELIVERABLE_MESSAGES.map((message) => (
-            <article key={`${message.author}-${message.date}`} className={message.mine ? 'is-mine' : ''}>
-              {!message.mine ? <img src="/assets/index/bee_nobg.png" alt="" /> : null}
-              <div>
-                <p><strong>{message.author}</strong><span>{message.date}</span></p>
-                <div className="business-review-chat-bubble">
-                  {message.text}
-                  {message.files ? (
-                    <div className="business-review-chat-files">
-                      {message.files.map((file) => (
-                        <button key={file.name} type="button">
-                          <FiFileText aria-hidden="true" />
-                          <span><strong>{file.name}</strong><em>{file.type} · {file.size}</em></span>
-                          <FiDownload aria-hidden="true" />
-                        </button>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
+          <div className="business-review-chat-body">
+            {callMessage ? (
+              <div className="business-call-status" role="status">
+                <span>{callMessage}</span>
+                {activeCall?.status === 'ringing' ? <button type="button" onClick={stopCalling}>Cancel</button> : null}
               </div>
-            </article>
-          ))}
-        </div>
-
-        <footer>
-          <input type="text" placeholder="Type a message..." />
-          <button type="button" aria-label="Attach file"><FiUpload aria-hidden="true" /></button>
-          <button type="button" aria-label="Add reaction"><FiSmile aria-hidden="true" /></button>
-          <button type="button" className="business-profile-primary-btn" aria-label="Send message"><FiSend aria-hidden="true" /></button>
-        </footer>
-      </section>
+            ) : null}
+            <p className="business-review-chat-start">
+              This is the beginning of your conversation for {opportunity?.title || 'this opportunity'}.
+            </p>
+            {messages.map((message) => (
+              <article key={message.id} className={message.senderId !== activeConversation.participant.id ? 'is-mine' : ''}>
+                {message.senderId === activeConversation.participant.id ? <img src={activeConversation.participant.avatarUrl || '/assets/index/bee_nobg.png'} alt="" /> : null}
+                <div>
+                  <p>
+                    <strong>{message.senderId !== activeConversation.participant.id ? 'You' : activeConversation.participant.name}</strong>
+                    <span>
+                      {new Date(message.createdAt).toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit' })}
+                      {message.senderId !== activeConversation.participant.id
+                        ? ` · ${message.isRead ? 'Read' : message.deliveredAt ? 'Delivered' : 'Sent'}`
+                        : ''}
+                    </span>
+                  </p>
+                  <div className="business-review-chat-bubble">{message.body}</div>
+                </div>
+              </article>
+            ))}
+          </div>
+          <form onSubmit={submitMessage}>
+            <input
+              type="text"
+              value={draft}
+              onChange={(event) => setDraft(event.target.value)}
+              placeholder={`Message ${activeConversation.participant.name}`}
+              aria-label="Opportunity message"
+            />
+            <button type="submit" className="business-profile-primary-btn" aria-label="Send opportunity message" disabled={!draft.trim() || isSending}>
+              <FiSend aria-hidden="true" />
+            </button>
+          </form>
+          {messageError ? <p className="business-message-error" role="alert">{messageError}</p> : null}
+        </section>
+      ) : (
+        <section className="business-review-chat business-review-chat-empty">
+          <FiMessageSquare aria-hidden="true" />
+          <h3>No conversation selected</h3>
+          <p>Start an interview or open Messages to begin a verified conversation.</p>
+        </section>
+      )}
     </section>
   )
 }
@@ -2759,19 +3127,19 @@ function DeliverablesPanel({ onRequestPayment, opportunity }) {
         ) : null}
       </header>
 
-      <div className="business-review-application-tabs" role="tablist" aria-label="Deliverable sections">
-        {DELIVERABLE_FILTERS.map((filter) => (
-          <button
-            key={filter.id}
-            type="button"
-            className={activeDeliverableTab === filter.id ? 'is-active' : ''}
-            onClick={() => setActiveDeliverableTab(filter.id)}
-          >
+      <TabNav
+        activeId={activeDeliverableTab}
+        ariaLabel="Deliverable sections"
+        className="business-review-application-tabs"
+        items={DELIVERABLE_FILTERS}
+        onChange={setActiveDeliverableTab}
+        renderTab={(filter) => (
+          <>
             {filter.label}
             <span>{filter.id === 'deliverables' ? deliverableCount : filter.count}</span>
-          </button>
-        ))}
-      </div>
+          </>
+        )}
+      />
 
       {isMessages ? (
         <BusinessDeliverableMessagesPanel />
@@ -3336,11 +3704,17 @@ function OverviewPanel({ opportunity, skills, type }) {
 
 export function BusinessOpportunityReviewWorkspace({
   activeApplicationStatus,
+  activeInterviewConversation,
   activeReviewTab,
+  applications = [],
+  applicationsError = '',
+  isLoadingApplications = false,
   onBack,
   onChangeApplicationStatus,
   onChangeReviewTab,
   onPublishOpportunity,
+  onScheduleApplicantInterview,
+  onStartApplicantInterview,
   openPublishPayment = false,
   opportunity,
 }) {
@@ -3350,7 +3724,7 @@ export function BusinessOpportunityReviewWorkspace({
 
   const skills = getSkillList(opportunity)
   const type = opportunity.category === 'Social Media' ? 'Campaign' : opportunity.mode || 'Project'
-  const reviewTabs = getReviewTabs(opportunity)
+  const reviewTabs = getReviewTabs(opportunity, applications.length)
   const canShowPerformance = opportunity.scopeMode === 'milestone'
   const coverImage = getOpportunityCoverImage(opportunity)
   const createdOn = formatOpportunityDate(opportunity.createdAt, 'Just now')
@@ -3392,7 +3766,7 @@ export function BusinessOpportunityReviewWorkspace({
 
       <section className="business-profile-card business-review-overview-card">
         <div className="business-review-cover">
-          <img src={coverImage} alt={`${opportunity.title} opportunity`} />
+          <img src={coverImage} alt={`${opportunity.title} opportunity`} style={getSplashCropStyle(opportunity.opportunitySplash) || undefined} />
         </div>
         <dl>
           <div><dt>Type</dt><dd>{type}</dd></div>
@@ -3402,7 +3776,7 @@ export function BusinessOpportunityReviewWorkspace({
         </dl>
         <dl>
           <div><dt>Budget</dt><dd>{opportunity.budget}</dd></div>
-          <div><dt>Applications</dt><dd>{opportunity.applicants} ({Math.max(0, opportunity.applicants - 12)} new)</dd></div>
+          <div><dt>Applications</dt><dd>{applications.length} ({applications.filter((application) => getApplicationStatus(application.status).id === 'new').length} new)</dd></div>
           <div><dt>Status</dt><dd><span>{opportunity.status}</span></dd></div>
           <div><dt>Deadline</dt><dd>{deadline}</dd></div>
         </dl>
@@ -3414,26 +3788,29 @@ export function BusinessOpportunityReviewWorkspace({
         </dl>
       </section>
 
-      <div className="business-review-detail-tabs" role="tablist" aria-label="Opportunity review sections">
-        {reviewTabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={activeReviewTab === tab.id}
-            className={activeReviewTab === tab.id ? 'is-active' : ''}
-            onClick={() => onChangeReviewTab(tab.id)}
-          >
+      <TabNav
+        activeId={activeReviewTab}
+        ariaLabel="Opportunity review sections"
+        className="business-review-detail-tabs"
+        items={reviewTabs}
+        onChange={onChangeReviewTab}
+        renderTab={(tab) => (
+          <>
             {tab.label}
             {tab.count ? <span>{tab.count}</span> : null}
-          </button>
-        ))}
-      </div>
+          </>
+        )}
+      />
 
       {activeReviewTab === 'applications' ? (
         <ApplicationsPanel
           activeApplicationStatus={activeApplicationStatus}
+          applications={applications}
+          applicationsError={applicationsError}
+          isLoadingApplications={isLoadingApplications}
           onChangeApplicationStatus={onChangeApplicationStatus}
+          onScheduleApplicantInterview={onScheduleApplicantInterview}
+          onStartApplicantInterview={onStartApplicantInterview}
         />
       ) : activeReviewTab === 'deliverables' ? (
         <DeliverablesPanel onRequestPayment={startPublishPayment} opportunity={opportunity} />
@@ -3449,7 +3826,7 @@ export function BusinessOpportunityReviewWorkspace({
               <p>Coordinate with creators around evidence, revisions and approvals.</p>
             </div>
           </header>
-          <BusinessDeliverableMessagesPanel />
+          <BusinessDeliverableMessagesPanel conversation={activeInterviewConversation} opportunity={opportunity} />
         </section>
       ) : activeReviewTab === 'activity' ? (
         <ActivityPanel />

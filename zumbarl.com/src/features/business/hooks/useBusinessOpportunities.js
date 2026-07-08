@@ -1,24 +1,55 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import {
   BUSINESS_OPPORTUNITY_ACTIVITY,
   BUSINESS_OPPORTUNITY_BIDDER_CANDIDATES,
   BUSINESS_OPPORTUNITY_FILTERS,
   BUSINESS_OPPORTUNITY_ROWS,
-  BUSINESS_OPPORTUNITY_SKILL_DEMAND,
-  BUSINESS_OPPORTUNITY_SUMMARY,
+  BUSINESS_OPPORTUNITY_TOP_FREELANCERS,
 } from '../opportunitiesData'
 import {
   inviteBusinessOpportunityBidders,
   publishBusinessOpportunity,
 } from '../services/businessFlowService'
+import {
+  listBackendOpportunityApplicants,
+  listBackendOpportunityInviteCandidates,
+  scheduleBackendApplicantInterview,
+  startBackendApplicantInterview,
+} from '../services/persistBusinessOpportunity'
 import { useBusinessFlowState } from './useBusinessFlowState'
 
 const DEFAULT_SEED_ID = 'brief-social-media-manager'
 const OWNED_COMPANY = 'Zetech Studios'
-const PAGE_SIZE = 5
-const ACTIVE_OPPORTUNITY_STATUSES = new Set(['Open', 'In Review', 'Shortlisted', 'Pending'])
+const DEFAULT_PAGE_SIZE = 5
+const PAGE_SIZE_OPTIONS = [5, 10, 20]
+const VIEW_MODE_STORAGE_KEY = 'zumbarl.business-opportunities-view'
+const ACTIVE_OPPORTUNITY_STATUSES = new Set(['Open', 'Pending'])
 const ARCHIVED_OPPORTUNITY_STATUSES = new Set(['Archived', 'Closed'])
+const STATUS_TONES = {
+  Archived: 'orange',
+  Completed: 'green',
+  Draft: 'neutral',
+  Open: 'green',
+  Pending: 'blue',
+}
+
+function getStoredViewMode() {
+  try {
+    const storedViewMode = window.localStorage.getItem(VIEW_MODE_STORAGE_KEY)
+    return storedViewMode === 'grid' ? 'grid' : 'list'
+  } catch {
+    return 'list'
+  }
+}
+
+function storeViewMode(viewMode) {
+  try {
+    window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode)
+  } catch {
+    // View mode persistence is best-effort; ignore storage failures.
+  }
+}
 
 function splitSkills(value) {
   return String(value || '')
@@ -36,8 +67,7 @@ function getDisplayOpportunityStatus(status) {
 
   if (normalized === 'draft' || normalized === 'draft ready' || normalized === 'ready') return 'Draft'
   if (normalized === 'published' || normalized === 'open') return 'Open'
-  if (normalized === 'in_review' || normalized === 'in review') return 'In Review'
-  if (normalized === 'shortlisted') return 'Shortlisted'
+  if (normalized === 'in_review' || normalized === 'in review' || normalized === 'shortlisted' || normalized === 'pending') return 'Pending'
   if (normalized === 'completed') return 'Completed'
   if (normalized === 'archived' || normalized === 'closed') return 'Archived'
 
@@ -50,6 +80,7 @@ function mapFlowOpportunity(opportunity, invitedCount = 0) {
 
   return {
     id: opportunity.id,
+    backendId: opportunity.backendId,
     acceptanceCriteria: opportunity.acceptanceCriteria,
     applicants: opportunity.applicants || 0,
     budget: opportunity.budget,
@@ -83,7 +114,7 @@ function mapFlowOpportunity(opportunity, invitedCount = 0) {
     status,
     time: opportunity.createdAt === 'Seed brief' ? 'Seed brief' : 'Just now',
     title: opportunity.title,
-    tone: status === 'Draft' ? 'neutral' : 'purple',
+    tone: STATUS_TONES[status] || 'purple',
     thumbnail: opportunity.thumbnail,
     thumbnailUrl: opportunity.thumbnailUrl,
     visibility: opportunity.visibility,
@@ -92,7 +123,7 @@ function mapFlowOpportunity(opportunity, invitedCount = 0) {
 
 function mapStaticOpportunity(opportunity, invitedCount = 0) {
   const isOwned = opportunity.company === OWNED_COMPANY
-  const status = opportunity.status === 'Closed' ? 'Archived' : opportunity.status
+  const status = getDisplayOpportunityStatus(opportunity.status)
 
   return {
     ...opportunity,
@@ -120,6 +151,7 @@ export function useBusinessOpportunities() {
   const [activeTab, setActiveTab] = useState('opportunities')
   const [activeReviewTab, setActiveReviewTab] = useState('overview')
   const [activeApplicationStatus, setActiveApplicationStatus] = useState('all')
+  const [activeInterviewConversation, setActiveInterviewConversation] = useState(null)
   const [reviewOpportunityId, setReviewOpportunityId] = useState(incomingReviewOpportunityId)
   const [publishPaymentOpportunityId, setPublishPaymentOpportunityId] = useState(
     shouldOpenPublishPayment ? incomingReviewOpportunityId : null,
@@ -130,11 +162,18 @@ export function useBusinessOpportunities() {
   const [skill, setSkill] = useState('all')
   const [sort, setSort] = useState('newest')
   const [stage, setStage] = useState('all')
-  const [viewMode, setViewMode] = useState('list')
+  const [viewMode, setViewMode] = useState(() => getStoredViewMode())
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
   const [inviteOpportunityId, setInviteOpportunityId] = useState(null)
   const [inviteQuery, setInviteQuery] = useState('')
-  const [inviteNote, setInviteNote] = useState('We reviewed your profile and think you could be a strong fit. Please submit your offer and availability for this opportunity.')
+  const [inviteNote, setInviteNote] = useState('')
   const [selectedBidderIds, setSelectedBidderIds] = useState([])
+  const [backendInviteCandidates, setBackendInviteCandidates] = useState([])
+  const [applicantsByOpportunity, setApplicantsByOpportunity] = useState({})
+  const [applicantLoadErrors, setApplicantLoadErrors] = useState({})
+  const [isLoadingInviteCandidates, setIsLoadingInviteCandidates] = useState(false)
+  const [isSendingInvites, setIsSendingInvites] = useState(false)
 
   const invitesByOpportunity = useMemo(() => (
     (businessFlow.opportunityInvites || []).reduce((groups, invite) => ({
@@ -161,6 +200,16 @@ export function useBusinessOpportunities() {
   const reviewOpportunity = useMemo(() => (
     opportunities.find((opportunity) => opportunity.id === reviewOpportunityId) || null
   ), [opportunities, reviewOpportunityId])
+  const reviewOpportunityBackendId = reviewOpportunity?.backendId
+  const reviewApplicants = reviewOpportunityBackendId
+    ? applicantsByOpportunity[reviewOpportunityBackendId] || []
+    : (businessFlow.opportunityBids || []).filter((bid) => bid.opportunityId === reviewOpportunity?.id)
+  const isLoadingReviewApplicants = Boolean(
+    reviewOpportunityBackendId && applicantsByOpportunity[reviewOpportunityBackendId] === undefined,
+  )
+  const reviewApplicantsError = reviewOpportunityBackendId
+    ? applicantLoadErrors[reviewOpportunityBackendId] || ''
+    : ''
 
   const existingInviteIds = useMemo(() => (
     new Set((invitesByOpportunity[inviteOpportunityId] || []).map((invite) => invite.bidderId))
@@ -169,12 +218,16 @@ export function useBusinessOpportunities() {
   const inviteCandidates = useMemo(() => {
     const normalizedQuery = inviteQuery.trim().toLowerCase()
     const opportunitySkills = new Set(inviteOpportunity?.skills || [])
+    const sourceCandidates = inviteOpportunity?.backendId
+      ? backendInviteCandidates
+      : BUSINESS_OPPORTUNITY_BIDDER_CANDIDATES
 
-    return BUSINESS_OPPORTUNITY_BIDDER_CANDIDATES
+    return sourceCandidates
       .map((candidate) => ({
         ...candidate,
-        alreadyInvited: existingInviteIds.has(candidate.id),
-        skillMatches: candidate.skills.filter((skill) => opportunitySkills.has(skill)).length,
+        skills: Array.isArray(candidate.skills) ? candidate.skills : [],
+        alreadyInvited: Boolean(candidate.alreadyInvited) || existingInviteIds.has(candidate.id),
+        skillMatches: (Array.isArray(candidate.skills) ? candidate.skills : []).filter((skill) => opportunitySkills.has(skill)).length,
       }))
       .filter((candidate) => {
         if (!normalizedQuery) return true
@@ -187,7 +240,77 @@ export function useBusinessOpportunities() {
         ].some((value) => value.toLowerCase().includes(normalizedQuery))
       })
       .sort((a, b) => b.skillMatches - a.skillMatches || b.match - a.match)
-  }, [existingInviteIds, inviteOpportunity, inviteQuery])
+  }, [backendInviteCandidates, existingInviteIds, inviteOpportunity, inviteQuery])
+
+  useEffect(() => {
+    let isCurrent = true
+    const backendOpportunityId = inviteOpportunity?.backendId
+    if (!backendOpportunityId) {
+      setBackendInviteCandidates([])
+      setIsLoadingInviteCandidates(false)
+      return () => { isCurrent = false }
+    }
+
+    setIsLoadingInviteCandidates(true)
+    listBackendOpportunityInviteCandidates(backendOpportunityId, inviteQuery)
+      .then((response) => {
+        if (!isCurrent) return
+        setBackendInviteCandidates((response?.candidates || []).map((candidate, index) => ({
+          ...candidate,
+          tone: ['purple', 'green', 'orange', 'blue'][index % 4],
+        })))
+      })
+      .catch(() => {
+        if (isCurrent) setBackendInviteCandidates([])
+      })
+      .finally(() => {
+        if (isCurrent) setIsLoadingInviteCandidates(false)
+      })
+
+    return () => { isCurrent = false }
+  }, [inviteOpportunity?.backendId, inviteQuery])
+
+  useEffect(() => {
+    let isCurrent = true
+    if (!reviewOpportunityBackendId) return () => { isCurrent = false }
+
+    listBackendOpportunityApplicants(reviewOpportunityBackendId)
+      .then((response) => {
+        if (!isCurrent) return
+        setApplicantsByOpportunity((current) => ({
+          ...current,
+          [reviewOpportunityBackendId]: Array.isArray(response?.data) ? response.data : [],
+        }))
+        setApplicantLoadErrors((current) => ({ ...current, [reviewOpportunityBackendId]: '' }))
+      })
+      .catch((error) => {
+        if (!isCurrent) return
+        setApplicantsByOpportunity((current) => ({ ...current, [reviewOpportunityBackendId]: [] }))
+        setApplicantLoadErrors((current) => ({
+          ...current,
+          [reviewOpportunityBackendId]: error instanceof Error ? error.message : 'Could not load applicants.',
+        }))
+      })
+
+    return () => { isCurrent = false }
+  }, [reviewOpportunityBackendId])
+
+  function changeViewMode(nextViewMode) {
+    storeViewMode(nextViewMode)
+    setViewMode(nextViewMode)
+  }
+
+  function changeFilter(setter) {
+    return (value) => {
+      setPage(1)
+      setter(value)
+    }
+  }
+
+  function changePageSize(nextPageSize) {
+    setPage(1)
+    setPageSize(nextPageSize)
+  }
 
   const filteredOpportunities = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -223,6 +346,35 @@ export function useBusinessOpportunities() {
       })
   }, [activeTab, budget, category, opportunities, query, skill, sort, stage])
 
+  const pageCount = Math.max(1, Math.ceil(filteredOpportunities.length / pageSize))
+  const currentPage = Math.min(page, pageCount)
+
+  const summary = useMemo(() => {
+    const countByStatus = (status) => opportunities.filter((opportunity) => opportunity.status === status).length
+
+    return [
+      { icon: 'briefcase', label: 'Total', tone: 'purple', value: opportunities.length },
+      { icon: 'check', label: 'Open', tone: 'green', value: countByStatus('Open') },
+      { icon: 'review', label: 'Pending', tone: 'blue', value: countByStatus('Pending') },
+      { icon: 'check', label: 'Completed', tone: 'green', value: countByStatus('Completed') },
+      { icon: 'draft', label: 'Drafts', tone: 'neutral', value: countByStatus('Draft') },
+      { icon: 'closed', label: 'Archived', tone: 'orange', value: countByStatus('Archived') },
+    ]
+  }, [opportunities])
+
+  const recentActivity = useMemo(() => {
+    const opportunityTitleById = new Map(opportunities.map((opportunity) => [opportunity.id, opportunity.title]))
+    const flowActivity = (businessFlow.reviewEvents || []).slice(0, 4).map((event) => ({
+      actor: event.applicantName || 'Zumbarl business',
+      initials: String(event.applicantName || 'ZB').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+      detail: event.detail || `${event.action} on ${opportunityTitleById.get(event.opportunityId) || 'an opportunity'}`,
+      time: event.createdAt || 'Recently',
+      tone: ['coral', 'orange', 'blue', 'green'][Math.abs(event.id?.length || 0) % 4],
+    }))
+
+    return flowActivity.length ? flowActivity : BUSINESS_OPPORTUNITY_ACTIVITY
+  }, [businessFlow.reviewEvents, opportunities])
+
   function openInvitePanel(opportunity) {
     if (!opportunity?.canInvite) return
 
@@ -247,19 +399,24 @@ export function useBusinessOpportunities() {
     ))
   }
 
-  function sendInvites() {
-    const selectedBidders = BUSINESS_OPPORTUNITY_BIDDER_CANDIDATES.filter((candidate) => (
-      selectedBidderIds.includes(candidate.id)
+  async function sendInvites() {
+    const selectedBidders = inviteCandidates.filter((candidate) => (
+      selectedBidderIds.includes(candidate.id) && !candidate.alreadyInvited
     ))
 
     if (!inviteOpportunity || !selectedBidders.length) return
 
-    inviteBusinessOpportunityBidders({
-      bidders: selectedBidders,
-      note: inviteNote,
-      opportunityId: inviteOpportunity.id,
-    })
-    closeInvitePanel()
+    setIsSendingInvites(true)
+    try {
+      await inviteBusinessOpportunityBidders({
+        bidders: selectedBidders,
+        note: inviteNote,
+        opportunityId: inviteOpportunity.id,
+      })
+      closeInvitePanel()
+    } finally {
+      setIsSendingInvites(false)
+    }
   }
 
   function publishOpportunity(opportunity) {
@@ -289,36 +446,67 @@ export function useBusinessOpportunities() {
     }
   }
 
+  async function scheduleApplicantInterview(applicantBidId, interview) {
+    if (!reviewOpportunityBackendId) {
+      throw new Error('This opportunity must be saved before interviews can be scheduled.')
+    }
+
+    const result = await scheduleBackendApplicantInterview(applicantBidId, interview)
+    const response = await listBackendOpportunityApplicants(reviewOpportunityBackendId)
+    setApplicantsByOpportunity((current) => ({
+      ...current,
+      [reviewOpportunityBackendId]: Array.isArray(response?.data) ? response.data : [],
+    }))
+    return result
+  }
+
+  async function startApplicantInterview(applicantBidId) {
+    const result = await startBackendApplicantInterview(applicantBidId)
+    setActiveInterviewConversation(result.conversation)
+    setActiveReviewTab('messages')
+    setActiveApplicationStatus('all')
+    return result
+  }
+
   return {
     activeTab,
     activeApplicationStatus,
     activeReviewTab,
-    activity: BUSINESS_OPPORTUNITY_ACTIVITY,
+    activeInterviewConversation,
+    activity: recentActivity,
     filters: BUSINESS_OPPORTUNITY_FILTERS,
     filterState: { budget, category, query, skill, sort, stage, viewMode },
     inviteCandidates,
     inviteNote,
     inviteOpportunity,
+    isLoadingInviteCandidates,
+    isSendingInvites,
     openPublishPaymentForReview: publishPaymentOpportunityId === reviewOpportunity?.id,
+    isLoadingReviewApplicants,
     reviewOpportunity,
-    opportunities: filteredOpportunities.slice(0, PAGE_SIZE),
+    reviewApplicants,
+    reviewApplicantsError,
+    opportunities: filteredOpportunities.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    page: currentPage,
+    pageCount,
+    pageSize,
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
     selectedBidderIds,
-    showingCount: Math.min(PAGE_SIZE, filteredOpportunities.length),
-    skillsDemand: BUSINESS_OPPORTUNITY_SKILL_DEMAND,
-    summary: BUSINESS_OPPORTUNITY_SUMMARY.map((item) => (
-      item.label === 'Total'
-        ? { ...item, value: item.value + businessFlow.opportunities.filter((opportunity) => opportunity.id !== DEFAULT_SEED_ID).length }
-        : item
-    )),
+    showingFrom: filteredOpportunities.length ? (currentPage - 1) * pageSize + 1 : 0,
+    showingTo: Math.min(currentPage * pageSize, filteredOpportunities.length),
+    topFreelancers: BUSINESS_OPPORTUNITY_TOP_FREELANCERS,
+    summary,
     totalCount: filteredOpportunities.length,
-    onChangeBudget: setBudget,
-    onChangeCategory: setCategory,
-    onChangeQuery: setQuery,
-    onChangeSkill: setSkill,
-    onChangeSort: setSort,
-    onChangeStage: setStage,
-    onChangeTab: setActiveTab,
-    onChangeViewMode: setViewMode,
+    onChangeBudget: changeFilter(setBudget),
+    onChangeCategory: changeFilter(setCategory),
+    onChangePage: (nextPage) => setPage(Math.min(Math.max(1, nextPage), pageCount)),
+    onChangePageSize: changePageSize,
+    onChangeQuery: changeFilter(setQuery),
+    onChangeSkill: changeFilter(setSkill),
+    onChangeSort: changeFilter(setSort),
+    onChangeStage: changeFilter(setStage),
+    onChangeTab: changeFilter(setActiveTab),
+    onChangeViewMode: changeViewMode,
     onChangeInviteNote: setInviteNote,
     onChangeInviteQuery: setInviteQuery,
     onCloseInvitePanel: closeInvitePanel,
@@ -329,6 +517,7 @@ export function useBusinessOpportunities() {
       setPublishPaymentOpportunityId(null)
       setActiveReviewTab('overview')
       setActiveApplicationStatus('all')
+      setActiveInterviewConversation(null)
     },
     onContinueDraftOpportunity: continueDraftOpportunity,
     onOpenInvitePanel: openInvitePanel,
@@ -337,7 +526,10 @@ export function useBusinessOpportunities() {
       setPublishPaymentOpportunityId(null)
       setActiveReviewTab('overview')
       setActiveApplicationStatus('all')
+      setActiveInterviewConversation(null)
     },
+    onScheduleApplicantInterview: scheduleApplicantInterview,
+    onStartApplicantInterview: startApplicantInterview,
     onPublishOpportunity: publishOpportunity,
     onSendInvites: sendInvites,
     onToggleBidderSelection: toggleBidderSelection,

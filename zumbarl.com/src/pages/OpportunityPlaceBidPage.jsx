@@ -6,23 +6,21 @@ import OpportunityBidSuccessDialog from '../features/opportunities/components/Op
 import OpportunityBidSummaryRail from '../features/opportunities/components/OpportunityBidSummaryRail'
 import useOpportunityPlaceBidState from '../features/opportunities/hooks/useOpportunityPlaceBidState'
 import { CAMPUS_PLACE_BID_SEO } from '../features/seo/constants'
-import { WorkflowStatusPanel } from '../features/workflows/components/WorkflowStatusPanel'
 import '../styles/campus.css'
 import '../styles/opportunities.css'
-import '../styles/workflows.css'
 
 function OpportunityPlaceBidPage() {
   const {
     activeBidIntent,
-    bidIntentOptions,
     isBidSuccessOpen,
+    isSubmitting,
     onBackToGig,
     onContinueDiscovery,
-    onIntentChange,
     onOpenMyBids,
     onSubmitProposal,
     selectedGig,
     submittedBid,
+    submitError,
   } = useOpportunityPlaceBidState()
 
   return (
@@ -41,19 +39,11 @@ function OpportunityPlaceBidPage() {
 
           <section className="campus-main opportunities-main opportunities-bid-main">
             <OpportunityBidHeader onBackToGig={onBackToGig} selectedGig={selectedGig} />
-            <WorkflowStatusPanel
-              title="Bid submission path"
-              items={[
-                { label: 'Opportunity open', status: 'done', detail: `${selectedGig.company} is accepting student bids.` },
-                { label: 'Proposal mode', status: 'done', detail: activeBidIntent.label },
-                { label: 'Business review', status: 'blocked', detail: 'Starts after you submit your proposal.' },
-              ]}
-            />
             <OpportunityBidForm
-              activeBidIntentId={activeBidIntent.id}
-              intentOptions={bidIntentOptions}
-              onIntentChange={onIntentChange}
+              isSubmitting={isSubmitting}
               onSubmitProposal={onSubmitProposal}
+              selectedGig={selectedGig}
+              submitError={submitError}
             />
           </section>
 

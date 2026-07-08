@@ -37,10 +37,13 @@ function OpportunitiesBuySellPage() {
             <MarketplaceWorkflowPanel />
             <MarketplaceItemSections
               activeCategory={marketplaceState.activeCategory}
+              activeRecentFilter={marketplaceState.activeRecentFilter}
               filteredFeaturedItems={marketplaceState.filteredFeaturedItems}
               filteredRecentItems={marketplaceState.filteredRecentItems}
               onCardKeyDown={marketplaceState.handleCardKeyDown}
+              onCategoryChange={marketplaceState.onCategoryChange}
               onOpenItemDetail={marketplaceState.onOpenItemDetail}
+              onRecentFilterChange={marketplaceState.onRecentFilterChange}
             />
           </section>
 

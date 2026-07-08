@@ -60,8 +60,28 @@ export async function hydrateEarnFlowFromBackend() {
   return backendHydrationPromise
 }
 
-export function submitOpportunityBid({ gig, intent, proposal }) {
-  const bid = createBid({ gig, intent, proposal })
+export async function submitOpportunityBid({ gig, intent, proposal }) {
+  const backendBid = await sendZumbarlApiRequest(`/earn/opportunities/${gig.submissionOpportunityId || gig.id}/bids`, {
+    method: 'POST',
+    body: JSON.stringify({
+      amount: Number(String(proposal.price || '').replace(/[^\d.]/g, '')) || 0,
+      attachments: proposal.attachments || [],
+      deliveryTime: proposal.deliveryTime || undefined,
+      intent: intent.id === 'career' ? 'build-career' : intent.id,
+      message: proposal.message || undefined,
+      pricingType: proposal.pricingType || undefined,
+      proposal: proposal.proposal,
+      questionAnswers: proposal.questionAnswers || [],
+    }),
+  })
+  const bid = {
+    ...createBid({ gig, intent, proposal }),
+    ...backendBid,
+    id: backendBid.id,
+    source: 'database',
+    status: 'Submitted',
+    stage: 'Proposal submitted',
+  }
   setEarnFlowState((state) => ({
     ...state,
     bids: [

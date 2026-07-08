@@ -34,6 +34,10 @@ function getUniqueItems(items) {
 }
 
 function getQualificationQuestions(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter(Boolean)
+  }
+
   return String(value || '')
     .split('\n')
     .map((item) => item.trim())
@@ -154,7 +158,7 @@ function BusinessOpportunityQualificationQuestions({ value, onUpdateField }) {
     const nextQuestions = [...questions]
     nextQuestions[index] = { ...nextQuestions[index], value: nextValue }
     setQuestions(nextQuestions)
-    onUpdateField('preferredQualifications', nextQuestions.map((item) => item.value.trim()).filter(Boolean).join('\n'))
+    onUpdateField('qualificationQuestions', nextQuestions.map((item) => item.value.trim()).filter(Boolean))
   }
 
   function addQuestion() {
@@ -165,21 +169,21 @@ function BusinessOpportunityQualificationQuestions({ value, onUpdateField }) {
     const nextQuestions = questions.filter((_, itemIndex) => itemIndex !== index)
     const safeQuestions = nextQuestions.length ? nextQuestions : [{ id: `qualification-${Date.now()}`, value: '' }]
     setQuestions(safeQuestions)
-    onUpdateField('preferredQualifications', safeQuestions.map((item) => item.value.trim()).filter(Boolean).join('\n'))
+    onUpdateField('qualificationQuestions', safeQuestions.map((item) => item.value.trim()).filter(Boolean))
   }
 
   return (
     <div className="business-create-qualification-field">
-      <div className="business-create-field-label">Preferred Qualifications</div>
+      <div className="business-create-field-label">Application Questions</div>
       <div className="business-create-qualification-list">
         {questions.map((question, index) => (
           <label key={question.id} className="business-create-qualification-row">
-            <span>Qualification question {index + 1}</span>
+            <span>Application question {index + 1}</span>
             <div>
               <input
                 type="text"
                 value={question.value}
-                placeholder="e.g. You are above 18 years old"
+                placeholder="e.g. Describe a relevant project and its outcome"
                 onChange={(event) => updateQuestion(index, event.target.value)}
               />
               <button type="button" aria-label={`Remove qualification question ${index + 1}`} onClick={() => removeQuestion(index)}>
@@ -191,7 +195,7 @@ function BusinessOpportunityQualificationQuestions({ value, onUpdateField }) {
       </div>
       <button type="button" className="business-create-add-question" onClick={addQuestion}>
         <FiPlus aria-hidden="true" />
-        Add qualification question
+        Add application question
       </button>
     </div>
   )
@@ -298,6 +302,13 @@ export function BusinessOpportunityBriefRequirementsStep({ form, onUpdateField }
             onUpdateField={onUpdateField}
           />
           <BusinessOpportunityQualificationQuestions
+            value={form.qualificationQuestions}
+            onUpdateField={onUpdateField}
+          />
+          <BusinessCreateTextareaField
+            isWide
+            label="Preferred Qualifications"
+            name="preferredQualifications"
             value={form.preferredQualifications}
             onUpdateField={onUpdateField}
           />

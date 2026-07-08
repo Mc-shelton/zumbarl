@@ -43,7 +43,7 @@ export const BUSINESS_NAV_ITEMS = [
   },
   { id: 'talent', label: 'Talent Search', icon: 'search', requiredAccess: ACCESS_KEYS.business.talentSearch },
   { id: 'teams', label: 'Teams', icon: 'users', requiredAccess: ACCESS_KEYS.business.teams },
-  { id: 'messages', label: 'Messages', icon: 'mail', badge: 6, requiredAccess: ACCESS_KEYS.business.messages },
+  { id: 'messages', label: 'Messages', icon: 'mail', href: '/messages', requiredAccess: ACCESS_KEYS.business.messages },
   {
     id: 'analytics',
     label: 'Analytics',

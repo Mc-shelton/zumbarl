@@ -9,11 +9,16 @@ function OpportunitiesDiscoverRail({
   isFilterExpanded,
   isFilterPanelVisible,
   onBackToDetail,
+  onClearFilters,
   onCloseDetails,
   onEditFilters,
   onOpenPlaceBid,
+  onRailFilterChange,
+  onRailFilterToggle,
+  railFilters,
   selectedOpportunity,
   selectedOpportunityThumbnail,
+  skillOptions,
 }) {
   const railClasses = (
     `campus-rail opportunities-rail${isDetailOpen ? ' has-detail' : ''}` +
@@ -29,7 +34,12 @@ function OpportunitiesDiscoverRail({
         isFilterExpanded={isFilterExpanded}
         isFilterPanelVisible={isFilterPanelVisible}
         onBackToDetail={onBackToDetail}
+        onClearFilters={onClearFilters}
         onEditFilters={onEditFilters}
+        onRailFilterChange={onRailFilterChange}
+        onRailFilterToggle={onRailFilterToggle}
+        railFilters={railFilters}
+        skillOptions={skillOptions}
       />
 
       <OpportunityDetailRailPanel

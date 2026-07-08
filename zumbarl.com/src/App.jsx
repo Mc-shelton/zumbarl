@@ -2,16 +2,16 @@ import { Suspense, useEffect } from 'react'
 import { createBrowserRouter, RouterProvider, useRouteError } from 'react-router-dom'
 import './App.css'
 import AccessRoute from './features/auth/components/AccessRoute'
+import RealtimeCallAgent from './features/calls/components/RealtimeCallAgent'
 import { APP_ROUTES } from './features/navigation/routeConfig'
 
 const DYNAMIC_IMPORT_RELOAD_KEY = 'zumbarl.dynamicImportReloaded'
 
 function renderRouteElement(route) {
-  if (!route.access) {
-    return route.element
-  }
-
-  return <AccessRoute access={route.access}>{route.element}</AccessRoute>
+  const page = route.access
+    ? <AccessRoute access={route.access}>{route.element}</AccessRoute>
+    : route.element
+  return <><RealtimeCallAgent />{page}</>
 }
 
 function getErrorMessage(error) {

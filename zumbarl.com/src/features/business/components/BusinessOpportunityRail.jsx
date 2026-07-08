@@ -3,6 +3,7 @@ import {
   FiCheckCircle,
   FiFileText,
   FiSearch,
+  FiStar,
   FiUsers,
   FiZap,
 } from 'react-icons/fi'
@@ -17,13 +18,12 @@ const SUMMARY_ICONS = {
   users: FiUsers,
 }
 
-export function BusinessOpportunityRail({ activity, skillsDemand, summary }) {
+export function BusinessOpportunityRail({ activity, summary, topFreelancers = [] }) {
   return (
     <aside className="campus-rail business-workspace-rail business-opportunities-rail">
       <section className="business-profile-card business-opportunity-summary-card">
         <header>
           <h2>Opportunity Summary</h2>
-          <button type="button" className="business-workspace-filter">This week</button>
         </header>
         <dl>
           {summary.map((item) => {
@@ -40,16 +40,23 @@ export function BusinessOpportunityRail({ activity, skillsDemand, summary }) {
         </dl>
       </section>
 
-      <section className="business-profile-card business-skill-demand-card">
+      <section className="business-profile-card business-top-freelancers-card">
         <header>
-          <h2>Top Skills in Demand</h2>
+          <h2>Top Freelancers</h2>
           <Link to="/business/applicants" className="business-link-btn">View all</Link>
         </header>
         <ul>
-          {skillsDemand.map((item) => (
-            <li key={item.label}>
-              <p><span>{item.label}</span><strong>{item.value}%</strong></p>
-              <div><span className={`tone-${item.tone}`} style={{ width: `${item.value}%` }} /></div>
+          {topFreelancers.map((freelancer) => (
+            <li key={freelancer.id}>
+              <span className={`tone-${freelancer.tone}`}>{freelancer.initials}</span>
+              <div>
+                <strong>{freelancer.name}</strong>
+                <p>{freelancer.school} · {freelancer.skill}</p>
+              </div>
+              <em>
+                <FiStar aria-hidden="true" />
+                {freelancer.rating} · {freelancer.projects} projects
+              </em>
             </li>
           ))}
         </ul>

@@ -28,13 +28,118 @@ export function resolveOpportunityIntent(value) {
 }
 
 export const OPPORTUNITY_TYPES = [
-  { label: 'All Opportunities', count: 1248, Icon: FiBriefcase, active: true },
-  { label: 'Part-time Jobs', count: 432, Icon: FiCalendar },
-  { label: 'Gigs & Freelance', count: 652, Icon: FiShoppingBag },
-  { label: 'Internships', count: 128, Icon: FiBookOpen },
-  { label: 'Remote', count: 203, Icon: FiUsers },
-  { label: 'On-campus', count: 186, Icon: FiHome },
+  { id: 'all', label: 'All Opportunities', Icon: FiBriefcase },
+  { id: 'part-time', label: 'Part-time Jobs', Icon: FiCalendar },
+  { id: 'gigs', label: 'Gigs & Freelance', Icon: FiShoppingBag },
+  { id: 'internships', label: 'Internships', Icon: FiBookOpen },
+  { id: 'remote', label: 'Remote', Icon: FiUsers },
+  { id: 'on-campus', label: 'On-campus', Icon: FiHome },
 ]
+export const DEFAULT_OPPORTUNITY_TYPE_ID = 'all'
+
+function getOpportunityTypeText(opportunity) {
+  return [opportunity.meta, opportunity.location].filter(Boolean).join(' ').toLowerCase()
+}
+
+export function matchesOpportunityType(opportunity, typeId) {
+  const text = getOpportunityTypeText(opportunity)
+
+  if (!typeId || typeId === 'all') return true
+  if (typeId === 'part-time') return text.includes('part-time')
+  if (typeId === 'internships') return text.includes('intern') || text.includes('attachment')
+  if (typeId === 'remote') return text.includes('remote')
+  if (typeId === 'on-campus') return text.includes('on-campus') || text.includes('on campus')
+  if (typeId === 'gigs') {
+    return ['one-time', 'gig', 'freelance', 'project', 'task', 'contract']
+      .some((keyword) => text.includes(keyword))
+  }
+
+  return true
+}
+
+export function resolveOpportunityTypeId(value) {
+  return OPPORTUNITY_TYPES.some((type) => type.id === value) ? value : DEFAULT_OPPORTUNITY_TYPE_ID
+}
+
+export function filterOpportunitiesByType(opportunities, typeId) {
+  return opportunities.filter((item) => matchesOpportunityType(item, typeId))
+}
+
+export function getOpportunityTypeCounts(opportunities) {
+  return OPPORTUNITY_TYPES.reduce((counts, type) => ({
+    ...counts,
+    [type.id]: filterOpportunitiesByType(opportunities, type.id).length,
+  }), {})
+}
+
+const FILTER_TYPE_KEYWORDS = {
+  'Part-time Jobs': ['part-time'],
+  'Gigs & Freelance': ['one-time', 'gig', 'freelance', 'project', 'task', 'contract'],
+  Internships: ['intern', 'attachment'],
+  Volunteer: ['volunteer'],
+  'Full-time': ['full-time'],
+}
+
+const FILTER_MODE_KEYWORDS = {
+  'On-campus': ['on-campus', 'on campus'],
+  Remote: ['remote'],
+  Hybrid: ['hybrid', 'flexible'],
+}
+
+export function getOpportunityPayAmount(opportunity) {
+  return Number(String(opportunity.pay || '').replace(/[^\d]/g, '')) || 0
+}
+
+export function matchesOpportunitySearch(opportunity, query) {
+  const normalizedQuery = String(query || '').trim().toLowerCase()
+  if (!normalizedQuery) return true
+
+  return [
+    opportunity.title,
+    opportunity.company,
+    opportunity.description,
+    opportunity.careerPath,
+    opportunity.location,
+    opportunity.meta,
+    (opportunity.tags || []).join(' '),
+  ].some((value) => String(value || '').toLowerCase().includes(normalizedQuery))
+}
+
+export function matchesOpportunityRailFilters(opportunity, railFilters) {
+  const text = getOpportunityTypeText(opportunity)
+
+  if (railFilters.types.length) {
+    const matchesType = railFilters.types.some((type) => (
+      (FILTER_TYPE_KEYWORDS[type] || []).some((keyword) => text.includes(keyword))
+    ))
+    if (!matchesType) return false
+  }
+
+  if (railFilters.workModes.length) {
+    const matchesMode = railFilters.workModes.some((mode) => (
+      (FILTER_MODE_KEYWORDS[mode] || []).some((keyword) => text.includes(keyword))
+    ))
+    if (!matchesMode) return false
+  }
+
+  const payAmount = getOpportunityPayAmount(opportunity)
+  const budgetMin = Number(railFilters.budgetMin) || 0
+  const budgetMax = Number(railFilters.budgetMax) || 0
+  if (budgetMin && payAmount < budgetMin) return false
+  if (budgetMax && payAmount > budgetMax) return false
+
+  if (railFilters.skill !== 'all' && !(opportunity.tags || []).includes(railFilters.skill)) return false
+
+  return true
+}
+
+export const INITIAL_OPPORTUNITY_RAIL_FILTERS = {
+  budgetMax: '',
+  budgetMin: '',
+  skill: 'all',
+  types: [],
+  workModes: [],
+}
 
 export const OPPORTUNITY_TAB_ITEMS = [
   { label: 'Discover', requiredAccess: ACCESS_KEYS.opportunities.discover },

@@ -1,5 +1,5 @@
-import { FiChevronLeft, FiChevronRight } from 'react-icons/fi'
 import Seo from '../components/Seo'
+import { Pagination } from '../components/ui'
 import { BusinessOpportunityBoard } from '../features/business/components/BusinessOpportunityBoard'
 import { BusinessOpportunityInvitePanel } from '../features/business/components/BusinessOpportunityInvitePanel'
 import { BusinessOpportunityRail } from '../features/business/components/BusinessOpportunityRail'
@@ -32,11 +32,17 @@ function BusinessOpportunitiesPage() {
             {opportunities.reviewOpportunity ? (
               <BusinessOpportunityReviewWorkspace
                 activeApplicationStatus={opportunities.activeApplicationStatus}
+                activeInterviewConversation={opportunities.activeInterviewConversation}
                 activeReviewTab={opportunities.activeReviewTab}
+                applications={opportunities.reviewApplicants}
+                applicationsError={opportunities.reviewApplicantsError}
+                isLoadingApplications={opportunities.isLoadingReviewApplicants}
                 onBack={opportunities.onCloseReviewOpportunity}
                 onChangeApplicationStatus={opportunities.onChangeApplicationStatus}
                 onChangeReviewTab={opportunities.onChangeReviewTab}
                 onPublishOpportunity={opportunities.onPublishOpportunity}
+                onScheduleApplicantInterview={opportunities.onScheduleApplicantInterview}
+                onStartApplicantInterview={opportunities.onStartApplicantInterview}
                 opportunity={opportunities.reviewOpportunity}
                 openPublishPayment={opportunities.openPublishPaymentForReview}
               />
@@ -68,19 +74,19 @@ function BusinessOpportunitiesPage() {
                   opportunities={opportunities.opportunities}
                   viewMode={opportunities.filterState.viewMode}
                 />
-                <footer className="business-opportunities-pagination">
-                  <p>Showing 1 to {opportunities.showingCount} of {opportunities.totalCount} opportunities</p>
-                  <div>
-                    <button type="button" aria-label="Previous page"><FiChevronLeft aria-hidden="true" /></button>
-                    <button type="button" className="is-active">1</button>
-                    <button type="button">2</button>
-                    <button type="button">3</button>
-                    <span>...</span>
-                    <button type="button">5</button>
-                    <button type="button" aria-label="Next page"><FiChevronRight aria-hidden="true" /></button>
-                    <button type="button">5 per page</button>
-                  </div>
-                </footer>
+                <Pagination
+                  className="business-opportunities-pagination"
+                  itemsLabel="opportunities"
+                  onChangePage={opportunities.onChangePage}
+                  onChangePageSize={opportunities.onChangePageSize}
+                  page={opportunities.page}
+                  pageCount={opportunities.pageCount}
+                  pageSize={opportunities.pageSize}
+                  pageSizeOptions={opportunities.pageSizeOptions}
+                  showingFrom={opportunities.showingFrom}
+                  showingTo={opportunities.showingTo}
+                  totalCount={opportunities.totalCount}
+                />
               </>
             )}
           </section>
@@ -89,12 +95,13 @@ function BusinessOpportunitiesPage() {
             <BusinessOpportunityReviewRail
               activeApplicationStatus={opportunities.activeApplicationStatus}
               activeReviewTab={opportunities.activeReviewTab}
+              applications={opportunities.reviewApplicants}
               opportunity={opportunities.reviewOpportunity}
             />
           ) : (
             <BusinessOpportunityRail
               activity={opportunities.activity}
-              skillsDemand={opportunities.skillsDemand}
+              topFreelancers={opportunities.topFreelancers}
               summary={opportunities.summary}
             />
           )}
@@ -105,6 +112,8 @@ function BusinessOpportunitiesPage() {
         candidates={opportunities.inviteCandidates}
         inviteNote={opportunities.inviteNote}
         inviteOpportunity={opportunities.inviteOpportunity}
+        isLoading={opportunities.isLoadingInviteCandidates}
+        isSending={opportunities.isSendingInvites}
         onChangeInviteNote={opportunities.onChangeInviteNote}
         onChangeInviteQuery={opportunities.onChangeInviteQuery}
         onClose={opportunities.onCloseInvitePanel}

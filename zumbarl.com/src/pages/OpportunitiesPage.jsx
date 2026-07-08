@@ -28,10 +28,15 @@ function OpportunitiesPage() {
 
           <section className="campus-main opportunities-main">
             <OpportunitiesHeader
+              activeLocation={pageState.activeLocation}
               activeOpportunityTab={pageState.activeOpportunityTab}
+              locationOptions={pageState.locationOptions}
               newInvitesCount={pageState.newInvitesCount}
+              onLocationChange={pageState.onLocationChange}
+              onSearchQueryChange={pageState.onSearchQueryChange}
               onTabChange={pageState.onTabChange}
               opportunitySearchRef={pageState.opportunitySearchRef}
+              searchQuery={pageState.searchQuery}
             />
 
             <OpportunitiesTabContent
@@ -44,13 +49,18 @@ function OpportunitiesPage() {
               invites={pageState.invites}
               newInvitesCount={pageState.newInvitesCount}
               onBidSelect={pageState.onBidSelect}
+              onClearFilters={pageState.onClearFilters}
               onOpenMarketingCampaign={pageState.onOpenMarketingCampaign}
+              onOpenMessages={pageState.onOpenMessages}
               onOpenPlaceBid={pageState.onOpenPlaceBid}
               onOpenProject={pageState.onOpenProject}
               onOpportunitySelect={pageState.onOpportunitySelect}
+              onOpportunityTypeChange={pageState.onOpportunityTypeChange}
               onViewBooking={pageState.onViewBooking}
+              opportunityTypeOptions={pageState.opportunityTypeOptions}
               projects={pageState.projects}
               activeOpportunityIntentId={pageState.activeOpportunityIntent.id}
+              activeOpportunityTypeId={pageState.activeOpportunityTypeId}
               selectedBidId={pageState.selectedBidId}
               selectedOpportunityUuid={pageState.selectedOpportunityUuid}
               visibleBids={pageState.visibleBids}
@@ -66,9 +76,14 @@ function OpportunitiesPage() {
               isFilterExpanded={pageState.isFilterExpanded}
               isFilterPanelVisible={pageState.isFilterPanelVisible}
               onBackToDetail={pageState.onBackToDetail}
+              onClearFilters={pageState.onClearFilters}
               onCloseDetails={pageState.onCloseDetails}
               onEditFilters={pageState.onEditFilters}
               onOpenPlaceBid={pageState.onOpenPlaceBid}
+              onRailFilterChange={pageState.onRailFilterChange}
+              onRailFilterToggle={pageState.onRailFilterToggle}
+              railFilters={pageState.railFilters}
+              skillOptions={pageState.skillOptions}
               activeOpportunityIntentId={pageState.activeOpportunityIntent.id}
               selectedOpportunity={pageState.selectedOpportunity}
               selectedOpportunityThumbnail={pageState.selectedOpportunityThumbnail}

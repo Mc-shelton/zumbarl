@@ -1,6 +1,6 @@
 import { FiCalendar, FiCreditCard, FiUsers } from 'react-icons/fi'
 
-function OpportunitiesOngoingPanel({ onOpenProject, projects = [] }) {
+function OpportunitiesOngoingPanel({ onOpenMessages = () => {}, onOpenProject, projects = [] }) {
   const dueSoonCount = projects.filter((project) => project.statusTone === 'is-scheduled').length
   const pendingInputCount = projects.filter((project) => project.statusTone === 'is-awaiting').length
 
@@ -11,7 +11,6 @@ function OpportunitiesOngoingPanel({ onOpenProject, projects = [] }) {
           <h2>Ongoing</h2>
           <p>Active jobs, gigs and projects you have already won or accepted.</p>
         </div>
-        <button type="button" className="campus-link-btn">View calendar</button>
       </div>
 
       <div className="opportunities-service-orders-summary">
@@ -64,7 +63,7 @@ function OpportunitiesOngoingPanel({ onOpenProject, projects = [] }) {
             <footer className="opportunities-service-order-foot">
               <p className="opportunities-service-order-amount">{project.progress}</p>
               <div className="opportunities-service-order-actions">
-                <button type="button" className="campus-link-btn">Message</button>
+                <button type="button" className="campus-link-btn" onClick={onOpenMessages}>Message</button>
                 <button
                   type="button"
                   className="opportunities-search-btn"

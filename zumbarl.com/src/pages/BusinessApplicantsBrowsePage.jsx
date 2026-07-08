@@ -16,6 +16,12 @@ import Seo from '../components/Seo'
 import { Breadcrumb, StatusPill } from '../components/ui'
 import { BusinessWorkspaceHeader } from '../features/business/components/BusinessWorkspaceHeader'
 import { BusinessWorkspaceSidebar } from '../features/business/components/BusinessApplicantSidebar'
+import {
+  BROWSE_AVAILABILITY_FILTERS,
+  BROWSE_QUICK_FILTERS,
+  BROWSE_RELATIONSHIP_FILTERS,
+  useBusinessBrowseStudents,
+} from '../features/business/hooks/useBusinessBrowseStudents'
 import '../styles/campus.css'
 import '../styles/business.css'
 
@@ -311,6 +317,8 @@ function BusinessStudentCard({ student }) {
 }
 
 function BusinessApplicantsBrowsePage() {
+  const browse = useBusinessBrowseStudents(STUDENT_GROUPS)
+
   return (
     <main className="campus-page business-workspace-page business-applicants-browse-page">
       <Seo
@@ -342,17 +350,23 @@ function BusinessApplicantsBrowsePage() {
             <section className="business-browse-categories" aria-labelledby="business-browse-categories-title">
               <header>
                 <h2 id="business-browse-categories-title">Browse by Category</h2>
-                <button type="button">View all categories</button>
+                <button type="button" onClick={() => browse.onCategoryChange('all')}>View all categories</button>
               </header>
               <div>
-                {BROWSE_CATEGORIES.map((category, index) => {
+                {BROWSE_CATEGORIES.map((category) => {
                   const CategoryIcon = category.icon
 
                   return (
-                    <button key={category.id} type="button" className={index === 0 ? 'is-active' : ''}>
+                    <button
+                      key={category.id}
+                      type="button"
+                      className={browse.activeCategoryId === category.id ? 'is-active' : ''}
+                      aria-pressed={browse.activeCategoryId === category.id}
+                      onClick={() => browse.onCategoryChange(category.id)}
+                    >
                       <span><CategoryIcon aria-hidden="true" /></span>
                       <strong>{category.label}</strong>
-                      <em>{category.count} students</em>
+                      <em>{browse.categoryCounts[category.id] || 0} students</em>
                     </button>
                   )
                 })}
@@ -362,27 +376,43 @@ function BusinessApplicantsBrowsePage() {
             <section className="business-profile-card business-browse-discovery-card">
               <label>
                 <FiSearch aria-hidden="true" />
-                <input type="search" placeholder="Search students by skill, school, service, or availability..." />
+                <input
+                  type="search"
+                  placeholder="Search students by skill, school, service, or availability..."
+                  value={browse.query}
+                  onChange={(event) => browse.onQueryChange(event.target.value)}
+                />
               </label>
-              <select defaultValue="skills" aria-label="Filter by skills">
-                <option value="skills">Skills</option>
-                <option value="social-media">Social Media</option>
-                <option value="ui-ux">UI/UX Design</option>
-                <option value="video-editing">Video Editing</option>
+              <select
+                value={browse.activeCategoryId}
+                aria-label="Filter by category"
+                onChange={(event) => browse.onCategoryChange(event.target.value)}
+              >
+                <option value="all">All categories</option>
+                {BROWSE_CATEGORIES.filter((category) => category.id !== 'all').map((category) => (
+                  <option key={category.id} value={category.id}>{category.label}</option>
+                ))}
               </select>
-              <select defaultValue="availability" aria-label="Filter by availability">
-                <option value="availability">Availability</option>
-                <option value="now">Available now</option>
-                <option value="soon">Available soon</option>
-              </select>
-              <select defaultValue="recommended" aria-label="Sort students">
+              <select
+                value={browse.sortBy}
+                aria-label="Sort students"
+                onChange={(event) => browse.onSortChange(event.target.value)}
+              >
                 <option value="recommended">Sort by: Recommended</option>
                 <option value="score">Score</option>
                 <option value="relationship">Relationship history</option>
               </select>
               <div>
-                {['Worked with us', 'Available this week', 'Social media', 'UI/UX', 'Video editing', 'High score'].map((filter) => (
-                  <button key={filter} type="button">{filter}</button>
+                {BROWSE_QUICK_FILTERS.map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    className={browse.activeQuickFilters.includes(filter) ? 'is-active' : ''}
+                    aria-pressed={browse.activeQuickFilters.includes(filter)}
+                    onClick={() => browse.onToggleQuickFilter(filter)}
+                  >
+                    {filter}
+                  </button>
                 ))}
               </div>
             </section>
@@ -440,7 +470,7 @@ function BusinessApplicantsBrowsePage() {
             </section>
 
             <section className="business-browse-groups" aria-label="Student groups">
-              {STUDENT_GROUPS.map((group) => {
+              {browse.visibleGroups.map((group) => {
                 const GroupIcon = group.icon || FiUsers
 
                 return (
@@ -461,6 +491,20 @@ function BusinessApplicantsBrowsePage() {
                   </section>
                 )
               })}
+              {!browse.visibleGroups.length ? (
+                <section className="business-profile-card business-browse-group-card" aria-live="polite">
+                  <header>
+                    <div>
+                      <span><FiUsers aria-hidden="true" /></span>
+                      <div>
+                        <h2>No students match these filters</h2>
+                        <p>Try clearing a filter or searching for a different skill, school, or service.</p>
+                      </div>
+                    </div>
+                    <button type="button" className="business-link-btn" onClick={browse.onClearFilters}>Clear filters</button>
+                  </header>
+                </section>
+              ) : null}
             </section>
           </section>
 
@@ -468,42 +512,59 @@ function BusinessApplicantsBrowsePage() {
             <section className="business-profile-card business-browse-filter-card">
               <header>
                 <h2><FiFilter aria-hidden="true" /> Filters</h2>
-                <button type="button">Clear all</button>
+                <button type="button" onClick={browse.onClearFilters}>Clear all</button>
               </header>
               <fieldset>
                 <legend>Category</legend>
-                {BROWSE_CATEGORIES.slice(0, 5).map((category, index) => (
+                {BROWSE_CATEGORIES.map((category) => (
                   <label key={category.id}>
-                    <input type="checkbox" defaultChecked={index === 0} />
+                    <input
+                      type="radio"
+                      name="browse-category"
+                      checked={browse.activeCategoryId === category.id}
+                      onChange={() => browse.onCategoryChange(category.id)}
+                    />
                     {category.label}
                   </label>
                 ))}
               </fieldset>
               <fieldset>
                 <legend>Availability</legend>
-                <label><input type="checkbox" /> Available now</label>
-                <label><input type="checkbox" /> Available soon</label>
-                <label><input type="checkbox" /> Open to interviews</label>
+                {BROWSE_AVAILABILITY_FILTERS.map((filter) => (
+                  <label key={filter}>
+                    <input
+                      type="checkbox"
+                      checked={browse.availabilityFilters.includes(filter)}
+                      onChange={() => browse.onToggleAvailability(filter)}
+                    />
+                    {' '}{filter}
+                  </label>
+                ))}
               </fieldset>
               <fieldset>
                 <legend>Relationship</legend>
-                <label><input type="checkbox" /> Worked with you</label>
-                <label><input type="checkbox" /> Repeat clients</label>
-                <label><input type="checkbox" /> Has promoted services</label>
+                {BROWSE_RELATIONSHIP_FILTERS.map((filter) => (
+                  <label key={filter}>
+                    <input
+                      type="checkbox"
+                      checked={browse.relationshipFilters.includes(filter)}
+                      onChange={() => browse.onToggleRelationship(filter)}
+                    />
+                    {' '}{filter}
+                  </label>
+                ))}
               </fieldset>
-              <button type="button" className="business-profile-primary-btn">Apply Filters</button>
             </section>
 
             <section className="business-profile-card">
               <header>
                 <h2>Browse Summary</h2>
-                <button type="button" className="business-workspace-filter">This week</button>
               </header>
               <dl>
-                <div><dt><FiUsers aria-hidden="true" /> Matched students</dt><dd>248</dd></div>
-                <div><dt><FiBriefcase aria-hidden="true" /> Promoted services</dt><dd>36</dd></div>
-                <div><dt><FiClock aria-hidden="true" /> Available this week</dt><dd>82</dd></div>
-                <div><dt><FiZap aria-hidden="true" /> Worked with you</dt><dd>17</dd></div>
+                <div><dt><FiUsers aria-hidden="true" /> Matched students</dt><dd>{browse.summary.matchedStudents}</dd></div>
+                <div><dt><FiBriefcase aria-hidden="true" /> Promoted services</dt><dd>{browse.summary.promotedServices}</dd></div>
+                <div><dt><FiClock aria-hidden="true" /> Available this week</dt><dd>{browse.summary.availableThisWeek}</dd></div>
+                <div><dt><FiZap aria-hidden="true" /> Worked with you</dt><dd>{browse.summary.workedWithYou}</dd></div>
               </dl>
             </section>
 

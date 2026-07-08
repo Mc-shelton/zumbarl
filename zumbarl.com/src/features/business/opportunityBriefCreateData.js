@@ -24,6 +24,10 @@ export const BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS = {
   paymentTerms: 'Milestone-based',
   portfolioRequired: 'Portfolio samples required',
   preferredQualifications: 'Experience managing Instagram or TikTok pages for clubs, student groups, or small businesses.',
+  qualificationQuestions: [
+    'Describe one relevant project you have completed and the result you achieved.',
+    'What is your weekly availability for this opportunity?',
+  ],
   requiredAttachments: [
     { id: 'required-portfolio-samples', label: 'Portfolio samples', fileType: 'PDF' },
     { id: 'required-content-examples', label: 'Two relevant content examples', fileType: 'Link' },

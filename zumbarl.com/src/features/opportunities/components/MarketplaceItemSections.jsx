@@ -1,4 +1,5 @@
 import { FiClock, FiHeart, FiMapPin } from 'react-icons/fi'
+import { TabNav } from '../../../components/ui'
 import { RECENT_FILTERS } from '../../../data/marketplace'
 
 function MarketplaceItemCard({
@@ -56,10 +57,13 @@ function MarketplaceItemCard({
 
 function MarketplaceItemSections({
   activeCategory,
+  activeRecentFilter = 'All',
   filteredFeaturedItems,
   filteredRecentItems,
   onCardKeyDown,
+  onCategoryChange = () => {},
   onOpenItemDetail,
+  onRecentFilterChange = () => {},
 }) {
   return (
     <>
@@ -68,7 +72,9 @@ function MarketplaceItemSections({
           <div>
             <h2>Featured Items</h2>
           </div>
-          <button type="button" className="campus-link-btn">View all</button>
+          {activeCategory !== 'All Items' ? (
+            <button type="button" className="campus-link-btn" onClick={() => onCategoryChange('All Items')}>View all</button>
+          ) : null}
         </div>
 
         <div className="opportunities-marketplace-featured-grid">
@@ -94,16 +100,27 @@ function MarketplaceItemSections({
           <div>
             <h2>Recently Added</h2>
           </div>
-          <button type="button" className="campus-link-btn">View all</button>
+          {activeCategory !== 'All Items' || activeRecentFilter !== 'All' ? (
+            <button
+              type="button"
+              className="campus-link-btn"
+              onClick={() => {
+                onCategoryChange('All Items')
+                onRecentFilterChange('All')
+              }}
+            >
+              View all
+            </button>
+          ) : null}
         </div>
 
-        <div className="opportunities-marketplace-filters" role="tablist" aria-label="Recently added filters">
-          {RECENT_FILTERS.map((filter, index) => (
-            <button key={filter} type="button" className={index === 0 ? 'is-active' : ''}>
-              {filter}
-            </button>
-          ))}
-        </div>
+        <TabNav
+          activeId={activeRecentFilter}
+          ariaLabel="Recently added filters"
+          className="opportunities-marketplace-filters"
+          items={RECENT_FILTERS.map((filter) => ({ id: filter, label: filter }))}
+          onChange={onRecentFilterChange}
+        />
 
         <div className="opportunities-marketplace-recent-grid">
           {filteredRecentItems.map((item) => (

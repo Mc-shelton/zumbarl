@@ -30,35 +30,68 @@ const TIMELINE = [
   { label: 'Completed', date: '-' },
 ]
 
-function ApplicationsRail({ activeApplicationStatus, opportunity }) {
+function getApplicationSummary(applications) {
+  const summary = applications.reduce((counts, application) => {
+    const status = String(application.status || 'submitted').toLowerCase()
+    let key = 'new'
+    if (['shortlisted', 'interview_scheduled'].includes(status)) key = 'shortlisted'
+    if (['accepted', 'awarded'].includes(status)) key = 'accepted'
+    if (['rejected', 'removed'].includes(status)) key = 'rejected'
+
+    return {
+      ...counts,
+      [key]: counts[key] + 1,
+    }
+  }, { new: 0, shortlisted: 0, accepted: 0, rejected: 0 })
+  const totalBidAmount = applications.reduce((total, application) => total + Number(application.bidAmount || 0), 0)
+
+  return {
+    ...summary,
+    total: applications.length,
+    averageBid: applications.length ? Math.round(totalBidAmount / applications.length) : 0,
+    withAttachments: applications.filter((application) => Array.isArray(application.attachments) && application.attachments.length).length,
+  }
+}
+
+function ApplicationSummaryCard({ applications, withEditIcon = false }) {
+  const summary = getApplicationSummary(applications)
+
+  return (
+    <section className="business-profile-card business-review-summary-card">
+      <header>
+        <h2>Application Summary</h2>
+        <button type="button">{withEditIcon ? <FiEdit3 aria-hidden="true" /> : null} Edit</button>
+      </header>
+      <dl>
+        <div><dt>Total Applications</dt><dd>{summary.total}</dd></div>
+        <div><dt>New</dt><dd>{summary.new}</dd></div>
+        <div><dt>Shortlisted</dt><dd>{summary.shortlisted}</dd></div>
+        <div><dt>Accepted</dt><dd>{summary.accepted}</dd></div>
+        <div><dt>Rejected</dt><dd>{summary.rejected}</dd></div>
+      </dl>
+      <hr />
+      <dl>
+        <div><dt>Average Bid</dt><dd>KES {summary.averageBid.toLocaleString()}</dd></div>
+        <div><dt>With Attachments</dt><dd>{summary.withAttachments}</dd></div>
+      </dl>
+    </section>
+  )
+}
+
+function ApplicationsRail({ activeApplicationStatus, applications }) {
+  const summary = getApplicationSummary(applications)
+
   if (activeApplicationStatus === 'shortlisted') {
     return (
       <>
-        <section className="business-profile-card business-review-summary-card">
-          <header>
-            <h2>Application Summary</h2>
-            <button type="button">Edit</button>
-          </header>
-          <dl>
-            <div><dt>Total Applications</dt><dd>{opportunity.applicants || 18}</dd></div>
-            <div><dt>New</dt><dd>5</dd></div>
-            <div><dt>Shortlisted</dt><dd>6</dd></div>
-            <div><dt>Accepted</dt><dd>3</dd></div>
-            <div><dt>Rejected</dt><dd>4</dd></div>
-          </dl>
-          <hr />
-          <dl>
-            <div><dt>Avg. Engagement Rate</dt><dd>5.6%</dd></div>
-            <div><dt>Total Reach</dt><dd>124.3K</dd></div>
-          </dl>
-        </section>
+        <ApplicationSummaryCard applications={applications} />
 
         <section className="business-profile-card business-review-shortlisted-insights-card">
           <h2>Shortlisted Insights</h2>
-          <p><FiCheckCircle aria-hidden="true" /> Great! You have 6 strong creators shortlisted.</p>
+          <p><FiCheckCircle aria-hidden="true" /> You have {summary.shortlisted} applicants shortlisted.</p>
           <div>
-            <article><span>Avg. Eng. Rate</span><strong>5.7%</strong></article>
-            <article><span>Total Reach</span><strong>118.7K</strong></article>
+            <article><span>Average Bid</span><strong>KES {summary.averageBid.toLocaleString()}</strong></article>
+            <article><span>Attachments</span><strong>{summary.withAttachments}</strong></article>
           </div>
         </section>
 
@@ -80,24 +113,7 @@ function ApplicationsRail({ activeApplicationStatus, opportunity }) {
 
   return (
     <>
-      <section className="business-profile-card business-review-summary-card">
-        <header>
-          <h2>Application Summary</h2>
-          <button type="button"><FiEdit3 aria-hidden="true" /> Edit</button>
-        </header>
-        <dl>
-          <div><dt>Total Applications</dt><dd>{opportunity.applicants || 18}</dd></div>
-          <div><dt>New</dt><dd>5</dd></div>
-          <div><dt>Shortlisted</dt><dd>6</dd></div>
-          <div><dt>Accepted</dt><dd>3</dd></div>
-          <div><dt>Rejected</dt><dd>4</dd></div>
-        </dl>
-        <hr />
-        <dl>
-          <div><dt>Avg. Engagement Rate</dt><dd>5.6%</dd></div>
-          <div><dt>Total Reach</dt><dd>124.3K</dd></div>
-        </dl>
-      </section>
+      <ApplicationSummaryCard applications={applications} withEditIcon />
 
       <section className="business-profile-card business-review-quick-actions-card">
         <h2>Quick Actions</h2>
@@ -345,13 +361,14 @@ function ActivityRail() {
   )
 }
 
-export function BusinessOpportunityReviewRail({ activeApplicationStatus, activeReviewTab, opportunity }) {
+export function BusinessOpportunityReviewRail({ activeApplicationStatus, activeReviewTab, applications = [], opportunity }) {
   if (!opportunity) return null
+  const applicationSummary = getApplicationSummary(applications)
 
   return (
     <aside className="campus-rail business-workspace-rail business-opportunity-review-rail">
       {activeReviewTab === 'applications' ? (
-        <ApplicationsRail activeApplicationStatus={activeApplicationStatus} opportunity={opportunity} />
+        <ApplicationsRail activeApplicationStatus={activeApplicationStatus} applications={applications} />
       ) : activeReviewTab === 'deliverables' ? (
         <DeliverablesRail opportunity={opportunity} />
       ) : activeReviewTab === 'payments' ? (
@@ -374,9 +391,9 @@ export function BusinessOpportunityReviewRail({ activeApplicationStatus, activeR
         </dl>
         <div className="business-review-spend-bar"><span /></div>
         <dl>
-          <div><dt>Applications</dt><dd>{opportunity.applicants}</dd></div>
-          <div><dt>Shortlisted</dt><dd>6</dd></div>
-          <div><dt>Accepted</dt><dd>3</dd></div>
+          <div><dt>Applications</dt><dd>{applicationSummary.total}</dd></div>
+          <div><dt>Shortlisted</dt><dd>{applicationSummary.shortlisted}</dd></div>
+          <div><dt>Accepted</dt><dd>{applicationSummary.accepted}</dd></div>
           <div><dt>Completed</dt><dd>{opportunity.status === 'Completed' ? 1 : 0}</dd></div>
         </dl>
       </section>

@@ -1,5 +1,6 @@
 import { FiArrowRight, FiBriefcase, FiClock } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import { getSplashCropStyle } from '../../../lib/getSplashCropStyle'
 import { BusinessOpportunityTabs } from './BusinessOpportunityTabs'
 
 function getOpportunityImage(opportunity) {
@@ -34,7 +35,7 @@ function OpportunityRowMedia({ opportunity }) {
 
   return (
     <figure className="business-opportunity-row-media">
-      <img src={imageUrl} alt="" loading="lazy" />
+      <img src={imageUrl} alt="" loading="lazy" style={getSplashCropStyle(opportunity.opportunitySplash) || undefined} />
     </figure>
   )
 }

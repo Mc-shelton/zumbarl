@@ -29,6 +29,7 @@ const BUSINESS_OPPORTUNITY_BRIEF_DRAFT_FALLBACKS = {
   paymentTerms: '',
   portfolioRequired: '',
   preferredQualifications: '',
+  qualificationQuestions: [],
   requiredAttachments: [],
   screeningFocus: '',
   skills: '',
@@ -247,6 +248,7 @@ function toPayload(form, status, clarityScore, options = {}) {
     paymentTerms: includeScope ? form.paymentTerms : undefined,
     portfolioRequired: includeRequirements ? form.portfolioRequired : undefined,
     preferredQualifications: includeRequirements ? form.preferredQualifications : undefined,
+    qualificationQuestions: includeRequirements ? form.qualificationQuestions : undefined,
     requiredAttachments: includeRequirements ? form.requiredAttachments : undefined,
     scopeMode: includeScope ? scopeMode : undefined,
     screeningFocus: includeRequirements ? form.screeningFocus : undefined,
@@ -279,6 +281,7 @@ function getOpportunityFormDraft(opportunity) {
     deliverableMilestones: normalizeScopeItemsForForm(opportunity.deliverableMilestones),
     milestoneScopes: normalizeScopeItemsForForm(opportunity.milestoneScopes),
     mustHave: Array.isArray(opportunity.mustHave) ? opportunity.mustHave : [],
+    qualificationQuestions: Array.isArray(opportunity.qualificationQuestions) ? opportunity.qualificationQuestions : [],
     requiredAttachments: Array.isArray(opportunity.requiredAttachments) ? opportunity.requiredAttachments : [],
   }
 }

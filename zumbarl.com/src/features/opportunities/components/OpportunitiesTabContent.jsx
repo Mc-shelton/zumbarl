@@ -7,6 +7,7 @@ import OpportunitiesServiceOrdersPanel from './OpportunitiesServiceOrdersPanel'
 function OpportunitiesTabContent({
   activeInviteClientsCount,
   activeOpportunityIntentId,
+  activeOpportunityTypeId,
   actionRequiredServiceOrdersCount,
   activeOpportunityTab,
   completedServiceOrdersCount,
@@ -15,11 +16,15 @@ function OpportunitiesTabContent({
   invites,
   newInvitesCount,
   onBidSelect,
+  onClearFilters,
   onOpenMarketingCampaign,
+  onOpenMessages,
   onOpenPlaceBid,
   onOpenProject,
   onOpportunitySelect,
+  onOpportunityTypeChange,
   onViewBooking,
+  opportunityTypeOptions,
   projects,
   selectedBidId,
   selectedOpportunityUuid,
@@ -30,9 +35,13 @@ function OpportunitiesTabContent({
     return (
       <OpportunitiesDiscoverPanel
         activeOpportunityIntentId={activeOpportunityIntentId}
+        activeOpportunityTypeId={activeOpportunityTypeId}
+        onClearFilters={onClearFilters}
         onOpenMarketingCampaign={onOpenMarketingCampaign}
         onOpportunitySelect={onOpportunitySelect}
+        onOpportunityTypeChange={onOpportunityTypeChange}
         opportunities={visibleOpportunities}
+        opportunityTypeOptions={opportunityTypeOptions}
         selectedOpportunityUuid={selectedOpportunityUuid}
       />
     )
@@ -62,7 +71,7 @@ function OpportunitiesTabContent({
   }
 
   if (activeOpportunityTab === 'Ongoing') {
-    return <OpportunitiesOngoingPanel onOpenProject={onOpenProject} projects={projects} />
+    return <OpportunitiesOngoingPanel onOpenMessages={onOpenMessages} onOpenProject={onOpenProject} projects={projects} />
   }
 
   if (activeOpportunityTab === 'Service Orders') {

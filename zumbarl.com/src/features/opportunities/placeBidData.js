@@ -115,6 +115,7 @@ export function toBidGig(opportunity, invite) {
   return withBidProcess({
     careerPath: opportunity?.careerPath,
     id: opportunity?.id || invite?.opportunityId || 'default',
+    submissionOpportunityId: opportunity?.submissionOpportunityId || opportunity?.id || invite?.opportunityId || 'default',
     intentFit: opportunity?.intentFit,
     title: opportunity?.title || invite?.title || PLACE_BID_FALLBACK_GIGS.default.title,
     company: opportunity?.company || invite?.company || PLACE_BID_FALLBACK_GIGS.default.company,
@@ -127,6 +128,12 @@ export function toBidGig(opportunity, invite) {
     experienceLevel: safeTags.length > 3 ? 'Intermediate' : 'Entry Level',
     progressionOutcome: opportunity?.progressionOutcome,
     skills: safeTags.length ? safeTags : (invite?.tags || PLACE_BID_FALLBACK_GIGS.default.skills),
+    qualificationQuestions: Array.isArray(opportunity?.qualificationQuestions)
+      ? opportunity.qualificationQuestions
+      : [],
+    requiredAttachments: Array.isArray(opportunity?.requiredAttachments)
+      ? opportunity.requiredAttachments
+      : [],
     trustOutcome: opportunity?.trustOutcome,
   })
 }

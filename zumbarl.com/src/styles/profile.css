@@ -248,6 +248,64 @@
   font-size: 20px;
 }
 
+.campus-profile-settings-wrap {
+  position: relative;
+}
+
+.campus-profile-settings-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  width: 300px;
+  display: grid;
+  gap: 8px;
+  border: 1px solid #d6dcef;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(31, 37, 80, 0.16);
+  padding: 14px;
+}
+
+.campus-profile-settings-menu > strong {
+  color: #1f2550;
+  font-size: 14px;
+}
+
+.campus-profile-settings-menu > p {
+  margin: 0;
+  color: #677092;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.campus-profile-settings-menu > button {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+  border: 1px solid #e6e9f7;
+  border-radius: 11px;
+  background: #fbfbfe;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+
+.campus-profile-settings-menu > button.is-active {
+  border-color: var(--theme-purple, #5f42e8);
+  background: #f5f2ff;
+}
+
+.campus-profile-settings-menu > button strong {
+  color: #1f2550;
+  font-size: 13.5px;
+}
+
+.campus-profile-settings-menu > button span {
+  color: #677092;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
 .campus-profile-metrics {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));

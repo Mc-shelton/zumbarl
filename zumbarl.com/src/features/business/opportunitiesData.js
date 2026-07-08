@@ -30,11 +30,8 @@ export const BUSINESS_OPPORTUNITY_FILTERS = {
   stages: [
     { label: 'All Stages', value: 'all' },
     { label: 'Open', value: 'Open' },
-    { label: 'In Review', value: 'In Review' },
-    { label: 'Shortlisted', value: 'Shortlisted' },
-    { label: 'Completed', value: 'Completed' },
+    { label: 'Pending', value: 'Pending' },
     { label: 'Draft', value: 'Draft' },
-    { label: 'Archived', value: 'Archived' },
   ],
 }
 
@@ -196,12 +193,12 @@ export const BUSINESS_OPPORTUNITY_ROWS = [
   },
 ]
 
-export const BUSINESS_OPPORTUNITY_SKILL_DEMAND = [
-  { label: 'Social Media', value: 42, tone: 'purple' },
-  { label: 'UI/UX Design', value: 34, tone: 'orange' },
-  { label: 'Web Development', value: 28, tone: 'green' },
-  { label: 'Data Analysis', value: 18, tone: 'blue' },
-  { label: 'Video Editing', value: 16, tone: 'pink' },
+export const BUSINESS_OPPORTUNITY_TOP_FREELANCERS = [
+  { id: 'aisha-mwangi', initials: 'AM', name: 'Aisha Mwangi', school: 'Strathmore University', skill: 'Social Media', rating: 4.9, projects: 23, tone: 'purple' },
+  { id: 'kevin-mutua', initials: 'KM', name: 'Kevin Mutua', school: 'Multimedia University', skill: 'UI/UX Design', rating: 4.8, projects: 18, tone: 'green' },
+  { id: 'grace-wanjiku', initials: 'GW', name: 'Grace Wanjiku', school: 'Kenyatta University', skill: 'Copywriting', rating: 4.8, projects: 15, tone: 'blue' },
+  { id: 'brian-otieno', initials: 'BO', name: 'Brian Otieno', school: 'Jomo Kenyatta University', skill: 'Data Analysis', rating: 4.7, projects: 12, tone: 'orange' },
+  { id: 'faith-njeri', initials: 'FN', name: 'Faith Njeri', school: 'University of Nairobi', skill: 'Video Editing', rating: 4.7, projects: 11, tone: 'pink' },
 ]
 
 export const BUSINESS_OPPORTUNITY_ACTIVITY = [
@@ -214,8 +211,7 @@ export const BUSINESS_OPPORTUNITY_ACTIVITY = [
 export const BUSINESS_OPPORTUNITY_SUMMARY = [
   { icon: 'briefcase', label: 'Total', tone: 'purple', value: 24 },
   { icon: 'check', label: 'Open', tone: 'green', value: 8 },
-  { icon: 'review', label: 'In Review', tone: 'blue', value: 6 },
-  { icon: 'users', label: 'Shortlisted', tone: 'purple', value: 5 },
+  { icon: 'review', label: 'Pending', tone: 'blue', value: 11 },
   { icon: 'check', label: 'Completed', tone: 'green', value: 1 },
   { icon: 'draft', label: 'Drafts', tone: 'neutral', value: 3 },
   { icon: 'closed', label: 'Archived', tone: 'orange', value: 1 },

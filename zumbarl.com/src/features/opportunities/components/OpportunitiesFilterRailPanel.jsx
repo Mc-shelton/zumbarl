@@ -1,4 +1,3 @@
-import { FiChevronDown } from 'react-icons/fi'
 import { FILTER_MODES, FILTER_TYPES } from '../constants'
 
 function OpportunitiesFilterRailPanel({
@@ -7,7 +6,12 @@ function OpportunitiesFilterRailPanel({
   isFilterExpanded,
   isFilterPanelVisible,
   onBackToDetail,
+  onClearFilters,
   onEditFilters,
+  onRailFilterChange,
+  onRailFilterToggle,
+  railFilters,
+  skillOptions = [],
 }) {
   return (
     <section
@@ -36,7 +40,7 @@ function OpportunitiesFilterRailPanel({
             Edit filters
           </button>
         ) : (
-          <button type="button" className="campus-link-btn">Clear all</button>
+          <button type="button" className="campus-link-btn" onClick={onClearFilters}>Clear all</button>
         )}
       </header>
 
@@ -47,39 +51,31 @@ function OpportunitiesFilterRailPanel({
       ) : (
         <div className="opportunities-filter-body">
           <div className="opportunities-filter-group">
-            <h4>Category</h4>
-            <button type="button" className="opportunities-select">
-              All Categories
-              <FiChevronDown aria-hidden="true" />
-            </button>
-          </div>
-
-          <div className="opportunities-filter-group">
             <h4>Type</h4>
             <div className="opportunities-checklist">
-              {FILTER_TYPES.map((item, index) => (
+              {FILTER_TYPES.filter((item) => item !== 'All Types').map((item) => (
                 <label key={item} className="opportunities-check-item">
-                  <input type="checkbox" defaultChecked={index === 0} />
+                  <input
+                    type="checkbox"
+                    checked={railFilters.types.includes(item)}
+                    onChange={() => onRailFilterToggle('types', item)}
+                  />
                   <span>{item}</span>
                 </label>
               ))}
             </div>
-          </div>
-
-          <div className="opportunities-filter-group">
-            <h4>Location</h4>
-            <button type="button" className="opportunities-select">
-              All Locations
-              <FiChevronDown aria-hidden="true" />
-            </button>
           </div>
 
           <div className="opportunities-filter-group">
             <h4>Work Mode</h4>
             <div className="opportunities-checklist">
-              {FILTER_MODES.map((item, index) => (
+              {FILTER_MODES.filter((item) => item !== 'All').map((item) => (
                 <label key={item} className="opportunities-check-item">
-                  <input type="checkbox" defaultChecked={index === 0} />
+                  <input
+                    type="checkbox"
+                    checked={railFilters.workModes.includes(item)}
+                    onChange={() => onRailFilterToggle('workModes', item)}
+                  />
                   <span>{item}</span>
                 </label>
               ))}
@@ -87,19 +83,40 @@ function OpportunitiesFilterRailPanel({
           </div>
 
           <div className="opportunities-filter-group">
-            <h4>Budget / Pay</h4>
+            <h4>Budget / Pay (KES)</h4>
             <div className="opportunities-budget-row">
-              <input type="text" placeholder="Min" />
-              <input type="text" placeholder="Max" />
+              <input
+                type="number"
+                min="0"
+                placeholder="Min"
+                aria-label="Minimum budget"
+                value={railFilters.budgetMin}
+                onChange={(event) => onRailFilterChange({ budgetMin: event.target.value })}
+              />
+              <input
+                type="number"
+                min="0"
+                placeholder="Max"
+                aria-label="Maximum budget"
+                value={railFilters.budgetMax}
+                onChange={(event) => onRailFilterChange({ budgetMax: event.target.value })}
+              />
             </div>
           </div>
 
           <div className="opportunities-filter-group">
             <h4>Skills</h4>
-            <button type="button" className="opportunities-select">
-              Select skills
-              <FiChevronDown aria-hidden="true" />
-            </button>
+            <select
+              className="opportunities-select"
+              aria-label="Filter by skill"
+              value={railFilters.skill}
+              onChange={(event) => onRailFilterChange({ skill: event.target.value })}
+            >
+              <option value="all">All skills</option>
+              {skillOptions.map((skill) => (
+                <option key={skill} value={skill}>{skill}</option>
+              ))}
+            </select>
           </div>
         </div>
       )}

@@ -4,6 +4,8 @@ export function BusinessOpportunityInvitePanel({
   candidates,
   inviteNote,
   inviteOpportunity,
+  isLoading = false,
+  isSending = false,
   onChangeInviteNote,
   onChangeInviteQuery,
   onClose,
@@ -39,12 +41,19 @@ export function BusinessOpportunityInvitePanel({
           <input
             type="search"
             placeholder="Search by student, school, or skill"
+            disabled={isLoading}
             onChange={(event) => onChangeInviteQuery(event.target.value)}
           />
         </label>
 
         <div className="business-opportunity-invite-list">
-          {candidates.map((candidate) => {
+          {isLoading ? (
+            <div className="business-opportunity-invite-empty">Loading real student matches...</div>
+          ) : null}
+          {!isLoading && !candidates.length ? (
+            <div className="business-opportunity-invite-empty">No inviteable students found for this opportunity.</div>
+          ) : null}
+          {!isLoading && candidates.map((candidate) => {
             const isSelected = selectedBidderIds.includes(candidate.id)
 
             return (
@@ -80,7 +89,11 @@ export function BusinessOpportunityInvitePanel({
 
         <label className="business-opportunity-invite-note">
           <span>Invite Note</span>
-          <textarea value={inviteNote} onChange={(event) => onChangeInviteNote(event.target.value)} />
+          <textarea
+            value={inviteNote}
+            placeholder="Add a short message about why this student is a good fit and what they should do next."
+            onChange={(event) => onChangeInviteNote(event.target.value)}
+          />
         </label>
 
         <footer>
@@ -90,10 +103,10 @@ export function BusinessOpportunityInvitePanel({
             <button
               type="button"
               className="business-profile-primary-btn"
-              disabled={!selectedCount}
+              disabled={!selectedCount || isSending}
               onClick={onSendInvites}
             >
-              Send Invites
+              {isSending ? 'Sending...' : 'Send Invites'}
               <FiSend aria-hidden="true" />
             </button>
           </div>

@@ -1139,6 +1139,95 @@ font-size: clamp(10px, 1vw, 18px);
   gap: 8px;
 }
 
+.app-notification-menu-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.app-notification-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 10px);
+  right: 0;
+  width: min(360px, calc(100vw - 32px));
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--theme-white);
+  box-shadow: 0 20px 48px rgba(20, 24, 40, 0.18);
+  display: grid;
+  gap: 8px;
+}
+
+.app-notification-menu header {
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app-notification-menu strong {
+  color: var(--theme-dark);
+  font-size: 0.9rem;
+  font-weight: 950;
+}
+
+.app-notification-menu header button {
+  border: 0;
+  background: transparent;
+  color: var(--color-brand-primary);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.app-notification-list {
+  display: grid;
+  gap: 6px;
+}
+
+.app-notification-list p {
+  margin: 0;
+  padding: 20px 12px;
+  color: var(--color-text-muted);
+  text-align: center;
+  font-size: 0.84rem;
+  font-weight: 780;
+}
+
+.app-notification-item {
+  min-height: 72px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface-muted);
+  color: var(--theme-dark);
+  display: grid;
+  gap: 4px;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.app-notification-item.is-unread {
+  border-color: rgba(107, 47, 232, 0.18);
+  background: #f2edff;
+}
+
+.app-notification-item span {
+  font-size: 0.84rem;
+  font-weight: 950;
+}
+
+.app-notification-item small {
+  color: var(--color-text-muted);
+  font-size: 0.76rem;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
 .business-workspace-breadcrumb {
   font-size: 0.78rem;
 }
@@ -3743,14 +3832,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-application-toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(140px, auto)) auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, auto) auto;
   gap: 10px;
   align-items: center;
 }
 
 .business-review-shortlisted-toolbar {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(140px, auto) minmax(155px, auto) minmax(210px, auto) auto;
+  grid-template-columns: minmax(220px, 1fr) minmax(210px, auto) auto;
   gap: 10px;
   align-items: center;
 }
@@ -3803,6 +3892,39 @@ font-size: clamp(10px, 1vw, 18px);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   overflow: hidden;
+}
+
+.business-review-applications-empty {
+  min-height: 220px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: 28px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 7px;
+  text-align: center;
+  color: #69718f;
+  background: #fafbfe;
+}
+
+.business-review-applications-empty svg {
+  font-size: 28px;
+  color: #6b2fe8;
+}
+
+.business-review-applications-empty strong {
+  color: var(--theme-dark);
+}
+
+.business-review-applications-empty p {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+.business-review-applications-empty.is-error {
+  border-color: rgba(208, 24, 24, 0.3);
+  background: rgba(208, 24, 24, 0.04);
 }
 
 .business-review-application-head,
@@ -7624,6 +7746,8 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-review-schedule-fields select,
+.business-review-schedule-fields input,
+.business-review-custom-meeting-link input,
 .business-review-schedule-section textarea {
   width: 100%;
   min-height: 42px;
@@ -7635,6 +7759,26 @@ font-size: clamp(10px, 1vw, 18px);
   font: inherit;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-heavy);
+}
+
+.business-review-custom-meeting-link {
+  margin: 4px 0 0 28px;
+  display: grid;
+  gap: 7px;
+  color: var(--color-text-subtle);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-black);
+}
+
+.business-review-schedule-error {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(208, 24, 24, 0.25);
+  border-radius: var(--radius-sm);
+  color: var(--color-danger);
+  background: rgba(208, 24, 24, 0.06);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-black);
 }
 
 .business-review-interviewers {
@@ -8496,6 +8640,28 @@ font-size: clamp(10px, 1vw, 18px);
   font-weight: var(--font-weight-heavy);
 }
 
+.business-call-status {
+  border: 1px solid #d8cffd;
+  border-radius: 10px;
+  background: #f5f2ff;
+  color: #4a2694;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-heavy);
+}
+
+.business-call-status button {
+  border: 0;
+  background: transparent;
+  color: #bd2535;
+  font: inherit;
+  cursor: pointer;
+}
+
 .business-review-chat-body article {
   display: grid;
   grid-template-columns: 34px minmax(0, 1fr);
@@ -8567,6 +8733,50 @@ font-size: clamp(10px, 1vw, 18px);
   grid-template-columns: minmax(0, 1fr) repeat(3, 34px);
   gap: 10px;
   align-items: center;
+}
+
+.business-review-chat > form {
+  border-top: 1px solid var(--color-border);
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 10px;
+}
+
+.business-review-chat > form input {
+  min-width: 0;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 0 13px;
+  outline: 0;
+}
+
+.business-review-chat > form button {
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  display: grid;
+  place-items: center;
+}
+
+.business-review-chat-empty {
+  min-height: 360px;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  color: #70758a;
+}
+
+.business-review-chat-empty > svg {
+  font-size: 2rem;
+}
+
+.business-message-error {
+  margin: 0;
+  padding: 0 16px 12px;
+  color: #b52235;
+  font-size: var(--font-size-sm);
 }
 
 .business-review-chat > footer input {
@@ -9998,6 +10208,21 @@ font-size: clamp(10px, 1vw, 18px);
   gap: 10px;
 }
 
+.business-opportunity-invite-empty {
+  min-height: 92px;
+  padding: 18px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-muted);
+  color: var(--color-text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 0.84rem;
+  font-weight: 850;
+}
+
 .business-opportunity-bidder-card {
   padding: 13px;
   border: 1px solid var(--color-border);
@@ -10164,6 +10389,22 @@ font-size: clamp(10px, 1vw, 18px);
   border-color: #6b2fe8;
   background: #6b2fe8;
   color: var(--theme-white);
+}
+
+.business-opportunities-pagination button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.business-opportunities-pagination select {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--theme-white);
+  color: var(--theme-dark);
+  font-weight: 900;
+  font-size: 0.82rem;
 }
 
 .business-opportunities-empty {
@@ -11709,12 +11950,92 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-skill-demand-card ul,
+.business-top-freelancers-card ul,
 .business-opportunity-activity-card ul {
   margin: 16px 0 0;
   padding: 0;
   list-style: none;
   display: grid;
   gap: 13px;
+}
+
+.business-top-freelancers-card li {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-areas:
+    'avatar copy'
+    'avatar meta';
+  gap: 2px 9px;
+  align-items: center;
+}
+
+.business-top-freelancers-card li > span {
+  grid-area: avatar;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.66rem;
+  font-weight: 950;
+}
+
+.business-top-freelancers-card li > div {
+  grid-area: copy;
+  min-width: 0;
+}
+
+.business-top-freelancers-card li strong {
+  color: var(--theme-dark);
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.business-top-freelancers-card li p {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 760;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.business-top-freelancers-card li em {
+  grid-area: meta;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #b76b00;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 850;
+}
+
+.business-top-freelancers-card .tone-purple {
+  background: rgba(124, 79, 255, 0.12);
+  color: #6b2fe8;
+}
+
+.business-top-freelancers-card .tone-green {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.business-top-freelancers-card .tone-blue {
+  background: rgba(56, 116, 255, 0.12);
+  color: #3267de;
+}
+
+.business-top-freelancers-card .tone-orange {
+  background: rgba(251, 177, 48, 0.18);
+  color: #b76b00;
+}
+
+.business-top-freelancers-card .tone-pink {
+  background: rgba(194, 90, 217, 0.14);
+  color: #a03bbd;
 }
 
 .business-skill-demand-card li {

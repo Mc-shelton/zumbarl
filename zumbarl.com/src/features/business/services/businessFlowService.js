@@ -3,6 +3,7 @@ import {
   createBackendBusinessOpportunity,
   listBackendBusinessOpportunities,
   publishBackendBusinessOpportunity,
+  sendBackendOpportunityInvites,
   updateBackendBusinessOpportunity,
 } from './persistBusinessOpportunity'
 import { getOpportunityStatusForAction } from './businessPipelineService'
@@ -320,7 +321,8 @@ export function publishBusinessOpportunity(opportunityId) {
   return updatedOpportunity
 }
 
-export function inviteBusinessOpportunityBidders({ bidders, note, opportunityId }) {
+export async function inviteBusinessOpportunityBidders({ bidders, note, opportunityId }) {
+  const opportunity = currentState.opportunities.find((item) => item.id === opportunityId)
   const existingInviteKeys = new Set(
     currentState.opportunityInvites
       .filter((invite) => invite.opportunityId === opportunityId)
@@ -341,6 +343,13 @@ export function inviteBusinessOpportunityBidders({ bidders, note, opportunityId 
     }))
 
   if (!newInvites.length) return []
+
+  if (opportunity?.backendId) {
+    await sendBackendOpportunityInvites(opportunity.backendId, {
+      note,
+      studentIds: newInvites.map((invite) => invite.bidderId),
+    })
+  }
 
   setBusinessFlowState((state) => ({
     ...state,

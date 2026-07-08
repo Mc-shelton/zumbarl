@@ -1,13 +1,18 @@
 import { FiChevronDown, FiMapPin, FiSearch } from 'react-icons/fi'
 import CampusTopActions from '../../../components/layout/CampusTopActions'
-import { Breadcrumb } from '../../../components/ui'
+import { Breadcrumb, TabNav } from '../../../components/ui'
 import { OPPORTUNITY_TABS } from '../constants'
 
 function OpportunitiesHeader({
+  activeLocation = 'all',
   activeOpportunityTab,
+  locationOptions = [],
   newInvitesCount,
+  onLocationChange = () => {},
+  onSearchQueryChange = () => {},
   onTabChange,
   opportunitySearchRef,
+  searchQuery = '',
 }) {
   return (
     <div className="opportunities-sticky-head">
@@ -38,35 +43,51 @@ function OpportunitiesHeader({
             ref={opportunitySearchRef}
             type="search"
             placeholder="Search jobs, gigs or companies..."
+            value={searchQuery}
+            onChange={(event) => onSearchQueryChange(event.target.value)}
           />
         </div>
-        <button type="button" className="opportunities-location-btn">
+        <label className="opportunities-location-btn">
           <FiMapPin aria-hidden="true" />
-          All locations
+          <select
+            aria-label="Filter by location"
+            value={activeLocation}
+            onChange={(event) => onLocationChange(event.target.value)}
+          >
+            <option value="all">All locations</option>
+            {locationOptions.map((location) => (
+              <option key={location} value={location}>{location}</option>
+            ))}
+          </select>
           <FiChevronDown aria-hidden="true" />
+        </label>
+        <button
+          type="button"
+          className="opportunities-search-btn"
+          onClick={() => opportunitySearchRef.current?.focus()}
+        >
+          Search
         </button>
-        <button type="button" className="opportunities-search-btn">Search</button>
       </section>
 
       <section className="opportunities-tabs-wrap">
-        <nav className="opportunities-tabs" aria-label="Opportunity tabs">
-          {OPPORTUNITY_TABS.map((tab) => (
-            <button
-              key={tab}
-              type="button"
-              className={activeOpportunityTab === tab ? 'is-active' : ''}
-              aria-selected={activeOpportunityTab === tab}
-              onClick={() => onTabChange(tab)}
-            >
-              <span>{tab}</span>
-              {tab === 'Invites' && newInvitesCount > 0 ? (
+        <TabNav
+          activeId={activeOpportunityTab}
+          ariaLabel="Opportunity tabs"
+          className="opportunities-tabs"
+          items={OPPORTUNITY_TABS.map((tab) => ({ id: tab, label: tab }))}
+          onChange={onTabChange}
+          renderTab={(tab) => (
+            <>
+              <span>{tab.label}</span>
+              {tab.id === 'Invites' && newInvitesCount > 0 ? (
                 <em className="opportunities-tab-badge" aria-label={`${newInvitesCount} new invites`}>
                   {newInvitesCount}
                 </em>
               ) : null}
-            </button>
-          ))}
-        </nav>
+            </>
+          )}
+        />
       </section>
     </div>
   )

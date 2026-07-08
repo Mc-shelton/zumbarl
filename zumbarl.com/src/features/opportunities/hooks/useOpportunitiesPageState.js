@@ -8,19 +8,32 @@ import {
   BID_RAIL_INTERVIEWS,
   DEFAULT_OPPORTUNITY_THUMBNAIL,
   DEFAULT_OPPORTUNITY_INTENT_ID,
+  DEFAULT_OPPORTUNITY_TYPE_ID,
+  INITIAL_OPPORTUNITY_RAIL_FILTERS,
   OPPORTUNITY_INTENT_OPTIONS,
   OPPORTUNITY_INVITES,
   OPPORTUNITY_TAB_TO_QUERY,
   OPPORTUNITY_TABS,
+  OPPORTUNITY_TYPES,
   createDeterministicUuid,
   filterOpportunitiesByIntent,
+  filterOpportunitiesByType,
   findOpportunityListingBySelector,
+  getOpportunityTypeCounts,
+  matchesOpportunityRailFilters,
+  matchesOpportunitySearch,
   resolveOpportunityIntent,
   resolveOpportunityTab,
+  resolveOpportunityTypeId,
   resolveOpportunityUuid,
   slugifyOwner,
 } from '../constants'
+import { getSplashCropStyle } from '../../../lib/getSplashCropStyle'
 import { getOpportunityProjectHref } from '../projectLinks'
+import {
+  getPreferredOpportunityIntentId,
+  setPreferredOpportunityIntentId,
+} from '../services/opportunityIntentPreference'
 import useOpportunityBidSelection from './useOpportunityBidSelection'
 import useOpportunityDashboardStats from './useOpportunityDashboardStats'
 import useOpportunitySearchShortcut from './useOpportunitySearchShortcut'
@@ -59,6 +72,26 @@ function getBusinessOpportunityOwner(opportunity) {
   }
 }
 
+function getBusinessOpportunityImage(opportunity) {
+  const splash = opportunity.opportunitySplash || {}
+  const upload = splash.upload || splash.data || {}
+
+  return (
+    splash.previewUrl
+    || splash.url
+    || splash.src
+    || upload.previewUrl
+    || upload.url
+    || upload.src
+    || opportunity.image
+    || opportunity.previewImage
+    || opportunity.imageUrl
+    || opportunity.thumbnail
+    || opportunity.thumbnailUrl
+    || DEFAULT_OPPORTUNITY_THUMBNAIL
+  )
+}
+
 function toStudentBusinessOpportunity(opportunity, bidCount = 0) {
   const skills = splitSkills(opportunity.skills)
   const visibleSkills = skills.length ? skills : ['Campus Work']
@@ -67,6 +100,7 @@ function toStudentBusinessOpportunity(opportunity, bidCount = 0) {
 
   return {
     id: opportunity.id,
+    submissionOpportunityId: opportunity.backendId || opportunity.id,
     shareKey,
     opportunityUuid: createDeterministicUuid(shareKey),
     ownerSlug: slugifyOwner(opportunity.company || 'zumbarl-business'),
@@ -74,7 +108,8 @@ function toStudentBusinessOpportunity(opportunity, bidCount = 0) {
     company: opportunity.company,
     meta: `${opportunity.opportunityType || 'Project'} · ${opportunity.engagementMode || 'Flexible'}`,
     description: opportunity.summary,
-    image: opportunity.image || opportunity.previewImage,
+    image: getBusinessOpportunityImage(opportunity),
+    imageCropStyle: getSplashCropStyle(opportunity.opportunitySplash),
     tags: visibleSkills,
     pay: pay.pay,
     unit: pay.unit,
@@ -95,6 +130,12 @@ function toStudentBusinessOpportunity(opportunity, bidCount = 0) {
       opportunity.screeningFocus || 'Business will review skills, fit, availability, and price.',
       `${opportunity.portfolioRequired || 'Portfolio optional'}`,
     ],
+    qualificationQuestions: Array.isArray(opportunity.qualificationQuestions)
+      ? opportunity.qualificationQuestions
+      : [],
+    requiredAttachments: Array.isArray(opportunity.requiredAttachments)
+      ? opportunity.requiredAttachments
+      : [],
     careerPath: opportunity.category || 'Campus Work',
     intentIds: ['earn', 'career'],
     intentFit: {
@@ -144,6 +185,9 @@ function useOpportunitiesPageState() {
   const businessFlow = useBusinessFlowState()
   const opportunitySearchRef = useRef(null)
   const [isFilterExpanded, setIsFilterExpanded] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [activeLocation, setActiveLocation] = useState('all')
+  const [railFilters, setRailFilters] = useState(INITIAL_OPPORTUNITY_RAIL_FILTERS)
   const bidSelection = useOpportunityBidSelection({
     bids: earnFlow.bids,
     searchParams,
@@ -153,11 +197,13 @@ function useOpportunitiesPageState() {
 
   const tabQueryParam = searchParams.get('tab')
   const intentQueryParam = searchParams.get('intent')
+  const typeQueryParam = searchParams.get('type')
   const opportunityQueryParam = searchParams.get('opportunity')
   const ownerQueryParam = searchParams.get('owner')
   const gigQueryParam = searchParams.get('gig')
   const activeOpportunityTab = resolveOpportunityTab(tabQueryParam)
-  const activeOpportunityIntent = resolveOpportunityIntent(intentQueryParam)
+  const activeOpportunityIntent = resolveOpportunityIntent(intentQueryParam || getPreferredOpportunityIntentId())
+  const activeOpportunityTypeId = resolveOpportunityTypeId(typeQueryParam)
   const businessOpportunityBidCounts = useMemo(() => (
     (businessFlow.opportunityBids || []).reduce((counts, bid) => ({
       ...counts,
@@ -206,7 +252,27 @@ function useOpportunitiesPageState() {
     return [...businessInvites, ...OPPORTUNITY_INVITES]
   }, [businessFlow.opportunityInvites, businessOpportunityById])
   const dashboardStats = useOpportunityDashboardStats(visibleInvites)
-  const visibleOpportunities = filterOpportunitiesByIntent(allOpportunityListings, activeOpportunityIntent.id)
+  const intentOpportunities = filterOpportunitiesByIntent(allOpportunityListings, activeOpportunityIntent.id)
+  const opportunityTypeCounts = useMemo(
+    () => getOpportunityTypeCounts(intentOpportunities),
+    [intentOpportunities],
+  )
+  const opportunityTypeOptions = useMemo(() => (
+    OPPORTUNITY_TYPES.map((type) => ({
+      ...type,
+      count: opportunityTypeCounts[type.id] || 0,
+    }))
+  ), [opportunityTypeCounts])
+  const locationOptions = useMemo(() => (
+    [...new Set(intentOpportunities.map((item) => item.location).filter(Boolean))].sort()
+  ), [intentOpportunities])
+  const skillOptions = useMemo(() => (
+    [...new Set(intentOpportunities.flatMap((item) => item.tags || []).filter((tag) => !tag.startsWith('+')))].sort()
+  ), [intentOpportunities])
+  const visibleOpportunities = filterOpportunitiesByType(intentOpportunities, activeOpportunityTypeId)
+    .filter((item) => matchesOpportunitySearch(item, searchQuery))
+    .filter((item) => activeLocation === 'all' || item.location === activeLocation)
+    .filter((item) => matchesOpportunityRailFilters(item, railFilters))
   const selectedOpportunityUuid = activeOpportunityTab === 'Discover'
     ? (
         opportunityQueryParam && opportunityUuidSet.has(opportunityQueryParam)
@@ -281,8 +347,43 @@ function useOpportunitiesPageState() {
     const nextIntent = resolveOpportunityIntent(intentId)
     const selectedFitsIntent = selectedOpportunity?.intentIds.includes(nextIntent.id)
 
+    setPreferredOpportunityIntentId(nextIntent.id)
+
     setIsFilterExpanded(false)
     syncRouteSelection('Discover', selectedFitsIntent ? selectedOpportunityUuid : null, nextIntent.id)
+  }
+
+  const handleRailFilterChange = (patch) => {
+    setRailFilters((current) => ({ ...current, ...patch }))
+  }
+
+  const handleRailFilterToggle = (field, value) => {
+    setRailFilters((current) => ({
+      ...current,
+      [field]: current[field].includes(value)
+        ? current[field].filter((item) => item !== value)
+        : [...current[field], value],
+    }))
+  }
+
+  const handleClearFilters = () => {
+    setRailFilters(INITIAL_OPPORTUNITY_RAIL_FILTERS)
+    setSearchQuery('')
+    setActiveLocation('all')
+    handleOpportunityTypeChange(DEFAULT_OPPORTUNITY_TYPE_ID)
+  }
+
+  const handleOpportunityTypeChange = (typeId) => {
+    const nextTypeId = resolveOpportunityTypeId(typeId)
+    const nextParams = new URLSearchParams(searchParams)
+
+    if (nextTypeId === DEFAULT_OPPORTUNITY_TYPE_ID) {
+      nextParams.delete('type')
+    } else {
+      nextParams.set('type', nextTypeId)
+    }
+
+    setSearchParams(nextParams, { replace: true })
   }
 
   const handleOpportunitySelect = (opportunityUuid) => {
@@ -323,7 +424,9 @@ function useOpportunitiesPageState() {
 
   return {
     activeInviteClientsCount: dashboardStats.activeInviteClientsCount,
+    activeLocation,
     activeOpportunityTab,
+    activeOpportunityTypeId,
     actionRequiredServiceOrdersCount: dashboardStats.actionRequiredServiceOrdersCount,
     activeOpportunityIntent,
     completedServiceOrdersCount: dashboardStats.completedServiceOrdersCount,
@@ -338,24 +441,36 @@ function useOpportunitiesPageState() {
     isFilterCollapsed,
     isFilterExpanded,
     isFilterPanelVisible,
+    locationOptions,
     newInvitesCount: dashboardStats.newInvitesCount,
     onBackToDetail: () => setIsFilterExpanded(false),
     onBidSelect: bidSelection.onBidSelect,
+    onClearFilters: handleClearFilters,
     onCloseDetails: handleCloseDetails,
     onEditFilters: () => setIsFilterExpanded(true),
     onIntentChange: handleOpportunityIntentChange,
+    onLocationChange: setActiveLocation,
+    onRailFilterChange: handleRailFilterChange,
+    onRailFilterToggle: handleRailFilterToggle,
+    onSearchQueryChange: setSearchQuery,
     onOpenMarketingCampaign: (campaignId = 'level-up-skills') => navigate(`/campus/opportunities/marketing/${campaignId}`, {
       state: { accepted: true },
     }),
+    onOpenMessages: () => navigate('/messages'),
     onOpenPlaceBid: handleOpenPlaceBid,
     onOpenProject: (project) => navigate(getOpportunityProjectHref(project)),
     onOpportunitySelect: handleOpportunitySelect,
+    onOpportunityTypeChange: handleOpportunityTypeChange,
     onTabChange: handleOpportunityTabChange,
     onViewBooking: () => navigate('/campus/projects/social-media-content-creation'),
     opportunitySearchRef,
     opportunityIntentOptions: OPPORTUNITY_INTENT_OPTIONS,
+    opportunityTypeOptions,
     projects: earnFlow.projects,
+    railFilters,
+    searchQuery,
     selectedBid: bidSelection.selectedBid,
+    skillOptions,
     selectedBidId: bidSelection.selectedBidId,
     selectedBidInterview,
     selectedOpportunity,

@@ -162,6 +162,17 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
+}
+
+.opportunities-location-btn select {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  appearance: none;
+  max-width: 180px;
   color: #30375c;
   font-size: 16px;
   font-weight: 600;
@@ -311,6 +322,17 @@
 
 .opportunities-list-section {
   margin-top: 16px;
+}
+
+.opportunities-list-empty {
+  margin: 0;
+  padding: 26px 18px;
+  border: 1px dashed #d9def2;
+  border-radius: 14px;
+  background: #fbfbfe;
+  color: #677092;
+  font-size: 14px;
+  text-align: center;
 }
 
 .opportunities-section-head {
@@ -1159,6 +1181,120 @@
   font-size: 16px;
 }
 
+.opportunities-application-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.opportunities-application-steps.has-2-steps {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.opportunities-application-steps.has-3-steps {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.opportunities-application-steps li {
+  min-width: 0;
+  border: 1px solid #e3e7f3;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #7a83a4;
+  background: #fbfcff;
+}
+
+.opportunities-application-steps li > span {
+  flex: 0 0 auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  color: #626d93;
+  background: #edf0f8;
+}
+
+.opportunities-application-steps li div {
+  min-width: 0;
+  display: grid;
+}
+
+.opportunities-application-steps small {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.opportunities-application-steps strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+}
+
+.opportunities-application-steps li.is-active {
+  border-color: var(--theme-purple);
+  color: var(--theme-dark);
+  background: #f5f2ff;
+}
+
+.opportunities-application-steps li.is-active > span,
+.opportunities-application-steps li.is-complete > span {
+  color: #ffffff;
+  background: var(--theme-purple);
+}
+
+.opportunities-application-steps li.is-complete {
+  color: #3f4a70;
+}
+
+.opportunities-application-phase {
+  display: grid;
+  gap: 18px;
+}
+
+.opportunities-application-phase-heading {
+  border-bottom: 1px solid #edf0f7;
+  padding-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.opportunities-application-phase-heading > span {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: var(--theme-dark);
+  font-weight: 900;
+}
+
+.opportunities-application-phase-heading h3,
+.opportunities-application-phase-heading p {
+  margin: 0;
+}
+
+.opportunities-application-phase-heading h3 {
+  color: var(--theme-dark);
+  font-size: 18px;
+}
+
+.opportunities-application-phase-heading p {
+  margin-top: 3px;
+  color: #717b9c;
+  font-size: 13px;
+}
+
 .opportunities-bid-field {
   display: grid;
   gap: 8px;
@@ -1299,6 +1435,7 @@
 
 .opportunities-bid-price-row input,
 .opportunities-bid-price-row select,
+.opportunities-application-attachment > input,
 .opportunities-bid-delivery-row select {
   border: 1px solid #dce2f3;
   border-radius: 11px;
@@ -1358,10 +1495,357 @@
   display: none;
 }
 
+.opportunities-application-empty {
+  border: 1px dashed #d7dced;
+  border-radius: 12px;
+  padding: 28px 16px;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  text-align: center;
+  color: #6e7899;
+  background: #fbfcff;
+}
+
+.opportunities-application-empty svg {
+  font-size: 24px;
+  color: var(--theme-purple);
+}
+
+.opportunities-application-empty strong {
+  color: var(--theme-dark);
+}
+
+.opportunities-application-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.opportunities-application-review-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.opportunities-application-review-grid article {
+  border: 1px solid #e2e6f2;
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr);
+  gap: 10px;
+  color: var(--theme-purple);
+  background: #fbfcff;
+}
+
+.opportunities-application-review-grid article > svg {
+  margin-top: 2px;
+  font-size: 19px;
+}
+
+.opportunities-application-review-grid article div {
+  display: grid;
+  gap: 3px;
+}
+
+.opportunities-application-review-grid small {
+  color: #727c9d;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.opportunities-application-review-grid strong {
+  color: var(--theme-dark);
+  font-size: 14px;
+}
+
+.opportunities-application-review-grid p {
+  margin: 0;
+  color: #657092;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.opportunities-application-error {
+  margin: 0;
+  border: 1px solid #f3c3c3;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #9d2525;
+  background: #fff3f3;
+  font-size: 13px;
+  font-weight: 700;
+}
+
 .opportunities-bid-form-foot {
   display: grid;
   justify-items: end;
   gap: 6px;
+}
+
+.opportunities-application-actions {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.opportunities-application-back-btn {
+  width: fit-content;
+  border: 1px solid #dce2f3;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #465176;
+  background: #ffffff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.opportunities-application-actions button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.student-interview-main {
+  display: grid;
+  align-content: start;
+  gap: 16px;
+}
+
+.student-interview-hero,
+.student-interview-card {
+  border: 1px solid #e2e6f2;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.student-interview-hero {
+  padding: 22px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.student-interview-hero > span {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: var(--theme-purple);
+  font-size: 22px;
+}
+
+.student-interview-hero p,
+.student-interview-hero h1 {
+  margin: 0;
+}
+
+.student-interview-hero p {
+  color: var(--theme-purple);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.student-interview-hero h1 {
+  margin: 3px 0;
+  color: var(--theme-dark);
+  font-size: 24px;
+}
+
+.student-interview-hero strong {
+  color: #667194;
+}
+
+.student-interview-card {
+  padding: 20px;
+  display: grid;
+  gap: 18px;
+}
+
+.student-interview-card > header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.student-interview-card h2,
+.student-interview-card header p {
+  margin: 0;
+}
+
+.student-interview-card h2 {
+  color: var(--theme-dark);
+  font-size: 19px;
+}
+
+.student-interview-card header p {
+  margin-top: 4px;
+  color: #6d7697;
+  font-size: 13px;
+}
+
+.student-interview-status {
+  height: fit-content;
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: #965414;
+  background: #fff1da;
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.student-interview-status.is-confirmed {
+  color: #15763d;
+  background: #e6f7ec;
+}
+
+.student-interview-status.is-cancelled {
+  color: #a32626;
+  background: #fde9e9;
+}
+
+.student-interview-card dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.student-interview-card dl div {
+  border-radius: 11px;
+  padding: 12px;
+  background: #f7f8fc;
+}
+
+.student-interview-card dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #737c9b;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.student-interview-card dd {
+  margin: 5px 0 0;
+  color: var(--theme-dark);
+  font-weight: 850;
+}
+
+.student-interview-note {
+  margin: 0;
+  border-left: 3px solid var(--theme-purple);
+  padding: 10px 12px;
+  display: grid;
+  gap: 4px;
+  color: #566082;
+  background: #f8f6ff;
+  font-size: 13px;
+}
+
+.student-interview-meeting-link {
+  width: fit-content;
+  border-radius: 10px;
+  padding: 10px 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #ffffff;
+  background: var(--theme-dark);
+  font-size: 13px;
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.student-interview-action-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.student-interview-action-grid button {
+  border: 1px solid #dde2f0;
+  border-radius: 12px;
+  padding: 14px;
+  display: grid;
+  justify-items: start;
+  gap: 5px;
+  color: #6c7595;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.student-interview-action-grid button.is-active {
+  border-color: var(--theme-purple);
+  color: var(--theme-purple);
+  background: #f6f3ff;
+}
+
+.student-interview-action-grid strong {
+  color: var(--theme-dark);
+}
+
+.student-interview-action-grid span {
+  font-size: 12px;
+}
+
+.student-interview-proposed-time {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.student-interview-proposed-time label,
+.student-interview-response-note {
+  display: grid;
+  gap: 7px;
+  color: #3b456c;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.student-interview-proposed-time input,
+.student-interview-response-note textarea {
+  border: 1px solid #dce2f3;
+  border-radius: 10px;
+  padding: 11px 12px;
+  color: var(--theme-dark);
+  background: #ffffff;
+  font: inherit;
+}
+
+.student-interview-response-note textarea {
+  min-height: 110px;
+  resize: vertical;
+}
+
+.student-interview-form-error,
+.student-interview-state.is-error {
+  margin: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: #a32626;
+  background: #fde9e9;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.student-interview-response-saved {
+  grid-template-columns: 36px minmax(0, 1fr);
+  color: #19824b;
+}
+
+.student-interview-response-saved blockquote {
+  margin: 8px 0 0;
+  color: #566082;
 }
 
 .opportunities-bid-form-foot .opportunities-detail-bid-btn {
@@ -1967,6 +2451,36 @@
   padding: 3px 8px;
 }
 
+.opportunities-fit-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.opportunities-bid-estimate-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.opportunities-bid-estimate-row input {
+  max-width: 220px;
+}
+
+.opportunities-bid-estimate-total {
+  margin: 0;
+  color: #5a6588;
+  font-size: 14px;
+}
+
+.opportunities-bid-estimate-total strong {
+  color: #1f2550;
+}
+
 .opportunities-job-meta {
   margin: 5px 0 0;
   color: #657090;
@@ -2138,6 +2652,8 @@
   align-items: center;
   justify-content: space-between;
   font-size: 16px;
+  appearance: auto;
+  cursor: pointer;
   font-weight: 400;
   cursor: pointer;
 }
@@ -2559,6 +3075,14 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
+  .opportunities-application-steps li {
+    padding: 8px;
+  }
+
+  .opportunities-application-steps li > span {
+    display: none;
+  }
+
   .opportunities-location-btn {
     border-left: 0;
     justify-content: flex-start;
@@ -2727,6 +3251,33 @@
   }
 
   .opportunities-bid-price-row {
+    grid-template-columns: 1fr;
+  }
+
+  .opportunities-application-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .opportunities-application-steps li > span {
+    display: grid;
+  }
+
+  .opportunities-application-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .opportunities-application-actions > span {
+    display: none;
+  }
+
+  .opportunities-application-actions button,
+  .opportunities-bid-form-foot .opportunities-detail-bid-btn {
+    width: 100%;
+  }
+
+  .student-interview-action-grid,
+  .student-interview-card dl,
+  .student-interview-proposed-time {
     grid-template-columns: 1fr;
   }
 

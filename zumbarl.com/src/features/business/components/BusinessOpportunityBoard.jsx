@@ -9,6 +9,7 @@ import {
   FiSend,
   FiVideo,
 } from 'react-icons/fi'
+import { getSplashCropStyle } from '../../../lib/getSplashCropStyle'
 
 const ICON_BY_TYPE = {
   analytics: FiBarChart2,
@@ -57,7 +58,7 @@ function OpportunityMedia({ opportunity }) {
 
   return (
     <figure className="business-opportunity-media">
-      <img src={imageUrl} alt="" loading="lazy" />
+      <img src={imageUrl} alt="" loading="lazy" style={getSplashCropStyle(opportunity.opportunitySplash) || undefined} />
     </figure>
   )
 }

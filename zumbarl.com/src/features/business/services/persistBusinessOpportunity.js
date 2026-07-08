@@ -82,10 +82,44 @@ async function createBackendOpportunityDeliverables(opportunityId, deliverables,
   })
 }
 
+async function listBackendOpportunityInviteCandidates(opportunityId, search = '') {
+  const query = search ? `?search=${encodeURIComponent(search)}` : ''
+  return sendZumbarlApiRequest(`/business/opportunities/${opportunityId}/invite-candidates${query}`)
+}
+
+async function listBackendOpportunityApplicants(opportunityId) {
+  return sendZumbarlApiRequest(`/business/opportunities/${opportunityId}/applicants`)
+}
+
+async function scheduleBackendApplicantInterview(applicantBidId, interview) {
+  return sendZumbarlApiRequest(`/business/applicants/${applicantBidId}/interview`, {
+    method: 'POST',
+    body: JSON.stringify(interview),
+  })
+}
+
+async function startBackendApplicantInterview(applicantBidId) {
+  return sendZumbarlApiRequest(`/business/applicants/${applicantBidId}/interview/start`, {
+    method: 'POST',
+  })
+}
+
+async function sendBackendOpportunityInvites(opportunityId, { note, studentIds }) {
+  return sendZumbarlApiRequest(`/business/opportunities/${opportunityId}/invites`, {
+    method: 'POST',
+    body: JSON.stringify({ note, studentIds }),
+  })
+}
+
 export {
   createBackendBusinessOpportunity,
   updateBackendBusinessOpportunity,
   publishBackendBusinessOpportunity,
   createBackendOpportunityDeliverables,
+  listBackendOpportunityInviteCandidates,
+  listBackendOpportunityApplicants,
+  scheduleBackendApplicantInterview,
+  startBackendApplicantInterview,
+  sendBackendOpportunityInvites,
   listBackendBusinessOpportunities,
 }

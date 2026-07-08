@@ -71,19 +71,13 @@ function OpportunityDetailRailPanel({
         </article>
       </div>
 
-      {canPlaceBid ? (
-        <button
-          type="button"
-          className="opportunities-detail-bid-btn"
-          onClick={() => onOpenPlaceBid(selectedOpportunity.opportunityUuid)}
-        >
-          Place Bid
-          <FiArrowRight aria-hidden="true" />
-        </button>
-      ) : null}
-
       <section className="opportunities-gig-thumbnail" aria-label={`${selectedOpportunity.title} preview`}>
-        <img src={selectedOpportunityThumbnail} alt={`${selectedOpportunity.title} thumbnail`} loading="lazy" />
+        <img
+          src={selectedOpportunityThumbnail}
+          alt={`${selectedOpportunity.title} thumbnail`}
+          loading="lazy"
+          style={selectedOpportunity.imageCropStyle || undefined}
+        />
       </section>
 
       <section className="opportunities-owner-card">
@@ -121,7 +115,13 @@ function OpportunityDetailRailPanel({
       </section>
 
       <section className="opportunities-detail-block opportunities-fit-block">
-        <h4>{selectedOpportunity.intentFit[activeOpportunityIntentId] || selectedOpportunity.careerPath}</h4>
+        <h4>Why this fits you</h4>
+        <p className="opportunities-fit-tags">
+          <span className="opportunities-intent-pill">Fits: {selectedOpportunity.careerPath}</span>
+          {selectedOpportunity.intentFit[activeOpportunityIntentId] ? (
+            <span>{selectedOpportunity.intentFit[activeOpportunityIntentId]}</span>
+          ) : null}
+        </p>
         <p>{selectedOpportunity.progressionOutcome}</p>
         <span>{selectedOpportunity.trustOutcome}</span>
       </section>
@@ -158,6 +158,17 @@ function OpportunityDetailRailPanel({
           Trusted by campus talent
         </p>
       </section>
+
+      {canPlaceBid ? (
+        <button
+          type="button"
+          className="opportunities-detail-bid-btn"
+          onClick={() => onOpenPlaceBid(selectedOpportunity.opportunityUuid)}
+        >
+          Place Bid
+          <FiArrowRight aria-hidden="true" />
+        </button>
+      ) : null}
     </section>
   )
 }

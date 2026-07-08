@@ -1,20 +1,17 @@
+import { TabNav } from '../../../components/ui'
 import { BUSINESS_APPLICANT_TABS } from '../applicantProfileData'
+
+const APPLICANT_TAB_ITEMS = BUSINESS_APPLICANT_TABS.map((tab) => ({ id: tab, label: tab }))
 
 export function BusinessApplicantTabs({ activeTab, onTabChange }) {
   return (
-    <nav className="business-profile-tabs" aria-label="Profile tabs" role="tablist">
-      {BUSINESS_APPLICANT_TABS.map((tab) => (
-        <button
-          key={tab}
-          type="button"
-          className={`business-profile-tab${activeTab === tab ? ' is-active' : ''}`}
-          aria-selected={activeTab === tab}
-          role="tab"
-          onClick={() => onTabChange(tab)}
-        >
-          {tab}
-        </button>
-      ))}
-    </nav>
+    <TabNav
+      activeId={activeTab}
+      ariaLabel="Profile tabs"
+      className="business-profile-tabs"
+      items={APPLICANT_TAB_ITEMS}
+      onChange={onTabChange}
+      tabClassName="business-profile-tab"
+    />
   )
 }

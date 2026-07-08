@@ -19,7 +19,7 @@ export const CAMPUS_NAV_ITEMS = [
   { id: 'learn', label: 'Learn & Grow', icon: 'book', href: '/campus/learn', requiredAccess: ACCESS_KEYS.campus.learn },
   { id: 'finance', label: 'Finance', icon: 'credit-card', requiredAccess: ACCESS_KEYS.finance.own },
   { id: 'services', label: 'Services', icon: 'truck', requiredAccess: ACCESS_KEYS.campus.services },
-  { id: 'messages', label: 'Messages', icon: 'mail', requiredAccess: ACCESS_KEYS.campus.messages },
+  { id: 'messages', label: 'Messages', icon: 'mail', href: '/messages', requiredAccess: ACCESS_KEYS.campus.messages },
   { id: 'notifications', label: 'Notifications', icon: 'bell', requiredAccess: ACCESS_KEYS.campus.notifications },
 ]
 

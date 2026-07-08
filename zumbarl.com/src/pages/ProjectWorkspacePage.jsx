@@ -27,14 +27,12 @@ import {
   ProjectProgramWorkflowPanel,
 } from '../features/projects/components/ProjectProgramWorkflowPanel'
 import useProjectWorkspace from '../features/projects/hooks/useProjectWorkspace'
-import { WorkflowStatusPanel } from '../features/workflows/components/WorkflowStatusPanel'
-import { GIG_WORKFLOW_MOCK, createInitialProjectProgramState } from '../features/workflows/workflowData'
+import { createInitialProjectProgramState } from '../features/workflows/workflowData'
 import '../styles/campus.css'
 import '../styles/opportunities.css'
 import '../styles/workflows.css'
 
 function ProjectWorkspacePage() {
-  const [revisionBudgetPaid, setRevisionBudgetPaid] = useState(false)
   const [projectProgramState, setProjectProgramState] = useState(createInitialProjectProgramState)
   const {
     activeProject,
@@ -87,31 +85,6 @@ function ProjectWorkspacePage() {
                 />
               ) : null}
               {isSubmitted ? (
-                <WorkflowStatusPanel
-                  title="Submission review gates"
-                  items={[
-                    ...GIG_WORKFLOW_MOCK.gates.slice(0, 2),
-                    {
-                      label: 'Revision limit',
-                      status: GIG_WORKFLOW_MOCK.currentRevisionCount < GIG_WORKFLOW_MOCK.revisionLimit ? 'done' : 'blocked',
-                      detail: `${GIG_WORKFLOW_MOCK.currentRevisionCount}/${GIG_WORKFLOW_MOCK.revisionLimit} revision requests used.`,
-                    },
-                    {
-                      label: 'Pending revision budget',
-                      status: revisionBudgetPaid ? 'done' : 'blocked',
-                      detail: revisionBudgetPaid
-                        ? 'Pending revision budget is paid. Business review actions are unlocked.'
-                        : `${GIG_WORKFLOW_MOCK.revisedBudgetDue} must be paid before approval or revision action.`,
-                    },
-                  ]}
-                  actions={!revisionBudgetPaid ? (
-                    <button type="button" className="project-primary-btn" onClick={() => setRevisionBudgetPaid(true)}>
-                      Mark revision budget paid
-                    </button>
-                  ) : null}
-                />
-              ) : null}
-              {isSubmitted ? (
                 <SubmittedPanel
                   activeProject={activeProject}
                   onApproveSubmission={() => handleReviewDecision('approved', {
@@ -125,7 +98,6 @@ function ProjectWorkspacePage() {
                   })}
                   payment={projectPayment}
                   reviewDecision={projectReview}
-                  reviewLocked={!revisionBudgetPaid}
                 />
               ) : activeProject.hasTeam && activeTab === 'Overview' ? (
                 <TeamOverviewPanel />
