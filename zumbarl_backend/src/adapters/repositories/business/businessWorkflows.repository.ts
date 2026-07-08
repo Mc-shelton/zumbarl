@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto'
 import { KycStatus, type Prisma } from '@prisma/client'
+import { env } from '../../../config/env.js'
 import { prisma } from '../../../lib/prisma.js'
 import { createPrismaRecordRepository } from '../../../shared/repositories/index.js'
 import { createSkillSlug, normalizeSkillName as normalizeCanonicalSkillName } from '../skills/index.js'
@@ -804,6 +806,70 @@ class BusinessWorkflowsRepository {
     return item ? toOpportunityScopeItem(item) : null
   }
 
+  async listOpportunityInviteCandidates(id: string, query: Record<string, unknown>) {
+    const opportunity = await prisma.opportunity.findUnique({
+      where: { id },
+      include: {
+        opportunitySkills: { include: { skill: true } },
+        invites: true
+      }
+    })
+    if (!opportunity) return null
+
+    const search = String(query.search || query.q || '').trim()
+    const opportunitySkills = opportunity.opportunitySkills.map((item) => item.skill.name)
+    const opportunitySkillSet = new Set(opportunitySkills.map((skill) => skill.toLowerCase()))
+    const invitedStudentIds = new Set(opportunity.invites.map((invite) => invite.studentId))
+    const students = await prisma.studentProfile.findMany({
+      where: {
+        user: {
+          isActive: true,
+          ...(search ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { firstName: { contains: search, mode: 'insensitive' } },
+              { lastName: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+              { studentEmail: { contains: search, mode: 'insensitive' } }
+            ]
+          } : {})
+        }
+      },
+      include: {
+        campus: true,
+        course: true,
+        studentSkills: { include: { skill: true } },
+        user: true
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 30
+    })
+
+    return {
+      opportunity: toOpportunity(opportunity),
+      candidates: students.map((student) => {
+        const skills = student.studentSkills.map((item) => item.skill.name)
+        const skillMatches = skills.filter((skill) => opportunitySkillSet.has(skill.toLowerCase())).length
+        const match = opportunitySkills.length
+          ? Math.min(98, Math.max(45, Math.round((skillMatches / opportunitySkills.length) * 100)))
+          : 70
+
+        return {
+          id: student.id,
+          userId: student.userId,
+          name: `${student.firstName} ${student.lastName}`.trim() || student.user.name || student.user.email,
+          email: student.user.studentEmail || student.user.email,
+          school: [student.campus?.name, student.course?.name].filter(Boolean).join(' · ') || student.locationCity,
+          skills,
+          skillMatches,
+          match,
+          status: student.isOpenToHire ? 'Open to work' : student.currentMode,
+          alreadyInvited: invitedStudentIds.has(student.id)
+        }
+      })
+    }
+  }
+
   createOpportunityInvite(payload: Record<string, any>) {
     return prisma.opportunityInvite.create({
       data: {
@@ -819,12 +885,73 @@ class BusinessWorkflowsRepository {
   async listOpportunityBids(opportunityId: string) {
     const items = await prisma.bid.findMany({
       where: { opportunityId },
+      include: {
+        interview: true,
+        student: {
+          include: {
+            campus: true,
+            course: true,
+            studentSkills: { include: { skill: true } },
+            user: {
+              select: {
+                createdAt: true,
+                email: true,
+                name: true,
+                studentEmail: true,
+                username: true
+              }
+            },
+            zumbarl: true
+          }
+        }
+      },
       orderBy: { appliedAt: 'desc' }
     })
     return items.map((item) => ({
-      ...item,
+      id: item.id,
+      opportunityId: item.opportunityId,
+      status: item.status,
+      coverNote: item.coverNote,
+      proposal: item.proposal,
+      bidAmount: item.bidAmount,
+      currency: item.currency,
+      deliveryTime: item.deliveryTime,
+      intentId: item.intentId,
+      intentLabel: item.intentLabel,
+      questionAnswers: item.questionAnswers,
+      attachments: item.attachments,
+      interview: item.interview ? {
+        ...item.interview,
+        scheduledAt: toIso(item.interview.scheduledAt),
+        proposedAt: toIso(item.interview.proposedAt),
+        respondedAt: toIso(item.interview.respondedAt),
+        createdAt: toIso(item.interview.createdAt),
+        updatedAt: toIso(item.interview.updatedAt)
+      } : null,
       appliedAt: toIso(item.appliedAt),
-      respondedAt: toIso(item.respondedAt)
+      respondedAt: toIso(item.respondedAt),
+      student: {
+        id: item.student.id,
+        userId: item.student.userId,
+        name: `${item.student.firstName} ${item.student.lastName}`.trim()
+          || item.student.user.name
+          || item.student.user.email,
+        username: item.student.user.username,
+        email: item.student.user.studentEmail || item.student.user.email,
+        avatarUrl: item.student.avatarUrl,
+        bio: item.student.bio,
+        locationCity: item.student.locationCity,
+        careerPath: item.student.careerPath,
+        currentMode: item.student.currentMode,
+        isOpenToHire: item.student.isOpenToHire,
+        joinedAt: toIso(item.student.user.createdAt),
+        campus: item.student.campus?.name,
+        course: item.student.course?.name,
+        skills: item.student.studentSkills.map((studentSkill) => studentSkill.skill.name),
+        score: item.student.zumbarl?.currentScore ?? 0,
+        scoreTier: item.student.zumbarl?.tier ?? 'BRONZE',
+        completedGigs: item.student.zumbarl?.totalGigsCompleted ?? 0
+      }
     }))
   }
 
@@ -1070,15 +1197,44 @@ class BusinessWorkflowsRepository {
 
   createOpportunityInvitesWithEvent(id: string, payload: Record<string, any>, actorId: string | undefined) {
     return prisma.$transaction(async (transaction) => {
-      const opportunity = await transaction.opportunity.findUnique({ where: { id } })
+      const opportunity = await transaction.opportunity.findUnique({ where: { id }, include: { company: true } })
       if (!opportunity) return null
 
-      const invites = await Promise.all(payload.studentIds.map((studentId: string) => transaction.opportunityInvite.create({
+      const students = await transaction.studentProfile.findMany({
+        where: { id: { in: payload.studentIds } },
+        include: { user: true }
+      })
+      const existingInvites = await transaction.opportunityInvite.findMany({
+        where: { opportunityId: id, studentId: { in: students.map((student) => student.id) } },
+        select: { studentId: true }
+      })
+      const existingStudentIds = new Set(existingInvites.map((invite) => invite.studentId))
+      const studentsToInvite = students.filter((student) => !existingStudentIds.has(student.id))
+
+      const invites = await Promise.all(studentsToInvite.map((student) => transaction.opportunityInvite.create({
         data: {
           opportunityId: id,
-          studentId,
+          studentId: student.id,
           note: payload.note,
-          status: 'sent'
+          status: 'sent',
+          metadata: toJson({
+            email: student.user.studentEmail || student.user.email,
+            notification: 'queued'
+          })
+        }
+      })))
+      await Promise.all(studentsToInvite.map((student) => transaction.notification.create({
+        data: {
+          userId: student.userId,
+          type: 'OPPORTUNITY_INVITE',
+          title: `New opportunity invite: ${opportunity.title}`,
+          body: payload.note || `${opportunity.company?.name || 'A business'} invited you to apply for ${opportunity.title}.`,
+          data: toJson({
+            opportunityId: id,
+            inviteId: invites.find((invite) => invite.studentId === student.id)?.id,
+            deepLink: `/campus/opportunities/${id}/place-bid`
+          }),
+          sentVia: ['IN_APP', 'PUSH', 'EMAIL']
         }
       })))
       await transaction.opportunityActivityEvent.create({
@@ -1089,7 +1245,15 @@ class BusinessWorkflowsRepository {
           metadata: toJson({ count: invites.length })
         }
       })
-      return { opportunity, invites }
+      return {
+        opportunity,
+        invites,
+        recipients: studentsToInvite.map((student) => ({
+          email: student.user.studentEmail || student.user.email,
+          name: `${student.firstName} ${student.lastName}`.trim() || student.user.name || student.user.email,
+          userId: student.userId
+        }))
+      }
     })
   }
 
@@ -1113,6 +1277,240 @@ class BusinessWorkflowsRepository {
           })
         }
       })
+    })
+  }
+
+  scheduleApplicantInterview(id: string, payload: Record<string, any>, actorId: string | undefined) {
+    return prisma.$transaction(async (transaction) => {
+      const bid = await transaction.bid.findUnique({
+        where: { id },
+        include: {
+          opportunity: { include: { company: true } },
+          student: { include: { user: true } }
+        }
+      })
+      if (!bid) return null
+
+      const meetingUrl = payload.meetingOption === 'generated'
+        ? `${env.JITSI_PUBLIC_URL.replace(/\/+$/, '')}/zumbarl-${randomUUID().replaceAll('-', '')}`
+        : payload.meetingUrl
+      const interview = await transaction.opportunityInterview.upsert({
+        where: { bidId: bid.id },
+        update: {
+          scheduledById: actorId,
+          interviewType: payload.interviewType,
+          scheduledAt: new Date(payload.interviewAt),
+          durationMinutes: payload.durationMinutes,
+          timezone: payload.timezone,
+          meetingOption: payload.meetingOption,
+          meetingUrl,
+          note: payload.note,
+          status: 'pending',
+          studentResponseNote: null,
+          proposedAt: null,
+          respondedAt: null
+        },
+        create: {
+          bidId: bid.id,
+          opportunityId: bid.opportunityId,
+          studentId: bid.studentId,
+          scheduledById: actorId,
+          interviewType: payload.interviewType,
+          scheduledAt: new Date(payload.interviewAt),
+          durationMinutes: payload.durationMinutes,
+          timezone: payload.timezone,
+          meetingOption: payload.meetingOption,
+          meetingUrl,
+          note: payload.note,
+          status: 'pending'
+        }
+      })
+
+      await transaction.bid.update({
+        where: { id: bid.id },
+        data: { status: 'shortlisted', respondedAt: new Date() }
+      })
+      await transaction.opportunityActivityEvent.create({
+        data: {
+          action: 'interview_scheduled',
+          opportunityId: bid.opportunityId,
+          actorId,
+          note: payload.note,
+          metadata: toJson({
+            scope: 'applicant',
+            bidId: bid.id,
+            studentId: bid.studentId,
+            interviewId: interview.id,
+            interviewAt: payload.interviewAt,
+            durationMinutes: payload.durationMinutes,
+            meetingOption: payload.meetingOption
+          })
+        }
+      })
+      await transaction.notification.create({
+        data: {
+          userId: bid.student.userId,
+          type: 'INTERVIEW_SCHEDULED',
+          title: `You're shortlisted: ${bid.opportunity.title}`,
+          body: `${bid.opportunity.company?.name || 'A business'} scheduled an interview with you.`,
+          data: toJson({
+            opportunityId: bid.opportunityId,
+            bidId: bid.id,
+            interviewId: interview.id,
+            deepLink: `/campus/interviews/${interview.id}`
+          }),
+          sentVia: ['IN_APP', 'PUSH', 'EMAIL']
+        }
+      })
+
+      return {
+        interview: {
+          ...interview,
+          scheduledAt: toIso(interview.scheduledAt),
+          proposedAt: toIso(interview.proposedAt),
+          respondedAt: toIso(interview.respondedAt)
+        },
+        recipient: {
+          email: bid.student.user.studentEmail || bid.student.user.email,
+          name: `${bid.student.firstName} ${bid.student.lastName}`.trim(),
+          opportunityTitle: bid.opportunity.title,
+          companyName: bid.opportunity.company?.name || 'Zumbarl business'
+        }
+      }
+    })
+  }
+
+  startApplicantInterview(id: string, actorId: string) {
+    return prisma.$transaction(async (transaction) => {
+      const bid = await transaction.bid.findUnique({
+        where: { id },
+        include: {
+          interview: true,
+          opportunity: { include: { company: true } },
+          student: { include: { user: true } }
+        }
+      })
+      if (!bid?.interview) return null
+      if (bid.interview.status !== 'confirmed') {
+        return { blockedReason: 'The student has not confirmed this interview.' }
+      }
+      if (!bid.interview.meetingUrl) {
+        return { blockedReason: 'This interview does not have a meeting link.' }
+      }
+
+      const existingMessage = await transaction.message.findFirst({
+        where: {
+          opportunityId: bid.opportunityId,
+          senderId: actorId,
+          recipientId: bid.student.userId,
+          body: 'Interview started'
+        },
+        orderBy: { createdAt: 'desc' }
+      })
+      const message = existingMessage ?? await transaction.message.create({
+        data: {
+          opportunityId: bid.opportunityId,
+          senderId: actorId,
+          recipientId: bid.student.userId,
+          body: 'Interview started',
+          fileUrls: []
+        }
+      })
+
+      const existingNotification = await transaction.notification.findFirst({
+        where: {
+          userId: bid.student.userId,
+          type: 'INTERVIEW_STARTED',
+          data: { path: ['interviewId'], equals: bid.interview.id }
+        }
+      })
+      if (!existingNotification) {
+        await transaction.notification.create({
+          data: {
+            userId: bid.student.userId,
+            type: 'INTERVIEW_STARTED',
+            title: `Interview started: ${bid.opportunity.title}`,
+            body: `${bid.opportunity.company?.name || 'The business'} has started your interview.`,
+            data: toJson({
+              opportunityId: bid.opportunityId,
+              bidId: bid.id,
+              interviewId: bid.interview.id,
+              senderId: actorId,
+              deepLink: `/campus/interviews/${bid.interview.id}`
+            }),
+            sentVia: ['IN_APP', 'PUSH']
+          }
+        })
+      }
+
+      const existingActivity = await transaction.opportunityActivityEvent.findFirst({
+        where: {
+          action: 'interview_started',
+          opportunityId: bid.opportunityId,
+          metadata: { path: ['interviewId'], equals: bid.interview.id }
+        }
+      })
+      if (!existingActivity) {
+        await transaction.opportunityActivityEvent.create({
+          data: {
+            action: 'interview_started',
+            opportunityId: bid.opportunityId,
+            actorId,
+            metadata: toJson({
+              scope: 'applicant',
+              bidId: bid.id,
+              studentId: bid.studentId,
+              interviewId: bid.interview.id,
+              messageId: message.id
+            })
+          }
+        })
+      }
+
+      const messages = await transaction.message.findMany({
+        where: {
+          opportunityId: bid.opportunityId,
+          OR: [
+            { senderId: actorId, recipientId: bid.student.userId },
+            { senderId: bid.student.userId, recipientId: actorId }
+          ]
+        },
+        include: {
+          sender: { select: { id: true, name: true } },
+          recipient: { select: { id: true, name: true } }
+        },
+        orderBy: { createdAt: 'asc' }
+      })
+
+      return {
+        interview: {
+          id: bid.interview.id,
+          meetingUrl: bid.interview.meetingUrl,
+          status: bid.interview.status
+        },
+        conversation: {
+          opportunityId: bid.opportunityId,
+          opportunityTitle: bid.opportunity.title,
+          participant: {
+            id: bid.student.userId,
+            name: `${bid.student.firstName} ${bid.student.lastName}`.trim()
+              || bid.student.user.name
+              || bid.student.user.email,
+            avatarUrl: bid.student.avatarUrl
+          },
+          messages: messages.map((item) => ({
+            id: item.id,
+            body: item.body,
+            senderId: item.senderId,
+            recipientId: item.recipientId,
+            senderName: item.sender.name,
+            createdAt: toIso(item.createdAt),
+            isMine: item.senderId === actorId
+          }))
+        },
+        notificationCreated: !existingNotification,
+        messageCreated: !existingMessage
+      }
     })
   }
 

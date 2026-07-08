@@ -1,0 +1,12 @@
+<svg width="52" height="40" viewBox="0 0 52 40" xmlns="http://www.w3.org/2000/svg">
+  <title>Zumbarl</title>
+  <image
+    href="bee_nobg.png"
+    x="6"
+    y="0"
+    width="40"
+    height="40"
+    preserveAspectRatio="xMidYMid meet"
+    style="filter: brightness(0) invert(1)"
+  />
+</svg>

@@ -8,6 +8,7 @@ import {
   createOpportunityDeliverablesController,
   fundBusinessOpportunityController,
   inviteOpportunityBiddersController,
+  listOpportunityInviteCandidatesController,
   listBusinessOpportunitiesController,
   listBusinessIndustriesController,
   listOpportunityDeliverablesController,
@@ -17,6 +18,8 @@ import {
   readBusinessDashboardController,
   readBusinessKycController,
   readBusinessProfileController,
+  scheduleApplicantInterviewController,
+  startApplicantInterviewController,
   submitBusinessKycController,
   updateBusinessOpportunityController,
   updateBusinessProfileController
@@ -39,9 +42,12 @@ async function registerBusinessRoutes(app: FastifyInstance) {
   app.get('/opportunities/:id/deliverables', { preHandler: businessOnly }, listOpportunityDeliverablesController)
   app.post('/opportunities/:id/deliverables', { preHandler: businessOnly }, createOpportunityDeliverablesController)
   app.get('/opportunities/:id/deliverables/:deliverableId', { preHandler: businessOnly }, readOpportunityDeliverableController)
+  app.get('/opportunities/:id/invite-candidates', { preHandler: businessOnly }, listOpportunityInviteCandidatesController)
   app.post('/opportunities/:id/invites', { preHandler: businessOnly }, inviteOpportunityBiddersController)
   app.get('/opportunities/:id/applicants', { preHandler: businessOnly }, listOpportunityApplicantsController)
   app.post('/applicants/:id/review-events', { preHandler: businessOnly }, createApplicantReviewEventController)
+  app.post('/applicants/:id/interview', { preHandler: businessOnly }, scheduleApplicantInterviewController)
+  app.post('/applicants/:id/interview/start', { preHandler: businessOnly }, startApplicantInterviewController)
   app.post('/applicants/:id/award', { preHandler: businessOnly }, awardApplicantProjectController)
 }
 

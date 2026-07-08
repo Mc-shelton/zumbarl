@@ -190,6 +190,11 @@ class AuthUsersRepository {
           expectedGraduation: new Date(`${new Date().getFullYear() + course.duration}-12-31T00:00:00.000Z`)
         }
       })
+      await transaction.wallet.create({
+        data: {
+          studentId: student.id
+        }
+      })
       return { user, student }
     })
     return { user: toAuthUser(result.user, { studentId: result.student.id }), student: toStudentProfile(result.student) }

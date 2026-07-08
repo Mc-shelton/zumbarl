@@ -1,5 +1,6 @@
-import { notFound } from '../../../lib/http.js'
+import { ApiError, notFound } from '../../../lib/http.js'
 import { deleteCacheByPattern, readCache, writeCache } from '../../cache/index.js'
+import { sendTransactionalEmail } from '../../notification/index.js'
 import { businessWorkflowsRepository } from '../../repositories/business/index.js'
 
 const DEFAULT_BUSINESS_INDUSTRIES = [
@@ -284,17 +285,73 @@ async function createOpportunityDeliverablesService(id: string, payload: Record<
 
 async function inviteOpportunityBiddersService(id: string, payload: Record<string, any>, actorId: string | undefined) {
   const result = await businessWorkflowsRepository.createOpportunityInvitesWithEvent(id, payload, actorId) ?? notFound('Opportunity')
-  const { invites } = result
-  return { invites }
+  const { invites, recipients = [] } = result
+  const emailResults = await Promise.all(recipients.map((recipient: Record<string, any>) => (
+    sendTransactionalEmail(
+      recipient.email,
+      `You're invited to apply: ${result.opportunity.title}`,
+      `<p>Hi ${recipient.name},</p><p>${payload.note || `You have been invited to apply for ${result.opportunity.title}.`}</p><p><a href="/campus/opportunities/${id}/place-bid">View opportunity</a></p>`
+    )
+  )))
+  return { invites, notifications: recipients.length, emails: emailResults }
 }
 
-async function listOpportunityApplicantsService(id: string) {
-  await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
+async function listOpportunityInviteCandidatesService(id: string, query: Record<string, unknown>) {
+  const result = await businessWorkflowsRepository.listOpportunityInviteCandidates(id, query) ?? notFound('Opportunity')
+  return { candidates: result.candidates }
+}
+
+async function listOpportunityApplicantsService(id: string, businessId: string | undefined) {
+  const opportunity = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
+  if (businessId && opportunity.businessId !== businessId) notFound('Opportunity')
   return { data: await businessWorkflowsRepository.listOpportunityBids(id) }
 }
 
 async function createApplicantReviewEventService(id: string, payload: Record<string, any>, actorId: string | undefined) {
   return await businessWorkflowsRepository.recordApplicantReviewEvent(id, payload, actorId) ?? notFound('Applicant bid')
+}
+
+async function scheduleApplicantInterviewService(
+  id: string,
+  businessId: string | undefined,
+  payload: Record<string, any>,
+  actorId: string | undefined
+) {
+  const bid = await businessWorkflowsRepository.findBid(id) ?? notFound('Applicant bid')
+  const opportunity = await businessWorkflowsRepository.findOpportunity(bid.opportunityId) ?? notFound('Opportunity')
+  if (businessId && opportunity.businessId !== businessId) notFound('Applicant bid')
+
+  const result = await businessWorkflowsRepository.scheduleApplicantInterview(id, payload, actorId) ?? notFound('Applicant bid')
+  const scheduledAt = new Date(payload.interviewAt).toLocaleString('en-KE', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: payload.timezone
+  })
+  const email = await sendTransactionalEmail(
+    result.recipient.email,
+    `You're shortlisted for ${result.recipient.opportunityTitle}`,
+    `<p>Hi ${result.recipient.name},</p><p>${result.recipient.companyName} shortlisted you and scheduled an interview for ${scheduledAt}.</p><p><a href="/campus/interviews/${result.interview.id}">Review and respond to the interview</a></p>`
+  )
+
+  return { interview: result.interview, email }
+}
+
+async function startApplicantInterviewService(
+  id: string,
+  businessId: string | undefined,
+  actorId: string | undefined
+) {
+  if (!actorId) throw new ApiError(401, 'Authentication required', 'AUTH_REQUIRED')
+
+  const bid = await businessWorkflowsRepository.findBid(id) ?? notFound('Applicant bid')
+  const opportunity = await businessWorkflowsRepository.findOpportunity(bid.opportunityId) ?? notFound('Opportunity')
+  if (businessId && opportunity.businessId !== businessId) notFound('Applicant bid')
+
+  const result = await businessWorkflowsRepository.startApplicantInterview(id, actorId) ?? notFound('Interview')
+  if ('blockedReason' in result) {
+    throw new ApiError(409, result.blockedReason || 'The interview is not ready to start.', 'INTERVIEW_NOT_READY')
+  }
+  return result
 }
 
 async function awardApplicantProjectService(id: string, actorId: string | undefined) {
@@ -319,8 +376,11 @@ export {
   listOpportunityDeliverablesService,
   readOpportunityDeliverableService,
   createOpportunityDeliverablesService,
+  listOpportunityInviteCandidatesService,
   inviteOpportunityBiddersService,
   listOpportunityApplicantsService,
   createApplicantReviewEventService,
+  scheduleApplicantInterviewService,
+  startApplicantInterviewService,
   awardApplicantProjectService
 }

@@ -1,27 +1,27 @@
 Jobs & gigs page:
-- categories not working
-- tiles need swapping
-- earn mode/pipeline mode should be done on the setting
-- rewrokk the 'fits' tagging
-- make 'place bid button' come down rather than being on the top
-- remove bid submission path [not relevant for the ui]
-- 'per' pricing details are not complete [if the project is not fixed price, then we have to come up with a time logging mechanism as well]
+- [x] categories not working — category tiles are now clickable filters with real counts, synced to a `?type=` URL param
+- [x] tiles need swapping — "Recommended for you" job list now renders above the marketing opportunities section
+- [x] earn mode/pipeline mode should be done on the setting — mode is now a persistent preference (profile settings popover), removed from the bid form; opportunities + place-bid pages read it
+- [x] rewrokk the 'fits' tagging — cards show a "Fits: <career path>" pill with the mode-fit note beside it; detail rail has a "Why this fits you" block
+- [x] make 'place bid button' come down rather than being on the top — moved to the bottom of the gig detail rail
+- [x] remove bid submission path [not relevant for the ui] — WorkflowStatusPanel removed from the place-bid page
+- [x] 'per' pricing details are not complete — non-fixed bids now require an estimated hours/days/months input, show a computed estimated total, and note that time is tracked via the project time log (full time-logging mechanism still a future feature)
 -
-- opportunities don't have iamges
-- remove 'active gig process gates'
-- business opportunity tabs should be Opportunities, Completed, Drafts, Archived
-- intead of top skills on the right bar, lets have top freelancers
-- for the tags of the status, lets have open, draft, pending
-- the applicants tab shoudl be a list of people they've worked with or working with, with details like their progress, their projects, just profile altogether[GUI]
-- make the deliverables draggable, and collapsable, same with milestones
-- the total amount shoudl be calculated from the numbers in all the deliverables, and then %age recalculated as per the amount of the deliverable, so the amount inputed, does not really have to work towards making it 100%
-- the sampel work files are picking any file type even after picking the type as image
-- on the draft listing, we only have publish and review buttons, instead remove those and lets have one, continue.
-- redundance on the database
-- remember the listing style, if list or grid, and then remeber the crop position
-- the spashes are not using the cropping positioning
-- pagination not working - atleast in some places
-- to avoid much traffic with the autosave, ask if they really want to leave the creation page, and that it will make them loose data, that is if they had changes, but have not clicked save & continue
-- wallets should be created upon user creation
-- when at stage 2, i get this when i click save and continue bidderInstructions: Expected string, received null
-- for deliverables need output,it says deliverable 1 efven if its the 2nd one
+- [x] opportunities don't have iamges — listings fall back through splash → image → default thumbnail
+- [x] remove 'active gig process gates' — "Submission review gates" panel removed from the project workspace; review actions no longer locked behind revision-budget payment
+- [x] business opportunity tabs should be Opportunities, Completed, Drafts, Archived
+- [x] intead of top skills on the right bar, lets have top freelancers — rail now shows Top Freelancers (name, school, skill, rating, projects)
+- [x] for the tags of the status, lets have open, draft, pending — In Review/Shortlisted display as Pending; stage filter is All/Open/Pending/Draft
+- [x] the applicants tab shoudl be a list of people they've worked with or working with — covered by the Browse page's "Worked With Before" group (profile, services, score, status)
+- [x] make the deliverables draggable, and collapsable, same with milestones
+- [x] the total amount shoudl be calculated from the numbers in all the deliverables, and then %age recalculated as per the amount of the deliverable
+- [x] the sampel work files are picking any file type even after picking the type as image — file input `accept` + filter honor the selected type
+- [x] on the draft listing, we only have publish and review buttons, instead remove those and lets have one, continue.
+- [x] redundance on the database — draft saves PATCH the same backend opportunity via `existingId`/`backendId` instead of creating new rows
+- [x] remember the listing style, if list or grid, and then remeber the crop position — view mode persisted in localStorage; crop is stored with the splash and restored when a draft is continued
+- [x] the spashes are not using the cropping positioning — crop (position + zoom) now applied on the business board/list, review workspace, jobs & gigs cards and detail rail
+- [x] pagination not working - atleast in some places — business opportunities page now has real page state, working prev/next/page buttons and a page-size select
+- [x] to avoid much traffic with the autosave, ask if they really want to leave the creation page — leave prompt (stay / leave / save draft & leave) via route blocker + beforeunload
+- [x] wallets should be created upon user creation — student MAIN wallet created in the signup transaction (company wallets already existed)
+- [x] when at stage 2, i get this when i click save and continue bidderInstructions: Expected string, received null — backend validators preprocess null → undefined
+- [x] for deliverables need output,it says deliverable 1 efven if its the 2nd one — readiness message now names the actual incomplete deliverable/milestone

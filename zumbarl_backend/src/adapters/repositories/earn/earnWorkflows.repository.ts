@@ -39,6 +39,18 @@ function toOpportunityCard(opportunity: Record<string, any>) {
     overview: opportunity.description ?? opportunity.summary,
     responsibilities: opportunity.requirements ?? [],
     requirements: opportunity.mustHave ?? [],
+    qualificationQuestions: opportunity.qualificationQuestions ?? [],
+    preferredQualifications: opportunity.preferredQualifications,
+    portfolioRequired: opportunity.portfolioRequired,
+    screeningFocus: opportunity.screeningFocus,
+    bidderInstructions: opportunity.bidderInstructions,
+    requiredAttachments: (opportunity.requiredAttachments ?? []).map((attachment: Record<string, any>) => ({
+      id: attachment.id,
+      label: attachment.label,
+      fileType: attachment.fileType,
+      required: attachment.required,
+      sortOrder: attachment.sortOrder
+    })),
     source: 'database-opportunity'
   }
 }
@@ -53,7 +65,8 @@ class EarnWorkflowsRepository {
         ]
       },
       include: {
-        company: true
+        company: true,
+        requiredAttachments: { orderBy: { sortOrder: 'asc' } }
       },
       orderBy: { createdAt: 'desc' }
     })
@@ -88,6 +101,125 @@ class EarnWorkflowsRepository {
 
   acceptInvite(id: string) {
     return prisma.opportunityInvite.update({ where: { id }, data: { status: 'accepted', acceptedAt: new Date(), respondedAt: new Date() } })
+  }
+
+  async readStudentInterview(id: string, studentId: string | undefined) {
+    if (!studentId) return null
+    const interview = await prisma.opportunityInterview.findFirst({
+      where: { id, studentId },
+      include: {
+        bid: {
+          include: {
+            opportunity: { include: { company: true } },
+            student: true
+          }
+        }
+      }
+    })
+    if (!interview) return null
+
+    return {
+      ...interview,
+      scheduledAt: toIso(interview.scheduledAt),
+      proposedAt: toIso(interview.proposedAt),
+      respondedAt: toIso(interview.respondedAt),
+      createdAt: toIso(interview.createdAt),
+      updatedAt: toIso(interview.updatedAt),
+      opportunity: {
+        id: interview.bid.opportunity.id,
+        title: interview.bid.opportunity.title,
+        company: interview.bid.opportunity.company?.name || interview.bid.opportunity.companyName
+      }
+    }
+  }
+
+  respondToStudentInterview(id: string, studentId: string | undefined, payload: Record<string, any>) {
+    return prisma.$transaction(async (transaction) => {
+      if (!studentId) return null
+      const interview = await transaction.opportunityInterview.findFirst({
+        where: { id, studentId },
+        include: {
+          bid: {
+            include: {
+              opportunity: { include: { company: true } },
+              student: { include: { user: true } }
+            }
+          }
+        }
+      })
+      if (!interview) return null
+
+      const status = payload.action === 'rsvp'
+        ? 'confirmed'
+        : payload.action === 'propose_new_time'
+          ? 'proposed_new_time'
+          : 'cancelled'
+      const updated = await transaction.opportunityInterview.update({
+        where: { id: interview.id },
+        data: {
+          status,
+          studentResponseNote: payload.note,
+          proposedAt: payload.proposedAt ? new Date(payload.proposedAt) : null,
+          respondedAt: new Date()
+        }
+      })
+      const contacts = await transaction.companyContact.findMany({
+        where: { companyId: interview.bid.opportunity.companyId },
+        include: { user: true }
+      })
+      const studentName = `${interview.bid.student.firstName} ${interview.bid.student.lastName}`.trim()
+      const responseLabel = status === 'confirmed'
+        ? 'confirmed the interview'
+        : status === 'proposed_new_time'
+          ? 'suggested a new interview time'
+          : 'cancelled the interview'
+
+      await Promise.all(contacts.map((contact) => transaction.notification.create({
+        data: {
+          userId: contact.userId,
+          type: 'INTERVIEW_RESPONSE',
+          title: `Interview response: ${studentName}`,
+          body: `${studentName} ${responseLabel} for ${interview.bid.opportunity.title}.`,
+          data: {
+            opportunityId: interview.bid.opportunityId,
+            bidId: interview.bidId,
+            interviewId: interview.id,
+            response: status,
+            deepLink: '/business/opportunities'
+          },
+          sentVia: ['IN_APP', 'EMAIL']
+        }
+      })))
+      await transaction.opportunityActivityEvent.create({
+        data: {
+          action: `interview_${status}`,
+          opportunityId: interview.opportunityId,
+          actorId: interview.bid.student.userId,
+          note: payload.note,
+          metadata: {
+            bidId: interview.bidId,
+            interviewId: interview.id,
+            proposedAt: payload.proposedAt
+          }
+        }
+      })
+
+      return {
+        interview: {
+          ...updated,
+          scheduledAt: toIso(updated.scheduledAt),
+          proposedAt: toIso(updated.proposedAt),
+          respondedAt: toIso(updated.respondedAt)
+        },
+        recipients: contacts.map((contact) => ({
+          email: contact.user.email,
+          name: contact.user.name || contact.user.email
+        })),
+        studentName,
+        opportunityTitle: interview.bid.opportunity.title,
+        responseLabel
+      }
+    })
   }
 
   listStudentProjects(studentId: string | undefined, query: Record<string, unknown>) {
@@ -127,6 +259,9 @@ class EarnWorkflowsRepository {
       if (!studentId) return null
       const opportunity = await transaction.opportunity.findUnique({ where: { id: opportunityId } })
       if (!opportunity) return null
+      const existingBid = await transaction.bid.findUnique({
+        where: { opportunityId_studentId: { opportunityId, studentId } }
+      })
 
       const bid = await transaction.bid.upsert({
         where: { opportunityId_studentId: { opportunityId, studentId } },
@@ -136,6 +271,10 @@ class EarnWorkflowsRepository {
           deliveryTime: payload.deliveryTime,
           intentId: payload.intent,
           intentLabel: payload.intent,
+          coverNote: payload.message,
+          questionAnswers: payload.questionAnswers,
+          attachments: payload.attachments,
+          metadata: { pricingType: payload.pricingType },
           status: 'submitted',
           appliedAt: new Date()
         },
@@ -147,10 +286,16 @@ class EarnWorkflowsRepository {
           deliveryTime: payload.deliveryTime,
           intentId: payload.intent,
           intentLabel: payload.intent,
+          coverNote: payload.message,
+          questionAnswers: payload.questionAnswers,
+          attachments: payload.attachments,
+          metadata: { pricingType: payload.pricingType },
           status: 'submitted'
         }
       })
-      await transaction.opportunity.update({ where: { id: opportunityId }, data: { applicants: { increment: 1 } } })
+      if (!existingBid) {
+        await transaction.opportunity.update({ where: { id: opportunityId }, data: { applicants: { increment: 1 } } })
+      }
       return { bid, opportunity }
     })
   }
@@ -160,6 +305,9 @@ class EarnWorkflowsRepository {
       if (!studentId) return null
       const opportunity = await transaction.opportunity.findUnique({ where: { id: opportunityId } })
       if (!opportunity) return null
+      const existingBid = await transaction.bid.findUnique({
+        where: { opportunityId_studentId: { opportunityId, studentId } }
+      })
 
       const bid = await transaction.bid.upsert({
         where: { opportunityId_studentId: { opportunityId, studentId } },
@@ -169,6 +317,10 @@ class EarnWorkflowsRepository {
           deliveryTime: payload.deliveryTime,
           intentId: payload.intent,
           intentLabel: payload.intent,
+          coverNote: payload.message,
+          questionAnswers: payload.questionAnswers,
+          attachments: payload.attachments,
+          metadata: { pricingType: payload.pricingType },
           status: 'submitted',
           appliedAt: new Date()
         },
@@ -180,10 +332,16 @@ class EarnWorkflowsRepository {
           deliveryTime: payload.deliveryTime,
           intentId: payload.intent,
           intentLabel: payload.intent,
+          coverNote: payload.message,
+          questionAnswers: payload.questionAnswers,
+          attachments: payload.attachments,
+          metadata: { pricingType: payload.pricingType },
           status: 'submitted'
         }
       })
-      await transaction.opportunity.update({ where: { id: opportunityId }, data: { applicants: { increment: 1 } } })
+      if (!existingBid) {
+        await transaction.opportunity.update({ where: { id: opportunityId }, data: { applicants: { increment: 1 } } })
+      }
       await transaction.opportunityActivityEvent.create({
         data: {
           action: 'bid_submitted',

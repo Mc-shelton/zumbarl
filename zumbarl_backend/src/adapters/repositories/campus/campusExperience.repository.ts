@@ -166,6 +166,64 @@ function mapCareerRoadmap(roadmap: Record<string, any>) {
 }
 
 class CampusExperienceRepository {
+  async listNotifications(userId?: string) {
+    if (!userId) return { data: [], unreadCount: 0 }
+
+    const [notifications, unreadCount] = await Promise.all([
+      prisma.notification.findMany({
+        where: { userId },
+        orderBy: { createdAt: 'desc' },
+        take: 20
+      }),
+      prisma.notification.count({
+        where: { userId, isRead: false }
+      })
+    ])
+
+    return {
+      data: notifications.map((notification) => ({
+        id: notification.id,
+        type: notification.type,
+        title: notification.title,
+        body: notification.body,
+        data: notification.data,
+        isRead: notification.isRead,
+        sentVia: notification.sentVia,
+        createdAt: notification.createdAt.toISOString()
+      })),
+      unreadCount
+    }
+  }
+
+  async markNotificationRead(userId: string | undefined, notificationId: string) {
+    if (!userId) return null
+
+    const notification = await prisma.notification.findFirst({
+      where: { id: notificationId, userId }
+    })
+    if (!notification) return null
+
+    return prisma.notification.update({
+      where: { id: notification.id },
+      data: {
+        isRead: true,
+        readAt: new Date()
+      }
+    })
+  }
+
+  async markAllNotificationsRead(userId?: string) {
+    if (!userId) return { count: 0 }
+
+    return prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: {
+        isRead: true,
+        readAt: new Date()
+      }
+    })
+  }
+
   async readHomeExperience(studentId?: string) {
     const student = studentId ? await prisma.studentProfile.findUnique({ where: { id: studentId }, include: { campus: true } }) : null
     const campusWhere = student?.campusId ? { OR: [{ campusId: student.campusId }, { campusId: null }] } : {}

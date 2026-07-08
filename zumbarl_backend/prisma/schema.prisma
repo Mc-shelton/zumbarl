@@ -152,6 +152,8 @@ model User {
   notifications    Notification[]
   sentMessages     Message[]       @relation("SentMessages")
   receivedMessages Message[]       @relation("ReceivedMessages")
+  outgoingCalls    CallSession[]   @relation("CallCaller")
+  incomingCalls    CallSession[]   @relation("CallRecipient")
   uploadedFiles    UploadedFile[]
 
   @@index([email])
@@ -876,6 +878,8 @@ model Bid {
   intentId        String?
   intentLabel     String?
   inviteId        String?
+  questionAnswers Json?
+  attachments     Json?
   appliedAt       DateTime  @default(now())
   respondedAt     DateTime?
   rejectionReason String?
@@ -885,12 +889,42 @@ model Bid {
   opportunity Opportunity             @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
   student     StudentProfile          @relation(fields: [studentId], references: [id], onDelete: Cascade)
   submissions OpportunitySubmission[]
+  interview   OpportunityInterview?
 
   @@unique([opportunityId, studentId])
   @@index([opportunityId])
   @@index([studentId])
   @@index([status])
   @@map("bids")
+}
+
+model OpportunityInterview {
+  id                  String    @id @default(cuid())
+  bidId               String    @unique
+  opportunityId       String
+  studentId           String
+  scheduledById       String?
+  interviewType       String    @default("video")
+  scheduledAt         DateTime
+  durationMinutes     Int       @default(30)
+  timezone            String    @default("Africa/Nairobi")
+  meetingOption       String    @default("generated")
+  meetingUrl          String?
+  note                String?
+  status              String    @default("pending")
+  studentResponseNote String?
+  proposedAt          DateTime?
+  respondedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  bid Bid @relation(fields: [bidId], references: [id], onDelete: Cascade)
+
+  @@index([opportunityId])
+  @@index([studentId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("opportunity_interviews")
 }
 
 model OpportunitySubmission {
@@ -1563,6 +1597,30 @@ model Notification {
   @@map("notifications")
 }
 
+model CallSession {
+  id            String    @id @default(cuid())
+  callerId      String
+  recipientId   String
+  opportunityId String?
+  callType      String
+  roomUrl       String
+  status        String    @default("ringing")
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  declinedAt    DateTime?
+  endedAt       DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  caller    User @relation("CallCaller", fields: [callerId], references: [id], onDelete: Cascade)
+  recipient User @relation("CallRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([callerId, status])
+  @@index([recipientId, status])
+  @@index([expiresAt])
+  @@map("call_sessions")
+}
+
 model Message {
   id            String    @id @default(cuid())
   opportunityId String?
@@ -1570,6 +1628,7 @@ model Message {
   recipientId   String
   body          String
   fileUrls      String[]
+  deliveredAt   DateTime?
   isRead        Boolean   @default(false)
   readAt        DateTime?
   createdAt     DateTime  @default(now())

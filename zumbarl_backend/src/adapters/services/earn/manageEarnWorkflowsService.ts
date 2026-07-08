@@ -1,4 +1,5 @@
-import { notFound } from '../../../lib/http.js'
+import { ApiError, notFound } from '../../../lib/http.js'
+import { sendTransactionalEmail } from '../../notification/index.js'
 import { earnWorkflowsRepository } from '../../repositories/earn/index.js'
 
 function listEarnOpportunitiesService(query: Record<string, unknown>) {
@@ -10,6 +11,29 @@ function listStudentBidsService(studentId: string | undefined, query: Record<str
 }
 
 async function submitOpportunityBidService(opportunityId: string, studentId: string | undefined, payload: Record<string, any>) {
+  const opportunity = await earnWorkflowsRepository.findOpportunity(opportunityId) ?? notFound('Opportunity')
+  const answers = Array.isArray(payload.questionAnswers) ? payload.questionAnswers : []
+  const missingQuestions = opportunity.qualificationQuestions.filter((question) => (
+    !answers.some((item: Record<string, unknown>) => item.question === question && String(item.answer ?? '').trim())
+  ))
+  if (missingQuestions.length) {
+    throw new ApiError(400, `Answer all application questions: ${missingQuestions.join(', ')}`, 'APPLICATION_ANSWERS_REQUIRED')
+  }
+
+  const attachments = Array.isArray(payload.attachments) ? payload.attachments : []
+  const missingAttachments = opportunity.requiredAttachments
+    .filter((requirement) => requirement.required)
+    .filter((requirement) => !attachments.some((item: Record<string, unknown>) => (
+      item.requirementId === requirement.id && String(item.url ?? '').trim()
+    )))
+  if (missingAttachments.length) {
+    throw new ApiError(
+      400,
+      `Add all required attachments: ${missingAttachments.map((item) => item.label).join(', ')}`,
+      'APPLICATION_ATTACHMENTS_REQUIRED'
+    )
+  }
+
   const result = await earnWorkflowsRepository.submitBidWithEvent(opportunityId, studentId, payload) ?? notFound('Opportunity')
   const { bid } = result
   return bid
@@ -17,6 +41,22 @@ async function submitOpportunityBidService(opportunityId: string, studentId: str
 
 async function acceptOpportunityInviteService(inviteId: string) {
   return await earnWorkflowsRepository.acceptInvite(inviteId) ?? notFound('Opportunity invite')
+}
+
+async function readStudentInterviewService(id: string, studentId: string | undefined) {
+  return await earnWorkflowsRepository.readStudentInterview(id, studentId) ?? notFound('Interview')
+}
+
+async function respondToStudentInterviewService(id: string, studentId: string | undefined, payload: Record<string, any>) {
+  const result = await earnWorkflowsRepository.respondToStudentInterview(id, studentId, payload) ?? notFound('Interview')
+  const emails = await Promise.all(result.recipients.map((recipient: Record<string, string>) => (
+    sendTransactionalEmail(
+      recipient.email,
+      `Interview response from ${result.studentName}`,
+      `<p>Hi ${recipient.name},</p><p>${result.studentName} ${result.responseLabel} for ${result.opportunityTitle}.</p>${payload.note ? `<p>Note: ${payload.note}</p>` : ''}`
+    )
+  )))
+  return { interview: result.interview, emails }
 }
 
 function listStudentProjectsService(studentId: string | undefined, query: Record<string, unknown>) {
@@ -46,6 +86,8 @@ export {
   listStudentBidsService,
   submitOpportunityBidService,
   acceptOpportunityInviteService,
+  readStudentInterviewService,
+  respondToStudentInterviewService,
   listStudentProjectsService,
   submitProjectDeliverableService,
   readStudentTrustSnapshotService

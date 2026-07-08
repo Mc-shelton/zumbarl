@@ -182,6 +182,24 @@ const reviewApplicantSchema = z.object({
   interviewAt: z.string().datetime().optional()
 })
 
+const scheduleApplicantInterviewSchema = z.object({
+  interviewType: z.enum(['video', 'audio']).default('video'),
+  interviewAt: z.string().datetime(),
+  durationMinutes: z.coerce.number().int().min(15).max(180).default(30),
+  timezone: z.string().min(1).default('Africa/Nairobi'),
+  meetingOption: z.enum(['generated', 'custom', 'phone']).default('generated'),
+  meetingUrl: z.string().url().optional(),
+  note: z.string().max(1000).optional()
+}).superRefine((value, context) => {
+  if (value.meetingOption === 'custom' && !value.meetingUrl) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['meetingUrl'],
+      message: 'A custom meeting link is required'
+    })
+  }
+})
+
 export {
   createOpportunitySchema,
   updateOpportunitySchema,
@@ -191,5 +209,6 @@ export {
   createOpportunityDeliverablesSchema,
   inviteOpportunityBiddersSchema,
   fundOpportunitySchema,
-  reviewApplicantSchema
+  reviewApplicantSchema,
+  scheduleApplicantInterviewSchema
 }

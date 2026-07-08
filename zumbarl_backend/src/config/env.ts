@@ -6,6 +6,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(4100),
   HOST: z.string().default('0.0.0.0'),
   SERVER_PUBLIC_URL: z.string().url().default('http://localhost:4100'),
+  JITSI_PUBLIC_URL: z.string().url().default('http://localhost:18000'),
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),

@@ -6,10 +6,12 @@ import {
   listStudentBidsService,
   listStudentProjectsService,
   readStudentTrustSnapshotService,
+  readStudentInterviewService,
+  respondToStudentInterviewService,
   submitOpportunityBidService,
   submitProjectDeliverableService
 } from '../../../../adapters/services/earn/index.js'
-import { submitOpportunityBidSchema, submitProjectDeliverableSchema } from '../../../validators/earn/index.js'
+import { respondToInterviewSchema, submitOpportunityBidSchema, submitProjectDeliverableSchema } from '../../../validators/earn/index.js'
 
 async function listEarnOpportunitiesController(request: FastifyRequest, reply: FastifyReply) {
   return reply.send(await listEarnOpportunitiesService(request.query as Record<string, unknown>))
@@ -27,6 +29,20 @@ async function submitOpportunityBidController(request: FastifyRequest, reply: Fa
 async function acceptOpportunityInviteController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
   return reply.send(await acceptOpportunityInviteService(id))
+}
+
+async function readStudentInterviewController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await readStudentInterviewService(id, request.authUser?.studentId))
+}
+
+async function respondToStudentInterviewController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await respondToStudentInterviewService(
+    id,
+    request.authUser?.studentId,
+    requireBody(respondToInterviewSchema, request)
+  ))
 }
 
 async function listStudentProjectsController(request: FastifyRequest, reply: FastifyReply) {
@@ -47,6 +63,8 @@ export {
   listStudentBidsController,
   submitOpportunityBidController,
   acceptOpportunityInviteController,
+  readStudentInterviewController,
+  respondToStudentInterviewController,
   listStudentProjectsController,
   submitProjectDeliverableController,
   readStudentTrustSnapshotController

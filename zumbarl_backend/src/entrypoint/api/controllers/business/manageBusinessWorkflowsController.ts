@@ -8,6 +8,7 @@ import {
   awardApplicantProjectService,
   fundBusinessOpportunityService,
   inviteOpportunityBiddersService,
+  listOpportunityInviteCandidatesService,
   listBusinessOpportunitiesService,
   listBusinessIndustriesService,
   listOpportunityDeliverablesService,
@@ -17,6 +18,8 @@ import {
   readBusinessDashboardService,
   readBusinessKycService,
   readBusinessProfileService,
+  scheduleApplicantInterviewService,
+  startApplicantInterviewService,
   submitBusinessKycService,
   updateBusinessOpportunityService,
   updateBusinessProfileService
@@ -29,6 +32,7 @@ import {
   fundOpportunitySchema,
   inviteOpportunityBiddersSchema,
   reviewApplicantSchema,
+  scheduleApplicantInterviewSchema,
   submitBusinessKycSchema,
   updateOpportunitySchema,
   updateBusinessProfileSchema
@@ -110,14 +114,38 @@ async function inviteOpportunityBiddersController(request: FastifyRequest, reply
   return reply.code(201).send(await inviteOpportunityBiddersService(id, requireBody(inviteOpportunityBiddersSchema, request), request.authUser?.id))
 }
 
+async function listOpportunityInviteCandidatesController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await listOpportunityInviteCandidatesService(id, request.query as Record<string, unknown>))
+}
+
 async function listOpportunityApplicantsController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.send(await listOpportunityApplicantsService(id))
+  return reply.send(await listOpportunityApplicantsService(id, request.authUser?.businessId))
 }
 
 async function createApplicantReviewEventController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
   return reply.code(201).send(await createApplicantReviewEventService(id, requireBody(reviewApplicantSchema, request), request.authUser?.id))
+}
+
+async function scheduleApplicantInterviewController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.code(201).send(await scheduleApplicantInterviewService(
+    id,
+    request.authUser?.businessId,
+    requireBody(scheduleApplicantInterviewSchema, request),
+    request.authUser?.id
+  ))
+}
+
+async function startApplicantInterviewController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await startApplicantInterviewService(
+    id,
+    request.authUser?.businessId,
+    request.authUser?.id
+  ))
 }
 
 async function awardApplicantProjectController(request: FastifyRequest, reply: FastifyReply) {
@@ -142,7 +170,10 @@ export {
   readOpportunityDeliverableController,
   createOpportunityDeliverablesController,
   inviteOpportunityBiddersController,
+  listOpportunityInviteCandidatesController,
   listOpportunityApplicantsController,
   createApplicantReviewEventController,
+  scheduleApplicantInterviewController,
+  startApplicantInterviewController,
   awardApplicantProjectController
 }
