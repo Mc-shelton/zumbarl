@@ -1,4 +1,3 @@
-import { BUSINESS_APPLICANT_PROFILE } from '../applicantProfileData'
 import {
   createBackendBusinessOpportunity,
   listBackendBusinessOpportunities,
@@ -9,7 +8,7 @@ import {
 import { getOpportunityStatusForAction } from './businessPipelineService'
 
 const STORAGE_KEY = 'zumbarl.businessFlow.v1'
-const STATE_VERSION = 1
+const STATE_VERSION = 2
 const REPEAT_HIRE_LIMIT = 3
 
 const listeners = new Set()
@@ -24,66 +23,14 @@ function mirrorBackendWrite(writeOperation, onSuccess) {
     })
 }
 
-function getDefaultOpportunity() {
-  return {
-    acceptanceCriteria: 'Posts match the approved brand voice, weekly analytics are submitted, and final editable files are handed over.',
-    applicationDeadline: 'Jun 20, 2026',
-    applicants: 12,
-    availability: 'Weekdays',
-    id: 'brief-social-media-manager',
-    image: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp',
-    title: 'Social Media Manager',
-    company: 'Zetech Studios',
-    category: 'Social Media',
-    clarityScore: 100,
-    companyDescription: 'Zetech Studios creates digital campaigns for student-facing brands and campus communities.',
-    deliverables: 'Instagram and TikTok content calendar, 12 short captions, 8 designed posts, and weekly performance summary.',
-    duration: '4 weeks',
-    engagementMode: 'Hybrid',
-    experienceLevel: 'Intermediate',
-    mode: 'Part-time - Hybrid',
-    budget: 'KSh 8,000 / month',
-    deadline: 'Jun 20, 2026',
-    bidderInstructions: 'Apply with two social media samples, availability for June, and a short note on how you would grow engagement.',
-    mustHave: ['Social Media', 'Canva', 'Copywriting'],
-    opportunityType: 'Part-time',
-    paymentTerms: 'Milestone-based',
-    portfolioRequired: 'Portfolio samples required',
-    preferredQualifications: 'Experience creating content for student clubs, SMEs, or campus campaigns.',
-    requiredAttachments: [
-      { id: 'required-portfolio-samples', label: 'Portfolio samples', fileType: 'PDF' },
-      { id: 'required-content-links', label: 'Relevant content links', fileType: 'Link' },
-    ],
-    screeningFocus: 'Portfolio samples, caption quality, brand fit, analytics awareness, and weekly availability.',
-    summary: 'Manage Instagram, TikTok and WhatsApp content for a student-facing campaign.',
-    skills: 'Social Media, Canva, Copywriting, Analytics',
-    visibility: 'Visible to all students',
-    intentId: 'career',
-    intentLabel: 'Build Career Mode',
-    status: 'Shortlisted',
-    createdAt: 'Seed brief',
-  }
-}
-
 function getDefaultState() {
-  const defaultOpportunity = getDefaultOpportunity()
-
   return {
     version: STATE_VERSION,
-    opportunities: [defaultOpportunity],
+    opportunities: [],
     opportunityInvites: [],
     opportunityBids: [],
-    selectedOpportunityId: defaultOpportunity.id,
-    reviewEvents: [
-      {
-        id: 'event-seed-shortlist',
-        action: 'shortlisted',
-        applicantName: BUSINESS_APPLICANT_PROFILE.name,
-        opportunityId: defaultOpportunity.id,
-        detail: 'Applicant moved into review shortlist.',
-        createdAt: 'Seed event',
-      },
-    ],
+    selectedOpportunityId: null,
+    reviewEvents: [],
   }
 }
 
@@ -144,21 +91,19 @@ function formatCreatedAt() {
 
 function normalizeOpportunity(opportunity) {
   const source = opportunity || {}
-  const fallback = source.id === 'brief-social-media-manager'
-    ? getDefaultOpportunity()
-    : {
-        acceptanceCriteria: '',
-        applicants: 0,
-        bidderInstructions: '',
-        clarityScore: 0,
-        companyDescription: '',
-        deliverables: '',
-        duration: '',
-        invitedCount: 0,
-        paymentTerms: '',
-        requiredAttachments: [],
-        screeningFocus: '',
-      }
+  const fallback = {
+    acceptanceCriteria: '',
+    applicants: 0,
+    bidderInstructions: '',
+    clarityScore: 0,
+    companyDescription: '',
+    deliverables: '',
+    duration: '',
+    invitedCount: 0,
+    paymentTerms: '',
+    requiredAttachments: [],
+    screeningFocus: '',
+  }
 
   return {
     ...fallback,
@@ -197,13 +142,11 @@ function mergeBackendOpportunities(opportunities) {
     backendId: opportunity.id,
     status: getDisplayOpportunityStatus(opportunity.status),
   }))
-  const backendIds = new Set(backendOpportunities.map((opportunity) => opportunity.backendId))
-
   setBusinessFlowState((state) => ({
     ...state,
     opportunities: [
       ...backendOpportunities,
-      ...state.opportunities.filter((opportunity) => !backendIds.has(opportunity.backendId)),
+      ...state.opportunities.filter((opportunity) => !opportunity.backendId),
     ],
   }))
 }
@@ -267,7 +210,6 @@ export async function createBusinessOpportunity(payload, options = {}) {
   const opportunity = {
     ...(existingOpportunity || {}),
     id: existingOpportunity?.id || createId('brief', `${payload.title}-${Date.now()}`),
-    company: BUSINESS_APPLICANT_PROFILE.company,
     applicants: 0,
     createdAt: existingOpportunity?.createdAt || formatCreatedAt(),
     intentId: 'career',
@@ -374,99 +316,10 @@ export async function inviteBusinessOpportunityBidders({ bidders, note, opportun
   return newInvites
 }
 
-export function acceptBusinessOpportunityInvite(inviteId) {
-  let acceptedInvite = null
-
-  setBusinessFlowState((state) => ({
-    ...state,
-    opportunityInvites: state.opportunityInvites.map((invite) => {
-      if (invite.id !== inviteId) return invite
-
-      acceptedInvite = {
-        ...invite,
-        acceptedAt: formatCreatedAt(),
-        status: 'Accepted',
-      }
-
-      return acceptedInvite
-    }),
-  }))
-
-  if (acceptedInvite) {
-    recordApplicantReviewEvent({
-      action: 'opportunity_invite_accepted',
-      detail: `${acceptedInvite.bidderName} accepted the invite and is preparing a bid.`,
-      opportunityId: acceptedInvite.opportunityId,
-    })
-  }
-
-  return acceptedInvite
-}
-
-export function recordStudentOpportunityBid({ bid, gig, invite, intent, proposal }) {
-  const opportunity = currentState.opportunities.find((item) => item.id === gig.id)
-
-  if (!opportunity) return null
-
-  const now = formatCreatedAt()
-  const bidderName = invite?.bidderName || invite?.studentName || 'Aisha Mwangi'
-  const businessBid = {
-    id: bid.id,
-    amount: bid.bidAmount,
-    bidderId: invite?.bidderId || 'student-demo',
-    bidderName,
-    createdAt: now,
-    deliveryTime: proposal?.deliveryTime || 'Timeline pending',
-    intentId: intent?.id || opportunity.intentId || 'earn',
-    intentLabel: intent?.label || opportunity.intentLabel || 'Earn Mode',
-    inviteId: invite?.id || null,
-    message: proposal?.message || '',
-    opportunityId: gig.id,
-    proposal: proposal?.proposal || '',
-    status: 'Submitted',
-  }
-
-  setBusinessFlowState((state) => ({
-    ...state,
-    opportunities: state.opportunities.map((item) => {
-      if (item.id !== gig.id) return item
-
-      const previousBidExists = state.opportunityBids.some((existingBid) => (
-        existingBid.opportunityId === gig.id && existingBid.bidderId === businessBid.bidderId
-      ))
-
-      return {
-        ...item,
-        applicants: previousBidExists ? (item.applicants || 0) : (item.applicants || 0) + 1,
-        status: 'In Review',
-      }
-    }),
-    opportunityBids: [
-      businessBid,
-      ...state.opportunityBids.filter((item) => item.id !== businessBid.id),
-    ],
-    opportunityInvites: state.opportunityInvites.map((item) => (
-      item.id === invite?.id
-        ? { ...item, bidId: businessBid.id, respondedAt: now, status: 'Bid submitted' }
-        : item
-    )),
-    selectedOpportunityId: gig.id,
-  }))
-
-  recordApplicantReviewEvent({
-    action: 'student_bid_submitted',
-    detail: `${bidderName} submitted a bid for ${opportunity.title}.`,
-    opportunityId: gig.id,
-  })
-
-  return businessBid
-}
-
 export function recordApplicantReviewEvent({ action, detail, opportunityId }) {
   const event = {
     id: createId('event', `${action}-${Date.now()}`),
     action,
-    applicantName: BUSINESS_APPLICANT_PROFILE.name,
     opportunityId,
     detail,
     createdAt: formatCreatedAt(),

@@ -66,6 +66,10 @@ async function listBackendBusinessOpportunities() {
   return sendZumbarlApiRequest('/business/opportunities')
 }
 
+async function listBackendBusinessActivity() {
+  return sendZumbarlApiRequest('/business/activity')
+}
+
 async function publishBackendBusinessOpportunity(opportunityId) {
   return sendZumbarlApiRequest(`/business/opportunities/${opportunityId}/publish`, {
     method: 'POST',
@@ -121,5 +125,6 @@ export {
   scheduleBackendApplicantInterview,
   startBackendApplicantInterview,
   sendBackendOpportunityInvites,
+  listBackendBusinessActivity,
   listBackendBusinessOpportunities,
 }

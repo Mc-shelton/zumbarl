@@ -39,8 +39,20 @@ async function submitOpportunityBidService(opportunityId: string, studentId: str
   return bid
 }
 
-async function acceptOpportunityInviteService(inviteId: string) {
-  return await earnWorkflowsRepository.acceptInvite(inviteId) ?? notFound('Opportunity invite')
+async function acceptOpportunityInviteService(inviteId: string, studentId?: string) {
+  return await earnWorkflowsRepository.acceptInvite(inviteId, studentId) ?? notFound('Opportunity invite')
+}
+
+async function declineOpportunityInviteService(inviteId: string, studentId?: string) {
+  return await earnWorkflowsRepository.declineInvite(inviteId, studentId) ?? notFound('Opportunity invite')
+}
+
+function listStudentInvitesService(studentId: string | undefined, query: Record<string, unknown>) {
+  return earnWorkflowsRepository.listStudentInvites(studentId, query)
+}
+
+function listStudentInterviewsService(studentId: string | undefined, query: Record<string, unknown>) {
+  return earnWorkflowsRepository.listStudentInterviews(studentId, query)
 }
 
 async function readStudentInterviewService(id: string, studentId: string | undefined) {
@@ -86,6 +98,9 @@ export {
   listStudentBidsService,
   submitOpportunityBidService,
   acceptOpportunityInviteService,
+  declineOpportunityInviteService,
+  listStudentInvitesService,
+  listStudentInterviewsService,
   readStudentInterviewService,
   respondToStudentInterviewService,
   listStudentProjectsService,

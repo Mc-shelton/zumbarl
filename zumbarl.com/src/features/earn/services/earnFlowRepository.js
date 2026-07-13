@@ -1,20 +1,14 @@
-import { MY_BIDS, ONGOING_PROJECTS } from '../../opportunities/constants'
-
 const STORAGE_KEY = 'zumbarl.earnFlow.v1'
-const STATE_VERSION = 1
+const STATE_VERSION = 2
 
 export function getDefaultEarnFlowState() {
   return {
     version: STATE_VERSION,
-    bids: MY_BIDS.map((bid) => ({
-      intentId: 'earn',
-      intentLabel: 'Earn Mode',
-      projectId: null,
-      source: 'seed',
-      ...bid,
-    })),
+    bids: [],
     opportunities: [],
-    projects: ONGOING_PROJECTS.map((project) => ({ source: 'seed', ...project })),
+    projects: [],
+    invites: [],
+    interviews: [],
     portfolioEvidence: [],
     projectReviews: [],
     endorsements: [],
@@ -39,6 +33,8 @@ function normalizeEarnFlowState(parsed) {
     bids: Array.isArray(parsed.bids) ? parsed.bids : defaultState.bids,
     opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities : defaultState.opportunities,
     projects: Array.isArray(parsed.projects) ? parsed.projects : defaultState.projects,
+    invites: Array.isArray(parsed.invites) ? parsed.invites : [],
+    interviews: Array.isArray(parsed.interviews) ? parsed.interviews : [],
     portfolioEvidence: Array.isArray(parsed.portfolioEvidence) ? parsed.portfolioEvidence : [],
     projectReviews: Array.isArray(parsed.projectReviews) ? parsed.projectReviews : [],
     endorsements: Array.isArray(parsed.endorsements) ? parsed.endorsements : [],

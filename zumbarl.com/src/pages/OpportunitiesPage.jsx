@@ -50,10 +50,14 @@ function OpportunitiesPage() {
               newInvitesCount={pageState.newInvitesCount}
               onBidSelect={pageState.onBidSelect}
               onClearFilters={pageState.onClearFilters}
+              onCreateBooking={pageState.onCreateBooking}
+              onDeclineInvite={pageState.onDeclineInvite}
+              onMarkInvitesSeen={pageState.onMarkInvitesSeen}
               onOpenMarketingCampaign={pageState.onOpenMarketingCampaign}
               onOpenMessages={pageState.onOpenMessages}
               onOpenPlaceBid={pageState.onOpenPlaceBid}
               onOpenProject={pageState.onOpenProject}
+              onViewBidOpportunity={pageState.onViewBidOpportunity}
               onOpportunitySelect={pageState.onOpportunitySelect}
               onOpportunityTypeChange={pageState.onOpportunityTypeChange}
               onViewBooking={pageState.onViewBooking}
@@ -92,6 +96,8 @@ function OpportunitiesPage() {
 
           {pageState.isBidsTab ? (
             <OpportunitiesBidsRail
+              interviews={pageState.interviews}
+              onRefresh={pageState.onRefreshEarnFlow}
               selectedBid={pageState.selectedBid}
               selectedBidInterview={pageState.selectedBidInterview}
               upcomingInterviewsCount={pageState.upcomingInterviewsCount}

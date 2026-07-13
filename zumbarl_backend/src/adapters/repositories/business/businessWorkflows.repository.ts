@@ -90,6 +90,13 @@ function toNumber(value: unknown, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 
+function toBudgetLabel(budget: unknown, currency: unknown) {
+  if (budget === undefined || budget === null || budget === '') return undefined
+  const amount = toNumber(budget)
+  if (!amount) return String(budget)
+  return `${String(currency || 'KES')} ${Math.round(amount).toLocaleString('en-KE')}`
+}
+
 function toStringList(value: unknown) {
   if (Array.isArray(value)) return value.map((item) => String(item).trim()).filter(Boolean)
   return String(value ?? '')
@@ -292,7 +299,7 @@ function toOpportunityCreateData(payload: Record<string, any>, businessId?: stri
     scopeMode: payload.scopeMode ?? 'deliverable',
     opportunitySplash: toJson(payload.opportunitySplash),
     budgetAmount: toNumber(payload.budgetAmount ?? payload.budget),
-    budgetLabel: payload.budget,
+    budgetLabel: toBudgetLabel(payload.budget ?? payload.budgetAmount, payload.currency),
     currency: payload.currency ?? 'KES',
     paymentTerms: payload.paymentTerms,
     applicants: Number(payload.applicants ?? 0),
@@ -341,7 +348,7 @@ function toOpportunityPatchData(payload: Record<string, any>, businessId?: strin
     scopeMode: payload.scopeMode,
     opportunitySplash: payload.opportunitySplash === undefined ? undefined : toJson(payload.opportunitySplash),
     budgetAmount: payload.budgetAmount === undefined && payload.budget === undefined ? undefined : toNumber(payload.budgetAmount ?? payload.budget),
-    budgetLabel: payload.budget,
+    budgetLabel: payload.budgetAmount === undefined && payload.budget === undefined ? undefined : toBudgetLabel(payload.budget ?? payload.budgetAmount, payload.currency),
     currency: payload.currency,
     paymentTerms: payload.paymentTerms,
     applicants: payload.applicants === undefined ? undefined : Number(payload.applicants),
@@ -565,6 +572,33 @@ class BusinessWorkflowsRepository {
       ...item,
       businessId,
       createdAt: toIso(item.createdAt)
+    }))
+  }
+
+  async listBusinessActivity(businessId: string | undefined, limit = 8) {
+    const events = await prisma.opportunityActivityEvent.findMany({
+      where: businessId ? { opportunity: { companyId: businessId } } : undefined,
+      include: { opportunity: true },
+      orderBy: { createdAt: 'desc' },
+      take: limit
+    })
+    const actorIds = Array.from(new Set(events.map((event) => event.actorId).filter(Boolean))) as string[]
+    const [users, students] = await Promise.all([
+      prisma.user.findMany({ where: { id: { in: actorIds } } }),
+      prisma.studentProfile.findMany({ where: { id: { in: actorIds } }, include: { user: true } })
+    ])
+    const nameByActorId = new Map<string, string>()
+    users.forEach((user) => nameByActorId.set(user.id, user.name || user.email))
+    students.forEach((student) => nameByActorId.set(student.id, `${student.firstName} ${student.lastName}`.trim() || student.user?.name || 'Student'))
+
+    return events.map((event) => ({
+      id: event.id,
+      action: event.action,
+      note: event.note,
+      actorName: (event.actorId && nameByActorId.get(event.actorId)) || 'Zumbarl user',
+      opportunityId: event.opportunityId,
+      opportunityTitle: event.opportunity?.title,
+      createdAt: toIso(event.createdAt)
     }))
   }
 

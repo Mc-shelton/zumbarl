@@ -1,17 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import {
-  BUSINESS_OPPORTUNITY_ACTIVITY,
-  BUSINESS_OPPORTUNITY_BIDDER_CANDIDATES,
-  BUSINESS_OPPORTUNITY_FILTERS,
-  BUSINESS_OPPORTUNITY_ROWS,
-  BUSINESS_OPPORTUNITY_TOP_FREELANCERS,
-} from '../opportunitiesData'
+import { BUSINESS_OPPORTUNITY_FILTERS } from '../opportunitiesData'
 import {
   inviteBusinessOpportunityBidders,
   publishBusinessOpportunity,
 } from '../services/businessFlowService'
 import {
+  listBackendBusinessActivity,
   listBackendOpportunityApplicants,
   listBackendOpportunityInviteCandidates,
   scheduleBackendApplicantInterview,
@@ -19,8 +14,6 @@ import {
 } from '../services/persistBusinessOpportunity'
 import { useBusinessFlowState } from './useBusinessFlowState'
 
-const DEFAULT_SEED_ID = 'brief-social-media-manager'
-const OWNED_COMPANY = 'Zetech Studios'
 const DEFAULT_PAGE_SIZE = 5
 const PAGE_SIZE_OPTIONS = [5, 10, 20]
 const VIEW_MODE_STORAGE_KEY = 'zumbarl.business-opportunities-view'
@@ -121,19 +114,32 @@ function mapFlowOpportunity(opportunity, invitedCount = 0) {
   }
 }
 
-function mapStaticOpportunity(opportunity, invitedCount = 0) {
-  const isOwned = opportunity.company === OWNED_COMPANY
-  const status = getDisplayOpportunityStatus(opportunity.status)
+function getRelativeTimeLabel(value) {
+  const date = value ? new Date(value) : null
+  if (!date || Number.isNaN(date.getTime())) return 'Recently'
 
-  return {
-    ...opportunity,
-    canInvite: isOwned && status === 'Open',
-    canPublish: false,
-    invitedCount,
-    isOwned,
-    mode: opportunity.mode || 'Project',
-    status,
-  }
+  const elapsedMinutes = Math.max(0, Math.round((Date.now() - date.getTime()) / 60000))
+  if (elapsedMinutes < 1) return 'Just now'
+  if (elapsedMinutes < 60) return `${elapsedMinutes}m ago`
+  const elapsedHours = Math.round(elapsedMinutes / 60)
+  if (elapsedHours < 24) return `${elapsedHours}h ago`
+  const elapsedDays = Math.round(elapsedHours / 24)
+  if (elapsedDays < 7) return `${elapsedDays}d ago`
+  return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' })
+}
+
+const ACTIVITY_ACTION_LABELS = {
+  bid_submitted: 'submitted a bid for',
+  created: 'created',
+  invites_sent: 'sent invites for',
+  published: 'published',
+  updated: 'updated',
+}
+
+function getActivityDetail(event) {
+  const actionLabel = ACTIVITY_ACTION_LABELS[event.action]
+    || String(event.action || 'updated').replace(/_/g, ' ')
+  return `${actionLabel} ${event.opportunityTitle || 'an opportunity'}`
 }
 
 function matchesBudget(opportunity, budgetFilter) {
@@ -182,16 +188,11 @@ export function useBusinessOpportunities() {
     }), {})
   ), [businessFlow.opportunityInvites])
 
-  const opportunities = useMemo(() => {
-    const created = businessFlow.opportunities
-      .filter((item) => item.id !== DEFAULT_SEED_ID)
-      .map((item) => mapFlowOpportunity(item, invitesByOpportunity[item.id]?.length || 0))
-    const seededRows = BUSINESS_OPPORTUNITY_ROWS.map((item) => (
-      mapStaticOpportunity(item, invitesByOpportunity[item.id]?.length || 0)
+  const opportunities = useMemo(() => (
+    businessFlow.opportunities.map((item) => (
+      mapFlowOpportunity(item, invitesByOpportunity[item.id]?.length || 0)
     ))
-
-    return [...created, ...seededRows]
-  }, [businessFlow.opportunities, invitesByOpportunity])
+  ), [businessFlow.opportunities, invitesByOpportunity])
 
   const inviteOpportunity = useMemo(() => (
     opportunities.find((opportunity) => opportunity.id === inviteOpportunityId) || null
@@ -203,7 +204,7 @@ export function useBusinessOpportunities() {
   const reviewOpportunityBackendId = reviewOpportunity?.backendId
   const reviewApplicants = reviewOpportunityBackendId
     ? applicantsByOpportunity[reviewOpportunityBackendId] || []
-    : (businessFlow.opportunityBids || []).filter((bid) => bid.opportunityId === reviewOpportunity?.id)
+    : []
   const isLoadingReviewApplicants = Boolean(
     reviewOpportunityBackendId && applicantsByOpportunity[reviewOpportunityBackendId] === undefined,
   )
@@ -218,11 +219,8 @@ export function useBusinessOpportunities() {
   const inviteCandidates = useMemo(() => {
     const normalizedQuery = inviteQuery.trim().toLowerCase()
     const opportunitySkills = new Set(inviteOpportunity?.skills || [])
-    const sourceCandidates = inviteOpportunity?.backendId
-      ? backendInviteCandidates
-      : BUSINESS_OPPORTUNITY_BIDDER_CANDIDATES
 
-    return sourceCandidates
+    return backendInviteCandidates
       .map((candidate) => ({
         ...candidate,
         skills: Array.isArray(candidate.skills) ? candidate.skills : [],
@@ -362,18 +360,49 @@ export function useBusinessOpportunities() {
     ]
   }, [opportunities])
 
-  const recentActivity = useMemo(() => {
-    const opportunityTitleById = new Map(opportunities.map((opportunity) => [opportunity.id, opportunity.title]))
-    const flowActivity = (businessFlow.reviewEvents || []).slice(0, 4).map((event) => ({
-      actor: event.applicantName || 'Zumbarl business',
-      initials: String(event.applicantName || 'ZB').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
-      detail: event.detail || `${event.action} on ${opportunityTitleById.get(event.opportunityId) || 'an opportunity'}`,
-      time: event.createdAt || 'Recently',
-      tone: ['coral', 'orange', 'blue', 'green'][Math.abs(event.id?.length || 0) % 4],
-    }))
+  const [backendActivity, setBackendActivity] = useState([])
 
-    return flowActivity.length ? flowActivity : BUSINESS_OPPORTUNITY_ACTIVITY
-  }, [businessFlow.reviewEvents, opportunities])
+  useEffect(() => {
+    let isCurrent = true
+
+    listBackendBusinessActivity()
+      .then((response) => {
+        if (isCurrent) setBackendActivity(Array.isArray(response?.data) ? response.data : [])
+      })
+      .catch(() => {
+        if (isCurrent) setBackendActivity([])
+      })
+
+    return () => { isCurrent = false }
+  }, [businessFlow.opportunities])
+
+  const recentActivity = useMemo(() => (
+    backendActivity.slice(0, 4).map((event, index) => ({
+      actor: event.actorName || 'Zumbarl user',
+      initials: String(event.actorName || 'ZU').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
+      detail: getActivityDetail(event),
+      time: getRelativeTimeLabel(event.createdAt),
+      tone: ['coral', 'orange', 'blue', 'green'][index % 4],
+    }))
+  ), [backendActivity])
+
+  const topSkills = useMemo(() => {
+    const skillCounts = opportunities
+      .flatMap((opportunity) => opportunity.skills || [])
+      .reduce((counts, skill) => ({ ...counts, [skill]: (counts[skill] || 0) + 1 }), {})
+    const total = Math.max(1, Object.values(skillCounts).reduce((sum, count) => sum + count, 0))
+    const tones = ['purple', 'orange', 'green', 'blue', 'pink']
+
+    return Object.entries(skillCounts)
+      .sort((first, second) => second[1] - first[1])
+      .slice(0, 5)
+      .map(([label, count], index) => ({
+        id: label,
+        label,
+        value: Math.round((count / total) * 100),
+        tone: tones[index % tones.length],
+      }))
+  }, [opportunities])
 
   function openInvitePanel(opportunity) {
     if (!opportunity?.canInvite) return
@@ -494,7 +523,7 @@ export function useBusinessOpportunities() {
     selectedBidderIds,
     showingFrom: filteredOpportunities.length ? (currentPage - 1) * pageSize + 1 : 0,
     showingTo: Math.min(currentPage * pageSize, filteredOpportunities.length),
-    topFreelancers: BUSINESS_OPPORTUNITY_TOP_FREELANCERS,
+    topSkills,
     summary,
     totalCount: filteredOpportunities.length,
     onChangeBudget: changeFilter(setBudget),

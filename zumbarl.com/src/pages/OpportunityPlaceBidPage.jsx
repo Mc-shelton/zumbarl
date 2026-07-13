@@ -38,16 +38,29 @@ function OpportunityPlaceBidPage() {
           <CampusSidebar activeItemId="opportunities" />
 
           <section className="campus-main opportunities-main opportunities-bid-main">
-            <OpportunityBidHeader onBackToGig={onBackToGig} selectedGig={selectedGig} />
-            <OpportunityBidForm
-              isSubmitting={isSubmitting}
-              onSubmitProposal={onSubmitProposal}
-              selectedGig={selectedGig}
-              submitError={submitError}
-            />
+            {selectedGig ? (
+              <>
+                <OpportunityBidHeader onBackToGig={onBackToGig} selectedGig={selectedGig} />
+                <OpportunityBidForm
+                  isSubmitting={isSubmitting}
+                  onSubmitProposal={onSubmitProposal}
+                  selectedGig={selectedGig}
+                  submitError={submitError}
+                />
+              </>
+            ) : (
+              <div className="opportunities-list-section">
+                <p className="opportunities-list-empty">
+                  This opportunity is no longer available or is still loading.
+                </p>
+                <button type="button" className="campus-link-btn" onClick={onBackToGig}>
+                  Back to opportunities
+                </button>
+              </div>
+            )}
           </section>
 
-          <OpportunityBidSummaryRail selectedGig={selectedGig} />
+          {selectedGig ? <OpportunityBidSummaryRail selectedGig={selectedGig} /> : null}
         </div>
       </div>
 

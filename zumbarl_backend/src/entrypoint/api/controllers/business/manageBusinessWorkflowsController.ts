@@ -9,6 +9,7 @@ import {
   fundBusinessOpportunityService,
   inviteOpportunityBiddersService,
   listOpportunityInviteCandidatesService,
+  listBusinessActivityService,
   listBusinessOpportunitiesService,
   listBusinessIndustriesService,
   listOpportunityDeliverablesService,
@@ -45,6 +46,10 @@ const deliverableParamSchema = z.object({
 
 async function readBusinessDashboardController(request: FastifyRequest, reply: FastifyReply) {
   return reply.send(await readBusinessDashboardService(request.authUser?.businessId))
+}
+
+async function listBusinessActivityController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await listBusinessActivityService(request.authUser?.businessId))
 }
 
 async function readBusinessProfileController(request: FastifyRequest, reply: FastifyReply) {
@@ -155,6 +160,7 @@ async function awardApplicantProjectController(request: FastifyRequest, reply: F
 
 export {
   readBusinessDashboardController,
+  listBusinessActivityController,
   readBusinessProfileController,
   updateBusinessProfileController,
   readBusinessKycController,

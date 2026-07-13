@@ -32,6 +32,11 @@ function OpportunitiesOngoingPanel({ onOpenMessages = () => {}, onOpenProject, p
       </div>
 
       <div className="opportunities-service-orders-list">
+        {projects.length === 0 ? (
+          <p className="opportunities-list-empty">
+            Nothing ongoing yet. Projects you win or accept will appear here.
+          </p>
+        ) : null}
         {projects.map((project) => (
           <article key={project.id} className="opportunities-service-order-card">
             <header className="opportunities-service-order-head">

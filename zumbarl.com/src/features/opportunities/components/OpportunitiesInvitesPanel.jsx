@@ -1,12 +1,13 @@
 import { FiClock, FiMapPin } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
-import { OPPORTUNITY_INVITES } from '../constants'
 
 function OpportunitiesInvitesPanel({
   activeInviteClientsCount,
   expiringSoonInvitesCount,
-  invites = OPPORTUNITY_INVITES,
+  invites = [],
   newInvitesCount,
+  onDeclineInvite = () => {},
+  onMarkInvitesSeen = () => {},
   onOpenPlaceBid,
 }) {
   const canSubmitBid = hasAccess(ACCESS_KEYS.opportunities.apply)
@@ -18,7 +19,9 @@ function OpportunitiesInvitesPanel({
           <h2>Invites</h2>
           <p>Gigs where clients invited you directly to submit a proposal.</p>
         </div>
-        <button type="button" className="campus-link-btn">Mark all as seen</button>
+        {newInvitesCount > 0 ? (
+          <button type="button" className="campus-link-btn" onClick={onMarkInvitesSeen}>Mark all as seen</button>
+        ) : null}
       </div>
 
       <div className="opportunities-invites-summary">
@@ -40,6 +43,11 @@ function OpportunitiesInvitesPanel({
       </div>
 
       <div className="opportunities-invite-page-list">
+        {invites.length === 0 ? (
+          <p className="opportunities-list-empty">
+            No invites yet. When a business invites you to bid on an opportunity, it will appear here.
+          </p>
+        ) : null}
         {invites.map((invite) => (
           <article key={invite.id} className={`opportunities-invite-page-card${invite.isNew ? ' is-new' : ''}`}>
             <div className="opportunities-invite-page-thumb">
@@ -58,7 +66,7 @@ function OpportunitiesInvitesPanel({
               <p className="opportunities-job-description">{invite.detail}</p>
 
               <div className="opportunities-tag-row">
-                {invite.tags.map((tag) => (
+                {(invite.tags || []).map((tag) => (
                   <span key={`${invite.id}-${tag}`}>{tag}</span>
                 ))}
               </div>
@@ -93,7 +101,7 @@ function OpportunitiesInvitesPanel({
             </div>
 
             <div className="opportunities-invite-page-actions">
-              {canSubmitBid ? (
+              {canSubmitBid && invite.stage !== 'Declined' ? (
                 <button
                   type="button"
                   className="opportunities-search-btn"
@@ -102,7 +110,17 @@ function OpportunitiesInvitesPanel({
                   {invite.isAccepted ? 'Submit Bid' : 'Accept Invite'}
                 </button>
               ) : null}
-              <button type="button" className="campus-link-btn">Not now</button>
+              {invite.stage === 'Declined' ? (
+                <p className="opportunities-invite-declined-note">Invite declined</p>
+              ) : (
+                <button
+                  type="button"
+                  className="campus-link-btn"
+                  onClick={() => onDeclineInvite(invite)}
+                >
+                  Not now
+                </button>
+              )}
             </div>
           </article>
         ))}

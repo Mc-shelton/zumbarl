@@ -453,6 +453,94 @@
   font-size:20px;
 }
 
+.opportunities-bid-menu {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}
+
+.opportunities-bid-menu .opportunities-bid-more {
+  position: static;
+}
+
+.opportunities-bid-menu-list {
+  position: absolute;
+  top: 36px;
+  right: 0;
+  z-index: 12;
+  min-width: 190px;
+  display: grid;
+  padding: 6px;
+  border-radius: 12px;
+  border: 1px solid #e3e7f5;
+  background: #ffffff;
+  box-shadow: 0 14px 30px rgba(38, 44, 88, 0.16);
+}
+
+.opportunities-bid-menu-list button {
+  border: 0;
+  background: transparent;
+  text-align: left;
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #333a5e;
+  cursor: pointer;
+}
+
+.opportunities-bid-menu-list button:hover {
+  background: #f2f0ff;
+  color: var(--theme-purple);
+}
+
+.opportunities-bid-status-filters {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 999px;
+  border: 1px solid #e3e7f5;
+  background: #f6f7fc;
+}
+
+.opportunities-bid-status-filter {
+  border: 0;
+  background: transparent;
+  border-radius: 999px;
+  padding: 6px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #59618a;
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease;
+}
+
+.opportunities-bid-status-filter em {
+  font-style: normal;
+  font-size: 10.5px;
+  font-weight: 700;
+  border-radius: 999px;
+  padding: 1px 7px;
+  background: #e6e3fb;
+  color: #4a3fb5;
+}
+
+.opportunities-bid-status-filter.is-active {
+  background: #ffffff;
+  color: var(--theme-purple);
+  box-shadow: 0 4px 10px rgba(38, 44, 88, 0.1);
+}
+
+.opportunities-invite-declined-note {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: #8b91b3;
+}
+
 .opportunities-bid-body {
   padding: 10px;
   display: grid;

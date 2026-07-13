@@ -17,10 +17,14 @@ function OpportunitiesTabContent({
   newInvitesCount,
   onBidSelect,
   onClearFilters,
+  onCreateBooking,
+  onDeclineInvite,
+  onMarkInvitesSeen,
   onOpenMarketingCampaign,
   onOpenMessages,
   onOpenPlaceBid,
   onOpenProject,
+  onViewBidOpportunity,
   onOpportunitySelect,
   onOpportunityTypeChange,
   onViewBooking,
@@ -52,7 +56,9 @@ function OpportunitiesTabContent({
       <OpportunitiesBidsPanel
         bids={visibleBids}
         onBidSelect={onBidSelect}
+        onOpenMessages={onOpenMessages}
         onOpenProject={onOpenProject}
+        onViewBidOpportunity={onViewBidOpportunity}
         selectedBidId={selectedBidId}
       />
     )
@@ -65,6 +71,8 @@ function OpportunitiesTabContent({
         expiringSoonInvitesCount={expiringSoonInvitesCount}
         invites={invites}
         newInvitesCount={newInvitesCount}
+        onDeclineInvite={onDeclineInvite}
+        onMarkInvitesSeen={onMarkInvitesSeen}
         onOpenPlaceBid={onOpenPlaceBid}
       />
     )
@@ -80,6 +88,8 @@ function OpportunitiesTabContent({
         actionRequiredServiceOrdersCount={actionRequiredServiceOrdersCount}
         completedServiceOrdersCount={completedServiceOrdersCount}
         confirmedServiceOrdersCount={confirmedServiceOrdersCount}
+        onCreateBooking={onCreateBooking}
+        onOpenMessages={onOpenMessages}
         onViewBooking={onViewBooking}
       />
     )

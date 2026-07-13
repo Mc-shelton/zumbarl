@@ -2,8 +2,11 @@ import type { FastifyReply, FastifyRequest } from 'fastify'
 import { idParamSchema, requireBody, requireParams } from '../../../../lib/http.js'
 import {
   acceptOpportunityInviteService,
+  declineOpportunityInviteService,
   listEarnOpportunitiesService,
   listStudentBidsService,
+  listStudentInvitesService,
+  listStudentInterviewsService,
   listStudentProjectsService,
   readStudentTrustSnapshotService,
   readStudentInterviewService,
@@ -28,7 +31,20 @@ async function submitOpportunityBidController(request: FastifyRequest, reply: Fa
 
 async function acceptOpportunityInviteController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.send(await acceptOpportunityInviteService(id))
+  return reply.send(await acceptOpportunityInviteService(id, request.authUser?.studentId))
+}
+
+async function declineOpportunityInviteController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await declineOpportunityInviteService(id, request.authUser?.studentId))
+}
+
+async function listStudentInvitesController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await listStudentInvitesService(request.authUser?.studentId, request.query as Record<string, unknown>))
+}
+
+async function listStudentInterviewsController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await listStudentInterviewsService(request.authUser?.studentId, request.query as Record<string, unknown>))
 }
 
 async function readStudentInterviewController(request: FastifyRequest, reply: FastifyReply) {
@@ -63,6 +79,9 @@ export {
   listStudentBidsController,
   submitOpportunityBidController,
   acceptOpportunityInviteController,
+  declineOpportunityInviteController,
+  listStudentInvitesController,
+  listStudentInterviewsController,
   readStudentInterviewController,
   respondToStudentInterviewController,
   listStudentProjectsController,

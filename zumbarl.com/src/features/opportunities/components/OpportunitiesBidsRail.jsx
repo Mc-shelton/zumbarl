@@ -1,28 +1,66 @@
+import { useState } from 'react'
 import { FiCalendar, FiClock, FiMessageCircle } from 'react-icons/fi'
-import {
-  BID_RAIL_CALENDAR_DAYS,
-  BID_RAIL_INTERVIEWS,
-  BID_RAIL_REMINDERS,
-} from '../constants'
+
+function getCurrentWeekDays(interviews) {
+  const now = new Date()
+  const mondayOffset = (now.getDay() + 6) % 7
+  const monday = new Date(now)
+  monday.setHours(0, 0, 0, 0)
+  monday.setDate(monday.getDate() - mondayOffset)
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const day = new Date(monday)
+    day.setDate(monday.getDate() + index)
+
+    const interviewCount = interviews.filter((interview) => {
+      if (!interview.scheduledAt) return false
+      const scheduled = new Date(interview.scheduledAt)
+      return !Number.isNaN(scheduled.getTime()) && scheduled.toDateString() === day.toDateString()
+    }).length
+
+    return {
+      day: day.toLocaleDateString('en-US', { weekday: 'short' }),
+      date: String(day.getDate()),
+      interviews: interviewCount,
+      isToday: day.toDateString() === now.toDateString(),
+    }
+  })
+}
 
 function OpportunitiesBidsRail({
+  interviews = [],
+  onRefresh = () => {},
   selectedBid,
   selectedBidInterview,
   upcomingInterviewsCount,
 }) {
+  const calendarDays = getCurrentWeekDays(interviews)
+  const [isSyncing, setIsSyncing] = useState(false)
+
+  const handleSync = async () => {
+    setIsSyncing(true)
+    try {
+      await onRefresh()
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   return (
     <aside className="campus-rail opportunities-rail opportunities-bids-rail" aria-label="Bid planning tools">
       <section className="campus-rail-card opportunities-bids-rail-card opportunities-bids-calendar-card">
         <header>
           <h3>Interview Calendar</h3>
-          <button type="button" className="campus-link-btn">Sync</button>
+          <button type="button" className="campus-link-btn" onClick={handleSync} disabled={isSyncing}>
+            {isSyncing ? 'Syncing…' : 'Sync'}
+          </button>
         </header>
         <p className="opportunities-bids-rail-subtitle">
           {upcomingInterviewsCount} upcoming interviews this week
         </p>
 
         <div className="opportunities-bids-week-grid">
-          {BID_RAIL_CALENDAR_DAYS.map((item) => (
+          {calendarDays.map((item) => (
             <article
               key={`${item.day}-${item.date}`}
               className={`opportunities-bids-week-cell${item.isToday ? ' is-today' : ''}${item.interviews > 0 ? ' has-event' : ''}`}
@@ -63,7 +101,12 @@ function OpportunitiesBidsRail({
         </header>
 
         <div className="opportunities-bids-interview-list">
-          {BID_RAIL_INTERVIEWS.map((item) => (
+          {interviews.length === 0 ? (
+            <p className="opportunities-bids-no-interview">
+              No interviews scheduled yet. When a client books an interview for one of your bids, it will appear here.
+            </p>
+          ) : null}
+          {interviews.map((item) => (
             <article
               key={item.id}
               className={`opportunities-bids-interview-item${selectedBidInterview?.id === item.id ? ' is-selected' : ''}`}
@@ -77,26 +120,7 @@ function OpportunitiesBidsRail({
                 <FiMessageCircle aria-hidden="true" />
                 {item.mode} · {item.contact}
               </p>
-              <span>{item.note}</span>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="campus-rail-card opportunities-bids-rail-card">
-        <header>
-          <h3>Reminders</h3>
-          <button type="button" className="campus-link-btn">Manage</button>
-        </header>
-
-        <div className="opportunities-bids-reminder-list">
-          {BID_RAIL_REMINDERS.map((item, index) => (
-            <article key={`${item.id}-${index}`} className={`opportunities-bids-reminder-item ${item.tone}`}>
-              <div>
-                <h4>{item.title}</h4>
-                <p>{item.detail}</p>
-              </div>
-              <strong>{item.due}</strong>
+              {item.note ? <span>{item.note}</span> : null}
             </article>
           ))}
         </div>

@@ -1,4 +1,14 @@
-import { createAwardedBid, createAwardedProject, createBid, createEvidence, toWorkspaceProject } from './earnFlowMappers'
+import {
+  createAwardedBid,
+  createAwardedProject,
+  createBid,
+  createEvidence,
+  toStudentBidCard,
+  toStudentInterviewCard,
+  toStudentInviteCard,
+  toStudentProjectCard,
+  toWorkspaceProject,
+} from './earnFlowMappers'
 import { createEarnFlowSyncPayload, loadEarnFlowState, saveEarnFlowState } from './earnFlowRepository'
 import { createPayoutReadinessRecord, resolveProjectPayment } from './earnPaymentService'
 import { applyReviewToEvidence, createProjectEndorsement, createProjectReview, getReviewedProjectState } from './earnReviewMappers'
@@ -6,9 +16,33 @@ import { resolveEarnTrustSnapshot } from './earnTrustService'
 import { sendZumbarlApiRequest } from '../../../lib/sendZumbarlApiRequest'
 
 const listeners = new Set()
+const SEEN_INVITES_KEY = 'zumbarl.earnFlow.seenInvites'
 
 let currentState = loadEarnFlowState()
 let backendHydrationPromise = null
+
+function readSeenInviteIds() {
+  if (typeof window === 'undefined') return new Set()
+
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(SEEN_INVITES_KEY))
+    return new Set(Array.isArray(parsed) ? parsed : [])
+  } catch {
+    return new Set()
+  }
+}
+
+function saveSeenInviteIds(seenIds) {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(SEEN_INVITES_KEY, JSON.stringify([...seenIds]))
+}
+
+function applySeenState(invites) {
+  const seenIds = readSeenInviteIds()
+  return invites.map((invite) => (
+    seenIds.has(invite.id) ? { ...invite, isNew: false } : invite
+  ))
+}
 
 function setEarnFlowState(updater) {
   currentState = updater(currentState)
@@ -39,16 +73,16 @@ export async function hydrateEarnFlowFromBackend() {
     sendZumbarlApiRequest('/earn/opportunities').catch(() => null),
     sendZumbarlApiRequest('/earn/bids').catch(() => null),
     sendZumbarlApiRequest('/earn/projects').catch(() => null),
-  ]).then(([opportunitiesPayload, bidsPayload, projectsPayload]) => {
-    const opportunities = readEnvelopeData(opportunitiesPayload)
-    const bids = readEnvelopeData(bidsPayload)
-    const projects = readEnvelopeData(projectsPayload)
-
+    sendZumbarlApiRequest('/earn/invites').catch(() => null),
+    sendZumbarlApiRequest('/earn/interviews').catch(() => null),
+  ]).then(([opportunitiesPayload, bidsPayload, projectsPayload, invitesPayload, interviewsPayload]) => {
     setEarnFlowState((state) => ({
       ...state,
-      opportunities: opportunities.length ? opportunities : state.opportunities,
-      bids: bids.length ? bids : state.bids,
-      projects: projects.length ? projects : state.projects,
+      opportunities: opportunitiesPayload ? readEnvelopeData(opportunitiesPayload) : state.opportunities,
+      bids: bidsPayload ? readEnvelopeData(bidsPayload).map(toStudentBidCard) : state.bids,
+      projects: projectsPayload ? readEnvelopeData(projectsPayload).map(toStudentProjectCard) : state.projects,
+      invites: invitesPayload ? applySeenState(readEnvelopeData(invitesPayload).map(toStudentInviteCard)) : state.invites,
+      interviews: interviewsPayload ? readEnvelopeData(interviewsPayload).map(toStudentInterviewCard) : state.interviews,
     }))
 
     return currentState
@@ -58,6 +92,57 @@ export async function hydrateEarnFlowFromBackend() {
   })
 
   return backendHydrationPromise
+}
+
+export function refreshEarnFlowFromBackend() {
+  backendHydrationPromise = null
+  return hydrateEarnFlowFromBackend()
+}
+
+export async function acceptEarnOpportunityInvite(inviteId) {
+  await sendZumbarlApiRequest(`/earn/invites/${inviteId}/accept`, { method: 'POST' })
+
+  let acceptedInvite = null
+  setEarnFlowState((state) => ({
+    ...state,
+    invites: state.invites.map((invite) => {
+      if (invite.id !== inviteId) return invite
+      acceptedInvite = {
+        ...invite,
+        isAccepted: true,
+        isNew: false,
+        stage: 'Accepted',
+        stageTone: 'is-open',
+        clientLastSeen: 'Client awaiting your bid',
+      }
+      return acceptedInvite
+    }),
+  }))
+  return acceptedInvite
+}
+
+export async function declineEarnOpportunityInvite(inviteId) {
+  await sendZumbarlApiRequest(`/earn/invites/${inviteId}/decline`, { method: 'POST' })
+
+  setEarnFlowState((state) => ({
+    ...state,
+    invites: state.invites.map((invite) => (
+      invite.id === inviteId
+        ? { ...invite, isAccepted: false, isNew: false, stage: 'Declined', stageTone: 'is-viewed' }
+        : invite
+    )),
+  }))
+}
+
+export function markEarnInvitesSeen() {
+  const seenIds = readSeenInviteIds()
+  currentState.invites.forEach((invite) => seenIds.add(invite.id))
+  saveSeenInviteIds(seenIds)
+
+  setEarnFlowState((state) => ({
+    ...state,
+    invites: state.invites.map((invite) => (invite.isNew ? { ...invite, isNew: false } : invite)),
+  }))
 }
 
 export async function submitOpportunityBid({ gig, intent, proposal }) {

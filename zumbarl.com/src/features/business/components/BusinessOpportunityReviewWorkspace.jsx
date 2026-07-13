@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { TabNav } from '../../../components/ui'
 import { getSplashCropStyle } from '../../../lib/getSplashCropStyle'
 import {
-  FiBarChart2,
   FiCalendar,
   FiCheckCircle,
   FiCreditCard,
@@ -12,7 +11,6 @@ import {
   FiEye,
   FiFileText,
   FiFilter,
-  FiFolder,
   FiHeart,
   FiImage,
   FiLock,
@@ -26,12 +24,12 @@ import {
   FiSettings,
   FiStar,
   FiUpload,
-  FiTrendingUp,
   FiUsers,
   FiVideo,
   FiX,
 } from 'react-icons/fi'
 import { Button, MetricCard, PersonRow, StatusPill } from '../../../components/ui'
+import { listBackendBusinessActivity } from '../services/persistBusinessOpportunity'
 import { cancelCall, createCall, readCall } from '../../calls/services/callService'
 import { openCallOverlay } from '../../calls/getCallMeetingUrl'
 import { listConversations, listMessages, sendMessage } from '../../messages/services/messageService'
@@ -39,11 +37,11 @@ import { playCallRingtone, playMessageSentSound } from '../../communications/ser
 
 const REVIEW_TABS = [
   { id: 'overview', label: 'Overview' },
-  { id: 'applications', label: 'Applications', count: 18 },
-  { id: 'deliverables', label: 'Work & Deliverables', count: 6 },
-  { id: 'payments', label: 'Payments', count: 4 },
+  { id: 'applications', label: 'Applications' },
+  { id: 'deliverables', label: 'Work & Deliverables' },
+  { id: 'payments', label: 'Payments' },
   { id: 'performance', label: 'Performance' },
-  { id: 'messages', label: 'Messages', count: 8 },
+  { id: 'messages', label: 'Messages' },
   { id: 'activity', label: 'Activity' },
 ]
 
@@ -60,21 +58,6 @@ function getReviewTabs(opportunity, applicationCount = 0) {
   return tabs.filter((tab) => tab.id !== 'performance')
 }
 
-const PLATFORM_BUDGETS = [
-  { label: 'Instagram', value: 'KES 10,000', share: '40%' },
-  { label: 'TikTok', value: 'KES 7,500', share: '30%' },
-  { label: 'YouTube', value: 'KES 5,000', share: '20%' },
-  { label: 'X (Twitter)', value: 'KES 2,500', share: '10%' },
-]
-
-const DELIVERABLES = [
-  { label: 'Instagram Feed Post', value: 2 },
-  { label: 'Instagram Story', value: 3 },
-  { label: 'TikTok Video', value: 1 },
-  { label: 'YouTube Short', value: 1 },
-  { label: 'X (Twitter) Tweet', value: 0 },
-]
-
 const REVIEW_IMAGE = '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp'
 const SAMPLE_APPLICATION_PDF_PREVIEW = 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAzMDAgMTQ0XSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA0NCA+PgpzdHJlYW0KQlQKL0YxIDI0IFRmCjcyIDcyIFRkCihQb3J0Zm9saW8gc2FtcGxlKSBUagpFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNzQgMDAwMDAgbiAKMDAwMDAwMDM2NyAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQzNQolJUVPRgo='
 
@@ -88,823 +71,13 @@ const APPLICATION_FILTERS = [
 
 void SAMPLE_APPLICATION_PDF_PREVIEW
 
-const APPLICATION_ROWS = [
-  {
-    id: 'wanjiru-m',
-    avatar: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp',
-    creator: 'Wanjiru M.',
-    handle: '@wanjiru_creates',
-    platform: 'Instagram',
-    followers: '24.6K',
-    engagementRate: '5.8%',
-    submitted: 'May 20, 2025',
-    submittedAgo: '2 hours ago',
-    status: 'New',
-    tone: 'blue',
-  },
-  {
-    id: 'kevin-creator',
-    avatar: '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
-    creator: 'Kevin The Creator',
-    handle: '@kevinthego',
-    platform: 'TikTok',
-    followers: '18.3K',
-    engagementRate: '6.2%',
-    submitted: 'May 20, 2025',
-    submittedAgo: '5 hours ago',
-    status: 'New',
-    tone: 'blue',
-  },
-  {
-    id: 'study-with-lynn',
-    avatar: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-    creator: 'Study With Lynn',
-    handle: '@studywithlynn',
-    platform: 'Instagram',
-    followers: '31.2K',
-    engagementRate: '4.9%',
-    submitted: 'May 19, 2025',
-    submittedAgo: '1 day ago',
-    status: 'Shortlisted',
-    tone: 'orange',
-  },
-  {
-    id: 'brian-otieno',
-    avatar: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-    creator: 'Brian Otieno',
-    handle: '@brian.creates',
-    platform: 'TikTok',
-    followers: '12.7K',
-    engagementRate: '7.1%',
-    submitted: 'May 19, 2025',
-    submittedAgo: '1 day ago',
-    status: 'Accepted',
-    tone: 'green',
-  },
-  {
-    id: 'campus-talks',
-    avatar: '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp',
-    creator: 'Campus Talks KE',
-    handle: '@campustalks.ke',
-    platform: 'YouTube',
-    followers: '22.1K',
-    engagementRate: '5.3%',
-    submitted: 'May 18, 2025',
-    submittedAgo: '2 days ago',
-    status: 'Rejected',
-    tone: 'red',
-  },
-  {
-    id: 'learn-with-paul',
-    avatar: '/assets/index/business_page_images/optimized/justin-buisson-vIluu0IH6Ps-unsplash.webp',
-    creator: 'Learn With Paul',
-    handle: '@learnwithpaul',
-    platform: 'Instagram',
-    followers: '15.4K',
-    engagementRate: '4.1%',
-    submitted: 'May 18, 2025',
-    submittedAgo: '2 days ago',
-    status: 'New',
-    tone: 'blue',
-  },
-  {
-    id: 'mindset-mentor',
-    avatar: '/assets/index/business_page_images/optimized/0xk-y5n-nhkRd7U-unsplash.webp',
-    creator: 'Mindset Mentor',
-    handle: '@mindset.mentor',
-    platform: 'TikTok',
-    followers: '9.8K',
-    engagementRate: '6.7%',
-    submitted: 'May 17, 2025',
-    submittedAgo: '3 days ago',
-    status: 'Shortlisted',
-    tone: 'orange',
-  },
-]
-
-const SHORTLISTED_APPLICATION_ROWS = [
-  {
-    id: 'shortlisted-lynn',
-    avatar: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-    creator: 'Study With Lynn',
-    handle: '@studywithlynn',
-    platform: 'Instagram',
-    followers: '31.2K',
-    engagementRate: '4.9%',
-    shortlistedOn: 'May 20, 2025',
-    shortlistedTime: '10:30 AM',
-    submitted: 'May 19, 2025',
-    submittedAgo: '1 day ago',
-    status: 'Shortlisted',
-    tone: 'orange',
-  },
-  {
-    id: 'shortlisted-mindset',
-    avatar: '/assets/index/business_page_images/optimized/0xk-y5n-nhkRd7U-unsplash.webp',
-    creator: 'Mindset Mentor',
-    handle: '@mindset.mentor',
-    platform: 'TikTok',
-    followers: '9.8K',
-    engagementRate: '6.7%',
-    shortlistedOn: 'May 19, 2025',
-    shortlistedTime: '2:15 PM',
-    submitted: 'May 17, 2025',
-    submittedAgo: '3 days ago',
-    status: 'Shortlisted',
-    tone: 'orange',
-  },
-  {
-    id: 'shortlisted-kevin',
-    avatar: '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
-    creator: 'Kevin The Creator',
-    handle: '@kevinthego',
-    platform: 'TikTok',
-    followers: '18.3K',
-    engagementRate: '6.2%',
-    shortlistedOn: 'May 20, 2025',
-    shortlistedTime: '9:45 AM',
-    submitted: 'May 20, 2025',
-    submittedAgo: '5 hours ago',
-    status: 'New',
-    tone: 'blue',
-  },
-  {
-    id: 'shortlisted-wanjiru',
-    avatar: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp',
-    creator: 'Wanjiru M.',
-    handle: '@wanjiru_creates',
-    platform: 'Instagram',
-    followers: '24.6K',
-    engagementRate: '5.8%',
-    shortlistedOn: 'May 20, 2025',
-    shortlistedTime: '9:30 AM',
-    submitted: 'May 20, 2025',
-    submittedAgo: '2 hours ago',
-    status: 'New',
-    tone: 'blue',
-  },
-  {
-    id: 'shortlisted-brian',
-    avatar: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-    creator: 'Brian Otieno',
-    handle: '@brian.creates',
-    platform: 'TikTok',
-    followers: '12.7K',
-    engagementRate: '7.1%',
-    shortlistedOn: 'May 19, 2025',
-    shortlistedTime: '11:20 AM',
-    submitted: 'May 19, 2025',
-    submittedAgo: '1 day ago',
-    status: 'Shortlisted',
-    tone: 'orange',
-  },
-  {
-    id: 'shortlisted-campus',
-    avatar: '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp',
-    creator: 'Campus Talks KE',
-    handle: '@campustalks.ke',
-    platform: 'YouTube',
-    followers: '22.1K',
-    engagementRate: '5.3%',
-    shortlistedOn: 'May 18, 2025',
-    shortlistedTime: '4:40 PM',
-    submitted: 'May 18, 2025',
-    submittedAgo: '2 days ago',
-    status: 'Rejected',
-    tone: 'red',
-  },
-]
-
 const DELIVERABLE_FILTERS = [
-  { id: 'deliverables', label: 'Deliverables', count: 6 },
-  { id: 'submitted-work', label: 'Submitted Work', count: 6 },
-  { id: 'files', label: 'Files', count: 12 },
-  { id: 'messages', label: 'Messages', count: 8 },
+  { id: 'deliverables', label: 'Deliverables' },
+  { id: 'submitted-work', label: 'Submitted Work' },
+  { id: 'files', label: 'Files' },
+  { id: 'messages', label: 'Messages' },
 ]
 
-const BUSINESS_DELIVERABLE_FILES = [
-  { name: 'Zetech_Campaign_Designs.zip', type: 'ZIP', owner: 'Wanjiru M.', updated: 'May 20, 2025', size: '38.4 MB', tone: 'zip' },
-  { name: 'Landing_Page_Source.zip', type: 'ZIP', owner: 'Kevin The Creator', updated: 'May 20, 2025', size: '42.8 MB', tone: 'zip' },
-  { name: 'Campus_Market_Report.pdf', type: 'PDF', owner: 'Study With Lynn', updated: 'May 19, 2025', size: '2.1 MB', tone: 'pdf' },
-  { name: 'Instagram_Insights_Before_After.pdf', type: 'PDF', owner: 'Brian Otieno', updated: 'May 19, 2025', size: '6.8 MB', tone: 'pdf' },
-  { name: 'Activation_Checkin_Proof.zip', type: 'ZIP', owner: 'Campus Talks KE', updated: 'May 18, 2025', size: '14.2 MB', tone: 'zip' },
-  { name: 'Launch_Workflow_Submission.zip', type: 'ZIP', owner: 'Grace Wanjiku', updated: 'May 18, 2025', size: '31.6 MB', tone: 'zip' },
-]
-
-void PLATFORM_BUDGETS
-void DELIVERABLES
-void APPLICATION_ROWS
-void SHORTLISTED_APPLICATION_ROWS
-
-const DELIVERABLE_ROWS = [
-  {
-    id: 'file-asset-pack',
-    title: 'Campaign Design Asset Pack',
-    required: true,
-    type: 'Type 1 - File Asset',
-    description: 'Final poster, source files and editable brand templates.',
-    dueDate: 'May 21, 2025',
-    dueMeta: 'Overdue',
-    submissions: '4 / 6',
-    status: 'In Review',
-    tone: 'blue',
-    icon: 'instagram',
-    format: 'PNG, PDF, source files',
-    evidenceRequired: 'Final PNG/PDF exports, editable source files, brand assets and no-watermark proof.',
-    acceptanceCriteria: 'Files match the approved brand direction, include editable sources, and pass originality review.',
-    paymentRelease: 'Release after company approval and file verification.',
-    budget: 'KES 6,000',
-    reference: 'Brand assets and campaign brief attached.',
-  },
-  {
-    id: 'code-development',
-    title: 'Landing Page Build',
-    required: true,
-    type: 'Type 2 - Code & Development',
-    description: 'GitHub repository, live URL and Loom walkthrough.',
-    dueDate: 'May 22, 2025',
-    dueMeta: '2 days left',
-    submissions: '2 / 4',
-    status: 'In Review',
-    tone: 'blue',
-    icon: 'x',
-    format: 'Repository, live URL, walkthrough',
-    evidenceRequired: 'GitHub repo, deploy URL, commit history and Loom walkthrough.',
-    acceptanceCriteria: 'Build is runnable, source is student-authored, and all brief requirements are met.',
-    paymentRelease: 'Release after technical review and live demo verification.',
-    budget: 'KES 7,500',
-    reference: 'Landing page copy and wireframe notes attached.',
-  },
-  {
-    id: 'document-report',
-    title: 'Campus Market Research Report',
-    required: true,
-    type: 'Type 3 - Document',
-    description: 'Google Docs report with edit history and plagiarism check.',
-    dueDate: 'May 23, 2025',
-    dueMeta: '3 days left',
-    submissions: '3 / 5',
-    status: 'Submitted',
-    tone: 'green',
-    icon: 'youtube',
-    format: 'Google Docs and PDF',
-    evidenceRequired: 'Editable document link, exported PDF, sources and originality report.',
-    acceptanceCriteria: 'Report covers the requested audience, has clear citations, and passes originality checks.',
-    paymentRelease: 'Release after document review and final approval.',
-    budget: 'KES 4,000',
-    reference: 'Research questions and target audience notes attached.',
-  },
-  {
-    id: 'stats-metrics',
-    title: 'Instagram Growth Metrics',
-    required: true,
-    type: 'Type 4 - Stats & Metrics',
-    description: 'Before and after analytics screenshots with API verification.',
-    dueDate: 'May 24, 2025',
-    dueMeta: '4 days left',
-    submissions: '5 / 8',
-    status: 'In Progress',
-    tone: 'orange',
-    icon: 'instagram',
-    format: 'Analytics screenshots',
-    evidenceRequired: 'Before and after screenshots, baseline, measurement window and platform metrics.',
-    acceptanceCriteria: 'Metrics match the agreed window and show the target result or verified effort.',
-    paymentRelease: 'Release after metric verification.',
-    budget: 'KES 4,500',
-    reference: 'Analytics target sheet attached.',
-  },
-  {
-    id: 'proof-based',
-    title: 'Campus Activation Proof',
-    required: true,
-    type: 'Type 5 - Proof-Based',
-    description: 'Geo-tagged check-in, photo evidence and recipient confirmation.',
-    dueDate: 'May 25, 2025',
-    dueMeta: '5 days left',
-    submissions: '6 / 10',
-    status: 'In Progress',
-    tone: 'orange',
-    icon: 'tiktok',
-    format: 'Proof photos and confirmation',
-    evidenceRequired: 'Geo-tagged photos, GPS check-in, timestamped proof and recipient confirmation.',
-    acceptanceCriteria: 'Evidence matches the agreed location, recipient and activation requirements.',
-    paymentRelease: 'Release after proof validation.',
-    budget: 'KES 3,500',
-    reference: 'Activation location and proof checklist attached.',
-  },
-  {
-    id: 'hybrid-launch',
-    title: 'Hybrid Launch Workflow',
-    required: true,
-    type: 'Type 6 - Hybrid',
-    description: 'Design assets, proof of posting and engagement analytics.',
-    dueDate: 'May 26, 2025',
-    dueMeta: '6 days left',
-    submissions: '3 / 3',
-    status: 'Not Started',
-    tone: 'gray',
-    icon: 'instagram',
-    format: 'Hybrid submission',
-    evidenceRequired: 'Design assets, proof of posting and final analytics package.',
-    acceptanceCriteria: 'Each component is submitted in sequence and approved before release.',
-    paymentRelease: 'Release according to staged escrow split.',
-    budget: 'KES 9,000',
-    reference: 'Hybrid workflow brief attached.',
-  },
-]
-
-const SUBMITTED_WORK_ROWS = [
-  {
-    id: 'type-1-file-asset',
-    creator: 'Wanjiru M.',
-    handle: '@wanjiru_designs',
-    avatar: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp',
-    platform: 'Canva',
-    frameworkType: 'Type 1 - File Asset',
-    deliverable: 'Campaign Design Asset Pack',
-    submittedDate: 'May 20, 2025',
-    submittedAgo: '2 hours ago',
-    preview: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp',
-    file: 'Zetech_Campaign_Designs.zip',
-    size: '38.4 MB',
-    extraFiles: '+6',
-    filesSubmitted: '7 files',
-    status: 'In Review',
-    tone: 'blue',
-    summaryItems: [
-      { label: 'Upload Method', value: 'Direct Upload', meta: 'Zumbarl files' },
-      { label: 'Accepted Formats', value: 'PNG, PDF, SVG', meta: 'Source included' },
-      { label: 'Revision Limit', value: '2 rounds', meta: 'Brief defined' },
-      { label: 'Originality', value: 'Clear', meta: 'Reverse image check' },
-    ],
-    result: { label: 'Result', value: '7 files', meta: 'Ready for review', status: 'Assets Received', percent: 'All required files submitted' },
-    evidenceTitle: 'Files Submitted',
-    evidenceDescription: 'Final exports and editable source files uploaded to Zumbarl.',
-    evidence: [
-      { title: 'Final Poster Export', image: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp', stat: 'PNG + PDF', label: 'Final artwork', meta: 'No watermark detected' },
-      { title: 'Editable Source Pack', image: '/assets/index/business_page_images/optimized/0xk-y5n-nhkRd7U-unsplash.webp', stat: 'Figma + SVG', label: 'Source files', meta: 'Ownership ready on escrow release' },
-    ],
-    verification: 'Company review, reverse image originality check and revision cycle tracking completed.',
-    paymentModel: 'Single escrow release',
-    paymentStatus: 'Ready to Release',
-  },
-  {
-    id: 'type-2-code-dev',
-    creator: 'Kevin The Creator',
-    handle: '@kevinbuilds',
-    avatar: '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
-    platform: 'GitHub',
-    frameworkType: 'Type 2 - Code & Development',
-    deliverable: 'Landing Page Build',
-    submittedDate: 'May 20, 2025',
-    submittedAgo: '5 hours ago',
-    preview: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-    file: 'github.com/kevinbuilds/zetech-landing',
-    size: 'Live URL + repo',
-    extraFiles: '+1',
-    filesSubmitted: 'Repo, live URL, Loom',
-    status: 'Submitted',
-    tone: 'green',
-    summaryItems: [
-      { label: 'Primary Method', value: 'GitHub Repo', meta: 'Commit history visible' },
-      { label: 'Secondary Method', value: 'Live URL', meta: 'Deploy preview' },
-      { label: 'Walkthrough', value: 'Loom video', meta: '5 min demo' },
-      { label: 'Checklist', value: '9 / 10', meta: 'Brief adherence' },
-    ],
-    result: { label: 'Result', value: 'Live', meta: 'Deploy verified', status: 'Runnable', percent: '9 of 10 checks passed' },
-    evidenceTitle: 'Technical Evidence',
-    evidenceDescription: 'Repository, deployment and walkthrough evidence for a runnable submission.',
-    evidence: [
-      { title: 'Repository Review', image: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp', stat: '24 commits', label: 'GitHub history', meta: 'Student-authored commits' },
-      { title: 'Live Demo', image: '/assets/index/business_page_images/optimized/justin-buisson-vIluu0IH6Ps-unsplash.webp', stat: '200 OK', label: 'Deploy URL', meta: 'Homepage and lead form tested' },
-    ],
-    verification: 'Auto checklist, commit history and live demo verification completed.',
-    paymentModel: 'Milestone release',
-    paymentStatus: 'Code Review Pending',
-  },
-  {
-    id: 'type-3-document',
-    creator: 'Study With Lynn',
-    handle: '@studywithlynn',
-    avatar: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-    platform: 'Google Docs',
-    frameworkType: 'Type 3 - Document',
-    deliverable: 'Campus Market Research Report',
-    submittedDate: 'May 19, 2025',
-    submittedAgo: '1 day ago',
-    preview: '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp',
-    file: 'Campus_Market_Report.gdoc',
-    size: '2,480 words',
-    extraFiles: '+1',
-    filesSubmitted: 'Google Doc + PDF',
-    status: 'In Review',
-    tone: 'blue',
-    summaryItems: [
-      { label: 'Preferred Method', value: 'Google Docs', meta: 'Share link active' },
-      { label: 'Word Count', value: '2,480', meta: 'Within brief range' },
-      { label: 'Similarity Score', value: '11%', meta: 'Below 20% threshold' },
-      { label: 'Edit History', value: 'Verified', meta: 'Authorship visible' },
-    ],
-    result: { label: 'Result', value: '11%', meta: 'Similarity score', status: 'Manual Review Clear', percent: 'AI indicator shown, not blocked' },
-    evidenceTitle: 'Document Evidence',
-    evidenceDescription: 'Writing submission with plagiarism, AI indicator and edit-history checks.',
-    evidence: [
-      { title: 'Document Preview', image: '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp', stat: '2,480', label: 'Words', meta: 'Within requested range' },
-      { title: 'Originality Report', image: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp', stat: '11%', label: 'Similarity', meta: 'Manual review not required' },
-    ],
-    verification: 'Plagiarism check, AI indicator and Google Docs edit history reviewed.',
-    paymentModel: 'Approval release',
-    paymentStatus: 'Ready to Release',
-  },
-  {
-    id: 'type-4-stats',
-    creator: 'Brian Otieno',
-    handle: '@brian.growth',
-    avatar: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-    platform: 'Instagram',
-    frameworkType: 'Type 4 - Stats & Metrics',
-    deliverable: 'Instagram Growth Metrics',
-    submittedDate: 'May 19, 2025',
-    submittedAgo: '1 day ago',
-    preview: '/assets/index/business_page_images/optimized/justin-buisson-vIluu0IH6Ps-unsplash.webp',
-    file: 'Instagram_Insights_Before_After.pdf',
-    size: '4 screenshots',
-    extraFiles: '+2',
-    filesSubmitted: 'Before/after screenshots',
-    status: 'Changes Requested',
-    tone: 'orange',
-    summaryItems: [
-      { label: 'Metric Target', value: '+10,000', meta: 'Followers' },
-      { label: 'Measurement Window', value: 'May 1 - May 15', meta: '2025' },
-      { label: 'Baseline', value: '24,600', meta: 'Followers' },
-      { label: 'How Measured', value: 'Instagram Insights', meta: 'API available' },
-    ],
-    result: { label: 'Result', value: '+10,250', meta: 'Followers', status: 'Target Achieved', percent: '102.5% of target' },
-    evidenceTitle: 'Analytics Evidence',
-    evidenceDescription: 'Before and after platform analytics screenshots with API verification.',
-    evidence: [
-      { title: 'Before (Apr 30, 2025)', image: '/assets/index/business_page_images/optimized/justin-buisson-vIluu0IH6Ps-unsplash.webp', stat: '24,600', label: 'Followers', meta: 'Baseline screenshot' },
-      { title: 'After (May 15, 2025)', image: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp', stat: '34,850', label: 'Followers', meta: 'API verified' },
-    ],
-    verification: 'Platform analytics screenshots and Instagram Insights API verification completed.',
-    paymentModel: '50% content, 50% metrics',
-    paymentStatus: 'Metric Payment Pending',
-  },
-  {
-    id: 'type-5-proof',
-    creator: 'Campus Talks KE',
-    handle: '@campusactivators',
-    avatar: '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp',
-    platform: 'In-App Proof',
-    frameworkType: 'Type 5 - Proof-Based',
-    deliverable: 'Campus Activation Proof',
-    submittedDate: 'May 18, 2025',
-    submittedAgo: '2 days ago',
-    preview: '/assets/index/business_page_images/optimized/0xk-y5n-nhkRd7U-unsplash.webp',
-    file: 'Activation_Checkin_Proof',
-    size: 'GPS + photos',
-    extraFiles: '+4',
-    filesSubmitted: 'GPS log, EXIF photos, confirmation',
-    status: 'Approved',
-    tone: 'green',
-    summaryItems: [
-      { label: 'GPS Check-in', value: '143m', meta: 'Within 200m' },
-      { label: 'Photo Proof', value: 'EXIF valid', meta: 'Captured in-app' },
-      { label: 'WhatsApp Confirm', value: 'Received', meta: 'Recipient verified' },
-      { label: 'Milestones', value: '3 / 3', meta: 'Sequential stages' },
-    ],
-    result: { label: 'Result', value: 'Complete', meta: 'All proof accepted', status: 'Verified', percent: 'Safety gates satisfied' },
-    evidenceTitle: 'Physical-World Proof',
-    evidenceDescription: 'Geo-tagged photos, GPS check-in and recipient confirmation.',
-    evidence: [
-      { title: 'Geo-tagged Photo', image: '/assets/index/business_page_images/optimized/0xk-y5n-nhkRd7U-unsplash.webp', stat: '143m', label: 'From venue', meta: 'EXIF timestamp valid' },
-      { title: 'Recipient Confirmation', image: '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp', stat: 'Confirmed', label: 'WhatsApp', meta: 'Completion acknowledged' },
-    ],
-    verification: 'GPS check-in, in-app EXIF photo and recipient confirmation reviewed.',
-    paymentModel: 'Sequential milestone release',
-    paymentStatus: 'Released',
-  },
-  {
-    id: 'type-6-hybrid',
-    creator: 'Grace Wanjiku',
-    handle: '@grace.launch',
-    avatar: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-    platform: 'Hybrid',
-    frameworkType: 'Type 6 - Hybrid',
-    deliverable: 'Hybrid Launch Workflow',
-    submittedDate: 'May 18, 2025',
-    submittedAgo: '2 days ago',
-    preview: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp',
-    file: 'Launch_Workflow_Submission',
-    size: '3 stages',
-    extraFiles: '+5',
-    filesSubmitted: 'Assets, post proof, analytics',
-    status: 'In Review',
-    tone: 'blue',
-    summaryItems: [
-      { label: 'Stage 1', value: 'Assets', meta: '40% payment' },
-      { label: 'Stage 2', value: 'Posting Proof', meta: '30% payment' },
-      { label: 'Stage 3', value: 'Analytics', meta: '30% payment' },
-      { label: 'Submission Lock', value: 'Passed', meta: 'Sequential approval' },
-    ],
-    result: { label: 'Result', value: '3 / 3', meta: 'Stages submitted', status: 'Ready for staged review', percent: 'Payment split totals 100%' },
-    evidenceTitle: 'Hybrid Evidence',
-    evidenceDescription: 'Combined asset upload, proof of posting and engagement analytics.',
-    evidence: [
-      { title: 'Stage 1 + 2', image: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp', stat: '70%', label: 'Assets + proof', meta: 'Stages approved in sequence' },
-      { title: 'Stage 3', image: '/assets/index/business_page_images/optimized/justin-buisson-vIluu0IH6Ps-unsplash.webp', stat: '30%', label: 'Analytics', meta: 'Awaiting final metric review' },
-    ],
-    verification: 'Component workflow, staged escrow split and sequential submission lock reviewed.',
-    paymentModel: '40% assets, 30% proof, 30% analytics',
-    paymentStatus: 'Final Stage Pending',
-  },
-]
-
-const PAYMENT_METRICS = [
-  { label: 'Total Budget', value: 'KES 25,000', meta: '100% of budget', tone: 'blue' },
-  { label: 'Total Paid', value: 'KES 12,400', meta: '50% of budget', tone: 'green' },
-  { label: 'Pending Payments', value: 'KES 7,600', meta: '30.4% of budget', tone: 'orange' },
-  { label: 'Available Balance', value: 'KES 5,000', meta: '19.6% of budget', tone: 'purple' },
-]
-
-const PAYMENT_ROWS = [
-  {
-    id: 'pay-wanjiru',
-    creator: 'Wanjiru M.',
-    handle: '@wanjiru_creates',
-    avatar: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp',
-    deliverables: '2 Deliverables',
-    totalAmount: 'KES 4,000',
-    paidAmount: 'KES 4,000',
-    status: 'Paid',
-    tone: 'green',
-    date: 'May 20, 2025',
-    dateMeta: 'Paid on May 20, 2025',
-  },
-  {
-    id: 'pay-kevin',
-    creator: 'Kevin The Creator',
-    handle: '@kevinthego',
-    avatar: '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
-    deliverables: '1 Deliverable',
-    totalAmount: 'KES 3,000',
-    paidAmount: 'KES 3,000',
-    status: 'Paid',
-    tone: 'green',
-    date: 'May 20, 2025',
-    dateMeta: 'Paid on May 20, 2025',
-  },
-  {
-    id: 'pay-lynn',
-    creator: 'Study With Lynn',
-    handle: '@studywithlynn',
-    avatar: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-    deliverables: '2 Deliverables',
-    totalAmount: 'KES 2,500',
-    paidAmount: 'KES 1,250',
-    status: 'Partially Paid',
-    tone: 'orange',
-    date: 'May 27, 2025',
-    dateMeta: 'Due in 5 days',
-  },
-  {
-    id: 'pay-brian',
-    creator: 'Brian Otieno',
-    handle: '@brian.creates',
-    avatar: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-    deliverables: '1 Deliverable',
-    totalAmount: 'KES 2,000',
-    paidAmount: 'KES 0',
-    status: 'Pending',
-    tone: 'blue',
-    date: 'May 27, 2025',
-    dateMeta: 'Due in 5 days',
-  },
-  {
-    id: 'pay-campus-talks',
-    creator: 'Campus Talks KE',
-    handle: '@campustalks.ke',
-    avatar: '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp',
-    deliverables: '1 Deliverable',
-    totalAmount: 'KES 1,500',
-    paidAmount: 'KES 0',
-    status: 'Pending',
-    tone: 'blue',
-    date: 'May 27, 2025',
-    dateMeta: 'Due in 5 days',
-  },
-  {
-    id: 'pay-mindset',
-    creator: 'Mindset Mentor',
-    handle: '@mindset.mentor',
-    avatar: '/assets/index/business_page_images/optimized/0xk-y5n-nhkRd7U-unsplash.webp',
-    deliverables: '1 Deliverable',
-    totalAmount: 'KES 1,500',
-    paidAmount: 'KES 0',
-    status: 'Pending',
-    tone: 'blue',
-    date: 'May 27, 2025',
-    dateMeta: 'Due in 5 days',
-  },
-]
-
-const PERFORMANCE_METRICS = [
-  { label: 'Total Reach', value: '124.3K', change: '+ 18.6% vs previous 14 days', tone: 'purple', icon: FiUsers },
-  { label: 'Total Impressions', value: '312.7K', change: '+ 22.4% vs previous 14 days', tone: 'green', icon: FiBarChart2 },
-  { label: 'Engagements', value: '17.6K', change: '+ 15.2% vs previous 14 days', tone: 'pink', icon: FiHeart },
-  { label: 'Engagement Rate', value: '5.6%', change: '+ 8.3% vs previous 14 days', tone: 'blue', icon: FiTrendingUp },
-]
-
-const TOP_CREATORS = [
-  {
-    id: 'creator-kevin',
-    creator: 'Kevin The Creator',
-    handle: '@kevinthego',
-    avatar: '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
-    reach: '28.6K',
-    impressions: '72.4K',
-    engagements: '4.6K',
-    rate: '6.4%',
-    performance: 'Excellent',
-    tone: 'green',
-  },
-  {
-    id: 'creator-wanjiru',
-    creator: 'Wanjiru M.',
-    handle: '@wanjiru_creates',
-    avatar: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp',
-    reach: '24.1K',
-    impressions: '58.7K',
-    engagements: '3.4K',
-    rate: '5.8%',
-    performance: 'Excellent',
-    tone: 'green',
-  },
-  {
-    id: 'creator-lynn',
-    creator: 'Study With Lynn',
-    handle: '@studywithlynn',
-    avatar: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-    reach: '19.8K',
-    impressions: '45.2K',
-    engagements: '2.2K',
-    rate: '4.9%',
-    performance: 'Good',
-    tone: 'blue',
-  },
-  {
-    id: 'creator-campus',
-    creator: 'Campus Talks KE',
-    handle: '@campustalks.ke',
-    avatar: '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp',
-    reach: '18.3K',
-    impressions: '40.6K',
-    engagements: '1.8K',
-    rate: '4.4%',
-    performance: 'Good',
-    tone: 'blue',
-  },
-  {
-    id: 'creator-brian',
-    creator: 'Brian Otieno',
-    handle: '@brian.creates',
-    avatar: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-    reach: '14.6K',
-    impressions: '31.8K',
-    engagements: '1.2K',
-    rate: '3.9%',
-    performance: 'Average',
-    tone: 'orange',
-  },
-]
-
-const ACTIVITY_GROUPS = [
-  {
-    date: 'May 20, 2025',
-    items: [
-      {
-        id: 'activity-payment',
-        time: '2:30 PM',
-        type: 'Payment made',
-        detail: 'Paid KES 3,000 to Kevin The Creator for TikTok Video',
-        actor: 'Brian Mwangi',
-        role: 'Project Owner',
-        avatar: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-        action: 'Paid',
-        tone: 'green',
-        icon: FiCheckCircle,
-      },
-      {
-        id: 'activity-work-submitted',
-        time: '11:15 AM',
-        type: 'Work submitted',
-        detail: 'Kevin The Creator submitted TikTok_Video_Final.mp4',
-        actor: 'Kevin The Creator',
-        role: 'Creator',
-        avatar: '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
-        action: 'View',
-        tone: 'purple',
-        icon: FiUpload,
-      },
-      {
-        id: 'activity-message',
-        time: '9:45 AM',
-        type: 'Message sent',
-        detail: 'Brian Mwangi sent a message to Study With Lynn',
-        actor: 'Brian Mwangi',
-        role: 'Project Owner',
-        avatar: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-        action: 'View',
-        tone: 'orange',
-        icon: FiMessageSquare,
-      },
-    ],
-  },
-  {
-    date: 'May 19, 2025',
-    items: [
-      {
-        id: 'activity-status',
-        time: '4:20 PM',
-        type: 'Status updated',
-        detail: "Campus Talks KE's deliverable status changed to Accepted",
-        actor: 'Brian Mwangi',
-        role: 'Project Owner',
-        avatar: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-        action: 'Accepted',
-        tone: 'pink',
-        icon: FiMessageSquare,
-      },
-      {
-        id: 'activity-file',
-        time: '1:05 PM',
-        type: 'File uploaded',
-        detail: 'Study With Lynn uploaded Story_Set_1.zip',
-        actor: 'Study With Lynn',
-        role: 'Creator',
-        avatar: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-        action: 'View',
-        tone: 'blue',
-        icon: FiFileText,
-      },
-      {
-        id: 'activity-shortlisted',
-        time: '10:30 AM',
-        type: 'Creator shortlisted',
-        detail: 'Mindset Mentor was shortlisted for Instagram Story',
-        actor: 'Brian Mwangi',
-        role: 'Project Owner',
-        avatar: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-        action: 'View',
-        tone: 'purple',
-        icon: FiCheckCircle,
-      },
-    ],
-  },
-  {
-    date: 'May 18, 2025',
-    items: [
-      {
-        id: 'activity-invited',
-        time: '3:40 PM',
-        type: 'Creator invited',
-        detail: 'Brian Otieno was invited to the opportunity',
-        actor: 'Brian Mwangi',
-        role: 'Project Owner',
-        avatar: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-        tone: 'teal',
-        icon: FiUsers,
-      },
-      {
-        id: 'activity-published',
-        time: '11:00 AM',
-        type: 'Opportunity published',
-        detail: 'Level Up Your Skills campaign was published',
-        actor: 'Brian Mwangi',
-        role: 'Project Owner',
-        avatar: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-        tone: 'purple',
-        icon: FiBarChart2,
-      },
-    ],
-  },
-  {
-    date: 'May 17, 2025',
-    items: [
-      {
-        id: 'activity-settings',
-        time: '2:15 PM',
-        type: 'Settings updated',
-        detail: 'Engagement mode changed to Remote',
-        actor: 'Brian Mwangi',
-        role: 'Project Owner',
-        avatar: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-        tone: 'gray',
-        icon: FiSettings,
-      },
-    ],
-  },
-]
 
 function getSkillList(opportunity) {
   return Array.isArray(opportunity?.skills)
@@ -983,9 +156,26 @@ function getOpportunityPaymentScopeItems(opportunity) {
   })
 }
 
+function getOpportunitySampleFiles(opportunity) {
+  return getOpportunityPaymentScopeItems(opportunity).flatMap((item) => {
+    const samples = Array.isArray(item.source?.sampleWork) ? item.source.sampleWork : []
+
+    return samples.map((sample, index) => ({
+      id: sample.id || `${item.id}-file-${index}`,
+      name: sample.fileName || sample.label || sample.title || `Reference file ${index + 1}`,
+      type: String(sample.fileType || sample.mimeType || 'File').toUpperCase(),
+      owner: opportunity?.company || 'Business account',
+      updated: item.title,
+      size: sample.sizeBytes ? `${(sample.sizeBytes / (1024 * 1024)).toFixed(1)} MB` : '—',
+      url: sample.url || sample.previewUrl || '',
+      tone: String(sample.mimeType || '').includes('pdf') ? 'pdf' : 'zip',
+    }))
+  })
+}
+
 function getOpportunityDeliverableRows(opportunity) {
   const scopeItems = getOpportunityPaymentScopeItems(opportunity)
-  if (!scopeItems.length) return DELIVERABLE_ROWS
+  if (!scopeItems.length) return []
 
   return scopeItems.map((item, index) => {
     const source = item.source || {}
@@ -2698,107 +1888,74 @@ function ApplicationsPanel({
   )
 }
 
-function BusinessSubmittedWorkSummary() {
-  return (
-    <div className="business-review-submitted-student-view">
-      <section className="business-review-submission-success">
-        <div className="business-review-submission-success-mark">
-          <FiCheckCircle aria-hidden="true" />
-        </div>
-        <div>
-          <h3>Submitted Work Ready for Review</h3>
-          <p>Six submitted-work examples are available across the deliverables framework. Review files, evidence, and messages before making a decision.</p>
-        </div>
-        <dl>
-          <div><dt>Submitted on</dt><dd>May 20, 2025 at 2:14 PM</dd></div>
-          <div><dt>Next step</dt><dd>Business review</dd></div>
-          <div><dt>You'll be notified</dt><dd>When creators resubmit or reply</dd></div>
-        </dl>
-      </section>
+function BusinessDeliverableFilesPanel({ opportunity }) {
+  const [fileQuery, setFileQuery] = useState('')
+  const sampleFiles = getOpportunitySampleFiles(opportunity)
+  const normalizedQuery = fileQuery.trim().toLowerCase()
+  const visibleFiles = sampleFiles.filter((file) => (
+    !normalizedQuery || file.name.toLowerCase().includes(normalizedQuery)
+  ))
 
-      <section className="business-review-submitted-file-view">
-        <article>
-          <h3>Submission Summary</h3>
-          <dl>
-            <div><dt>Work Title</dt><dd>Six deliverable workflow submissions</dd></div>
-            <div><dt>Submitted Files</dt><dd>12 files across six framework types</dd></div>
-            <div><dt>Description</dt><dd>Creator submissions include uploaded assets, repository links, documents, analytics proof, GPS evidence and staged hybrid artifacts.</dd></div>
-            <div><dt>Feedback Request</dt><dd>Review each type-specific evidence package and request changes where the proof does not match the original brief.</dd></div>
-          </dl>
-        </article>
-
-        <article>
-          <header>
-            <h3>Submitted Files</h3>
-            <button type="button">
-              Download All
-              <FiDownload aria-hidden="true" />
-            </button>
-          </header>
-          {BUSINESS_DELIVERABLE_FILES.slice(0, 3).map((file) => (
-            <p key={file.name}>
-              <FiFolder aria-hidden="true" />
-              <strong>{file.name}</strong>
-              <span>{file.size}</span>
-              <FiDownload aria-hidden="true" />
-            </p>
-          ))}
-        </article>
-      </section>
-    </div>
-  )
-}
-
-function BusinessDeliverableFilesPanel() {
   return (
     <section className="business-review-files-panel">
       <header>
         <div>
-          <h3>Submitted Files</h3>
-          <p>Review, download and organize all files submitted against this opportunity.</p>
+          <h3>Files</h3>
+          <p>Reference assets attached to this brief and files submitted against this opportunity.</p>
         </div>
-        <button type="button" className="business-profile-primary-btn">
-          <FiUpload aria-hidden="true" />
-          Upload Files
-        </button>
       </header>
 
       <div className="business-review-files-tools">
         <label>
           <FiSearch aria-hidden="true" />
-          <input type="search" placeholder="Search files..." />
+          <input
+            type="search"
+            placeholder="Search files..."
+            value={fileQuery}
+            onChange={(event) => setFileQuery(event.target.value)}
+          />
         </label>
-        <button type="button">Filter</button>
-        <button type="button" aria-label="List view"><FiFileText aria-hidden="true" /></button>
       </div>
 
-      <section className="business-review-files-table" aria-label="Business submitted files">
-        <div className="business-review-files-row is-head">
-          <span>Name</span>
-          <span>Type</span>
-          <span>Owner</span>
-          <span>Last Updated</span>
-          <span>Size</span>
-          <span />
-        </div>
-        {BUSINESS_DELIVERABLE_FILES.map((file) => (
-          <div key={file.name} className="business-review-files-row">
-            <span>
-              <FiFileText className={`is-${file.tone}`} aria-hidden="true" />
-              <strong>{file.name}</strong>
-            </span>
-            <span>{file.type}</span>
-            <span>
-              <img src="/assets/index/bee_nobg.png" alt="" />
-              {file.owner}
-            </span>
-            <span>{file.updated}</span>
-            <span>{file.size}</span>
-            <button type="button" aria-label={`More actions for ${file.name}`}>
-              <FiMoreVertical aria-hidden="true" />
-            </button>
-          </div>
-        ))}
+      <section className="business-review-files-table" aria-label="Opportunity files">
+        {visibleFiles.length === 0 ? (
+          <p className="business-review-empty-note">
+            {sampleFiles.length === 0
+              ? 'No files yet. Reference files from the brief and creator submissions will appear here.'
+              : 'No files match this search.'}
+          </p>
+        ) : (
+          <>
+            <div className="business-review-files-row is-head">
+              <span>Name</span>
+              <span>Type</span>
+              <span>Owner</span>
+              <span>Deliverable</span>
+              <span>Size</span>
+              <span />
+            </div>
+            {visibleFiles.map((file) => (
+              <div key={file.id} className="business-review-files-row">
+                <span>
+                  <FiFileText className={`is-${file.tone}`} aria-hidden="true" />
+                  <strong>{file.name}</strong>
+                </span>
+                <span>{file.type}</span>
+                <span>
+                  <img src="/assets/index/bee_nobg.png" alt="" />
+                  {file.owner}
+                </span>
+                <span>{file.updated}</span>
+                <span>{file.size}</span>
+                {file.url ? (
+                  <a href={file.url} target="_blank" rel="noreferrer" aria-label={`Download ${file.name}`}>
+                    <FiDownload aria-hidden="true" />
+                  </a>
+                ) : <span aria-hidden="true" />}
+              </div>
+            ))}
+          </>
+        )}
       </section>
     </section>
   )
@@ -3066,6 +2223,11 @@ function DeliverablesPanel({ onRequestPayment, opportunity }) {
   const isMessages = activeDeliverableTab === 'messages'
   const deliverableRows = [...addedDeliverableRows, ...getOpportunityDeliverableRows(opportunity)]
   const deliverableCount = deliverableRows.length
+  const sampleFiles = getOpportunitySampleFiles(opportunity)
+  const deliverableTabCounts = {
+    deliverables: deliverableCount,
+    files: sampleFiles.length,
+  }
 
   function getDeliverableIcon(type) {
     if (type.includes('Code')) return 'x'
@@ -3136,7 +2298,7 @@ function DeliverablesPanel({ onRequestPayment, opportunity }) {
         renderTab={(filter) => (
           <>
             {filter.label}
-            <span>{filter.id === 'deliverables' ? deliverableCount : filter.count}</span>
+            {deliverableTabCounts[filter.id] ? <span>{deliverableTabCounts[filter.id]}</span> : null}
           </>
         )}
       />
@@ -3144,84 +2306,12 @@ function DeliverablesPanel({ onRequestPayment, opportunity }) {
       {isMessages ? (
         <BusinessDeliverableMessagesPanel />
       ) : isFiles ? (
-        <BusinessDeliverableFilesPanel />
+        <BusinessDeliverableFilesPanel opportunity={opportunity} />
       ) : isSubmittedWork ? (
         <>
-          <BusinessSubmittedWorkSummary />
-          <div className="business-review-submitted-toolbar">
-            <label>
-              <FiSearch aria-hidden="true" />
-              <input type="search" placeholder="Search submitted work..." />
-            </label>
-            <select defaultValue="all-deliverables" aria-label="Filter submissions by deliverable">
-              <option value="all-deliverables">Deliverable: All</option>
-            </select>
-            <select defaultValue="all-statuses" aria-label="Filter submissions by status">
-              <option value="all-statuses">Status: All</option>
-            </select>
-            <select defaultValue="all-creators" aria-label="Filter submissions by creator">
-              <option value="all-creators">Creator: All</option>
-            </select>
-            <button type="button">
-              <FiFilter aria-hidden="true" />
-              Filters
-            </button>
-          </div>
-
-          <div className="business-review-submitted-table">
-            <div className="business-review-submitted-head">
-              <span>Creator</span>
-              <span>Deliverable</span>
-              <span>Submitted On</span>
-              <span>Submission</span>
-              <span>Status</span>
-              <span>Actions</span>
-            </div>
-            {SUBMITTED_WORK_ROWS.map((row) => (
-              <article key={row.id} className="business-review-submitted-row">
-                <PersonRow
-                  avatar={row.avatar}
-                  className="business-review-application-creator"
-                  name={row.creator}
-                  subtitle={row.handle}
-                />
-                <div className="business-review-submitted-deliverable">
-                  <PlatformBadge platform={row.platform} />
-                  <strong>{row.deliverable}</strong>
-                </div>
-                <time>{row.submittedDate}<span>{row.submittedAgo}</span></time>
-                <div className="business-review-submitted-file">
-                  <figure>
-                    <img src={row.preview} alt={`${row.file} preview`} />
-                    {row.duration ? <figcaption>{row.duration}</figcaption> : null}
-                  </figure>
-                  <div>
-                    <strong>{row.file}</strong>
-                    <span>{row.size}</span>
-                  </div>
-                  {row.extraFiles ? <em>{row.extraFiles}</em> : null}
-                </div>
-                <StatusPill className="business-review-status-pill" tone={row.tone}>{row.status}</StatusPill>
-                <div className="business-review-deliverable-actions">
-                  <button type="button" onClick={() => setSelectedSubmission(row)}>{row.status === 'Approved' ? 'View' : 'Review'}</button>
-                  <button type="button" aria-label={`More actions for ${row.creator}`}>
-                    <FiMoreVertical aria-hidden="true" />
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <button type="button" className="business-review-submitted-more">Viewing all six deliverable framework samples</button>
-          <footer className="business-review-application-pagination">
-            <p>Showing 1-6 of 6 submissions</p>
-            <div>
-              <button type="button" aria-label="Previous page">←</button>
-              <button type="button" className="is-active">1</button>
-              <button type="button">2</button>
-              <button type="button" aria-label="Next page">→</button>
-            </div>
-          </footer>
+          <p className="business-review-empty-note">
+            No work submitted yet. When awarded creators submit deliverables, their evidence will appear here for review.
+          </p>
           <SubmittedWorkReviewModal
             submission={selectedSubmission}
             onClose={() => setSelectedSubmission(null)}
@@ -3300,7 +2390,22 @@ function DeliverablesPanel({ onRequestPayment, opportunity }) {
   )
 }
 
-function PaymentsPanel() {
+function PaymentsPanel({ applications = [], onRequestPayment = () => {}, opportunity }) {
+  const budgetAmount = getCurrencyAmount(opportunity?.budgetAmount || opportunity?.budget)
+  const isFunded = String(opportunity?.escrowStatus || 'unfunded') !== 'unfunded'
+  const awardedApplications = applications.filter((application) => (
+    ['awarded', 'accepted'].includes(String(application.status || '').toLowerCase())
+  ))
+  const committedAmount = awardedApplications
+    .reduce((total, application) => total + getCurrencyAmount(application.bidAmount), 0)
+  const scopeCount = getOpportunityPaymentScopeItems(opportunity).length
+  const paymentMetrics = [
+    { label: 'Total Budget', value: formatKesAmount(budgetAmount), meta: '100% of budget', tone: 'blue' },
+    { label: 'Escrow', value: isFunded ? 'Funded' : 'Not funded', meta: isFunded ? 'Held for payouts' : 'Fund to release payments', tone: isFunded ? 'green' : 'orange' },
+    { label: 'Committed', value: formatKesAmount(committedAmount), meta: `${awardedApplications.length} awarded bid${awardedApplications.length === 1 ? '' : 's'}`, tone: 'purple' },
+    { label: 'Remaining', value: formatKesAmount(Math.max(0, budgetAmount - committedAmount)), meta: 'Uncommitted budget', tone: 'green' },
+  ]
+
   return (
     <section className="business-profile-card business-review-payments-card">
       <header>
@@ -3308,10 +2413,16 @@ function PaymentsPanel() {
           <h2>Payments</h2>
           <p>Manage creator payments, track disbursements and download invoices.</p>
         </div>
+        {!isFunded ? (
+          <button type="button" className="business-profile-primary-btn" onClick={onRequestPayment}>
+            <FiCreditCard aria-hidden="true" />
+            Fund escrow
+          </button>
+        ) : null}
       </header>
 
       <div className="business-review-payment-metrics">
-        {PAYMENT_METRICS.map((metric) => (
+        {paymentMetrics.map((metric) => (
           <MetricCard
             key={metric.label}
             change={metric.meta}
@@ -3323,107 +2434,41 @@ function PaymentsPanel() {
         ))}
       </div>
 
-      <div className="business-review-payment-toolbar">
-        <label>
-          <FiSearch aria-hidden="true" />
-          <input type="search" placeholder="Search creators by name..." />
-        </label>
-        <select defaultValue="all-statuses" aria-label="Filter by creator status">
-          <option value="all-statuses">Status: All</option>
-        </select>
-        <select defaultValue="all-payments" aria-label="Filter by payment status">
-          <option value="all-payments">Payment Status: All</option>
-        </select>
-        <select defaultValue="newest" aria-label="Sort payments">
-          <option value="newest">Sort by: Newest</option>
-        </select>
-        <button type="button">
-          <FiFilter aria-hidden="true" />
-          Filters
-        </button>
-      </div>
-
       <div className="business-review-payment-table">
         <div className="business-review-payment-head">
           <span>Creator</span>
           <span>Deliverables</span>
           <span>Total Amount</span>
-          <span>Paid Amount</span>
           <span>Payment Status</span>
-          <span>Due Date / Paid On</span>
+          <span>Awarded</span>
           <span>Actions</span>
         </div>
-        {PAYMENT_ROWS.map((row) => (
+        {awardedApplications.length === 0 ? (
+          <p className="business-review-empty-note">
+            No payments yet. Award a bid from the Applications tab and creator payments will appear here.
+          </p>
+        ) : null}
+        {awardedApplications.map((row) => (
           <article key={row.id} className="business-review-payment-row">
             <PersonRow
-              avatar={row.avatar}
+              avatar={row.student?.avatarUrl || '/assets/index/bee_nobg.png'}
               className="business-review-application-creator"
-              name={row.creator}
-              subtitle={row.handle}
+              name={row.student?.name || row.bidderName || 'Student creator'}
+              subtitle={row.student?.username ? `@${row.student.username}` : 'Zumbarl student'}
             />
-            <strong>{row.deliverables}</strong>
-            <strong>{row.totalAmount}</strong>
-            <strong>{row.paidAmount}</strong>
-            <StatusPill className="business-review-status-pill" tone={row.tone}>{row.status}</StatusPill>
-            <time>{row.date}<span>{row.dateMeta}</span></time>
+            <strong>{scopeCount ? `${scopeCount} Deliverable${scopeCount === 1 ? '' : 's'}` : 'Full scope'}</strong>
+            <strong>{formatKesAmount(getCurrencyAmount(row.bidAmount))}</strong>
+            <StatusPill className="business-review-status-pill" tone={isFunded ? 'green' : 'blue'}>
+              {isFunded ? 'Escrow funded' : 'Awaiting funding'}
+            </StatusPill>
+            <time>{formatApplicationDate(row.respondedAt || row.appliedAt).date}</time>
             <div className="business-review-payment-actions">
-              <button type="button">{row.status === 'Paid' ? 'View Receipt' : 'Make Payment'}</button>
-              <button type="button" aria-label={`More payment actions for ${row.creator}`}>
-                <FiMoreVertical aria-hidden="true" />
+              <button type="button" onClick={onRequestPayment}>
+                {isFunded ? 'View escrow' : 'Make Payment'}
               </button>
             </div>
           </article>
         ))}
-      </div>
-
-      <footer className="business-review-payment-footer">
-        <p>Showing 1-6 of 6 payments</p>
-        <dl>
-          {PAYMENT_METRICS.map((metric) => (
-            <div key={metric.label}>
-              <dt>{metric.label}</dt>
-              <dd>{metric.value}</dd>
-            </div>
-          ))}
-        </dl>
-      </footer>
-    </section>
-  )
-}
-
-function PerformanceChart({ title, variant }) {
-  return (
-    <section className="business-review-performance-chart">
-      <header>
-        <h3>{title}</h3>
-        <div>
-          {variant === 'reach' ? (
-            <>
-              <span className="tone-purple">Reach</span>
-              <span className="tone-green">Impressions</span>
-            </>
-          ) : (
-            <>
-              <span className="tone-pink">Likes</span>
-              <span className="tone-blue">Comments</span>
-              <span className="tone-orange">Shares</span>
-            </>
-          )}
-        </div>
-      </header>
-      <div className={`business-review-performance-graph is-${variant}`}>
-        <i />
-        <i />
-        <i />
-        <i />
-        <span>May 12</span>
-        <span>May 14</span>
-        <span>May 16</span>
-        <span>May 18</span>
-        <span>May 20</span>
-        <span>May 22</span>
-        <span>May 24</span>
-        <span>May 26</span>
       </div>
     </section>
   )
@@ -3434,73 +2479,69 @@ function PerformancePanel() {
     <section className="business-profile-card business-review-performance-card">
       <header>
         <div>
-          <h2>Performance Overview</h2>
-          <p>Key performance metrics and engagement insights.</p>
-        </div>
-        <div>
-          <button type="button" className="business-profile-ghost-btn">
-            <FiCalendar aria-hidden="true" />
-            May 12 - May 26, 2025
-          </button>
-          <button type="button" className="business-profile-ghost-btn">
-            <FiFilter aria-hidden="true" />
-            Filters
-          </button>
+          <h2>Performance</h2>
+          <p>Reach, impressions and engagement for this campaign.</p>
         </div>
       </header>
-
-      <div className="business-review-performance-metrics">
-        {PERFORMANCE_METRICS.map((metric) => (
-          <MetricCard
-            key={metric.label}
-            change={metric.change}
-            icon={metric.icon}
-            label={metric.label}
-            tone={metric.tone}
-            value={metric.value}
-          />
-        ))}
-      </div>
-
-      <div className="business-review-performance-charts">
-        <PerformanceChart title="Reach Over Time" variant="reach" />
-        <PerformanceChart title="Engagements Over Time" variant="engagements" />
-      </div>
-
-      <section className="business-review-performance-table">
-        <header>
-          <h3>Top Performing Creators</h3>
-        </header>
-        <div className="business-review-performance-head">
-          <span>Creator</span>
-          <span>Reach</span>
-          <span>Impressions</span>
-          <span>Engagements</span>
-          <span>Engagement Rate</span>
-          <span>Performance</span>
-        </div>
-        {TOP_CREATORS.map((creator) => (
-          <article key={creator.id} className="business-review-performance-row">
-            <PersonRow
-              avatar={creator.avatar}
-              className="business-review-application-creator"
-              name={creator.creator}
-              subtitle={creator.handle}
-            />
-            <strong>{creator.reach}</strong>
-            <strong>{creator.impressions}</strong>
-            <strong>{creator.engagements}</strong>
-            <strong>{creator.rate}</strong>
-            <StatusPill className="business-review-status-pill" tone={creator.tone}>{creator.performance}</StatusPill>
-          </article>
-        ))}
-        <button type="button" className="business-review-submitted-more">View all performance details</button>
-      </section>
+      <p className="business-review-empty-note">
+        No performance data yet. Once creators start posting and submitting evidence, reach and engagement metrics will appear here.
+      </p>
     </section>
   )
 }
 
-function ActivityPanel() {
+const ACTIVITY_TYPE_PRESENTATION = {
+  bid_submitted: { type: 'Application', tone: 'purple', icon: FiUsers },
+  created: { type: 'Opportunity', tone: 'blue', icon: FiFileText },
+  invites_sent: { type: 'Invites', tone: 'orange', icon: FiSend },
+  published: { type: 'Published', tone: 'green', icon: FiCheckCircle },
+  updated: { type: 'Update', tone: 'blue', icon: FiFileText },
+}
+
+function getActivityPresentation(action) {
+  if (ACTIVITY_TYPE_PRESENTATION[action]) return ACTIVITY_TYPE_PRESENTATION[action]
+  if (String(action || '').startsWith('interview')) return { type: 'Interview', tone: 'green', icon: FiVideo }
+  return { type: 'Update', tone: 'blue', icon: FiFileText }
+}
+
+function ActivityPanel({ opportunityId }) {
+  const [activityEventsByRequest, setActivityEventsByRequest] = useState({})
+  const requestKey = opportunityId || 'all'
+  const activityEvents = activityEventsByRequest[requestKey] || []
+  const isLoading = activityEventsByRequest[requestKey] === undefined
+
+  useEffect(() => {
+    let isCurrent = true
+
+    listBackendBusinessActivity()
+      .then((response) => {
+        if (!isCurrent) return
+        const events = Array.isArray(response?.data) ? response.data : []
+        setActivityEventsByRequest((current) => ({
+          ...current,
+          [requestKey]: opportunityId ? events.filter((event) => event.opportunityId === opportunityId) : events,
+        }))
+      })
+      .catch(() => {
+        if (isCurrent) setActivityEventsByRequest((current) => ({ ...current, [requestKey]: [] }))
+      })
+
+    return () => { isCurrent = false }
+  }, [opportunityId, requestKey])
+
+  const activityGroups = activityEvents.reduce((groups, event) => {
+    const date = event.createdAt
+      ? new Date(event.createdAt).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })
+      : 'Recently'
+    const group = groups.find((item) => item.date === date)
+    if (group) {
+      group.items.push(event)
+    } else {
+      groups.push({ date, items: [event] })
+    }
+    return groups
+  }, [])
+
   return (
     <section className="business-profile-card business-review-activity-card">
       <header>
@@ -3508,36 +2549,37 @@ function ActivityPanel() {
           <h2>Activity Timeline</h2>
           <p>A chronological view of all actions and updates for this opportunity.</p>
         </div>
-        <button type="button" className="business-profile-ghost-btn">
-          <FiFilter aria-hidden="true" />
-          Filters
-        </button>
       </header>
 
       <div className="business-review-activity-timeline">
-        {ACTIVITY_GROUPS.map((group) => (
+        {!isLoading && activityEvents.length === 0 ? (
+          <p className="business-review-empty-note">
+            No activity yet. Publishing, invites, bids and interviews will show up here.
+          </p>
+        ) : null}
+        {activityGroups.map((group) => (
           <section key={group.date}>
             <h3>{group.date}</h3>
             <div>
               {group.items.map((item) => {
-                const Icon = item.icon
+                const presentation = getActivityPresentation(item.action)
+                const Icon = presentation.icon
+                const time = item.createdAt
+                  ? new Date(item.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+                  : ''
+
                 return (
                   <article key={item.id} className="business-review-activity-row">
-                    <time>{item.time}</time>
-                    <span className={`business-review-activity-icon tone-${item.tone}`}>
+                    <time>{time}</time>
+                    <span className={`business-review-activity-icon tone-${presentation.tone}`}>
                       <Icon aria-hidden="true" />
                     </span>
-                    <strong>{item.type}</strong>
-                    <p>{item.detail}</p>
+                    <strong>{presentation.type}</strong>
+                    <p>{item.note || `${item.actorName} ${String(item.action || 'updated').replace(/_/g, ' ')}`}</p>
                     <div className="business-review-activity-actor">
-                      <img src={item.avatar} alt={`${item.actor} avatar`} />
-                      <span><b>{item.actor}</b><em>{item.role}</em></span>
+                      <span><b>{item.actorName}</b><em>{item.opportunityTitle || ''}</em></span>
                     </div>
-                    {item.action ? (
-                      <button type="button" className={`business-review-activity-action tone-${item.tone}`}>
-                        {item.action}
-                      </button>
-                    ) : <span aria-hidden="true" />}
+                    <span aria-hidden="true" />
                   </article>
                 )
               })}
@@ -3545,10 +2587,6 @@ function ActivityPanel() {
           </section>
         ))}
       </div>
-
-      <footer className="business-review-activity-footer">
-        <button type="button">Load more activity</button>
-      </footer>
     </section>
   )
 }
@@ -3569,16 +2607,32 @@ function DetailBlock({ items, title }) {
   )
 }
 
-function OverviewPanel({ opportunity, skills, type }) {
+function OverviewPanel({ applications = [], onViewSchedule = () => {}, opportunity, skills, type }) {
   const deadline = opportunity.deadline === 'Rolling' ? 'Rolling' : formatOpportunityDate(opportunity.deadline, 'Rolling')
   const paymentScopeItems = getOpportunityPaymentScopeItems(opportunity)
   const scopedBudgetTotal = paymentScopeItems.reduce((total, item) => total + item.budgetAmount, 0)
   const budget = formatKesAmount(scopedBudgetTotal || opportunity.budget || opportunity.budgetAmount)
-  const upcomingInterviews = [
-    { id: 'aisha-mwangi', icon: FiVideo, name: 'Aisha Mwangi', time: 'Today, 2:00 PM', note: 'Portfolio review', status: 'Needs link' },
-    { id: 'brian-otieno', icon: FiPhone, name: 'Brian Otieno', time: 'Tomorrow, 10:30 AM', note: 'Phone screen', status: 'Confirmed' },
-    { id: 'grace-wanjiku', icon: FiVideo, name: 'Grace Wanjiku', time: 'Friday, 4:00 PM', note: 'Final interview', status: 'Pending' },
-  ]
+  const newApplicationCount = applications
+    .filter((application) => getApplicationStatus(application.status).id === 'new').length
+  const upcomingInterviews = applications
+    .filter((application) => application.interview && application.interview.status !== 'cancelled')
+    .map((application) => {
+      const interview = application.interview
+      const scheduled = interview.scheduledAt ? new Date(interview.scheduledAt) : null
+      const hasSchedule = scheduled && !Number.isNaN(scheduled.getTime())
+      const interviewType = String(interview.interviewType || 'video').toLowerCase()
+
+      return {
+        id: interview.id,
+        icon: interviewType === 'phone' ? FiPhone : FiVideo,
+        name: application.student?.name || application.bidderName || 'Applicant',
+        time: hasSchedule
+          ? `${scheduled.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}, ${scheduled.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+          : 'Time pending',
+        note: interviewType === 'phone' ? 'Phone screen' : 'Video interview',
+        status: interview.status === 'confirmed' ? 'Confirmed' : interview.status === 'proposed_new_time' ? 'New time proposed' : 'Pending',
+      }
+    })
 
   return (
     <section className="business-profile-card business-review-overview-readonly-card">
@@ -3598,13 +2652,15 @@ function OverviewPanel({ opportunity, skills, type }) {
       <div className="business-review-overview-actions">
         <article>
           <FiUsers aria-hidden="true" />
-          <span><strong>Invite qualified applicants</strong><em>18 matched students can be invited now</em></span>
-          <button type="button">Invite applicants</button>
+          <span>
+            <strong>Review applications</strong>
+            <em>{applications.length} application{applications.length === 1 ? '' : 's'} received{newApplicationCount ? ` · ${newApplicationCount} new` : ''}</em>
+          </span>
+          <button type="button" onClick={onViewSchedule}>Review applicants</button>
         </article>
         <article>
           <FiMessageSquare aria-hidden="true" />
           <span><strong>Accessibility notes</strong><em>Remote-friendly, flexible timing, interview accommodations available</em></span>
-          <button type="button">Share notes</button>
         </article>
       </div>
 
@@ -3614,9 +2670,14 @@ function OverviewPanel({ opportunity, skills, type }) {
             <h3>Immediate Upcoming Interviews</h3>
             <p>Shortlist conversations that need attention this week.</p>
           </div>
-          <button type="button">View schedule</button>
+          <button type="button" onClick={onViewSchedule}>View schedule</button>
         </header>
         <div>
+          {upcomingInterviews.length === 0 ? (
+            <p className="business-review-empty-note">
+              No interviews scheduled yet. Schedule one from the Applications tab.
+            </p>
+          ) : null}
           {upcomingInterviews.map((interview) => {
             const InterviewIcon = interview.icon
 
@@ -3655,9 +2716,9 @@ function OverviewPanel({ opportunity, skills, type }) {
             {skills.slice(0, 6).map((skill) => <span key={skill}>{skill}</span>)}
           </div>
           <dl>
-            <div><dt>Location</dt><dd>Kenya</dd></div>
-            <div><dt>Age range</dt><dd>18 - 28</dd></div>
-            <div><dt>Gender</dt><dd>All</dd></div>
+            <div><dt>Engagement</dt><dd>{opportunity.engagementMode || opportunity.mode || 'Remote'}</dd></div>
+            <div><dt>Duration</dt><dd>{opportunity.duration || 'Flexible'}</dd></div>
+            <div><dt>Experience</dt><dd>{opportunity.requiredExperience || opportunity.experienceLevel || 'Open to all levels'}</dd></div>
           </dl>
         </section>
 
@@ -3757,7 +2818,7 @@ export function BusinessOpportunityReviewWorkspace({
             <FiPlus aria-hidden="true" />
             Publish Opportunity
           </button>
-          <button type="button" className="business-profile-ghost-btn">
+          <button type="button" className="business-profile-ghost-btn" onClick={() => onChangeReviewTab?.('overview')}>
             <FiEye aria-hidden="true" />
             Preview Opportunity
           </button>
@@ -3815,7 +2876,7 @@ export function BusinessOpportunityReviewWorkspace({
       ) : activeReviewTab === 'deliverables' ? (
         <DeliverablesPanel onRequestPayment={startPublishPayment} opportunity={opportunity} />
       ) : activeReviewTab === 'payments' ? (
-        <PaymentsPanel />
+        <PaymentsPanel applications={applications} onRequestPayment={startPublishPayment} opportunity={opportunity} />
       ) : activeReviewTab === 'performance' && canShowPerformance ? (
         <PerformancePanel />
       ) : activeReviewTab === 'messages' ? (
@@ -3829,9 +2890,15 @@ export function BusinessOpportunityReviewWorkspace({
           <BusinessDeliverableMessagesPanel conversation={activeInterviewConversation} opportunity={opportunity} />
         </section>
       ) : activeReviewTab === 'activity' ? (
-        <ActivityPanel />
+        <ActivityPanel opportunityId={opportunity.backendId || opportunity.id} />
       ) : (
-        <OverviewPanel onBack={onBack} opportunity={opportunity} skills={skills} type={type} />
+        <OverviewPanel
+          applications={applications}
+          onViewSchedule={() => onChangeReviewTab?.('applications')}
+          opportunity={opportunity}
+          skills={skills}
+          type={type}
+        />
       )}
       <PublishOpportunityModal
         isOpen={isPublishingOpportunity}

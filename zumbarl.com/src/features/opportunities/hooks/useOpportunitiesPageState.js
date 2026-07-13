@@ -1,17 +1,19 @@
 import { useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
-import { acceptBusinessOpportunityInvite } from '../../business/services/businessFlowService'
-import { useBusinessFlowState } from '../../business/hooks/useBusinessFlowState'
+import {
+  acceptEarnOpportunityInvite,
+  declineEarnOpportunityInvite,
+  markEarnInvitesSeen,
+  refreshEarnFlowFromBackend,
+} from '../../earn/services/earnFlowService'
 import useEarnFlowState from '../../earn/hooks/useEarnFlowState'
 import {
-  BID_RAIL_INTERVIEWS,
   DEFAULT_OPPORTUNITY_THUMBNAIL,
   DEFAULT_OPPORTUNITY_INTENT_ID,
   DEFAULT_OPPORTUNITY_TYPE_ID,
   INITIAL_OPPORTUNITY_RAIL_FILTERS,
   OPPORTUNITY_INTENT_OPTIONS,
-  OPPORTUNITY_INVITES,
   OPPORTUNITY_TAB_TO_QUERY,
   OPPORTUNITY_TABS,
   OPPORTUNITY_TYPES,
@@ -51,12 +53,24 @@ function getBusinessOpportunityStatus(status) {
 
 function getBusinessOpportunityPay(opportunity) {
   const budget = String(opportunity.budget || '').trim()
-  const [, ...unitParts] = budget.split(' ')
 
   return {
-    pay: budget.startsWith('KES ') || budget.startsWith('KSh ') ? budget : budget || 'Budget pending',
-    unit: opportunity.paymentTerms || unitParts.join(' ') || 'project',
+    pay: budget || 'Budget pending',
+    unit: opportunity.paymentTerms || 'Per project',
   }
+}
+
+function formatPublishedLabel(publishedAt) {
+  if (!publishedAt) return 'Open now'
+  const date = new Date(publishedAt)
+  if (Number.isNaN(date.getTime())) return `Published ${publishedAt}`
+
+  const elapsedHours = Math.floor(Math.max(0, Date.now() - date.getTime()) / 3_600_000)
+  if (elapsedHours < 1) return 'Posted less than an hour ago'
+  if (elapsedHours < 24) return `Posted ${elapsedHours}h ago`
+  const elapsedDays = Math.floor(elapsedHours / 24)
+  if (elapsedDays < 7) return `Posted ${elapsedDays}d ago`
+  return `Posted ${date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`
 }
 
 function getBusinessOpportunityOwner(opportunity) {
@@ -113,7 +127,7 @@ function toStudentBusinessOpportunity(opportunity, bidCount = 0) {
     tags: visibleSkills,
     pay: pay.pay,
     unit: pay.unit,
-    posted: opportunity.publishedAt ? `Published ${opportunity.publishedAt}` : 'Open now',
+    posted: formatPublishedLabel(opportunity.publishedAt),
     badge: 'Business invite-ready',
     location: opportunity.engagementMode || 'Flexible',
     commitment: opportunity.duration || 'Timeline pending',
@@ -148,41 +162,10 @@ function toStudentBusinessOpportunity(opportunity, bidCount = 0) {
   }
 }
 
-function toStudentBusinessInvite(invite, opportunity) {
-  const skills = splitSkills(opportunity?.skills)
-  const status = invite.status || 'Invited'
-  const isAccepted = status === 'Accepted' || status === 'Bid submitted'
-
-  return {
-    id: invite.id,
-    opportunityId: invite.opportunityId,
-    bidderId: invite.bidderId,
-    bidderName: invite.bidderName,
-    title: opportunity?.title || 'Business opportunity',
-    company: opportunity?.company || 'Zumbarl business',
-    pay: opportunity?.budget || 'Budget pending',
-    mode: opportunity?.mode || `${opportunity?.opportunityType || 'Project'} · ${opportunity?.engagementMode || 'Flexible'}`,
-    location: opportunity?.engagementMode || 'Flexible',
-    inviter: opportunity?.company || 'Zumbarl business',
-    detail: invite.note || opportunity?.summary || 'The business invited you to submit a bid.',
-    expires: status === 'Bid submitted' ? 'Bid submitted' : 'Expires in 2 days',
-    posted: invite.sentAt ? `Sent ${invite.sentAt}` : 'Sent recently',
-    clientLastSeen: status === 'Bid submitted' ? 'Client reviewing bid' : 'Client active today',
-    stage: status,
-    stageTone: status === 'Bid submitted' ? 'is-viewed' : isAccepted ? 'is-open' : 'is-new',
-    isAccepted,
-    isNew: status === 'Invited',
-    image: DEFAULT_OPPORTUNITY_THUMBNAIL,
-    tags: skills.length ? skills : ['Campus Work'],
-    source: 'business-flow',
-  }
-}
-
 function useOpportunitiesPageState() {
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const earnFlow = useEarnFlowState()
-  const businessFlow = useBusinessFlowState()
   const opportunitySearchRef = useRef(null)
   const [isFilterExpanded, setIsFilterExpanded] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -204,24 +187,7 @@ function useOpportunitiesPageState() {
   const activeOpportunityTab = resolveOpportunityTab(tabQueryParam)
   const activeOpportunityIntent = resolveOpportunityIntent(intentQueryParam || getPreferredOpportunityIntentId())
   const activeOpportunityTypeId = resolveOpportunityTypeId(typeQueryParam)
-  const businessOpportunityBidCounts = useMemo(() => (
-    (businessFlow.opportunityBids || []).reduce((counts, bid) => ({
-      ...counts,
-      [bid.opportunityId]: (counts[bid.opportunityId] || 0) + 1,
-    }), {})
-  ), [businessFlow.opportunityBids])
-  const businessOpportunities = useMemo(() => (
-    (businessFlow.opportunities || [])
-      .filter((opportunity) => {
-        const status = getBusinessOpportunityStatus(opportunity.status)
-        return status !== 'draft' && status !== 'draft ready' && status !== 'closed'
-      })
-      .map((opportunity) => toStudentBusinessOpportunity(
-        opportunity,
-        businessOpportunityBidCounts[opportunity.id] || opportunity.applicants || 0,
-      ))
-  ), [businessFlow.opportunities, businessOpportunityBidCounts])
-  const databaseOpportunities = useMemo(() => (
+  const allOpportunityListings = useMemo(() => (
     (earnFlow.opportunities || [])
       .filter((opportunity) => {
         const status = getBusinessOpportunityStatus(opportunity.status)
@@ -232,26 +198,15 @@ function useOpportunitiesPageState() {
         opportunity.applicants || 0,
       ))
   ), [earnFlow.opportunities])
-  const allOpportunityListings = useMemo(() => (
-    [...databaseOpportunities, ...businessOpportunities]
-  ), [databaseOpportunities, businessOpportunities])
   const opportunityUuidSet = useMemo(() => (
     new Set(allOpportunityListings.map((item) => item.opportunityUuid))
   ), [allOpportunityListings])
   const opportunityUuidToListing = useMemo(() => (
     new Map(allOpportunityListings.map((item) => [item.opportunityUuid, item]))
   ), [allOpportunityListings])
-  const businessOpportunityById = useMemo(() => (
-    new Map((businessFlow.opportunities || []).map((opportunity) => [opportunity.id, opportunity]))
-  ), [businessFlow.opportunities])
-  const visibleInvites = useMemo(() => {
-    const businessInvites = (businessFlow.opportunityInvites || []).map((invite) => (
-      toStudentBusinessInvite(invite, businessOpportunityById.get(invite.opportunityId))
-    ))
-
-    return [...businessInvites, ...OPPORTUNITY_INVITES]
-  }, [businessFlow.opportunityInvites, businessOpportunityById])
-  const dashboardStats = useOpportunityDashboardStats(visibleInvites)
+  const visibleInvites = earnFlow.invites || []
+  const interviews = earnFlow.interviews || []
+  const dashboardStats = useOpportunityDashboardStats({ invites: visibleInvites, interviews })
   const intentOpportunities = filterOpportunitiesByIntent(allOpportunityListings, activeOpportunityIntent.id)
   const opportunityTypeCounts = useMemo(
     () => getOpportunityTypeCounts(intentOpportunities),
@@ -277,7 +232,7 @@ function useOpportunitiesPageState() {
     ? (
         opportunityQueryParam && opportunityUuidSet.has(opportunityQueryParam)
           ? opportunityQueryParam
-          : resolveOpportunityUuid(opportunityQueryParam, ownerQueryParam, gigQueryParam)
+          : resolveOpportunityUuid(allOpportunityListings, opportunityQueryParam, ownerQueryParam, gigQueryParam)
       )
     : null
 
@@ -291,7 +246,7 @@ function useOpportunitiesPageState() {
   const isBidsTab = activeOpportunityTab === 'My Bids'
   const hasRightRail = isDiscoverTab || isBidsTab
   const selectedBidInterview = bidSelection.selectedBid
-    ? BID_RAIL_INTERVIEWS.find((item) => item.bidId === bidSelection.selectedBid.id) || null
+    ? interviews.find((item) => item.bidId === bidSelection.selectedBid.id) || null
     : null
   const syncRouteSelection = (tab, opportunityUuid = null, intentId = activeOpportunityIntent.id) => {
     const nextParams = new URLSearchParams(searchParams)
@@ -396,19 +351,32 @@ function useOpportunitiesPageState() {
     syncRouteSelection('Discover')
   }
 
+  const handleViewBidOpportunity = (bid) => {
+    const listing = allOpportunityListings.find((item) => item.id === bid.opportunityId)
+    if (!listing) return
+
+    setIsFilterExpanded(false)
+    syncRouteSelection('Discover', listing.opportunityUuid)
+  }
+
   const handleOpenPlaceBid = (opportunitySelector, invite = null) => {
     if (!hasAccess(ACCESS_KEYS.opportunities.apply)) {
       return
     }
 
     const opportunity = opportunityUuidToListing.get(opportunitySelector)
-      || findOpportunityListingBySelector(opportunitySelector)
-      || allOpportunityListings[0]
+      || findOpportunityListingBySelector(allOpportunityListings, opportunitySelector)
       || null
-    const targetOpportunityId = opportunity?.id || opportunitySelector || 'social-media-manager'
-    const acceptedInvite = invite?.source === 'business-flow'
-      ? acceptBusinessOpportunityInvite(invite.id) || { ...invite, isAccepted: true, stage: 'Accepted' }
-      : invite
+    const targetOpportunityId = opportunity?.id || opportunitySelector
+
+    if (!targetOpportunityId) {
+      return
+    }
+    let acceptedInvite = invite
+    if (invite && !invite.isAccepted) {
+      acceptEarnOpportunityInvite(invite.id).catch(() => {})
+      acceptedInvite = { ...invite, isAccepted: true, isNew: false, stage: 'Accepted', stageTone: 'is-open' }
+    }
     const intentSearch = activeOpportunityIntent.id === DEFAULT_OPPORTUNITY_INTENT_ID
       ? ''
       : `?intent=${activeOpportunityIntent.id}`
@@ -433,6 +401,7 @@ function useOpportunitiesPageState() {
     confirmedServiceOrdersCount: dashboardStats.confirmedServiceOrdersCount,
     expiringSoonInvitesCount: dashboardStats.expiringSoonInvitesCount,
     hasRightRail,
+    interviews,
     invites: visibleInvites,
     isBidsTab,
     isDetailOpen,
@@ -447,6 +416,9 @@ function useOpportunitiesPageState() {
     onBidSelect: bidSelection.onBidSelect,
     onClearFilters: handleClearFilters,
     onCloseDetails: handleCloseDetails,
+    onDeclineInvite: (invite) => declineEarnOpportunityInvite(invite.id).catch(() => {}),
+    onMarkInvitesSeen: markEarnInvitesSeen,
+    onRefreshEarnFlow: () => refreshEarnFlowFromBackend().catch(() => {}),
     onEditFilters: () => setIsFilterExpanded(true),
     onIntentChange: handleOpportunityIntentChange,
     onLocationChange: setActiveLocation,
@@ -456,13 +428,15 @@ function useOpportunitiesPageState() {
     onOpenMarketingCampaign: (campaignId = 'level-up-skills') => navigate(`/campus/opportunities/marketing/${campaignId}`, {
       state: { accepted: true },
     }),
+    onCreateBooking: () => navigate('/campus/opportunities/buy-sell'),
     onOpenMessages: () => navigate('/messages'),
     onOpenPlaceBid: handleOpenPlaceBid,
+    onViewBidOpportunity: handleViewBidOpportunity,
     onOpenProject: (project) => navigate(getOpportunityProjectHref(project)),
     onOpportunitySelect: handleOpportunitySelect,
     onOpportunityTypeChange: handleOpportunityTypeChange,
     onTabChange: handleOpportunityTabChange,
-    onViewBooking: () => navigate('/campus/projects/social-media-content-creation'),
+    onViewBooking: () => navigate('/campus/opportunities?tab=ongoing'),
     opportunitySearchRef,
     opportunityIntentOptions: OPPORTUNITY_INTENT_OPTIONS,
     opportunityTypeOptions,

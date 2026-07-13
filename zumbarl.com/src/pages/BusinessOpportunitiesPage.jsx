@@ -96,12 +96,13 @@ function BusinessOpportunitiesPage() {
               activeApplicationStatus={opportunities.activeApplicationStatus}
               activeReviewTab={opportunities.activeReviewTab}
               applications={opportunities.reviewApplicants}
+              onChangeApplicationStatus={opportunities.onChangeApplicationStatus}
               opportunity={opportunities.reviewOpportunity}
             />
           ) : (
             <BusinessOpportunityRail
               activity={opportunities.activity}
-              topFreelancers={opportunities.topFreelancers}
+              topSkills={opportunities.topSkills}
               summary={opportunities.summary}
             />
           )}

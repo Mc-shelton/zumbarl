@@ -42,7 +42,7 @@ const BUSINESS_OPPORTUNITY_BRIEF_DRAFT_FALLBACKS = {
 }
 
 function getBudgetLabel(form) {
-  return `KES ${String(form.budget).replace(/^(KES\\s*)+/i, '')}`
+  return `KES ${String(form.budget).replace(/^(KES\s*)+/i, '')}`
 }
 
 function getNumberValue(value) {

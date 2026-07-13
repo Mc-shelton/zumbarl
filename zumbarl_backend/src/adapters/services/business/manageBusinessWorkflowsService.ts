@@ -180,6 +180,10 @@ async function readBusinessDashboardService(businessId: string | undefined) {
   return dashboard
 }
 
+async function listBusinessActivityService(businessId: string | undefined) {
+  return { data: await businessWorkflowsRepository.listBusinessActivity(businessId) }
+}
+
 function readBusinessProfileService(businessId: string | undefined) {
   return businessWorkflowsRepository.findBusinessProfile(businessId)
 }
@@ -362,6 +366,7 @@ async function awardApplicantProjectService(id: string, actorId: string | undefi
 
 export {
   readBusinessDashboardService,
+  listBusinessActivityService,
   readBusinessProfileService,
   updateBusinessProfileService,
   readBusinessKycService,

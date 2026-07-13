@@ -99,8 +99,65 @@ class EarnWorkflowsRepository {
     return prisma.bid.create({ data: payload as any })
   }
 
-  acceptInvite(id: string) {
+  async acceptInvite(id: string, studentId?: string) {
+    const invite = await prisma.opportunityInvite.findFirst({ where: studentId ? { id, studentId } : { id } })
+    if (!invite) return null
     return prisma.opportunityInvite.update({ where: { id }, data: { status: 'accepted', acceptedAt: new Date(), respondedAt: new Date() } })
+  }
+
+  async declineInvite(id: string, studentId?: string) {
+    const invite = await prisma.opportunityInvite.findFirst({ where: studentId ? { id, studentId } : { id } })
+    if (!invite) return null
+    return prisma.opportunityInvite.update({ where: { id }, data: { status: 'declined', respondedAt: new Date() } })
+  }
+
+  async listStudentInvites(studentId: string | undefined, query: Record<string, unknown>) {
+    if (!studentId) return pageEnvelope([], query)
+    const items = await prisma.opportunityInvite.findMany({
+      where: { studentId },
+      include: { opportunity: { include: { company: true } } },
+      orderBy: { sentAt: 'desc' }
+    })
+
+    return pageEnvelope(items.map((item) => ({
+      ...item,
+      sentAt: toIso(item.sentAt),
+      acceptedAt: toIso(item.acceptedAt),
+      respondedAt: toIso(item.respondedAt),
+      createdAt: toIso(item.createdAt),
+      updatedAt: toIso(item.updatedAt),
+      opportunity: toOpportunityCard(item.opportunity)
+    })), query)
+  }
+
+  async listStudentInterviews(studentId: string | undefined, query: Record<string, unknown>) {
+    if (!studentId) return pageEnvelope([], query)
+    const items = await prisma.opportunityInterview.findMany({
+      where: { studentId },
+      include: { bid: { include: { opportunity: { include: { company: true } } } } },
+      orderBy: { scheduledAt: 'asc' }
+    })
+
+    return pageEnvelope(items.map((interview) => ({
+      id: interview.id,
+      bidId: interview.bidId,
+      opportunityId: interview.opportunityId,
+      interviewType: interview.interviewType,
+      scheduledAt: toIso(interview.scheduledAt),
+      durationMinutes: interview.durationMinutes,
+      timezone: interview.timezone,
+      meetingOption: interview.meetingOption,
+      meetingUrl: interview.meetingUrl,
+      note: interview.note,
+      status: interview.status,
+      proposedAt: toIso(interview.proposedAt),
+      respondedAt: toIso(interview.respondedAt),
+      opportunity: {
+        id: interview.bid.opportunity.id,
+        title: interview.bid.opportunity.title,
+        company: interview.bid.opportunity.company?.name || interview.bid.opportunity.companyName
+      }
+    })), query)
   }
 
   async readStudentInterview(id: string, studentId: string | undefined) {

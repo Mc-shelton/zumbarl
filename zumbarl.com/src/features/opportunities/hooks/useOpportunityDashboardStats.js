@@ -1,20 +1,21 @@
 import { useMemo } from 'react'
-import { BID_RAIL_INTERVIEWS, OPPORTUNITY_INVITES, SERVICE_ORDERS } from '../constants'
 
-function useOpportunityDashboardStats(invites = OPPORTUNITY_INVITES) {
+function useOpportunityDashboardStats({ invites = [], interviews = [], serviceOrders = [] } = {}) {
   return useMemo(() => ({
     activeInviteClientsCount: new Set(invites.map((invite) => invite.company)).size,
-    actionRequiredServiceOrdersCount: SERVICE_ORDERS.filter((order) => order.statusTone === 'is-awaiting').length,
-    completedServiceOrdersCount: SERVICE_ORDERS.filter((order) => order.statusTone === 'is-completed').length,
-    confirmedServiceOrdersCount: SERVICE_ORDERS.filter((order) => (
+    actionRequiredServiceOrdersCount: serviceOrders.filter((order) => order.statusTone === 'is-awaiting').length,
+    completedServiceOrdersCount: serviceOrders.filter((order) => order.statusTone === 'is-completed').length,
+    confirmedServiceOrdersCount: serviceOrders.filter((order) => (
       order.statusTone === 'is-confirmed' || order.statusTone === 'is-scheduled'
     )).length,
     expiringSoonInvitesCount: invites.filter((invite) => (
-      invite.expires.includes('1 day') || invite.expires.includes('2 days')
+      String(invite.expires || '').includes('1 day') || String(invite.expires || '').includes('2 days')
     )).length,
     newInvitesCount: invites.filter((invite) => invite.isNew).length,
-    upcomingInterviewsCount: BID_RAIL_INTERVIEWS.length,
-  }), [invites])
+    upcomingInterviewsCount: interviews.filter((interview) => (
+      interview.status !== 'cancelled' && (!interview.scheduledAt || new Date(interview.scheduledAt) >= new Date())
+    )).length,
+  }), [invites, interviews, serviceOrders])
 }
 
 export default useOpportunityDashboardStats

@@ -1,12 +1,14 @@
 import { FiCalendar, FiMapPin, FiUsers } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
-import { SERVICE_ORDERS } from '../constants'
 
 function OpportunitiesServiceOrdersPanel({
   actionRequiredServiceOrdersCount,
   completedServiceOrdersCount,
   confirmedServiceOrdersCount,
+  onCreateBooking = () => {},
+  onOpenMessages = () => {},
   onViewBooking,
+  orders = [],
 }) {
   const canCreateBooking = hasAccess(ACCESS_KEYS.opportunities.createServiceBooking)
   const canMessageProvider = hasAccess(ACCESS_KEYS.campus.messages)
@@ -18,7 +20,7 @@ function OpportunitiesServiceOrdersPanel({
           <h2>Service Orders</h2>
           <p>Bookings for services, deliveries and scheduled support requests.</p>
         </div>
-        {canCreateBooking ? <button type="button" className="campus-link-btn">Create booking</button> : null}
+        {canCreateBooking ? <button type="button" className="campus-link-btn" onClick={onCreateBooking}>Create booking</button> : null}
       </div>
 
       <div className="opportunities-service-orders-summary">
@@ -40,7 +42,12 @@ function OpportunitiesServiceOrdersPanel({
       </div>
 
       <div className="opportunities-service-orders-list">
-        {SERVICE_ORDERS.map((order) => (
+        {orders.length === 0 ? (
+          <p className="opportunities-list-empty">
+            No service orders yet. Bookings for services, deliveries and support requests will appear here.
+          </p>
+        ) : null}
+        {orders.map((order) => (
           <article key={order.id} className="opportunities-service-order-card">
             <header className="opportunities-service-order-head">
               <div>
@@ -71,7 +78,7 @@ function OpportunitiesServiceOrdersPanel({
             <footer className="opportunities-service-order-foot">
               <p className="opportunities-service-order-amount">{order.amount}</p>
               <div className="opportunities-service-order-actions">
-                {canMessageProvider ? <button type="button" className="campus-link-btn">Message</button> : null}
+                {canMessageProvider ? <button type="button" className="campus-link-btn" onClick={onOpenMessages}>Message</button> : null}
                 <button
                   type="button"
                   className="opportunities-search-btn"

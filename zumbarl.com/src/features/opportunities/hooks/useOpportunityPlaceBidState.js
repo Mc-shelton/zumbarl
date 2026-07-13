@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
-import { recordStudentOpportunityBid } from '../../business/services/businessFlowService'
 import { submitOpportunityBid } from '../../earn/services/earnFlowService'
 import useEarnFlowState from '../../earn/hooks/useEarnFlowState'
 import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
@@ -13,7 +12,7 @@ import {
   getPreferredOpportunityIntentId,
   setPreferredOpportunityIntentId,
 } from '../services/opportunityIntentPreference'
-import { PLACE_BID_FALLBACK_GIGS, toBidGig, withBidProcess } from '../placeBidData'
+import { toBidGig } from '../placeBidData'
 
 function useOpportunityPlaceBidState() {
   const { opportunityId } = useParams()
@@ -35,12 +34,25 @@ function useOpportunityPlaceBidState() {
     }
     const databaseOpportunity = (earnFlow.opportunities || []).find((item) => item.id === opportunityId)
     if (databaseOpportunity) {
-      return toBidGig(databaseOpportunity)
+      return toBidGig({
+        id: databaseOpportunity.id,
+        submissionOpportunityId: databaseOpportunity.id,
+        title: databaseOpportunity.title,
+        company: databaseOpportunity.company,
+        meta: `${databaseOpportunity.opportunityType || 'Project'} · ${databaseOpportunity.engagementMode || 'Flexible'}`,
+        overview: databaseOpportunity.overview || databaseOpportunity.summary,
+        posted: databaseOpportunity.publishedAt
+          ? `Published ${new Date(databaseOpportunity.publishedAt).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' })}`
+          : 'Open now',
+        pay: databaseOpportunity.budget,
+        unit: databaseOpportunity.paymentTerms,
+        tags: Array.isArray(databaseOpportunity.requiredSkills) ? databaseOpportunity.requiredSkills : [],
+        careerPath: databaseOpportunity.category,
+        qualificationQuestions: databaseOpportunity.qualificationQuestions,
+        requiredAttachments: databaseOpportunity.requiredAttachments,
+      })
     }
-    if (opportunityId && PLACE_BID_FALLBACK_GIGS[opportunityId]) {
-      return withBidProcess(PLACE_BID_FALLBACK_GIGS[opportunityId])
-    }
-    return withBidProcess(PLACE_BID_FALLBACK_GIGS.default)
+    return null
   }, [earnFlow.opportunities, location.state, opportunityId])
 
   const handleBidIntentChange = (intentId) => {
@@ -89,14 +101,6 @@ function useOpportunityPlaceBidState() {
       const bid = await submitOpportunityBid({
         gig: selectedGig,
         intent: activeBidIntent,
-        proposal: persistedProposal,
-      })
-
-      recordStudentOpportunityBid({
-        bid,
-        gig: selectedGig,
-        intent: activeBidIntent,
-        invite: location.state?.invite,
         proposal: persistedProposal,
       })
 

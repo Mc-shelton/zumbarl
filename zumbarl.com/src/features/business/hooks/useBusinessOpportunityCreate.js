@@ -11,7 +11,7 @@ import {
 import { createBusinessMarketingCampaign } from '../services/businessMarketingService'
 
 function getBudgetLabel(form) {
-  return `KES ${form.totalBudget || String(form.budget).replace(/^KES\\s*/i, '')}`
+  return `KES ${form.totalBudget || String(form.budget).replace(/^(KES\s*)+/i, '')}`
 }
 
 function toPayload(form, status) {

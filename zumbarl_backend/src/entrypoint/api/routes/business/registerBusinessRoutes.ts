@@ -8,6 +8,7 @@ import {
   createOpportunityDeliverablesController,
   fundBusinessOpportunityController,
   inviteOpportunityBiddersController,
+  listBusinessActivityController,
   listOpportunityInviteCandidatesController,
   listBusinessOpportunitiesController,
   listBusinessIndustriesController,
@@ -28,6 +29,7 @@ import {
 async function registerBusinessRoutes(app: FastifyInstance) {
   const businessOnly = requireRoles(...roleGroups.business, ...roleGroups.admin)
   app.get('/dashboard', { preHandler: businessOnly }, readBusinessDashboardController)
+  app.get('/activity', { preHandler: businessOnly }, listBusinessActivityController)
   app.get('/profile', { preHandler: businessOnly }, readBusinessProfileController)
   app.patch('/profile', { preHandler: businessOnly }, updateBusinessProfileController)
   app.get('/kyc', { preHandler: businessOnly }, readBusinessKycController)

@@ -39,7 +39,10 @@ describe('Zumbarl API', () => {
       headers: { authorization: `Bearer ${token}` }
     })
     expect(response.statusCode).toBe(200)
-    expect(response.json().metrics.opportunities).toBeGreaterThan(0)
+    const metrics = response.json().metrics
+    expect(Array.isArray(metrics)).toBe(true)
+    const activeOpportunities = metrics.find((metric: Record<string, unknown>) => metric.label === 'Active Opportunities')
+    expect(activeOpportunities).toBeDefined()
   })
 
   it('allows a student to create a roadmap', async () => {

@@ -3,7 +3,6 @@ import {
   FiCheckCircle,
   FiFileText,
   FiSearch,
-  FiStar,
   FiUsers,
   FiZap,
 } from 'react-icons/fi'
@@ -18,7 +17,7 @@ const SUMMARY_ICONS = {
   users: FiUsers,
 }
 
-export function BusinessOpportunityRail({ activity, summary, topFreelancers = [] }) {
+export function BusinessOpportunityRail({ activity, summary, topSkills = [] }) {
   return (
     <aside className="campus-rail business-workspace-rail business-opportunities-rail">
       <section className="business-profile-card business-opportunity-summary-card">
@@ -40,26 +39,25 @@ export function BusinessOpportunityRail({ activity, summary, topFreelancers = []
         </dl>
       </section>
 
-      <section className="business-profile-card business-top-freelancers-card">
+      <section className="business-profile-card business-skill-demand-card">
         <header>
-          <h2>Top Freelancers</h2>
+          <h2>Top Skills in Demand</h2>
           <Link to="/business/applicants" className="business-link-btn">View all</Link>
         </header>
-        <ul>
-          {topFreelancers.map((freelancer) => (
-            <li key={freelancer.id}>
-              <span className={`tone-${freelancer.tone}`}>{freelancer.initials}</span>
-              <div>
-                <strong>{freelancer.name}</strong>
-                <p>{freelancer.school} · {freelancer.skill}</p>
-              </div>
-              <em>
-                <FiStar aria-hidden="true" />
-                {freelancer.rating} · {freelancer.projects} projects
-              </em>
-            </li>
-          ))}
-        </ul>
+        {topSkills.length === 0 ? (
+          <p className="business-rail-empty">Skills from your opportunity briefs will appear here.</p>
+        ) : (
+          <ul>
+            {topSkills.map((skill) => (
+              <li key={skill.id}>
+                <p>{skill.label}<span>{skill.value}%</span></p>
+                <div role="img" aria-label={`${skill.label} demand ${skill.value}%`}>
+                  <span className={`tone-${skill.tone}`} style={{ width: `${skill.value}%` }} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="business-profile-card business-opportunity-activity-card">
@@ -67,15 +65,19 @@ export function BusinessOpportunityRail({ activity, summary, topFreelancers = []
           <h2>Recent Activity</h2>
           <Link to="/business/applicant-profile" className="business-link-btn">View all</Link>
         </header>
-        <ul>
-          {activity.map((item) => (
-            <li key={`${item.actor}-${item.time}`}>
-              <span className={`tone-${item.tone}`}>{item.initials}</span>
-              <p><strong>{item.actor}</strong> {item.detail}</p>
-              <time>{item.time}</time>
-            </li>
-          ))}
-        </ul>
+        {activity.length === 0 ? (
+          <p className="business-rail-empty">Applicant and opportunity activity will appear here.</p>
+        ) : (
+          <ul>
+            {activity.map((item) => (
+              <li key={`${item.actor}-${item.time}-${item.detail}`}>
+                <span className={`tone-${item.tone}`}>{item.initials}</span>
+                <p><strong>{item.actor}</strong> {item.detail}</p>
+                <time>{item.time}</time>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <section className="business-profile-card business-opportunity-help-card">

@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { FiClock, FiMoreVertical } from 'react-icons/fi'
 import {
   BID_PROGRESS_POINT_COUNT,
@@ -11,12 +12,81 @@ function handleKeyboardActivation(event, onActivate) {
   }
 }
 
+const BID_STATUS_FILTERS = [
+  { id: 'all', label: 'All Bids', matches: () => true },
+  { id: 'active', label: 'Active', matches: (bid) => !['Awarded', 'Declined'].includes(bid.status) },
+  { id: 'awarded', label: 'Awarded', matches: (bid) => bid.status === 'Awarded' },
+  { id: 'declined', label: 'Declined', matches: (bid) => bid.status === 'Declined' },
+]
+
+function BidActionsMenu({ bid, onOpenMessages, onOpenProject, onViewBidOpportunity }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    if (!isOpen) return undefined
+
+    function handleOutsideClick(event) {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    return () => document.removeEventListener('mousedown', handleOutsideClick)
+  }, [isOpen])
+
+  const runAction = (event, action) => {
+    event.stopPropagation()
+    setIsOpen(false)
+    action()
+  }
+
+  return (
+    <div className="opportunities-bid-menu" ref={menuRef}>
+      <button
+        type="button"
+        className="opportunities-bid-more"
+        aria-label={`${bid.title} actions`}
+        aria-expanded={isOpen}
+        onClick={(event) => {
+          event.stopPropagation()
+          setIsOpen((current) => !current)
+        }}
+      >
+        <FiMoreVertical aria-hidden="true" />
+      </button>
+      {isOpen ? (
+        <div className="opportunities-bid-menu-list" role="menu">
+          <button type="button" role="menuitem" onClick={(event) => runAction(event, () => onViewBidOpportunity(bid))}>
+            View opportunity
+          </button>
+          {bid.projectId ? (
+            <button type="button" role="menuitem" onClick={(event) => runAction(event, () => onOpenProject({ id: bid.projectId }))}>
+              Open project workspace
+            </button>
+          ) : null}
+          <button type="button" role="menuitem" onClick={(event) => runAction(event, onOpenMessages)}>
+            Message client
+          </button>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
 function OpportunitiesBidsPanel({
   bids = [],
   onBidSelect,
+  onOpenMessages = () => {},
   onOpenProject,
+  onViewBidOpportunity = () => {},
   selectedBidId,
 }) {
+  const [statusFilterId, setStatusFilterId] = useState('all')
+  const statusFilter = BID_STATUS_FILTERS.find((filter) => filter.id === statusFilterId) || BID_STATUS_FILTERS[0]
+  const visibleBids = bids.filter(statusFilter.matches)
+
   return (
     <section className="opportunities-list-section opportunities-bids-section" aria-label="My bids">
       <div className="opportunities-section-head">
@@ -24,11 +94,33 @@ function OpportunitiesBidsPanel({
           <h2>My Bids</h2>
           <p>Track bid progress, client activity and response timelines.</p>
         </div>
-        <button type="button" className="campus-link-btn">View all bids</button>
+        <div className="opportunities-bid-status-filters" role="tablist" aria-label="Filter bids by status">
+          {BID_STATUS_FILTERS.map((filter) => (
+            <button
+              key={filter.id}
+              type="button"
+              role="tab"
+              aria-selected={statusFilterId === filter.id}
+              className={`opportunities-bid-status-filter${statusFilterId === filter.id ? ' is-active' : ''}`}
+              onClick={() => setStatusFilterId(filter.id)}
+            >
+              {filter.label}
+              <em>{bids.filter(filter.matches).length}</em>
+            </button>
+          ))}
+        </div>
       </div>
 
+      {visibleBids.length === 0 ? (
+        <p className="opportunities-list-empty">
+          {bids.length === 0
+            ? 'No bids yet. Apply to an opportunity from the Discover tab and your bids will show up here.'
+            : 'No bids match this status yet.'}
+        </p>
+      ) : null}
+
       <div className="opportunities-bid-grid">
-        {bids.map((bid) => {
+        {visibleBids.map((bid) => {
           const activeProgressPoint = getBidProgressPointIndex(bid.progress)
           const activeProgressWidth = (activeProgressPoint / (BID_PROGRESS_POINT_COUNT - 1)) * 100
 
@@ -44,9 +136,12 @@ function OpportunitiesBidsPanel({
             >
               <div className="opportunities-bid-thumb">
                 <span className={`opportunities-bid-status-chip ${bid.statusTone}`}>{bid.status}</span>
-                <button type="button" className="opportunities-bid-more" aria-label={`${bid.title} actions`}>
-                  <FiMoreVertical aria-hidden="true" />
-                </button>
+                <BidActionsMenu
+                  bid={bid}
+                  onOpenMessages={onOpenMessages}
+                  onOpenProject={onOpenProject}
+                  onViewBidOpportunity={onViewBidOpportunity}
+                />
                 <img src={bid.image} alt={`${bid.title} cover`} loading="lazy" />
               </div>
 
