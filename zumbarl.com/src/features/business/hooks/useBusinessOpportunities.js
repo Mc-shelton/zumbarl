@@ -17,6 +17,8 @@ import { useBusinessFlowState } from './useBusinessFlowState'
 const DEFAULT_PAGE_SIZE = 5
 const PAGE_SIZE_OPTIONS = [5, 10, 20]
 const VIEW_MODE_STORAGE_KEY = 'zumbarl.business-opportunities-view'
+// Stable identity, so an in-flight invite fetch doesn't re-run downstream memos.
+const NO_INVITE_CANDIDATES = []
 const ACTIVE_OPPORTUNITY_STATUSES = new Set(['Open', 'Pending'])
 const ARCHIVED_OPPORTUNITY_STATUSES = new Set(['Archived', 'Closed'])
 const STATUS_TONES = {
@@ -175,10 +177,11 @@ export function useBusinessOpportunities() {
   const [inviteQuery, setInviteQuery] = useState('')
   const [inviteNote, setInviteNote] = useState('')
   const [selectedBidderIds, setSelectedBidderIds] = useState([])
-  const [backendInviteCandidates, setBackendInviteCandidates] = useState([])
+  // Candidates are stored alongside the request they answer, so "loading" and
+  // "no stale results" are both derived instead of tracked as separate state.
+  const [inviteCandidatesResult, setInviteCandidatesResult] = useState({ key: '', candidates: [] })
   const [applicantsByOpportunity, setApplicantsByOpportunity] = useState({})
   const [applicantLoadErrors, setApplicantLoadErrors] = useState({})
-  const [isLoadingInviteCandidates, setIsLoadingInviteCandidates] = useState(false)
   const [isSendingInvites, setIsSendingInvites] = useState(false)
 
   const invitesByOpportunity = useMemo(() => (
@@ -216,9 +219,26 @@ export function useBusinessOpportunities() {
     new Set((invitesByOpportunity[inviteOpportunityId] || []).map((invite) => invite.bidderId))
   ), [inviteOpportunityId, invitesByOpportunity])
 
+  const inviteOpportunityBackendId = inviteOpportunity?.backendId || ''
+  // Identifies the request currently being shown. While the stored result belongs
+  // to a different key the fetch is still in flight, which is what "loading" means
+  // here - and it also stops a previous opportunity's candidates showing through.
+  const inviteRequestKey = inviteOpportunityBackendId
+    ? `${inviteOpportunityBackendId}|${inviteQuery}`
+    : ''
+  const hasCurrentInviteCandidates = inviteCandidatesResult.key === inviteRequestKey
+  const isLoadingInviteCandidates = Boolean(inviteOpportunityBackendId) && !hasCurrentInviteCandidates
+  const backendInviteCandidates = hasCurrentInviteCandidates
+    ? inviteCandidatesResult.candidates
+    : NO_INVITE_CANDIDATES
+
   const inviteCandidates = useMemo(() => {
+    // With no opportunity selected the panel is closed; report empty rather than
+    // leaking the previous opportunity's candidates.
+    if (!inviteOpportunity) return []
+
     const normalizedQuery = inviteQuery.trim().toLowerCase()
-    const opportunitySkills = new Set(inviteOpportunity?.skills || [])
+    const opportunitySkills = new Set(inviteOpportunity.skills || [])
 
     return backendInviteCandidates
       .map((candidate) => ({
@@ -241,32 +261,27 @@ export function useBusinessOpportunities() {
   }, [backendInviteCandidates, existingInviteIds, inviteOpportunity, inviteQuery])
 
   useEffect(() => {
-    let isCurrent = true
-    const backendOpportunityId = inviteOpportunity?.backendId
-    if (!backendOpportunityId) {
-      setBackendInviteCandidates([])
-      setIsLoadingInviteCandidates(false)
-      return () => { isCurrent = false }
-    }
+    // Nothing to fetch with the panel closed.
+    if (!inviteOpportunityBackendId) return undefined
 
-    setIsLoadingInviteCandidates(true)
-    listBackendOpportunityInviteCandidates(backendOpportunityId, inviteQuery)
+    let isCurrent = true
+    listBackendOpportunityInviteCandidates(inviteOpportunityBackendId, inviteQuery)
       .then((response) => {
         if (!isCurrent) return
-        setBackendInviteCandidates((response?.candidates || []).map((candidate, index) => ({
-          ...candidate,
-          tone: ['purple', 'green', 'orange', 'blue'][index % 4],
-        })))
+        setInviteCandidatesResult({
+          key: inviteRequestKey,
+          candidates: (response?.candidates || []).map((candidate, index) => ({
+            ...candidate,
+            tone: ['purple', 'green', 'orange', 'blue'][index % 4],
+          })),
+        })
       })
       .catch(() => {
-        if (isCurrent) setBackendInviteCandidates([])
-      })
-      .finally(() => {
-        if (isCurrent) setIsLoadingInviteCandidates(false)
+        if (isCurrent) setInviteCandidatesResult({ key: inviteRequestKey, candidates: [] })
       })
 
     return () => { isCurrent = false }
-  }, [inviteOpportunity?.backendId, inviteQuery])
+  }, [inviteOpportunityBackendId, inviteQuery, inviteRequestKey])
 
   useEffect(() => {
     let isCurrent = true

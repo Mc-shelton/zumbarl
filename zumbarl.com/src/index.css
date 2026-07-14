@@ -10,3 +10,23 @@ body {
 #root {
   min-height: 100vh;
 }
+
+/* Baseline keyboard focus ring. Single-class specificity, so any component that
+   already defines its own :focus-visible style still wins. */
+:focus-visible {
+  outline: 2px solid var(--theme-dark);
+  outline-offset: 2px;
+}
+
+/* Users who ask for less motion get no transitions or animations. The app uses
+   transforms and transitions throughout but only honoured this in one file. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

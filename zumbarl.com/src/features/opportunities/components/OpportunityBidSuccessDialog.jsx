@@ -1,4 +1,5 @@
 import { FiCheckCircle } from 'react-icons/fi'
+import { useDialog } from '../../../components/ui'
 
 function OpportunityBidSuccessDialog({
   activeBidIntentId,
@@ -8,6 +9,9 @@ function OpportunityBidSuccessDialog({
   selectedGig,
   submittedBid,
 }) {
+  // The bid is already submitted, so dismissing returns to discovery.
+  const dialogRef = useDialog({ isOpen, onClose: onContinueDiscovery })
+
   if (!isOpen) {
     return null
   }
@@ -21,6 +25,7 @@ function OpportunityBidSuccessDialog({
   return (
     <div className="opportunities-bid-success-overlay" role="presentation">
       <section
+        ref={dialogRef}
         className="opportunities-bid-success-dialog"
         role="dialog"
         aria-modal="true"

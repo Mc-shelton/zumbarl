@@ -308,11 +308,13 @@ export function useBusinessOpportunityBriefCreate() {
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
-  const [isLeavePromptOpen, setIsLeavePromptOpen] = useState(false)
   const saveDraftBeforeLeaveRef = useRef(null)
   const leaveBlocker = useBlocker(({ currentLocation, nextLocation }) => (
     hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname
   ))
+  // Derived rather than mirrored into state: the prompt is open exactly when the
+  // router is blocking navigation. reset()/proceed() below close it on their own.
+  const isLeavePromptOpen = leaveBlocker.state === 'blocked'
   const maxStep = BUSINESS_OPPORTUNITY_BRIEF_STEPS.length
   const activeStepMeta = BUSINESS_OPPORTUNITY_BRIEF_STEPS[activeStep - 1] || BUSINESS_OPPORTUNITY_BRIEF_STEPS[0]
   const clarityChecks = useMemo(() => getClarityChecks(form), [form])
@@ -391,11 +393,6 @@ export function useBusinessOpportunityBriefCreate() {
   })
 
   useEffect(() => {
-    if (leaveBlocker.state !== 'blocked') return
-    setIsLeavePromptOpen(true)
-  }, [leaveBlocker])
-
-  useEffect(() => {
     function handleBeforeUnload(event) {
       if (!hasUnsavedChanges) return
       event.preventDefault()
@@ -407,12 +404,10 @@ export function useBusinessOpportunityBriefCreate() {
   }, [hasUnsavedChanges])
 
   function stayOnPage() {
-    setIsLeavePromptOpen(false)
     if (leaveBlocker.state === 'blocked') leaveBlocker.reset()
   }
 
   function leaveWithoutSaving() {
-    setIsLeavePromptOpen(false)
     if (leaveBlocker.state === 'blocked') leaveBlocker.proceed()
   }
 
@@ -420,7 +415,6 @@ export function useBusinessOpportunityBriefCreate() {
     const opportunity = await saveDraftBeforeLeaveRef.current?.()
     if (!opportunity) return
 
-    setIsLeavePromptOpen(false)
     if (leaveBlocker.state === 'blocked') leaveBlocker.proceed()
   }
 

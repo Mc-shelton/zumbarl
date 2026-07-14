@@ -1,9 +1,12 @@
 import { FiPaperclip, FiX } from 'react-icons/fi'
+import { useDialog } from '../../../components/ui'
 
 function TeamTaskModal({ onClose }) {
+  const dialogRef = useDialog({ isOpen: true, onClose })
+
   return (
     <div className="project-modal-backdrop team-modal-backdrop" role="presentation">
-      <section className="project-submit-modal team-task-modal" role="dialog" aria-modal="true" aria-labelledby="add-task-title">
+      <section ref={dialogRef} className="project-submit-modal team-task-modal" role="dialog" aria-modal="true" aria-labelledby="add-task-title">
         <button type="button" className="project-modal-close" aria-label="Close add task modal" onClick={onClose}>
           <FiX aria-hidden="true" />
         </button>

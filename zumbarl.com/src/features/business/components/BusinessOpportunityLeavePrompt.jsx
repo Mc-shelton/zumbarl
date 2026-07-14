@@ -1,4 +1,5 @@
 import { FiAlertCircle, FiArrowRight, FiSave, FiX } from 'react-icons/fi'
+import { useDialog } from '../../../components/ui'
 
 export function BusinessOpportunityLeavePrompt({
   isOpen,
@@ -8,11 +9,15 @@ export function BusinessOpportunityLeavePrompt({
   onStay,
   saveError = '',
 }) {
+  // Escape means "stay editing" here - the safe choice for an unsaved draft.
+  const dialogRef = useDialog({ isOpen, onClose: onStay })
+
   if (!isOpen) return null
 
   return (
     <div className="business-create-leave-backdrop" role="presentation">
       <section
+        ref={dialogRef}
         aria-labelledby="business-create-leave-title"
         aria-modal="true"
         className="business-create-leave-dialog"

@@ -1,4 +1,5 @@
 import { FiSearch, FiSend, FiX } from 'react-icons/fi'
+import { useDialog } from '../../../components/ui'
 
 export function BusinessOpportunityInvitePanel({
   candidates,
@@ -13,6 +14,8 @@ export function BusinessOpportunityInvitePanel({
   onToggleBidder,
   selectedBidderIds,
 }) {
+  const dialogRef = useDialog({ isOpen: Boolean(inviteOpportunity), onClose })
+
   if (!inviteOpportunity) return null
 
   const selectedCount = selectedBidderIds.length
@@ -20,6 +23,7 @@ export function BusinessOpportunityInvitePanel({
   return (
     <div className="business-opportunity-invite-backdrop" role="presentation">
       <section
+        ref={dialogRef}
         className="business-opportunity-invite-dialog"
         role="dialog"
         aria-modal="true"

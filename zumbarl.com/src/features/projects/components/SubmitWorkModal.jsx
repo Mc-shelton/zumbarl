@@ -1,10 +1,13 @@
 import { FiSend, FiUploadCloud, FiX } from 'react-icons/fi'
+import { useDialog } from '../../../components/ui'
 import { submittedFiles } from '../data/mockWorkspace'
 
 function SubmitWorkModal({ onClose, onSubmit }) {
+  const dialogRef = useDialog({ isOpen: true, onClose })
+
   return (
     <div className="project-modal-backdrop" role="presentation">
-      <section className="project-submit-modal" role="dialog" aria-modal="true" aria-labelledby="submit-work-title">
+      <section ref={dialogRef} className="project-submit-modal" role="dialog" aria-modal="true" aria-labelledby="submit-work-title">
         <button type="button" className="project-modal-close" aria-label="Close submit work modal" onClick={onClose}>
           <FiX aria-hidden="true" />
         </button>

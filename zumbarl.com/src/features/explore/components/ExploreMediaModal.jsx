@@ -1,4 +1,5 @@
 import { FiChevronLeft, FiChevronRight, FiX } from 'react-icons/fi'
+import { useDialog } from '../../../components/ui'
 
 function ExploreMediaModal({
   activeMediaComments,
@@ -8,12 +9,15 @@ function ExploreMediaModal({
   onClose,
   onStep,
 }) {
-  if (!activeMediaPost || !activeMediaImage) {
+  const isOpen = Boolean(activeMediaPost && activeMediaImage)
+  const dialogRef = useDialog({ isOpen, onClose })
+
+  if (!isOpen) {
     return null
   }
 
   return (
-    <section className="explore-campus-media-modal" role="dialog" aria-modal="true" aria-label="Post media viewer" onClick={onClose}>
+    <section ref={dialogRef} className="explore-campus-media-modal" role="dialog" aria-modal="true" aria-label="Post media viewer" onClick={onClose}>
       <div className="explore-campus-media-content" onClick={(event) => event.stopPropagation()}>
         <section className="explore-campus-media-frame">
           <button type="button" className="explore-campus-media-close" onClick={onClose} aria-label="Close media viewer">
