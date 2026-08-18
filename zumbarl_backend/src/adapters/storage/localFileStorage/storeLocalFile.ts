@@ -103,11 +103,12 @@ function resolveLocalStorageObject(payload: {
     return { bucket: 'zumbarl-opportunity-files', storageKey: `${opportunityPrefix}/brief/${datedFileName}` }
   }
 
-  if (hasScopeMatch(safeScope, ['cv', 'draft-upload', 'internal-note', 'team-document', 'chama', 'meeting-minute'])) {
+  if (hasScopeMatch(safeScope, ['cv', 'draft-upload', 'internal-note', 'team-document', 'chama', 'meeting-minute', 'social-metrics'])) {
     if (hasScopeMatch(safeScope, ['cv'])) return { bucket: 'zumbarl-profile-private', storageKey: `students/${targetId || ownerId}/cv/cv-${datedFileName}` }
     if (hasScopeMatch(safeScope, ['draft-upload'])) return { bucket: 'zumbarl-profile-private', storageKey: `students/${targetId || ownerId}/draft-uploads/${datedFileName}` }
     if (hasScopeMatch(safeScope, ['internal-note'])) return { bucket: 'zumbarl-profile-private', storageKey: `companies/${targetId || ownerId}/internal-notes/${sanitizePathPart(readMetadataString(payload.metadata, ['studentId']) ?? 'student')}/${datedFileName}` }
     if (hasScopeMatch(safeScope, ['team-document'])) return { bucket: 'zumbarl-profile-private', storageKey: `companies/${targetId || ownerId}/team-documents/${datedFileName}` }
+    if (hasScopeMatch(safeScope, ['social-metrics'])) return { bucket: 'zumbarl-profile-private', storageKey: `students/${targetId || ownerId}/social-metrics/${datedFileName}` }
     const chamaId = sanitizeOptionalPathPart(readMetadataString(payload.metadata, ['chamaId'])) ?? targetId ?? ownerId
     return { bucket: 'zumbarl-profile-private', storageKey: `chamas/${chamaId}/${category}/${datedFileName}` }
   }

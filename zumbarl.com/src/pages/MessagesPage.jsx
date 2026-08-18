@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { FiMessageCircle, FiPhone, FiPhoneOff, FiSearch, FiSend, FiVideo } from 'react-icons/fi'
+import { Link, useSearchParams } from 'react-router-dom'
 import CampusSidebar from '../components/layout/CampusSidebar'
 import CampusTopActions from '../components/layout/CampusTopActions'
 import Seo from '../components/Seo'
@@ -9,6 +10,8 @@ import { listConversations, listMessages, sendMessage } from '../features/messag
 import { cancelCall, createCall, readCall } from '../features/calls/services/callService'
 import { openCallOverlay } from '../features/calls/getCallMeetingUrl'
 import { playCallRingtone, playMessageSentSound } from '../features/communications/services/communicationSounds'
+import { decideMarketplaceOffer, readMarketplaceOffer } from '../features/opportunities/services/marketplaceInteractionService'
+import { getAuthUserSnapshot } from '../features/auth/services/authUserService'
 import '../styles/campus.css'
 import '../styles/business.css'
 import '../styles/messages.css'
@@ -18,6 +21,8 @@ function formatTime(value) {
 }
 
 function MessagesPage() {
+  const [searchParams] = useSearchParams()
+  const requestedParticipantId = searchParams.get('participantId') || ''
   const isBusiness = getCurrentLoginRole().side === 'company'
   const [conversations, setConversations] = useState([])
   const [activeConversationId, setActiveConversationId] = useState('')
@@ -25,45 +30,60 @@ function MessagesPage() {
   const [draft, setDraft] = useState('')
   const [error, setError] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [offerStates, setOfferStates] = useState({})
+  const [offerDecisionId, setOfferDecisionId] = useState('')
+  const viewerUserId = getAuthUserSnapshot()?.user?.id || ''
   const [activeCall, setActiveCall] = useState(null)
   const [callStatus, setCallStatus] = useState('')
+  const threadBodyRef = useRef(null)
   const messageEndRef = useRef(null)
+  const shouldJumpToLatestRef = useRef(false)
+  const shouldScrollAfterSendRef = useRef(false)
   const activeConversation = conversations.find((item) => item.id === activeConversationId) || conversations[0]
+  const activeParticipantId = activeConversation?.participant.id
+  const activeOpportunityId = activeConversation?.opportunityId
+  const latestOfferMessageIds = new Set(Object.values(messages.reduce((latest, message) => {
+    const offerId = message.context?.offer?.id
+    return offerId ? { ...latest, [offerId]: message.id } : latest
+  }, {})))
 
-  async function loadConversations() {
-    const response = await listConversations()
+  const applyConversationResponse = useCallback((response) => {
     const nextConversations = response?.data || []
     setConversations(nextConversations)
     setActiveConversationId((current) => (
-      nextConversations.some((item) => item.id === current) ? current : nextConversations[0]?.id || ''
+      nextConversations.some((item) => item.id === current)
+        ? current
+        : nextConversations.find((item) => item.participant.id === requestedParticipantId)?.id || nextConversations[0]?.id || ''
     ))
-  }
+  }, [requestedParticipantId])
+
+  const refreshConversations = useCallback(async () => {
+    const response = await listConversations()
+    applyConversationResponse(response)
+  }, [applyConversationResponse])
 
   useEffect(() => {
     listConversations()
-      .then((response) => {
-        const nextConversations = response?.data || []
-        setConversations(nextConversations)
-        setActiveConversationId(nextConversations[0]?.id || '')
-      })
+      .then(applyConversationResponse)
       .catch((requestError) => setError(requestError.message))
-  }, [])
+  }, [applyConversationResponse])
 
   useEffect(() => {
-    if (!activeConversation) return
+    if (!activeParticipantId) return
     listMessages({
-      participantId: activeConversation.participant.id,
-      opportunityId: activeConversation.opportunityId,
+      participantId: activeParticipantId,
+      opportunityId: activeOpportunityId,
     })
       .then((response) => {
+        shouldJumpToLatestRef.current = true
         setMessages(response || [])
         setConversations((current) => current.map((conversation) => (
-          conversation.id === activeConversation.id ? { ...conversation, unreadCount: 0 } : conversation
+          conversation.id === activeConversationId ? { ...conversation, unreadCount: 0 } : conversation
         )))
         window.dispatchEvent(new Event('zumbarl:messages-read'))
       })
       .catch((requestError) => setError(requestError.message))
-  }, [activeConversation?.id])
+  }, [activeConversationId, activeOpportunityId, activeParticipantId])
 
   useEffect(() => {
     const handleReceipt = (event) => {
@@ -78,19 +98,19 @@ function MessagesPage() {
   useEffect(() => {
     const handleMessage = (event) => {
       const message = event.detail
-      loadConversations().catch(() => {})
+      refreshConversations().catch(() => {})
       if (
-        activeConversation
-        && message.senderId === activeConversation.participant.id
-        && (message.opportunityId || null) === (activeConversation.opportunityId || null)
+        activeParticipantId
+        && message.senderId === activeParticipantId
+        && (message.opportunityId || null) === (activeOpportunityId || null)
       ) {
         listMessages({
-          participantId: activeConversation.participant.id,
-          opportunityId: activeConversation.opportunityId,
+          participantId: activeParticipantId,
+          opportunityId: activeOpportunityId,
         }).then((response) => {
           setMessages(response || [])
           setConversations((current) => current.map((conversation) => (
-            conversation.id === activeConversation.id ? { ...conversation, unreadCount: 0 } : conversation
+            conversation.id === activeConversationId ? { ...conversation, unreadCount: 0 } : conversation
           )))
           window.dispatchEvent(new Event('zumbarl:messages-read'))
         }).catch(() => {})
@@ -98,11 +118,41 @@ function MessagesPage() {
     }
     window.addEventListener('zumbarl:message-created', handleMessage)
     return () => window.removeEventListener('zumbarl:message-created', handleMessage)
-  }, [activeConversation?.id])
+  }, [activeConversationId, activeOpportunityId, activeParticipantId, refreshConversations])
+
+  useLayoutEffect(() => {
+    if (shouldJumpToLatestRef.current) {
+      shouldJumpToLatestRef.current = false
+      if (threadBodyRef.current) threadBodyRef.current.scrollTop = threadBodyRef.current.scrollHeight
+      return
+    }
+    if (!shouldScrollAfterSendRef.current) return
+    shouldScrollAfterSendRef.current = false
+    messageEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [messages])
 
   useEffect(() => {
-    messageEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const offerIds = [...new Set(messages.map((message) => message.context?.offer?.id).filter(Boolean))]
+    if (!offerIds.length) return
+    Promise.all(offerIds.map((id) => readMarketplaceOffer(id).then((response) => response.offer).catch(() => null)))
+      .then((offers) => setOfferStates((current) => offers.reduce((next, offer) => (
+        offer ? { ...next, [offer.id]: offer } : next
+      ), current)))
   }, [messages])
+
+  async function handleOfferDecision(offerId, decision) {
+    if (offerDecisionId) return
+    setOfferDecisionId(offerId)
+    setError('')
+    try {
+      const response = await decideMarketplaceOffer(offerId, decision)
+      setOfferStates((current) => ({ ...current, [offerId]: response.offer }))
+    } catch (requestError) {
+      setError(requestError.message)
+    } finally {
+      setOfferDecisionId('')
+    }
+  }
 
   useEffect(() => {
     if (!activeCall?.id || activeCall.status !== 'ringing') return undefined
@@ -164,10 +214,11 @@ function MessagesPage() {
         opportunityId: activeConversation.opportunityId,
         body,
       })
+      shouldScrollAfterSendRef.current = true
       setMessages((current) => [...current, message])
       setDraft('')
       playMessageSentSound()
-      await loadConversations()
+      await refreshConversations()
     } catch (requestError) {
       setError(requestError.message)
     } finally {
@@ -230,15 +281,35 @@ function MessagesPage() {
                 {activeConversation ? (
                   <>
                     <header>
-                      <span className="messages-avatar">
-                        {activeConversation.participant.avatarUrl
-                          ? <img src={activeConversation.participant.avatarUrl} alt="" />
-                          : activeConversation.participant.name.slice(0, 1)}
-                      </span>
-                      <div>
-                        <h2>{activeConversation.participant.name}</h2>
-                        <p>Zumbarl conversation</p>
-                      </div>
+                      {activeConversation.participant.studentId ? (
+                        <Link
+                          className="messages-participant-link"
+                          to={`/campus/profiles/${activeConversation.participant.studentId}`}
+                          aria-label={`View ${activeConversation.participant.name}'s profile`}
+                        >
+                          <span className="messages-avatar">
+                            {activeConversation.participant.avatarUrl
+                              ? <img src={activeConversation.participant.avatarUrl} alt="" />
+                              : activeConversation.participant.name.slice(0, 1)}
+                          </span>
+                          <span>
+                            <h2>{activeConversation.participant.name}</h2>
+                            <p>View profile</p>
+                          </span>
+                        </Link>
+                      ) : (
+                        <div className="messages-participant-link is-static">
+                          <span className="messages-avatar">
+                            {activeConversation.participant.avatarUrl
+                              ? <img src={activeConversation.participant.avatarUrl} alt="" />
+                              : activeConversation.participant.name.slice(0, 1)}
+                          </span>
+                          <span>
+                            <h2>{activeConversation.participant.name}</h2>
+                            <p>Zumbarl conversation</p>
+                          </span>
+                        </div>
+                      )}
                       <div className="messages-call-actions">
                         {activeCall?.status === 'ringing' ? (
                           <button type="button" aria-label="Cancel call" onClick={stopCalling}><FiPhoneOff aria-hidden="true" /></button>
@@ -251,12 +322,47 @@ function MessagesPage() {
                       </div>
                     </header>
                     {callStatus ? <p className="messages-call-status" role="status">{callStatus}</p> : null}
-                    <div className="messages-thread-body" aria-live="polite">
+                    <div ref={threadBodyRef} className="messages-thread-body" aria-live="polite">
                       {messages.map((message) => {
                         const isMine = message.senderId !== activeConversation.participant.id
+                        const offer = message.context?.offer?.id ? offerStates[message.context.offer.id] : null
+                        const isOfferBuyer = Boolean(offer && offer.buyerId === viewerUserId)
+                        const isOfferSeller = Boolean(offer && offer.sellerId === viewerUserId)
+                        const isActiveOfferCard = latestOfferMessageIds.has(message.id)
                         return (
                           <article key={message.id} className={isMine ? 'is-mine' : ''}>
                             <div>
+                              {message.context?.product ? (
+                                <div className="messages-product-offer-wrap">
+                                <Link className="messages-product-preview" to={message.context.product.href}>
+                                  <img src={message.context.product.image} alt="" />
+                                  <span>
+                                    <small>{message.context.type === 'marketplace_offer' ? 'Marketplace offer' : 'Marketplace listing'}</small>
+                                    <strong>{message.context.product.title}</strong>
+                                    <b>{message.context.type === 'marketplace_offer' && message.context.offer
+                                      ? new Intl.NumberFormat('en-KE', { style: 'currency', currency: message.context.offer.currency, maximumFractionDigits: 0 }).format(message.context.offer.amount)
+                                      : message.context.product.price}</b>
+                                  </span>
+                                </Link>
+                                {message.context.type === 'marketplace_offer' && offer && isActiveOfferCard ? (
+                                  <div className="messages-offer-actions">
+                                    <span className={`is-${offer.status}`}>{offer.status}</span>
+                                    {isOfferSeller && offer.status === 'pending' ? (
+                                      <>
+                                        <button type="button" disabled={offerDecisionId === offer.id} onClick={() => handleOfferDecision(offer.id, 'declined')}>Decline</button>
+                                        <button type="button" disabled={offerDecisionId === offer.id} onClick={() => handleOfferDecision(offer.id, 'accepted')}>Accept</button>
+                                      </>
+                                    ) : null}
+                                    {isOfferBuyer && ['pending', 'declined'].includes(offer.status) ? (
+                                      <Link to={message.context.product.href}>Edit offer</Link>
+                                    ) : null}
+                                    {isOfferBuyer && offer.status === 'accepted' ? (
+                                      <Link to={message.context.product.href}>Checkout</Link>
+                                    ) : null}
+                                  </div>
+                                ) : null}
+                                </div>
+                              ) : null}
                               <p>{message.body}</p>
                               <time dateTime={message.createdAt}>
                                 {formatTime(message.createdAt)}

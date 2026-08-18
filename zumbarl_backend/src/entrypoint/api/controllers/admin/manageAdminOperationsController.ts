@@ -27,6 +27,7 @@ import {
   readScoreControlService,
   readSuperAdminDashboardService,
   readSystemConfigurationService,
+  readNavigationFeatureTagsService,
   recordFinancialActionService,
   reviewUserKycService,
   revokeUserSessionsService,
@@ -73,6 +74,7 @@ async function readSafetyMetricsController(_request: FastifyRequest, reply: Fast
 async function readContentModerationController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await readContentModerationService(request.query as Record<string, unknown>)) }
 async function moderateContentController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await moderateContentService(requireBody(contentModerationActionSchema, request), getAuditContext(request))) }
 async function readSystemConfigurationController(_request: FastifyRequest, reply: FastifyReply) { return reply.send(await readSystemConfigurationService()) }
+async function readNavigationFeatureTagsController(_request: FastifyRequest, reply: FastifyReply) { return reply.send(await readNavigationFeatureTagsService()) }
 async function writeSystemConfigurationController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await writeSystemConfigurationService(requireBody(systemConfigurationSchema, request), getAuditContext(request))) }
 async function readAnalyticsReportController(_request: FastifyRequest, reply: FastifyReply) { return reply.send(await readAnalyticsReportService()) }
 async function listAuditLogsController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listAuditLogsService(request.query as Record<string, unknown>)) }
@@ -97,6 +99,7 @@ export {
   readContentModerationController,
   moderateContentController,
   readSystemConfigurationController,
+  readNavigationFeatureTagsController,
   writeSystemConfigurationController,
   readAnalyticsReportController,
   listAuditLogsController,

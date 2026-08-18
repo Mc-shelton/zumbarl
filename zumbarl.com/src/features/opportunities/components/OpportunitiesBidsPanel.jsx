@@ -14,12 +14,13 @@ function handleKeyboardActivation(event, onActivate) {
 
 const BID_STATUS_FILTERS = [
   { id: 'all', label: 'All Bids', matches: () => true },
-  { id: 'active', label: 'Active', matches: (bid) => !['Awarded', 'Declined'].includes(bid.status) },
+  { id: 'draft', label: 'Drafts', matches: (bid) => bid.status === 'Draft' },
+  { id: 'active', label: 'Active', matches: (bid) => !['Draft', 'Awarded', 'Declined'].includes(bid.status) },
   { id: 'awarded', label: 'Awarded', matches: (bid) => bid.status === 'Awarded' },
   { id: 'declined', label: 'Declined', matches: (bid) => bid.status === 'Declined' },
 ]
 
-function BidActionsMenu({ bid, onOpenMessages, onOpenProject, onViewBidOpportunity }) {
+function BidActionsMenu({ bid, onOpenMessages, onOpenProject, onResumeBidDraft, onViewBidOpportunity }) {
   const [isOpen, setIsOpen] = useState(false)
   const menuRef = useRef(null)
 
@@ -58,6 +59,11 @@ function BidActionsMenu({ bid, onOpenMessages, onOpenProject, onViewBidOpportuni
       </button>
       {isOpen ? (
         <div className="opportunities-bid-menu-list" role="menu">
+          {bid.isDraft ? (
+            <button type="button" role="menuitem" onClick={(event) => runAction(event, () => onResumeBidDraft(bid))}>
+              Continue application
+            </button>
+          ) : null}
           <button type="button" role="menuitem" onClick={(event) => runAction(event, () => onViewBidOpportunity(bid))}>
             View opportunity
           </button>
@@ -66,9 +72,11 @@ function BidActionsMenu({ bid, onOpenMessages, onOpenProject, onViewBidOpportuni
               Open project workspace
             </button>
           ) : null}
-          <button type="button" role="menuitem" onClick={(event) => runAction(event, onOpenMessages)}>
-            Message client
-          </button>
+          {!bid.isDraft ? (
+            <button type="button" role="menuitem" onClick={(event) => runAction(event, onOpenMessages)}>
+              Message client
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -80,6 +88,8 @@ function OpportunitiesBidsPanel({
   onBidSelect,
   onOpenMessages = () => {},
   onOpenProject,
+  onResumeBidDraft = () => {},
+  onRespondCounterOffer = () => {},
   onViewBidOpportunity = () => {},
   selectedBidId,
 }) {
@@ -123,6 +133,7 @@ function OpportunitiesBidsPanel({
         {visibleBids.map((bid) => {
           const activeProgressPoint = getBidProgressPointIndex(bid.progress)
           const activeProgressWidth = (activeProgressPoint / (BID_PROGRESS_POINT_COUNT - 1)) * 100
+          const isAwarded = bid.status === 'Awarded'
 
           return (
             <article
@@ -140,6 +151,7 @@ function OpportunitiesBidsPanel({
                   bid={bid}
                   onOpenMessages={onOpenMessages}
                   onOpenProject={onOpenProject}
+                  onResumeBidDraft={onResumeBidDraft}
                   onViewBidOpportunity={onViewBidOpportunity}
                 />
                 <img src={bid.image} alt={`${bid.title} cover`} loading="lazy" />
@@ -153,6 +165,13 @@ function OpportunitiesBidsPanel({
                 <h3>{bid.title}</h3>
                 <p className="opportunities-bid-description">{bid.description}</p>
 
+                {isAwarded ? (
+                  <p className="opportunities-bid-ongoing-note">
+                    <span className="opportunities-bid-ongoing-dot" aria-hidden="true" />
+                    You won this bid — it&apos;s now tracked under <strong>Ongoing</strong>.
+                  </p>
+                ) : null}
+
                 <div className="opportunities-bid-meta-grid">
                   <article>
                     <p>Bid Amount</p>
@@ -163,6 +182,40 @@ function OpportunitiesBidsPanel({
                     <strong>{bid.submitted}</strong>
                   </article>
                 </div>
+
+                {bid.counterOffer && bid.counterOffer.status === 'pending' ? (
+                  <div className="opportunities-bid-counter-offer">
+                    <p>
+                      The business proposed a new price of <strong>{bid.counterOffer.amountLabel}</strong>
+                      {bid.counterOffer.previousAmountLabel ? <> (your bid was {bid.counterOffer.previousAmountLabel})</> : null}.
+                    </p>
+                    {bid.counterOffer.autoRejectOnDecline ? (
+                      <p className="opportunities-bid-counter-warning">
+                        <strong>Auto-reject enabled:</strong> Declining this offer will automatically move your application to Declined.
+                      </p>
+                    ) : null}
+                    <div className="opportunities-bid-counter-actions">
+                      <button
+                        type="button"
+                        className="campus-link-btn"
+                        onClick={(event) => { event.stopPropagation(); onRespondCounterOffer(bid.id, 'rejected') }}
+                      >
+                        Decline
+                      </button>
+                      <button
+                        type="button"
+                        className="opportunities-search-btn"
+                        onClick={(event) => { event.stopPropagation(); onRespondCounterOffer(bid.id, 'accepted') }}
+                      >
+                        Accept new price
+                      </button>
+                    </div>
+                  </div>
+                ) : bid.counterOffer && bid.counterOffer.status === 'accepted' ? (
+                  <p className="opportunities-bid-counter-note is-accepted">You accepted the new price of {bid.counterOffer.amountLabel}.</p>
+                ) : bid.counterOffer && bid.counterOffer.status === 'rejected' ? (
+                  <p className="opportunities-bid-counter-note is-declined">You declined the {bid.counterOffer.amountLabel} offer.</p>
+                ) : null}
 
                 <div className="opportunities-bid-progress">
                   <div className="opportunities-bid-progress-head">
@@ -223,6 +276,18 @@ function OpportunitiesBidsPanel({
                     }}
                   >
                     Open Project Workspace
+                  </button>
+                ) : null}
+                {bid.isDraft ? (
+                  <button
+                    type="button"
+                    className="opportunities-detail-bid-btn opportunities-bid-resume-btn"
+                    onClick={(event) => {
+                      event.stopPropagation()
+                      onResumeBidDraft(bid)
+                    }}
+                  >
+                    Continue application
                   </button>
                 ) : null}
               </div>

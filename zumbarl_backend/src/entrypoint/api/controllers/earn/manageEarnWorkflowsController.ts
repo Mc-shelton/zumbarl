@@ -8,13 +8,16 @@ import {
   listStudentInvitesService,
   listStudentInterviewsService,
   listStudentProjectsService,
+  readOpportunityBidDraftService,
   readStudentTrustSnapshotService,
   readStudentInterviewService,
   respondToStudentInterviewService,
+  respondToBidCounterOfferService,
+  saveOpportunityBidDraftService,
   submitOpportunityBidService,
   submitProjectDeliverableService
 } from '../../../../adapters/services/earn/index.js'
-import { respondToInterviewSchema, submitOpportunityBidSchema, submitProjectDeliverableSchema } from '../../../validators/earn/index.js'
+import { respondToBidCounterOfferSchema, respondToInterviewSchema, saveOpportunityBidDraftSchema, submitOpportunityBidSchema, submitProjectDeliverableSchema } from '../../../validators/earn/index.js'
 
 async function listEarnOpportunitiesController(request: FastifyRequest, reply: FastifyReply) {
   return reply.send(await listEarnOpportunitiesService(request.query as Record<string, unknown>))
@@ -27,6 +30,20 @@ async function listStudentBidsController(request: FastifyRequest, reply: Fastify
 async function submitOpportunityBidController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
   return reply.code(201).send(await submitOpportunityBidService(id, request.authUser?.studentId, requireBody(submitOpportunityBidSchema, request)))
+}
+
+async function readOpportunityBidDraftController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await readOpportunityBidDraftService(id, request.authUser?.studentId))
+}
+
+async function saveOpportunityBidDraftController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await saveOpportunityBidDraftService(
+    id,
+    request.authUser?.studentId,
+    requireBody(saveOpportunityBidDraftSchema, request)
+  ))
 }
 
 async function acceptOpportunityInviteController(request: FastifyRequest, reply: FastifyReply) {
@@ -74,9 +91,16 @@ async function readStudentTrustSnapshotController(request: FastifyRequest, reply
   return reply.send(await readStudentTrustSnapshotService(request.authUser?.studentId))
 }
 
+async function respondToBidCounterOfferController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await respondToBidCounterOfferService(id, request.authUser?.studentId, requireBody(respondToBidCounterOfferSchema, request)))
+}
+
 export {
   listEarnOpportunitiesController,
   listStudentBidsController,
+  readOpportunityBidDraftController,
+  saveOpportunityBidDraftController,
   submitOpportunityBidController,
   acceptOpportunityInviteController,
   declineOpportunityInviteController,
@@ -86,5 +110,6 @@ export {
   respondToStudentInterviewController,
   listStudentProjectsController,
   submitProjectDeliverableController,
+  respondToBidCounterOfferController,
   readStudentTrustSnapshotController
 }

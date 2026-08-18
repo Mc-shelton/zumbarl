@@ -3,11 +3,18 @@ import { KycStatus, type Prisma } from '@prisma/client'
 import { env } from '../../../config/env.js'
 import { prisma } from '../../../lib/prisma.js'
 import { createPrismaRecordRepository } from '../../../shared/repositories/index.js'
+import {
+  OPPORTUNITY_IN_PROGRESS_STATUS,
+  canAdvanceOpportunityToInProgress
+} from '../../../shared/opportunities/opportunityLifecycle.js'
+import { resolveBudgetAmount, shareOfAgreedTotal } from '../../../shared/projects/projectPayouts.js'
 import { createSkillSlug, normalizeSkillName as normalizeCanonicalSkillName } from '../skills/index.js'
 
-const campaigns = createPrismaRecordRepository('campaigns')
 const projects = createPrismaRecordRepository('projects')
 const escrows = createPrismaRecordRepository('escrows')
+const deliverables = createPrismaRecordRepository('deliverables')
+const milestones = createPrismaRecordRepository('milestones')
+const payouts = createPrismaRecordRepository('payouts')
 
 function normalizeIndustryName(name: string) {
   return name.trim().replace(/\s+/g, ' ')
@@ -88,6 +95,74 @@ function toDate(value: unknown) {
 function toNumber(value: unknown, fallback = 0) {
   const parsed = Number(String(value ?? '').replace(/[^\d.-]/g, ''))
   return Number.isFinite(parsed) ? parsed : fallback
+}
+
+type AwardBid = Prisma.BidGetPayload<{ include: { opportunity: true } }>
+
+// The "agreed price" is what the deal is actually settled at when a bid is
+// awarded: the student's bid amount if they named one, otherwise the business's
+// budget. Payout later distributes this exact number across deliverables, so it
+// must be covered by escrow before the project starts.
+async function resolveAwardTerms(transaction: Prisma.TransactionClient, bid: AwardBid) {
+  const bidAmount = toNumber(bid.bidAmount)
+  const budgetAmount = toNumber(bid.opportunity.budgetAmount)
+  const agreedAmount = bidAmount > 0 ? bidAmount : budgetAmount
+  const agreedCurrency = bid.currency ?? bid.opportunity.currency ?? 'KES'
+  const fundedHolds = await transaction.opportunityEscrowHold.findMany({
+    where: { opportunityId: bid.opportunityId, status: 'FUNDED' }
+  })
+  const escrowCoverage = fundedHolds.reduce((total, hold) => total + toNumber(hold.amount), 0)
+  return {
+    agreedAmount,
+    agreedCurrency,
+    escrowCoverage,
+    // Publication already requires funded escrow. If negotiation raises the
+    // agreed price above that hold, the business must top up before awarding.
+    blocked: agreedAmount > escrowCoverage
+  }
+}
+
+// Resolves the project an award attaches to. A task hires one student and gets a
+// dedicated project; a project is a team effort where every awarded student
+// joins ONE shared project (created on the first award). The awarded student is
+// always added to that project's team.
+async function resolveOrCreateAwardProject(
+  transaction: Prisma.TransactionClient,
+  bid: AwardBid,
+  terms: { agreedAmount: number; agreedCurrency: string },
+  isTaskOpportunity: boolean
+) {
+  let project = isTaskOpportunity
+    ? null
+    : (await projects.listAll((item) => item.opportunityId === bid.opportunity.id))[0] ?? null
+
+  if (!project) {
+    project = await projects.create({
+      opportunityId: bid.opportunity.id,
+      businessId: bid.opportunity.companyId,
+      studentId: bid.studentId,
+      title: bid.opportunity.title,
+      status: 'awarded',
+      fundingStatus: bid.opportunity.escrowStatus === 'funded' ? 'funded' : 'pending',
+      // A shared team project pays out of the single opportunity budget; a task
+      // pays the agreed (bid) price.
+      agreedAmount: isTaskOpportunity ? terms.agreedAmount : (toNumber(bid.opportunity.budgetAmount) || terms.agreedAmount),
+      agreedCurrency: terms.agreedCurrency,
+      isTeamProject: !isTaskOpportunity,
+      scopeLocked: false
+    })
+  }
+
+  const studentProfile = await transaction.studentProfile.findUnique({ where: { id: bid.studentId }, select: { userId: true } })
+  if (studentProfile?.userId) {
+    await transaction.projectTeamMember.upsert({
+      where: { projectId_userId: { projectId: project.id, userId: studentProfile.userId } },
+      update: { status: 'active' },
+      create: { projectId: project.id, userId: studentProfile.userId, role: 'Awarded', status: 'active' }
+    })
+  }
+
+  return project
 }
 
 function toBudgetLabel(budget: unknown, currency: unknown) {
@@ -198,6 +273,7 @@ function toOpportunityScopeItem(scopeItem: Record<string, any>) {
     isSequential: scopeItem.isSequential,
     status: scopeItem.status,
     referenceFiles: scopeItem.referenceFiles ?? [],
+    metadata: scopeItem.metadata ?? {},
     sampleWork: sampleWork.map((sample: Record<string, any>) => ({
       id: sample.id,
       label: sample.label,
@@ -280,6 +356,16 @@ function toOpportunity(opportunity: Record<string, any> | null) {
     completedAt: toIso(opportunity.completedAt),
     archivedAt: toIso(opportunity.archivedAt),
     isSeed: opportunity.isSeed,
+    applicationsClosed: Boolean(
+      opportunity.metadata && typeof opportunity.metadata === 'object' && !Array.isArray(opportunity.metadata)
+        ? (opportunity.metadata as Record<string, any>).applicationsClosed
+        : false
+    ),
+    projectEnded: Boolean(
+      opportunity.metadata && typeof opportunity.metadata === 'object' && !Array.isArray(opportunity.metadata)
+        ? (opportunity.metadata as Record<string, any>).projectEnded
+        : false
+    ),
     metadata: opportunity.metadata,
     createdAt: toIso(opportunity.createdAt),
     updatedAt: toIso(opportunity.updatedAt)
@@ -523,9 +609,9 @@ class BusinessWorkflowsRepository {
     })
   }
 
-  listBusinessOpportunities(businessId: string | undefined, query: Record<string, unknown>) {
+  async listBusinessOpportunities(businessId: string | undefined, query: Record<string, unknown>) {
     const page = Number(query.page ?? 1)
-    return prisma.opportunity.findMany({
+    const items = await prisma.opportunity.findMany({
       where: businessId ? { companyId: businessId } : undefined,
       include: {
         company: true,
@@ -533,22 +619,43 @@ class BusinessWorkflowsRepository {
         requiredAttachments: { orderBy: { sortOrder: 'asc' } }
       },
       orderBy: { createdAt: 'desc' }
-    }).then((items) => ({
-      data: items.map((item) => toOpportunity(item)),
+    })
+    // Derive "ended" from the actual project records so a board card reflects an
+    // ended project even if the opportunity flag was never written.
+    const opportunityIds = new Set(items.map((item) => item.id))
+    const relatedProjects = await projects.listAll((project) => opportunityIds.has(project.opportunityId))
+    const endedOpportunityIds = new Set(
+      relatedProjects.filter((project) => project.endedAt).map((project) => project.opportunityId)
+    )
+    return {
+      data: items.map((item) => {
+        const opportunity = toOpportunity(item)
+        if (!opportunity) return opportunity
+        return { ...opportunity, projectEnded: opportunity.projectEnded || endedOpportunityIds.has(item.id) }
+      }),
       meta: {
         page,
         pageSize: items.length,
         total: items.length
       }
-    }))
+    }
   }
 
   listBusinessProjects(businessId: string | undefined) {
     return projects.listAll((project) => !businessId || project.businessId === businessId)
   }
 
-  listBusinessCampaigns(businessId: string | undefined) {
-    return campaigns.listAll((campaign) => !businessId || campaign.businessId === businessId)
+  async listBusinessCampaigns(businessId: string | undefined) {
+    const items = await prisma.marketingCampaign.findMany({
+      where: businessId ? { businessId } : undefined,
+      orderBy: { createdAt: 'desc' }
+    })
+    return items.map((campaign) => ({
+      ...(campaign.payload && typeof campaign.payload === 'object' && !Array.isArray(campaign.payload) ? campaign.payload : {}),
+      ...campaign,
+      createdAt: toIso(campaign.createdAt),
+      updatedAt: toIso(campaign.updatedAt)
+    }))
   }
 
   async listBusinessBids(businessId: string | undefined) {
@@ -752,6 +859,11 @@ class BusinessWorkflowsRepository {
     return toOpportunity(opportunity)
   }
 
+  async deleteOpportunity(id: string) {
+    const result = await prisma.opportunity.deleteMany({ where: { id } })
+    return result.count > 0
+  }
+
   async updateOpportunity(id: string, patch: Record<string, any>) {
     return prisma.$transaction(async (transaction) => {
       const existing = await transaction.opportunity.findUnique({ where: { id } })
@@ -918,7 +1030,7 @@ class BusinessWorkflowsRepository {
 
   async listOpportunityBids(opportunityId: string) {
     const items = await prisma.bid.findMany({
-      where: { opportunityId },
+      where: { opportunityId, status: { not: 'draft' } },
       include: {
         interview: true,
         student: {
@@ -941,14 +1053,30 @@ class BusinessWorkflowsRepository {
       },
       orderBy: { appliedAt: 'desc' }
     })
-    return items.map((item) => ({
+    const escrowCoverage = await this.getOpportunityEscrowCoverage(opportunityId)
+    return Promise.all(items.map(async (item) => {
+      const project = item.projectId ? await projects.findById(item.projectId) : null
+      return {
       id: item.id,
       opportunityId: item.opportunityId,
+      projectId: item.projectId,
+      project: project ? {
+        id: project.id,
+        status: project.status,
+        agreedAmount: Number(project.agreedAmount) || Number(item.bidAmount) || 0,
+        agreedCurrency: project.agreedCurrency ?? item.currency ?? 'KES',
+        escrowCoverage,
+        startedAt: project.startedAt ?? null,
+        endedAt: project.endedAt ?? null
+      } : null,
       status: item.status,
       coverNote: item.coverNote,
       proposal: item.proposal,
       bidAmount: item.bidAmount,
       currency: item.currency,
+      counterOffer: (item.metadata && typeof item.metadata === 'object' && !Array.isArray(item.metadata))
+        ? ((item.metadata as Record<string, any>).counterOffer ?? null)
+        : null,
       deliveryTime: item.deliveryTime,
       intentId: item.intentId,
       intentLabel: item.intentLabel,
@@ -986,7 +1114,139 @@ class BusinessWorkflowsRepository {
         scoreTier: item.student.zumbarl?.tier ?? 'BRONZE',
         completedGigs: item.student.zumbarl?.totalGigsCompleted ?? 0
       }
+    }}))
+  }
+
+  async listOpportunitySubmissions(opportunityId: string) {
+    const opportunityProjects = await projects.listAll((project) => project.opportunityId === opportunityId)
+    if (!opportunityProjects.length) return []
+
+    const projectIds = new Set(opportunityProjects.map((project) => project.id))
+    const [projectDeliverables, projectMilestones, opportunity, projectPayouts] = await Promise.all([
+      deliverables.listAll((item) => projectIds.has(item.projectId)),
+      milestones.listAll((item) => projectIds.has(item.projectId)),
+      prisma.opportunity.findUnique({
+        where: { id: opportunityId },
+        select: {
+          budgetAmount: true,
+          budgetLabel: true,
+          currency: true,
+          scopeItems: {
+            select: { id: true, budgetAmount: true, budgetLabel: true, paymentPercent: true }
+          }
+        }
+      }),
+      payouts.listAll((item) => projectIds.has(item.projectId))
+    ])
+    if (!projectDeliverables.length) return []
+
+    const studentIds = [...new Set(opportunityProjects.map((project) => project.studentId).filter(Boolean))]
+    const students = studentIds.length
+      ? await prisma.studentProfile.findMany({
+        where: { id: { in: studentIds } },
+        include: {
+          campus: true,
+          course: true,
+          zumbarl: true,
+          user: { select: { name: true, email: true, studentEmail: true, username: true } }
+        }
+      })
+      : []
+    const studentById = new Map(students.map((student) => [student.id, student]))
+    const milestoneById = new Map(projectMilestones.map((milestone) => [milestone.id, milestone]))
+    const projectById = new Map(opportunityProjects.map((project) => [project.id, project]))
+    const payoutByDeliverableId = new Map(projectPayouts.map((payout) => [payout.deliverableId, payout]))
+    // A deliverable is settled when its budget has actually been released, not
+    // when its submissions happen to all be approved: the business can approve
+    // the last task and the team can still add more work afterwards.
+    const paidScopeItemIds = new Set(projectPayouts.map((payout) => payout.scopeItemId).filter(Boolean))
+    const paidMilestoneIds = new Set(projectPayouts.map((payout) => payout.milestoneId).filter(Boolean))
+    const scopeItems = (opportunity?.scopeItems ?? []).map((item) => ({
+      id: item.id,
+      budgetAmount: resolveBudgetAmount(item.budgetAmount, item.budgetLabel),
+      paymentPercent: Number(item.paymentPercent ?? 0)
     }))
+    const scopeItemById = new Map(scopeItems.map((item) => [item.id, item]))
+
+    return projectDeliverables
+      .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+      .map((deliverable) => {
+        const project = projectById.get(deliverable.projectId)
+        const student = project?.studentId ? studentById.get(project.studentId) : null
+        const milestone = deliverable.milestoneId ? milestoneById.get(deliverable.milestoneId) : null
+        const projectAgreedAmount = Number(project?.agreedAmount) > 0
+          ? Number(project?.agreedAmount)
+          : resolveBudgetAmount(opportunity?.budgetAmount, opportunity?.budgetLabel)
+        const projectAgreedCurrency = project?.agreedCurrency ?? opportunity?.currency ?? 'KES'
+        const existingPayout = payoutByDeliverableId.get(deliverable.id)
+        let payoutAmount = projectAgreedAmount
+
+        if (deliverable.milestoneId) {
+          const matchingMilestones = projectMilestones.filter((item) => item.projectId === deliverable.projectId)
+          const isFinalMilestone = matchingMilestones.every((item) => (
+            item.id === deliverable.milestoneId || item.status === 'approved'
+          ))
+          payoutAmount = projectAgreedAmount > 0
+            ? shareOfAgreedTotal(projectAgreedAmount, matchingMilestones, deliverable.milestoneId, isFinalMilestone, (item) => Number(item.budgetAmount ?? 0))
+            : Number(milestone?.budgetAmount ?? 0)
+        } else if (deliverable.scopeItemId) {
+          const approvedScopeIds = new Set(projectDeliverables
+            .filter((item) => item.projectId === deliverable.projectId && item.status === 'approved')
+            .map((item) => item.scopeItemId)
+            .filter(Boolean))
+          approvedScopeIds.add(deliverable.scopeItemId)
+          const isFinalScopeItem = scopeItems.length > 0 && scopeItems.every((item) => approvedScopeIds.has(item.id))
+          const scopeItem = scopeItemById.get(deliverable.scopeItemId)
+          payoutAmount = projectAgreedAmount > 0 && scopeItems.length > 0
+            ? shareOfAgreedTotal(projectAgreedAmount, scopeItems, deliverable.scopeItemId, isFinalScopeItem, (item) => (item.paymentPercent > 0 ? item.paymentPercent : item.budgetAmount))
+            : Number(scopeItem?.budgetAmount ?? 0)
+        }
+
+        if (existingPayout) payoutAmount = Number(existingPayout.amount ?? payoutAmount)
+        return {
+          id: deliverable.id,
+          projectId: deliverable.projectId,
+          projectTitle: project?.title ?? null,
+          projectAgreedAmount,
+          projectAgreedCurrency,
+          payoutAmount,
+          payoutCurrency: existingPayout?.currency ?? projectAgreedCurrency,
+          milestoneId: deliverable.milestoneId ?? null,
+          milestoneTitle: milestone?.title ?? null,
+          milestoneBudget: milestone?.budgetAmount ?? null,
+          scopeItemId: deliverable.scopeItemId ?? null,
+          scopeItemLabel: deliverable.scopeItemLabel ?? null,
+          scopeItemPaid: deliverable.scopeItemId
+            ? paidScopeItemIds.has(deliverable.scopeItemId)
+            : deliverable.milestoneId
+              ? paidMilestoneIds.has(deliverable.milestoneId)
+              : false,
+          title: deliverable.title,
+          kind: deliverable.kind ?? 'final',
+          notes: deliverable.notes ?? '',
+          feedbackRequest: deliverable.feedbackRequest ?? '',
+          files: Array.isArray(deliverable.files) ? deliverable.files : [],
+          status: deliverable.status,
+          feedback: deliverable.feedback ?? '',
+          revisionCount: deliverable.revisionCount ?? 0,
+          isRevision: Boolean(deliverable.isRevision),
+          revisionNumber: Number(deliverable.revisionNumber ?? 0),
+          revisionOfId: deliverable.revisionOfId ?? null,
+          supersededById: deliverable.supersededById ?? null,
+          submittedAt: deliverable.createdAt,
+          updatedAt: deliverable.updatedAt,
+          student: student ? {
+            id: student.id,
+            name: `${student.firstName} ${student.lastName}`.trim() || student.user.name || student.user.email,
+            username: student.user.username,
+            avatarUrl: student.avatarUrl,
+            campus: student.campus?.name,
+            course: student.course?.name,
+            locationCity: student.locationCity,
+            score: student.zumbarl?.currentScore ?? 0
+          } : null
+        }
+      })
   }
 
   findBid(id: string) {
@@ -1015,6 +1275,17 @@ class BusinessWorkflowsRepository {
         metadata: toJson(payload)
       }
     })
+  }
+
+  async findScopeLockedOpportunityProject(opportunityId: string) {
+    const lockedStatuses = new Set(['active', 'in_progress', 'in progress', 'ended', 'completed', 'closed'])
+    const opportunityProjects = await projects.listAll((project) => project.opportunityId === opportunityId)
+    return opportunityProjects.find((project) => (
+      project.scopeLocked === true
+      || Boolean(project.startedAt)
+      || Boolean(project.endedAt)
+      || lockedStatuses.has(String(project.status || '').toLowerCase())
+    )) ?? null
   }
 
   createOpportunityDeliverablesWithEvent(id: string, payload: Record<string, any>, actorId: string | undefined) {
@@ -1177,10 +1448,28 @@ class BusinessWorkflowsRepository {
     })
   }
 
-  fundOpportunity(id: string, payload: Record<string, any>) {
+  fundOpportunity(id: string, payload: Record<string, any>, actorId?: string) {
     return prisma.$transaction(async (transaction) => {
       const opportunity = await transaction.opportunity.findUnique({ where: { id } })
       if (!opportunity) return null
+
+      const existingEscrow = payload.reference
+        ? await transaction.opportunityEscrowHold.findFirst({
+            where: { opportunityId: id, transactionRef: payload.reference }
+          })
+        : null
+
+      if (existingEscrow) {
+        const currentOpportunity = await transaction.opportunity.findUnique({
+          where: { id },
+          include: {
+            company: true,
+            scopeItems: { include: { sampleWork: true }, orderBy: { sequence: 'asc' } },
+            requiredAttachments: { orderBy: { sortOrder: 'asc' } }
+          }
+        })
+        return { opportunity: toOpportunity(currentOpportunity), escrow: existingEscrow }
+      }
 
       const escrow = await transaction.opportunityEscrowHold.create({
         data: {
@@ -1192,9 +1481,16 @@ class BusinessWorkflowsRepository {
           transactionRef: payload.reference
         }
       })
+      const fundedHolds = await transaction.opportunityEscrowHold.findMany({
+        where: { opportunityId: id, status: 'FUNDED' },
+        select: { amount: true }
+      })
+      const escrowCoverage = fundedHolds.reduce((total, hold) => total + toNumber(hold.amount), 0)
       const updatedOpportunity = await transaction.opportunity.update({
         where: { id },
-        data: { escrowStatus: 'funded' },
+        data: {
+          escrowStatus: escrowCoverage >= opportunity.budgetAmount ? 'funded' : 'partially_funded'
+        },
         include: {
           company: true,
           scopeItems: { include: { sampleWork: true }, orderBy: { sequence: 'asc' } },
@@ -1205,11 +1501,20 @@ class BusinessWorkflowsRepository {
         data: {
           action: 'funded',
           opportunityId: id,
+          actorId,
           metadata: toJson({ escrowId: escrow.id, amount: escrow.amount, currency: escrow.currency })
         }
       })
       return { opportunity: toOpportunity(updatedOpportunity), escrow }
     })
+  }
+
+  async getOpportunityEscrowCoverage(id: string) {
+    const holds = await prisma.opportunityEscrowHold.findMany({
+      where: { opportunityId: id, status: 'FUNDED' },
+      select: { amount: true }
+    })
+    return holds.reduce((total, hold) => total + toNumber(hold.amount), 0)
   }
 
   createOpportunityInvites(id: string, payload: Record<string, any>) {
@@ -1266,7 +1571,7 @@ class BusinessWorkflowsRepository {
           data: toJson({
             opportunityId: id,
             inviteId: invites.find((invite) => invite.studentId === student.id)?.id,
-            deepLink: `/campus/opportunities/${id}/place-bid`
+            deepLink: `/campus/opportunities?opportunity=${encodeURIComponent(id)}`
           }),
           sentVia: ['IN_APP', 'PUSH', 'EMAIL']
         }
@@ -1548,22 +1853,154 @@ class BusinessWorkflowsRepository {
     })
   }
 
+  // Business toggles whether a project opportunity keeps taking applications.
+  // Used to mark a team project "at capacity" (or reopen it).
+  async setOpportunityApplicationsClosed(id: string, closed: boolean) {
+    const opportunity = await prisma.opportunity.findUnique({ where: { id } })
+    if (!opportunity) return null
+    const metadata = (opportunity.metadata && typeof opportunity.metadata === 'object' && !Array.isArray(opportunity.metadata))
+      ? { ...(opportunity.metadata as Record<string, any>) }
+      : {}
+    metadata.applicationsClosed = closed
+    metadata.applicationsClosedReason = closed ? 'at_capacity' : null
+    const updated = await prisma.opportunity.update({
+      where: { id },
+      data: { metadata: toJson(metadata) },
+      include: {
+        company: true,
+        scopeItems: { include: { sampleWork: true }, orderBy: { sequence: 'asc' } },
+        requiredAttachments: { orderBy: { sortOrder: 'asc' } }
+      }
+    })
+    return toOpportunity(updated)
+  }
+
+  // Business counter-offers a lower price on a bid before shortlisting/awarding.
+  // Stored on the bid's metadata (no schema change); the student accepts or
+  // rejects, and an accepted offer overwrites the bid amount. A replacement
+  // offer is allowed only after a non-auto-reject offer was declined.
+  async counterOfferApplicantBid(
+    bidId: string,
+    amount: number,
+    currency?: string,
+    autoRejectOnDecline = false
+  ) {
+    const bid = await prisma.bid.findUnique({
+      where: { id: bidId },
+      include: { student: true, opportunity: { include: { company: true } } }
+    })
+    if (!bid) return null
+
+    const metadata = (bid.metadata && typeof bid.metadata === 'object' && !Array.isArray(bid.metadata))
+      ? { ...(bid.metadata as Record<string, any>) }
+      : {}
+    const counterOffer = {
+      amount,
+      autoRejectOnDecline,
+      currency: currency ?? bid.currency ?? 'KES',
+      previousAmount: bid.bidAmount ?? null,
+      status: 'pending',
+      proposedAt: new Date().toISOString()
+    }
+    metadata.counterOffer = counterOffer
+    await prisma.bid.update({ where: { id: bidId }, data: { metadata: toJson(metadata) } })
+
+    await prisma.notification.create({
+      data: {
+        userId: bid.student.userId,
+        type: 'BID_COUNTER_OFFER',
+        title: `New price offer: ${bid.opportunity.title}`,
+        body: `${bid.opportunity.company?.name || 'A business'} offered ${counterOffer.currency} ${amount.toLocaleString()} for your bid. Review and respond.`,
+        data: toJson({ opportunityId: bid.opportunityId, bidId: bid.id, deepLink: `/campus/opportunities?tab=bids&bid=${bid.id}` })
+      }
+    })
+
+    return { bidId, counterOffer }
+  }
+
+  async respondToBidCounterOffer(bidId: string, decision: 'accepted' | 'rejected', studentId?: string) {
+    const bid = await prisma.bid.findUnique({
+      where: { id: bidId },
+      include: { opportunity: { include: { company: true } } }
+    })
+    if (!bid) return null
+    if (studentId && bid.studentId !== studentId) return { ok: false as const, reason: 'forbidden' as const }
+
+    const metadata = (bid.metadata && typeof bid.metadata === 'object' && !Array.isArray(bid.metadata))
+      ? { ...(bid.metadata as Record<string, any>) }
+      : {}
+    const counterOffer = metadata.counterOffer as Record<string, any> | undefined
+    if (!counterOffer || counterOffer.status !== 'pending') return { ok: false as const, reason: 'not_pending' as const }
+
+    counterOffer.status = decision
+    counterOffer.respondedAt = new Date().toISOString()
+    metadata.counterOffer = counterOffer
+
+    const shouldAutoRejectApplication = decision === 'rejected'
+      && counterOffer.autoRejectOnDecline === true
+      && !['accepted', 'awarded'].includes(String(bid.status || '').toLowerCase())
+    const data: Record<string, any> = { metadata: toJson(metadata) }
+    if (decision === 'accepted') {
+      data.bidAmount = counterOffer.amount
+      data.currency = counterOffer.currency ?? bid.currency
+    } else if (shouldAutoRejectApplication) {
+      data.status = 'rejected'
+      data.respondedAt = new Date()
+    }
+    await prisma.bid.update({ where: { id: bidId }, data })
+
+    const contact = await prisma.companyContact.findFirst({
+      where: { companyId: bid.opportunity.companyId },
+      orderBy: { isOwner: 'desc' },
+      select: { userId: true }
+    })
+    if (contact?.userId) {
+      await prisma.notification.create({
+        data: {
+          userId: contact.userId,
+          type: 'BID_COUNTER_OFFER_RESPONSE',
+          title: decision === 'accepted'
+            ? 'Price offer accepted'
+            : shouldAutoRejectApplication ? 'Offer declined — application rejected' : 'Price offer declined',
+          body: decision === 'accepted'
+            ? `A student accepted your ${counterOffer.currency} ${Number(counterOffer.amount).toLocaleString()} offer for "${bid.opportunity.title}".`
+            : shouldAutoRejectApplication
+              ? `A student declined your ${counterOffer.currency} ${Number(counterOffer.amount).toLocaleString()} offer for "${bid.opportunity.title}". Their application was automatically moved to Rejected.`
+              : `A student declined your ${counterOffer.currency} ${Number(counterOffer.amount).toLocaleString()} offer for "${bid.opportunity.title}".`,
+          data: toJson({
+            opportunityId: bid.opportunityId,
+            bidId: bid.id,
+            decision,
+            applicationAutoRejected: shouldAutoRejectApplication,
+            deepLink: '/business/opportunities'
+          })
+        }
+      })
+    }
+
+    return {
+      ok: true as const,
+      decision,
+      bidId,
+      counterOffer,
+      applicationAutoRejected: shouldAutoRejectApplication
+    }
+  }
+
   awardApplicantProject(id: string) {
     return prisma.$transaction(async (transaction) => {
       const bid = await transaction.bid.findUnique({ where: { id }, include: { opportunity: true } })
       if (!bid) return null
 
-      const project = await projects.create({
-        opportunityId: bid.opportunity.id,
-        businessId: bid.opportunity.companyId,
-        studentId: bid.studentId,
-        title: bid.opportunity.title,
-        status: 'awarded',
-        fundingStatus: bid.opportunity.escrowStatus === 'funded' ? 'funded' : 'pending',
-        scopeLocked: false
-      })
+      const terms = await resolveAwardTerms(transaction, bid)
+      if (terms.blocked) {
+        return { awarded: false, reason: 'escrow_below_agreed_amount', agreedAmount: terms.agreedAmount, escrowCoverage: terms.escrowCoverage, currency: terms.agreedCurrency }
+      }
+
+      const isTaskOpportunity = String(bid.opportunity.opportunityType || '').toLowerCase() === 'task'
+      const project = await resolveOrCreateAwardProject(transaction, bid, terms, isTaskOpportunity)
       const updatedBid = await transaction.bid.update({ where: { id }, data: { status: 'awarded', projectId: project.id } })
-      return { bid: updatedBid, project }
+      return { awarded: true, bid: updatedBid, project }
     })
   }
 
@@ -1572,16 +2009,37 @@ class BusinessWorkflowsRepository {
       const bid = await transaction.bid.findUnique({ where: { id }, include: { opportunity: true } })
       if (!bid) return null
 
-      const project = await projects.create({
-        opportunityId: bid.opportunity.id,
-        businessId: bid.opportunity.companyId,
-        studentId: bid.studentId,
-        title: bid.opportunity.title,
-        status: 'awarded',
-        fundingStatus: bid.opportunity.escrowStatus === 'funded' ? 'funded' : 'pending',
-        scopeLocked: false
-      })
+      const terms = await resolveAwardTerms(transaction, bid)
+      if (terms.blocked) {
+        return { awarded: false, reason: 'escrow_below_agreed_amount', agreedAmount: terms.agreedAmount, escrowCoverage: terms.escrowCoverage, currency: terms.agreedCurrency }
+      }
+
+      // A task hires one student, so awarding closes it to further applications.
+      // A project is a team effort: awards share one project and it stays open
+      // until the business marks it at capacity.
+      const isTaskOpportunity = String(bid.opportunity.opportunityType || '').toLowerCase() === 'task'
+      const project = await resolveOrCreateAwardProject(transaction, bid, terms, isTaskOpportunity)
       const updatedBid = await transaction.bid.update({ where: { id }, data: { status: 'awarded', projectId: project.id } })
+
+      // Talent is selected, so the brief is no longer merely open. The status is
+      // reporting only: a project opportunity keeps accepting applications
+      // because that gate lives in metadata.applicationsClosed.
+      const opportunityPatch: Record<string, any> = {}
+      if (canAdvanceOpportunityToInProgress(bid.opportunity.status)) {
+        opportunityPatch.status = OPPORTUNITY_IN_PROGRESS_STATUS
+      }
+      if (isTaskOpportunity) {
+        const existingMetadata = (bid.opportunity.metadata && typeof bid.opportunity.metadata === 'object' && !Array.isArray(bid.opportunity.metadata))
+          ? { ...(bid.opportunity.metadata as Record<string, any>) }
+          : {}
+        existingMetadata.applicationsClosed = true
+        existingMetadata.applicationsClosedReason = 'awarded'
+        opportunityPatch.metadata = toJson(existingMetadata)
+      }
+      if (Object.keys(opportunityPatch).length) {
+        await transaction.opportunity.update({ where: { id: bid.opportunityId }, data: opportunityPatch })
+      }
+
       await transaction.opportunityActivityEvent.create({
         data: {
           action: 'awarded',
@@ -1590,11 +2048,13 @@ class BusinessWorkflowsRepository {
           metadata: toJson({
             scope: 'applicant',
             bidId: id,
-            projectId: project.id
+            projectId: project.id,
+            agreedAmount: terms.agreedAmount,
+            agreedCurrency: terms.agreedCurrency
           })
         }
       })
-      return { bid: updatedBid, project }
+      return { awarded: true, bid: updatedBid, project }
     })
   }
 }

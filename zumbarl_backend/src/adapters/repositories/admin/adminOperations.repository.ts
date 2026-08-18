@@ -4,8 +4,6 @@ import { prisma } from '../../../lib/prisma.js'
 import { createPrismaRecordRepository } from '../../../shared/repositories/index.js'
 
 const projects = createPrismaRecordRepository('projects')
-const campaigns = createPrismaRecordRepository('campaigns')
-const orders = createPrismaRecordRepository('orders')
 const cases = createPrismaRecordRepository('moderationCases')
 const escrows = createPrismaRecordRepository('escrows')
 const platformConfigurations = createPrismaRecordRepository('platformConfigurations')
@@ -109,8 +107,8 @@ class AdminOperationsRepository {
       prisma.company.count(),
       prisma.opportunity.count(),
       projects.count(),
-      campaigns.count(),
-      orders.count(),
+      prisma.marketingCampaign.count(),
+      prisma.marketplaceOrder.count(),
       cases.count((item) => item.status === 'open')
     ])
 
@@ -413,6 +411,20 @@ class AdminOperationsRepository {
     const record = await collection.create({ ...payload, updatedBy: context?.actorId })
     await this.audit('system_configuration_changed', payload.kind ?? 'system_configuration', record.id, context, null, record, payload.reason)
     return record
+  }
+
+  async readNavigationFeatureTags() {
+    const records = await featureFlags.listAll((item) => String(item.key || '').startsWith('navigation.'))
+    const latestByKey = new Map<string, Record<string, any>>()
+    for (const record of records) {
+      if (!latestByKey.has(record.key)) latestByKey.set(record.key, record)
+    }
+    return {
+      tags: Object.fromEntries([...latestByKey.entries()].map(([key, record]) => [
+        key.replace(/^navigation\./, ''),
+        record.enabled === false ? null : String(record.label || record.value || '').trim() || null
+      ]))
+    }
   }
 
   async readAnalyticsReport() {

@@ -17,7 +17,7 @@ function useExploreMediaViewer({ feedComments, feedPosts }) {
           return current
         }
 
-        const post = feedPosts.find((candidate) => candidate.id === current.postId)
+        const post = current.post || feedPosts.find((candidate) => candidate.id === current.postId)
         if (!post) {
           return current
         }
@@ -52,8 +52,9 @@ function useExploreMediaViewer({ feedComments, feedPosts }) {
     }
   }, [feedPosts, mediaViewerState])
 
-  const openMediaViewer = (postId, imageIndex) => {
-    setMediaViewerState({ postId, imageIndex })
+  const openMediaViewer = (postOrId, imageIndex) => {
+    const post = typeof postOrId === 'object' ? postOrId : feedPosts.find((candidate) => candidate.id === postOrId)
+    setMediaViewerState({ postId: post?.id || postOrId, post: post || null, imageIndex })
   }
 
   const closeMediaViewer = () => {
@@ -66,7 +67,7 @@ function useExploreMediaViewer({ feedComments, feedPosts }) {
         return current
       }
 
-      const post = feedPosts.find((candidate) => candidate.id === current.postId)
+      const post = current.post || feedPosts.find((candidate) => candidate.id === current.postId)
       if (!post) {
         return current
       }
@@ -79,7 +80,7 @@ function useExploreMediaViewer({ feedComments, feedPosts }) {
   }
 
   const activeMediaPost = mediaViewerState
-    ? feedPosts.find((candidate) => candidate.id === mediaViewerState.postId) || null
+    ? mediaViewerState.post || feedPosts.find((candidate) => candidate.id === mediaViewerState.postId) || null
     : null
   const activeMediaIndex = activeMediaPost
     ? Math.min(Math.max(mediaViewerState?.imageIndex ?? 0, 0), activeMediaPost.gallery.length - 1)

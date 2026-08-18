@@ -9,6 +9,11 @@ import {
   getBusinessFlowSnapshot,
   recordApplicantReviewEvent,
 } from '../services/businessFlowService'
+import {
+  getBusinessProfileSnapshot,
+  hydrateBusinessProfileFromBackend,
+  subscribeBusinessProfile,
+} from '../services/businessProfileService'
 
 const BUSINESS_OPPORTUNITY_BRIEF_DRAFT_FALLBACKS = {
   acceptanceCriteria: '',
@@ -17,14 +22,12 @@ const BUSINESS_OPPORTUNITY_BRIEF_DRAFT_FALLBACKS = {
   budget: '',
   bidderInstructions: '',
   category: '',
-  companyDescription: '',
-  companyName: '',
   deliverables: '',
   duration: '',
   engagementMode: '',
   experienceLevel: '',
   mustHave: [],
-  opportunityType: 'Project',
+  opportunityType: '',
   opportunitySplash: null,
   paymentTerms: '',
   portfolioRequired: '',
@@ -42,7 +45,8 @@ const BUSINESS_OPPORTUNITY_BRIEF_DRAFT_FALLBACKS = {
 }
 
 function getBudgetLabel(form) {
-  return `KES ${String(form.budget).replace(/^(KES\s*)+/i, '')}`
+  const budget = String(form.budget || '').replace(/^(KES\s*)+/i, '').trim()
+  return budget ? `KES ${budget}` : ''
 }
 
 function getNumberValue(value) {
@@ -101,6 +105,8 @@ function getOverviewReadinessLabel(form) {
   const missing = []
   if (!hasMinimumText(form.title, 8)) missing.push(`title needs ${Math.max(0, 8 - getTextLength(form.title))} more characters`)
   if (!hasMinimumText(form.summary, 60)) missing.push(`short description needs ${Math.max(0, 60 - getTextLength(form.summary))} more characters`)
+  if (!getTextLength(form.category)) missing.push('category is required')
+  if (!getTextLength(form.opportunityType)) missing.push('opportunity type is required')
   return missing.length ? `Opportunity ${missing.join(' and ')}` : 'Opportunity title and summary explain the job clearly'
 }
 
@@ -157,18 +163,27 @@ function hasReadyOpportunitySplash(form) {
   return true
 }
 
+function hasDurableOpportunitySplash(form) {
+  const splash = form.opportunitySplash
+  if (!splash) return true
+
+  const url = String(splash.url || splash.previewUrl || '')
+  return splash.uploadStatus !== 'uploading'
+    && splash.uploadStatus !== 'failed'
+    && Boolean(url)
+    && !url.startsWith('blob:')
+    && !url.startsWith('data:')
+}
+
 function getClarityChecks(form) {
   return [
     {
       id: 'overview',
-      complete: hasMinimumText(form.title, 8) && hasMinimumText(form.summary, 60),
+      complete: hasMinimumText(form.title, 8)
+        && hasMinimumText(form.summary, 60)
+        && getTextLength(form.category) > 0
+        && getTextLength(form.opportunityType) > 0,
       label: getOverviewReadinessLabel(form),
-      step: 1,
-    },
-    {
-      id: 'company',
-      complete: hasMinimumText(form.companyName, 2) && hasMinimumText(form.companyDescription, 60),
-      label: 'Company context tells students who they will work with',
       step: 1,
     },
     {
@@ -223,6 +238,9 @@ function toPayload(form, status, clarityScore, options = {}) {
   const includeScope = stageLimit >= 3
   const isTaskOpportunity = String(form.opportunityType || '').toLowerCase() === 'task'
   const scopeMode = isTaskOpportunity ? 'deliverable' : form.scopeMode
+  // Company context now lives on the business profile (settings page) instead
+  // of being retyped per opportunity.
+  const businessProfile = getBusinessProfileSnapshot()
 
   return {
     acceptanceCriteria: includeScope ? form.acceptanceCriteria : undefined,
@@ -231,8 +249,8 @@ function toPayload(form, status, clarityScore, options = {}) {
     budget: includeScope ? getBudgetLabel(form) : undefined,
     bidderInstructions: includeRequirements ? form.bidderInstructions : undefined,
     category: form.category,
-    company: form.companyName,
-    companyDescription: form.companyDescription,
+    company: businessProfile?.name || undefined,
+    companyDescription: businessProfile?.description || undefined,
     clarityScore,
     deadline: form.applicationDeadline || 'Rolling',
     deliverables: includeScope ? form.deliverables : undefined,
@@ -277,7 +295,6 @@ function getOpportunityFormDraft(opportunity) {
     ...opportunity,
     applicationDeadline: opportunity.applicationDeadline || (opportunity.deadline === 'Rolling' ? '' : opportunity.deadline) || '',
     budget: opportunity.budget || opportunity.budgetLabel || '',
-    companyName: opportunity.companyName || opportunity.company || '',
     deliverableMilestones: normalizeScopeItemsForForm(opportunity.deliverableMilestones),
     milestoneScopes: normalizeScopeItemsForForm(opportunity.milestoneScopes),
     mustHave: Array.isArray(opportunity.mustHave) ? opportunity.mustHave : [],
@@ -306,8 +323,10 @@ export function useBusinessOpportunityBriefCreate() {
   const [form, setForm] = useState(() => initialForm)
   const [draftOpportunityId, setDraftOpportunityId] = useState(existingDraft?.id || null)
   const [isSaving, setIsSaving] = useState(false)
+  const [isUploadingSplash, setIsUploadingSplash] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const [businessProfile, setBusinessProfile] = useState(() => getBusinessProfileSnapshot())
   const saveDraftBeforeLeaveRef = useRef(null)
   const leaveBlocker = useBlocker(({ currentLocation, nextLocation }) => (
     hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname
@@ -323,13 +342,19 @@ export function useBusinessOpportunityBriefCreate() {
   const firstMissingDetail = clarityChecks.find((check) => !check.complete)
   const isPublishReady = completeClarityChecks === clarityChecks.length
 
+  useEffect(() => {
+    const unsubscribe = subscribeBusinessProfile(() => setBusinessProfile(getBusinessProfileSnapshot()))
+    hydrateBusinessProfileFromBackend()
+    return unsubscribe
+  }, [])
+
   const summary = useMemo(() => ({
     acceptanceCriteria: form.acceptanceCriteria,
     applicants: 'Will be visible after publishing',
     budget: getBudgetLabel(form),
     deliverableMilestones: form.deliverableMilestones,
     milestoneScopes: form.milestoneScopes,
-    company: form.companyName,
+    company: businessProfile?.name || '',
     deadline: form.applicationDeadline || 'Rolling',
     duration: form.duration,
     engagement: form.engagementMode,
@@ -341,7 +366,7 @@ export function useBusinessOpportunityBriefCreate() {
     title: form.title,
     type: form.opportunityType,
     visibility: form.visibility,
-  }), [clarityChecks.length, completeClarityChecks, form])
+  }), [businessProfile, clarityChecks.length, completeClarityChecks, form])
 
   function updateField(name, value) {
     setHasUnsavedChanges(true)
@@ -349,6 +374,13 @@ export function useBusinessOpportunityBriefCreate() {
   }
 
   async function saveOpportunity(status, options = {}) {
+    if (isUploadingSplash || !hasDurableOpportunitySplash(form)) {
+      setSaveError(isUploadingSplash
+        ? 'Wait for the opportunity splash to finish uploading before saving.'
+        : 'The opportunity splash was not uploaded. Re-select the file and try again.')
+      return null
+    }
+
     if (options.requiresPublishReadiness && !isPublishReady) {
       setActiveStep(firstMissingDetail?.step || maxStep)
       return null
@@ -426,7 +458,9 @@ export function useBusinessOpportunityBriefCreate() {
   }
 
   async function createAndPublishOpportunity() {
-    const opportunity = await saveOpportunity('Open', {
+    // A complete brief is still private until payment funds escrow. The
+    // opportunities workspace opens the payment flow for this saved draft.
+    const opportunity = await saveOpportunity('Draft', {
       requiresPublishReadiness: true,
       skipNavigate: true,
     })
@@ -451,6 +485,7 @@ export function useBusinessOpportunityBriefCreate() {
     form,
     isPublishReady,
     isSaving,
+    isUploadingSplash,
     isFirstStep: activeStep <= 1,
     isFinalStep: activeStep >= maxStep,
     missingRequiredDetails: clarityChecks.filter((check) => !check.complete),
@@ -458,21 +493,20 @@ export function useBusinessOpportunityBriefCreate() {
     summary,
     leavePrompt: {
       isOpen: isLeavePromptOpen,
-      isSaving,
+      isSaving: isSaving || isUploadingSplash,
       onLeaveWithoutSaving: leaveWithoutSaving,
       onSaveAndLeave: saveDraftAndLeave,
       onStay: stayOnPage,
       saveError,
     },
     onBack: () => setActiveStep((current) => Math.max(1, current - 1)),
+    // The leave blocker intercepts this navigation when there are unsaved
+    // changes, so cancelling still offers the save-draft prompt.
+    onCancel: () => navigate('/business/opportunities'),
     onContinue: saveDraftAndContinue,
     onPublish: createAndPublishOpportunity,
-    onReset: () => {
-      setActiveStep(1)
-      setForm(BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS)
-      setHasUnsavedChanges(false)
-    },
     onSaveDraft: () => saveOpportunity('Draft', { stageLimit: activeStep }),
+    onSplashUploadStateChange: setIsUploadingSplash,
     onStepChange: (step) => setActiveStep(Math.min(maxStep, Math.max(1, step))),
     onUpdateField: updateField,
   }

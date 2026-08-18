@@ -29,6 +29,7 @@ const readSafetyMetricsService = () => adminOperationsRepository.readSafetyMetri
 const readContentModerationService = (query: Record<string, unknown>) => adminOperationsRepository.readContentModeration(query)
 const moderateContentService = (payload: Record<string, any>, context?: AuditContext) => adminOperationsRepository.moderateContent(payload, context)
 const readSystemConfigurationService = () => adminOperationsRepository.readSystemConfiguration()
+const readNavigationFeatureTagsService = () => adminOperationsRepository.readNavigationFeatureTags()
 const writeSystemConfigurationService = (payload: Record<string, any>, context?: AuditContext) => adminOperationsRepository.writeSystemConfiguration(payload, context)
 const readAnalyticsReportService = () => adminOperationsRepository.readAnalyticsReport()
 const listAuditLogsService = (query: Record<string, unknown>) => adminOperationsRepository.listAuditLogs(query)
@@ -53,6 +54,7 @@ export {
   readContentModerationService,
   moderateContentService,
   readSystemConfigurationService,
+  readNavigationFeatureTagsService,
   writeSystemConfigurationService,
   readAnalyticsReportService,
   listAuditLogsService,

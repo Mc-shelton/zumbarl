@@ -19,13 +19,11 @@ export function CartSummaryRail({ promoCode, setPromoCode, totals }) {
         </article>
         <article>
           <p>Delivery Fee</p>
-          <strong>{formatKes(totals.deliveryFee)}</strong>
-        </article>
-        <article>
-          <p>Platform Fee</p>
-          <strong>{formatKes(totals.platformFee)}</strong>
+          <strong>{totals.deliveryPending ? 'Not yet quoted' : totals.deliveryFee ? formatKes(totals.deliveryFee) : 'Free'}</strong>
         </article>
       </div>
+
+      {totals.deliveryPending ? <p className="campus-cart-delivery-warning" role="status">Delivery has not been included in this total. The seller must confirm a delivery price before payment.</p> : null}
 
       <div className="campus-cart-summary-total">
         <p>Total</p>
@@ -45,12 +43,12 @@ export function CartSummaryRail({ promoCode, setPromoCode, totals }) {
         <button type="submit">Apply</button>
       </form>
 
-      {canCheckout ? (
+      {canCheckout && totals.itemCount > 0 && !totals.deliveryPending ? (
         <Link to="/campus/cart/payment" className="campus-cart-checkout-btn">
           Proceed to Checkout
           <FiArrowRight aria-hidden="true" />
         </Link>
-      ) : null}
+      ) : canCheckout && totals.itemCount > 0 ? <button type="button" className="campus-cart-checkout-btn" disabled>Awaiting delivery quote</button> : null}
 
       <p className="campus-cart-secure-note">
         <FiLock aria-hidden="true" />

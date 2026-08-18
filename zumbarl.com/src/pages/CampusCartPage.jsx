@@ -14,6 +14,8 @@ function CampusCartPage() {
     cartItems,
     handleClearCart,
     handleQuantityChange,
+    handleFulfilmentChange,
+    handleZumbarlDeliveryQuote,
     handleRemoveItem,
     promoCode,
     setPromoCode,
@@ -43,6 +45,8 @@ function CampusCartPage() {
       <CartItemsPanel
         items={cartItems}
         onQuantityChange={handleQuantityChange}
+        onFulfilmentChange={handleFulfilmentChange}
+        onZumbarlDeliveryQuote={handleZumbarlDeliveryQuote}
         onRemoveItem={handleRemoveItem}
       />
     </CartShell>

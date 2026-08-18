@@ -12,6 +12,9 @@ import { BusinessWorkspaceSidebar } from '../features/business/components/Busine
 import { useBusinessOpportunities } from '../features/business/hooks/useBusinessOpportunities'
 import '../styles/campus.css'
 import '../styles/business.css'
+import '../styles/deliverableRoom.css'
+import '../styles/projectTeam.css'
+import '../styles/projectPlanning.css'
 
 function BusinessOpportunitiesPage() {
   const opportunities = useBusinessOpportunities()
@@ -40,9 +43,22 @@ function BusinessOpportunitiesPage() {
                 onBack={opportunities.onCloseReviewOpportunity}
                 onChangeApplicationStatus={opportunities.onChangeApplicationStatus}
                 onChangeReviewTab={opportunities.onChangeReviewTab}
+                onInviteApplicants={opportunities.onOpenInvitePanel}
                 onPublishOpportunity={opportunities.onPublishOpportunity}
                 onScheduleApplicantInterview={opportunities.onScheduleApplicantInterview}
                 onStartApplicantInterview={opportunities.onStartApplicantInterview}
+                onAwardApplicant={opportunities.onAwardApplicant}
+                onCounterOfferApplicant={opportunities.onCounterOfferApplicant}
+                onSetOpportunityCapacity={opportunities.onSetOpportunityCapacity}
+                onStartProject={opportunities.onStartProject}
+                onEndProject={opportunities.onEndProject}
+                onFundOpportunity={opportunities.onFundOpportunity}
+                projectActionState={opportunities.projectActionState}
+                submissions={opportunities.reviewSubmissions}
+                submissionsError={opportunities.reviewSubmissionsError}
+                isLoadingSubmissions={opportunities.isLoadingReviewSubmissions}
+                onReviewSubmission={opportunities.onReviewSubmission}
+                onCompleteScopeTarget={opportunities.onCompleteScopeTarget}
                 opportunity={opportunities.reviewOpportunity}
                 openPublishPayment={opportunities.openPublishPaymentForReview}
               />
@@ -67,7 +83,10 @@ function BusinessOpportunitiesPage() {
                   onChangeViewMode={opportunities.onChangeViewMode}
                 />
                 <BusinessOpportunityBoard
+                  deleteOpportunityError={opportunities.deleteOpportunityError}
+                  deletingOpportunityId={opportunities.deletingOpportunityId}
                   onContinueDraftOpportunity={opportunities.onContinueDraftOpportunity}
+                  onDeleteDraftOpportunity={opportunities.onDeleteDraftOpportunity}
                   onOpenInvitePanel={opportunities.onOpenInvitePanel}
                   onPublishOpportunity={opportunities.onPublishOpportunity}
                   onReviewOpportunity={opportunities.onReviewOpportunity}

@@ -1,0 +1,37 @@
+- businesses should have templates for opportunity creation
+- notifications go to the peopel the business has worked with before first, before going to everyone else
+- learning bayesian and fake reviews
+- scanning of submitted files, rather than just lettign them go
+- drafts in the opportunities shoudl be visible and not just on draft tab
+- instad of picking filetype on sample wrok on opportunity creation, it shoudl be able to autopick file type
+- integrate the serach tags with the opportunities in the student opportunity list
+- when you create questions add response types 
+- why are projects stored as json
+- the company description adn company details, remove it form the opportunities table, and have a relation with the company profile, which pull shat info when need [or make me understand why we are having it this way]
+- for the jobs on activity, lets have non blocking events
+- questions shoudl have response types e.g numbers, strigns etc
+- click on phase to navigate
+- opportunity splash is both on the opportunity row, and uploaded files row, can't we have them on the in the uploaded files, and then opportunities to refer or will it compromise querying
+- activity events optimization
+- when you create opportunity, it creates it on draft, but then directs to opportunities, either have all, or direct to draft
+- Debit the company wallet on escrow
+- Create a real payment Transaction on escrow
+- adding deliverables mid publish, does it reescrow ?
+- the accept shortlist route, is not working well, you should not shortlist after accepting, or open interviews later
+- you should not submit work before project starts,
+- need to find a better way to automatically start projects, so when application closes and an escrow completes, you should auto start project
+- the messagign all over the platfrom should be relevant
+- use things like naming convention for students for zumbarl signal
+- on work approval, put note under deliverable instead of the sidebar
+- do things mostly with sockets, to reduce reloading
+- on teh works and deliverables, i should be able to click that number and it sends me to the submitted work without realy using the tab
+- reviews not appearign for student
+- reuest review is not working as well
+- when you create adn pay, it takes the project to draft, adn you have to click on it again, for you to proceed 
+- appy by line needs to be changed
+- when you reload fresh from payment, it still gives you the payment pop up
+- before award, you can't open the project as a student
+- submission can be just a reproting
+- as much as the project is not closed for bidding, once i've placed a bid, it should not show on my discover list
+links:
+https://www.itl.nist.gov/div898/handbook/apr/section2/apr1a.htm

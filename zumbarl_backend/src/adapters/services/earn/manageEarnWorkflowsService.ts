@@ -1,17 +1,82 @@
-import { ApiError, notFound } from '../../../lib/http.js'
+import { ApiError, forbidden, notFound } from '../../../lib/http.js'
 import { sendTransactionalEmail } from '../../notification/index.js'
 import { earnWorkflowsRepository } from '../../repositories/earn/index.js'
+import { businessWorkflowsRepository } from '../../repositories/business/index.js'
+import { OPPORTUNITY_APPLICABLE_STATUSES, normalizeOpportunityStatus } from '../../../shared/opportunities/opportunityLifecycle.js'
 
 function listEarnOpportunitiesService(query: Record<string, unknown>) {
   return earnWorkflowsRepository.listPublishedOpportunities(query)
+}
+
+function isOpportunityClosedToApplications(opportunity: Record<string, any>) {
+  const metadata = opportunity.metadata
+  return Boolean(metadata && typeof metadata === 'object' && !Array.isArray(metadata) && (metadata as Record<string, any>).applicationsClosed)
+}
+
+// Work cannot be delivered against a project that has not begun: escrow is
+// verified and scope is locked at start, so submissions before it bypass both.
+function assertProjectStarted(project: Record<string, any>) {
+  if (project.endedAt) {
+    throw new ApiError(409, 'This project has ended and can no longer receive submissions.', 'PROJECT_ENDED')
+  }
+  if (!project.startedAt) {
+    throw new ApiError(
+      409,
+      'The business has not started this project yet, so work cannot be submitted.',
+      'PROJECT_NOT_STARTED'
+    )
+  }
+}
+
+function assertOpportunityAcceptsApplications(opportunity: Record<string, any>) {
+  const status = normalizeOpportunityStatus(opportunity.status)
+  const isPublished = Boolean(opportunity.publishedAt)
+    && opportunity.visibility === 'public'
+    && OPPORTUNITY_APPLICABLE_STATUSES.includes(status)
+  if (!isPublished) {
+    throw new ApiError(
+      409,
+      'This opportunity has not been funded and published yet, so it cannot accept applications.',
+      'OPPORTUNITY_NOT_ACCEPTING_APPLICATIONS'
+    )
+  }
+  if (isOpportunityClosedToApplications(opportunity)) {
+    throw new ApiError(
+      409,
+      'This opportunity has already selected its talent and is no longer accepting applications.',
+      'OPPORTUNITY_APPLICATIONS_CLOSED'
+    )
+  }
 }
 
 function listStudentBidsService(studentId: string | undefined, query: Record<string, unknown>) {
   return earnWorkflowsRepository.listStudentBids(studentId, query)
 }
 
+async function readOpportunityBidDraftService(opportunityId: string, studentId: string | undefined) {
+  const opportunity = await earnWorkflowsRepository.findOpportunity(opportunityId) ?? notFound('Opportunity')
+  assertOpportunityAcceptsApplications(opportunity)
+  return { draft: await earnWorkflowsRepository.readStudentBidDraft(opportunityId, studentId) }
+}
+
+async function saveOpportunityBidDraftService(
+  opportunityId: string,
+  studentId: string | undefined,
+  payload: Record<string, any>
+) {
+  const opportunity = await earnWorkflowsRepository.findOpportunity(opportunityId) ?? notFound('Opportunity')
+  assertOpportunityAcceptsApplications(opportunity)
+  const result = await earnWorkflowsRepository.saveStudentBidDraft(opportunityId, studentId, payload)
+    ?? notFound('Opportunity')
+  if (result.conflict) {
+    throw new ApiError(409, 'This application has already been submitted and can no longer be saved as a draft.', 'APPLICATION_ALREADY_SUBMITTED')
+  }
+  return result.draft
+}
+
 async function submitOpportunityBidService(opportunityId: string, studentId: string | undefined, payload: Record<string, any>) {
   const opportunity = await earnWorkflowsRepository.findOpportunity(opportunityId) ?? notFound('Opportunity')
+  assertOpportunityAcceptsApplications(opportunity)
   const answers = Array.isArray(payload.questionAnswers) ? payload.questionAnswers : []
   const missingQuestions = opportunity.qualificationQuestions.filter((question) => (
     !answers.some((item: Record<string, unknown>) => item.question === question && String(item.answer ?? '').trim())
@@ -76,7 +141,18 @@ function listStudentProjectsService(studentId: string | undefined, query: Record
 }
 
 async function submitProjectDeliverableService(projectId: string, studentId: string | undefined, payload: Record<string, any>) {
+  const project = await earnWorkflowsRepository.findProjectRecord(projectId) ?? notFound('Project')
+  assertProjectStarted(project)
   return await earnWorkflowsRepository.submitProjectDeliverable(projectId, studentId, payload) ?? notFound('Project')
+}
+
+async function respondToBidCounterOfferService(bidId: string, studentId: string | undefined, payload: Record<string, any>) {
+  const result = await businessWorkflowsRepository.respondToBidCounterOffer(bidId, payload.decision, studentId) ?? notFound('Bid')
+  if (result.ok === false) {
+    if (result.reason === 'forbidden') forbidden('This offer is not addressed to you')
+    throw new ApiError(409, 'This price offer has already been responded to.', 'COUNTER_OFFER_NOT_PENDING')
+  }
+  return result
 }
 
 async function readStudentTrustSnapshotService(studentId: string | undefined) {
@@ -96,6 +172,8 @@ async function readStudentTrustSnapshotService(studentId: string | undefined) {
 export {
   listEarnOpportunitiesService,
   listStudentBidsService,
+  readOpportunityBidDraftService,
+  saveOpportunityBidDraftService,
   submitOpportunityBidService,
   acceptOpportunityInviteService,
   declineOpportunityInviteService,
@@ -105,5 +183,6 @@ export {
   respondToStudentInterviewService,
   listStudentProjectsService,
   submitProjectDeliverableService,
+  respondToBidCounterOfferService,
   readStudentTrustSnapshotService
 }

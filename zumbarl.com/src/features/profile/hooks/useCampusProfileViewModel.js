@@ -36,6 +36,7 @@ function useCampusProfileViewModel({
   skillsSearchQuery,
 }, profileExperience = null) {
   const isPortfolioTab = activeTab === 'Portfolio'
+  const isMarketingTab = activeTab === 'Marketing'
   const isExperienceTab = activeTab === 'Experience'
   const isSkillsTab = activeTab === 'Skills'
   const isShopTab = activeTab === 'Shop'
@@ -220,6 +221,7 @@ function useCampusProfileViewModel({
     endorsements: endorsementItems,
     hasSkillsResults,
     isExperienceTab,
+    isMarketingTab,
     isPortfolioDetailOpen,
     isPortfolioProjectDetailOpen,
     isPortfolioServiceDetailOpen,

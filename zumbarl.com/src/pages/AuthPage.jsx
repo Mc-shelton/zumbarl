@@ -8,6 +8,9 @@ import {
   AUTH_ROLE_STORAGE_KEY,
   getAuthRoleIdFromBackendRole,
 } from '../features/auth/roleConfig'
+import { clearAuthUserCache } from '../features/auth/services/authUserService'
+import CampusRegistrationField from '../features/auth/components/CampusRegistrationField'
+import { clearBusinessProfileCache } from '../features/business/services/businessProfileService'
 import { LOGIN_SEO, REGISTER_SEO } from '../features/seo/constants'
 import { AUTH_TOKEN_KEY, sendZumbarlApiRequest } from '../lib/sendZumbarlApiRequest'
 import '../styles/auth.css'
@@ -109,6 +112,7 @@ function AuthPage({ defaultMode = 'login' }) {
   const [accountType, setAccountType] = useState('student')
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [campus, setCampus] = useState(null)
   const disclaimer = useMemo(
     () =>
       mode === 'register'
@@ -131,9 +135,8 @@ function AuthPage({ defaultMode = 'login' }) {
           username: formData.get('username'),
           name: `${formData.get('firstName')} ${formData.get('lastName')}`,
           password: formData.get('password'),
-          role: accountType === 'business' ? 'COMPANY_STANDARD' : 'STUDENT_STANDARD',
-          businessName: accountType === 'business' ? formData.get('businessName') : undefined,
-          campus: accountType === 'student' ? formData.get('campus') : undefined,
+          role: accountType === 'professional' ? 'COMPANY_STANDARD' : 'STUDENT_STANDARD',
+          campus: accountType === 'student' ? campus : undefined,
         }
       : {
           email: formData.get('email'),
@@ -141,12 +144,16 @@ function AuthPage({ defaultMode = 'login' }) {
         }
 
     try {
+      if (mode === 'register' && accountType === 'student' && !campus) throw new Error('Select an existing campus or add your campus and choose its location.')
       const response = await sendZumbarlApiRequest(mode === 'register' ? '/auth/register' : '/auth/login', {
         method: 'POST',
         body: JSON.stringify(payload),
       })
 
       if (response?.token) {
+        // Drop any identity cached from a previous session before this one hydrates.
+        clearAuthUserCache()
+        clearBusinessProfileCache()
         window.localStorage.setItem(AUTH_TOKEN_KEY, response.token)
       }
       if (response?.user?.role) {
@@ -181,25 +188,7 @@ function AuthPage({ defaultMode = 'login' }) {
           <div className="auth-form-panel">
             <h1 className="auth-title">{content.heading}</h1>
             <form className="auth-form" onSubmit={handleSubmit}>
-              {mode === 'register' ? (
-                <div className="auth-account-toggle" role="radiogroup" aria-label="Account type">
-                  {[
-                    { id: 'student', label: 'Student', detail: 'Find work, services, and campus opportunities.' },
-                    { id: 'business', label: 'Business', detail: 'Post opportunities and hire student talent.' },
-                  ].map((option) => (
-                    <button
-                      key={option.id}
-                      type="button"
-                      className={accountType === option.id ? 'is-active' : ''}
-                      aria-pressed={accountType === option.id}
-                      onClick={() => setAccountType(option.id)}
-                    >
-                      <strong>{option.label}</strong>
-                      <span>{option.detail}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
+              {mode === 'register' ? <><div className="auth-account-toggle" role="radiogroup" aria-label="Personal profile type">{[{ id: 'student', label: 'Student', detail: 'Campus life, learning, work and connections.' }, { id: 'professional', label: 'Professional', detail: 'Represent yourself, then create or manage business pages.' }].map((option) => <button key={option.id} type="button" className={accountType === option.id ? 'is-active' : ''} aria-pressed={accountType === option.id} onClick={() => setAccountType(option.id)}><strong>{option.label}</strong><span>{option.detail}</span></button>)}</div><p className="auth-account-note">This creates your personal profile. Organizations are separate pages with shared management.</p></> : null}
 
               {content.fields.map(({ id, label, type, minLength, autoComplete, placeholder, Icon }) => (
                 <label key={id} className="auth-field" htmlFor={id}>
@@ -218,37 +207,7 @@ function AuthPage({ defaultMode = 'login' }) {
                 </label>
               ))}
 
-              {mode === 'register' && accountType === 'student' ? (
-                <label className="auth-field" htmlFor="campus">
-                  <span className="auth-field-label">Campus</span>
-                  <input
-                    id="campus"
-                    name="campus"
-                    type="text"
-                    autoComplete="organization"
-                    placeholder="Kenyatta University"
-                    className="auth-input"
-                    required
-                  />
-                  <HiOutlineUser className="auth-input-icon" aria-hidden="true" />
-                </label>
-              ) : null}
-
-              {mode === 'register' && accountType === 'business' ? (
-                <label className="auth-field" htmlFor="businessName">
-                  <span className="auth-field-label">Business name</span>
-                  <input
-                    id="businessName"
-                    name="businessName"
-                    type="text"
-                    autoComplete="organization"
-                    placeholder="Zetech Studios"
-                    className="auth-input"
-                    required
-                  />
-                  <HiOutlineUser className="auth-input-icon" aria-hidden="true" />
-                </label>
-              ) : null}
+              {mode === 'register' && accountType === 'student' ? <CampusRegistrationField onChange={setCampus} /> : null}
 
               {errorMessage ? <p className="auth-error-message">{errorMessage}</p> : null}
 

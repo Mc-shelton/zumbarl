@@ -10,16 +10,24 @@ import {
   listMarketingCampaignsController,
   publishMarketingCampaignController,
   readMarketingCampaignController,
-  submitMarketingCampaignProofController
+  readMarketingCampaignTrackingClientController,
+  readMarketingCampaignTrackingPageController,
+  submitMarketingCampaignProofController,
+  trackMarketingCampaignClickController,
+  updateMarketingCampaignController
 } from '../../controllers/marketing/index.js'
 
 async function registerMarketingRoutes(app: FastifyInstance) {
   const anyActor = requireRoles(...roleGroups.student, ...roleGroups.business, ...roleGroups.admin)
   const businessOnly = requireRoles(...roleGroups.business, ...roleGroups.admin)
   const studentOnly = requireRoles(...roleGroups.student, ...roleGroups.admin)
+  app.get('/track-client.js', readMarketingCampaignTrackingClientController)
+  app.get('/track/:token', readMarketingCampaignTrackingPageController)
+  app.post('/track/:token/click', trackMarketingCampaignClickController)
   app.get('/campaigns', { preHandler: anyActor }, listMarketingCampaignsController)
   app.post('/campaigns', { preHandler: businessOnly }, createMarketingCampaignController)
   app.get('/campaigns/:id', { preHandler: anyActor }, readMarketingCampaignController)
+  app.patch('/campaigns/:id', { preHandler: businessOnly }, updateMarketingCampaignController)
   app.post('/campaigns/:id/fund', { preHandler: businessOnly }, fundMarketingCampaignController)
   app.post('/campaigns/:id/publish', { preHandler: businessOnly }, publishMarketingCampaignController)
   app.post('/campaigns/:id/invites', { preHandler: businessOnly }, inviteCampaignersController)

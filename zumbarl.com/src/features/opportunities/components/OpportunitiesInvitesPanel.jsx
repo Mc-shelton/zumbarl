@@ -1,4 +1,4 @@
-import { FiClock, FiMapPin } from 'react-icons/fi'
+import { FiCheck, FiClock, FiMapPin, FiUserPlus, FiX } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 
 function OpportunitiesInvitesPanel({
@@ -8,16 +8,20 @@ function OpportunitiesInvitesPanel({
   newInvitesCount,
   onDeclineInvite = () => {},
   onMarkInvitesSeen = () => {},
+  onOpenInviteProject = () => {},
   onOpenPlaceBid,
+  onRespondProjectTeamInvite = () => {},
+  projectTeamInvites = [],
+  projectTeamInviteState = { error: '', pendingId: '' },
 }) {
   const canSubmitBid = hasAccess(ACCESS_KEYS.opportunities.apply)
 
   return (
-    <section className="opportunities-list-section opportunities-invites-section" aria-label="Bid invites">
+    <section className="opportunities-list-section opportunities-invites-section" aria-label="Opportunity and project invites">
       <div className="opportunities-section-head opportunities-invites-head">
         <div>
           <h2>Invites</h2>
-          <p>Gigs where clients invited you directly to submit a proposal.</p>
+          <p>Invitations to bid on opportunities or join an active project team.</p>
         </div>
         {newInvitesCount > 0 ? (
           <button type="button" className="campus-link-btn" onClick={onMarkInvitesSeen}>Mark all as seen</button>
@@ -43,16 +47,55 @@ function OpportunitiesInvitesPanel({
       </div>
 
       <div className="opportunities-invite-page-list">
-        {invites.length === 0 ? (
+        {projectTeamInviteState.error ? (
+          <p className="opportunities-team-invite-error" role="alert">{projectTeamInviteState.error}</p>
+        ) : null}
+
+        {projectTeamInvites.map((invite) => (
+          <article key={invite.id} className="opportunities-team-invite-card is-new">
+            <span className="opportunities-team-invite-icon" aria-hidden="true"><FiUserPlus /></span>
+            <div>
+              <span>Project team invitation</span>
+              <h3>{invite.projectTitle || 'Project'}</h3>
+              <p>
+                <strong>{invite.inviterName}</strong> invited you to join as <strong>{invite.role}</strong>.
+              </p>
+              {invite.note ? <p>{invite.note}</p> : null}
+            </div>
+            <div className="opportunities-team-invite-actions">
+              <button
+                type="button"
+                className="campus-link-btn"
+                disabled={Boolean(projectTeamInviteState.pendingId)}
+                onClick={() => onRespondProjectTeamInvite(invite, 'decline')}
+              >
+                <FiX aria-hidden="true" /> Not now
+              </button>
+              <button
+                type="button"
+                className="opportunities-search-btn"
+                disabled={Boolean(projectTeamInviteState.pendingId)}
+                onClick={() => onRespondProjectTeamInvite(invite, 'accept')}
+              >
+                <FiCheck aria-hidden="true" />
+                {projectTeamInviteState.pendingId === invite.id ? 'Responding…' : 'Accept & join'}
+              </button>
+            </div>
+          </article>
+        ))}
+
+        {invites.length === 0 && projectTeamInvites.length === 0 ? (
           <p className="opportunities-list-empty">
-            No invites yet. When a business invites you to bid on an opportunity, it will appear here.
+            No invites yet. Invitations to bid or join a project team will appear here.
           </p>
         ) : null}
         {invites.map((invite) => (
           <article key={invite.id} className={`opportunities-invite-page-card${invite.isNew ? ' is-new' : ''}`}>
             <div className="opportunities-invite-page-thumb">
               <img src={invite.image} alt={`${invite.title} preview`} loading="lazy" />
-              <span className={`opportunities-invite-stage-chip ${invite.stageTone}`}>{invite.stage}</span>
+              <span className={`opportunities-invite-stage-chip ${invite.projectId ? 'is-open' : invite.hasApplied ? 'is-new' : invite.stageTone}`}>
+                {invite.projectId ? 'Accepted' : invite.hasApplied ? 'Applied' : invite.stage}
+              </span>
             </div>
 
             <div className="opportunities-invite-page-body">
@@ -101,25 +144,42 @@ function OpportunitiesInvitesPanel({
             </div>
 
             <div className="opportunities-invite-page-actions">
-              {canSubmitBid && invite.stage !== 'Declined' ? (
-                <button
-                  type="button"
-                  className="opportunities-search-btn"
-                  onClick={() => onOpenPlaceBid(invite.opportunityId, invite)}
-                >
-                  {invite.isAccepted ? 'Submit Bid' : 'Accept Invite'}
+              {invite.projectId ? (
+                <>
+                  <span className="opportunities-invite-accepted-note">Accepted</span>
+                  <button
+                    type="button"
+                    className="opportunities-search-btn"
+                    onClick={() => onOpenInviteProject(invite.projectId)}
+                  >
+                    Open project
+                  </button>
+                </>
+              ) : invite.hasApplied ? (
+                <button type="button" className="opportunities-search-btn is-applied" disabled>
+                  Applied
                 </button>
-              ) : null}
-              {invite.stage === 'Declined' ? (
+              ) : invite.stage === 'Declined' ? (
                 <p className="opportunities-invite-declined-note">Invite declined</p>
               ) : (
-                <button
-                  type="button"
-                  className="campus-link-btn"
-                  onClick={() => onDeclineInvite(invite)}
-                >
-                  Not now
-                </button>
+                <>
+                  {canSubmitBid ? (
+                    <button
+                      type="button"
+                      className="opportunities-search-btn"
+                      onClick={() => onOpenPlaceBid(invite.opportunityId, invite)}
+                    >
+                      {invite.isAccepted ? 'Submit Bid' : 'Accept Invite'}
+                    </button>
+                  ) : null}
+                  <button
+                    type="button"
+                    className="campus-link-btn"
+                    onClick={() => onDeclineInvite(invite)}
+                  >
+                    Not now
+                  </button>
+                </>
               )}
             </div>
           </article>

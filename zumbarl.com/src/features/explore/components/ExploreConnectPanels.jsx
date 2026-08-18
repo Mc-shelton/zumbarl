@@ -33,9 +33,9 @@ function ExploreConnectWorkflowPanel({
       items={workflowStatusItems}
       actions={(
         <>
-          <button type="button" className="connect-soft-btn" disabled={state.profileReady} onClick={onPrepareProfile}>
+          <button type="button" className="connect-soft-btn" onClick={onPrepareProfile}>
             <FiUserPlus aria-hidden="true" />
-            Prepare profile
+            Connect settings
           </button>
           <button type="button" className="connect-soft-btn" disabled={!state.profileReady || state.storyPublished} onClick={onPublishStory}>
             <FiEye aria-hidden="true" />

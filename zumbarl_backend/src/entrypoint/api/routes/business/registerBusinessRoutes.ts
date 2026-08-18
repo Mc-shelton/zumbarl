@@ -2,10 +2,13 @@ import type { FastifyInstance } from 'fastify'
 import { requireRoles, roleGroups } from '../../../../lib/security.js'
 import {
   awardApplicantProjectController,
+  counterOfferApplicantBidController,
   createBusinessIndustryController,
   createApplicantReviewEventController,
   createBusinessOpportunityController,
   createOpportunityDeliverablesController,
+  deleteBusinessOpportunityController,
+  setOpportunityApplicationsClosedController,
   fundBusinessOpportunityController,
   inviteOpportunityBiddersController,
   listBusinessActivityController,
@@ -14,6 +17,7 @@ import {
   listBusinessIndustriesController,
   listOpportunityDeliverablesController,
   listOpportunityApplicantsController,
+  listOpportunitySubmissionsController,
   publishBusinessOpportunityController,
   readOpportunityDeliverableController,
   readBusinessDashboardController,
@@ -39,6 +43,8 @@ async function registerBusinessRoutes(app: FastifyInstance) {
   app.get('/opportunities', { preHandler: businessOnly }, listBusinessOpportunitiesController)
   app.post('/opportunities', { preHandler: businessOnly }, createBusinessOpportunityController)
   app.patch('/opportunities/:id', { preHandler: businessOnly }, updateBusinessOpportunityController)
+  app.delete('/opportunities/:id', { preHandler: businessOnly }, deleteBusinessOpportunityController)
+  app.post('/opportunities/:id/applications-closed', { preHandler: businessOnly }, setOpportunityApplicationsClosedController)
   app.post('/opportunities/:id/publish', { preHandler: businessOnly }, publishBusinessOpportunityController)
   app.post('/opportunities/:id/fund', { preHandler: businessOnly }, fundBusinessOpportunityController)
   app.get('/opportunities/:id/deliverables', { preHandler: businessOnly }, listOpportunityDeliverablesController)
@@ -47,10 +53,12 @@ async function registerBusinessRoutes(app: FastifyInstance) {
   app.get('/opportunities/:id/invite-candidates', { preHandler: businessOnly }, listOpportunityInviteCandidatesController)
   app.post('/opportunities/:id/invites', { preHandler: businessOnly }, inviteOpportunityBiddersController)
   app.get('/opportunities/:id/applicants', { preHandler: businessOnly }, listOpportunityApplicantsController)
+  app.get('/opportunities/:id/submissions', { preHandler: businessOnly }, listOpportunitySubmissionsController)
   app.post('/applicants/:id/review-events', { preHandler: businessOnly }, createApplicantReviewEventController)
   app.post('/applicants/:id/interview', { preHandler: businessOnly }, scheduleApplicantInterviewController)
   app.post('/applicants/:id/interview/start', { preHandler: businessOnly }, startApplicantInterviewController)
   app.post('/applicants/:id/award', { preHandler: businessOnly }, awardApplicantProjectController)
+  app.post('/applicants/:id/counter-offer', { preHandler: businessOnly }, counterOfferApplicantBidController)
 }
 
 export {

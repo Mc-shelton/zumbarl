@@ -1,11 +1,13 @@
 import ProfileExperiencePanel from './ProfileExperiencePanel'
+import ProfileMarketingPanel from './ProfileMarketingPanel'
 import ProfileOverviewPanel from './ProfileOverviewPanel'
 import ProfilePlaceholderPanel from './ProfilePlaceholderPanel'
 import ProfilePortfolioPanel from './ProfilePortfolioPanel'
 import ProfileShopPanel from './ProfileShopPanel'
+import ProfileShopOrders from './ProfileShopOrders'
 import ProfileSkillsPanel from './ProfileSkillsPanel'
 
-function ProfileTabContent({ activeTab, handlers, profileState, viewModel }) {
+function ProfileTabContent({ activeTab, canManageMarketing = false, canManageShop = false, handlers, isShopOrdersOpen = false, pendingShopOffers = [], profileState, sellerOrders = [], sellerOrdersError = '', sellerOrdersLoading = false, shop, shopOfferDecisionId = '', updatingOrderId = '', viewModel }) {
   if (activeTab === 'Overview') {
     return <ProfileOverviewPanel endorsements={viewModel.endorsements} workHighlights={viewModel.workHighlights} />
   }
@@ -23,6 +25,10 @@ function ProfileTabContent({ activeTab, handlers, profileState, viewModel }) {
         selectedPortfolioServiceId={profileState.selectedPortfolioServiceId}
       />
     )
+  }
+
+  if (viewModel.isMarketingTab && canManageMarketing) {
+    return <ProfileMarketingPanel />
   }
 
   if (viewModel.isExperienceTab) {
@@ -46,13 +52,23 @@ function ProfileTabContent({ activeTab, handlers, profileState, viewModel }) {
   }
 
   if (viewModel.isShopTab) {
+    if (canManageShop && isShopOrdersOpen) return <ProfileShopOrders error={sellerOrdersError} isLoading={sellerOrdersLoading} orders={sellerOrders} onBack={handlers.onCloseOrders} onMessageBuyer={handlers.onMessageBuyer} onRefresh={handlers.onRefreshOrders} onUpdateStatus={handlers.onUpdateOrderStatus} updatingOrderId={updatingOrderId} />
     return (
       <ProfileShopPanel
         activeShopFilter={profileState.activeShopFilter}
+        canManageShop={canManageShop}
         filteredShopProducts={viewModel.filteredShopProducts}
+        onCreateListing={handlers.onCreateListing}
+        onEditListing={handlers.onEditListing}
+        onOpenOffer={handlers.onOpenOffer}
+        onDecideOffer={handlers.onDecideOffer}
         onProductSelect={profileState.handleShopProductSelect}
+        onOpenOrders={handlers.onOpenOrders}
         onShopFilterChange={handlers.onShopFilterChange}
         selectedShopProductUid={profileState.selectedShopProductUid}
+        pendingOffers={pendingShopOffers}
+        offerDecisionId={shopOfferDecisionId}
+        shop={shop}
       />
     )
   }

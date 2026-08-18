@@ -21,6 +21,8 @@ export function BusinessMarketingCreatorTable({ campaign, compact = false }) {
               <th>Followers</th>
               <th>Content Preview</th>
               <th>Status</th>
+              <th>Unique Clicks</th>
+              <th>Total Visits</th>
               <th>Engagement</th>
               <th>Amount</th>
               <th><span className="sr-only">Actions</span></th>
@@ -45,6 +47,8 @@ export function BusinessMarketingCreatorTable({ campaign, compact = false }) {
                   </span>
                 </td>
                 <td><strong className={`business-marketing-collab-status is-${creator.status.toLowerCase()}`}>{creator.status}</strong></td>
+                <td><strong className="business-marketing-click-count">{Number(creator.clicks || 0).toLocaleString()}</strong></td>
+                <td>{Number(creator.visits || 0).toLocaleString()}</td>
                 <td>{creator.engagement}</td>
                 <td>{creator.amount}</td>
                 <td>

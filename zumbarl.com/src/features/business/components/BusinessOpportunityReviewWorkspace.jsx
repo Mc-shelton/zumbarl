@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { TabNav } from '../../../components/ui'
 import { getSplashCropStyle } from '../../../lib/getSplashCropStyle'
 import {
@@ -11,7 +11,6 @@ import {
   FiEye,
   FiFileText,
   FiFilter,
-  FiHeart,
   FiImage,
   FiLock,
   FiPhone,
@@ -21,28 +20,43 @@ import {
   FiPlus,
   FiSearch,
   FiSend,
-  FiSettings,
-  FiStar,
-  FiUpload,
   FiUsers,
   FiVideo,
   FiX,
 } from 'react-icons/fi'
 import { Button, MetricCard, PersonRow, StatusPill } from '../../../components/ui'
 import { listBackendBusinessActivity } from '../services/persistBusinessOpportunity'
-import { cancelCall, createCall, readCall } from '../../calls/services/callService'
-import { openCallOverlay } from '../../calls/getCallMeetingUrl'
-import { listConversations, listMessages, sendMessage } from '../../messages/services/messageService'
-import { playCallRingtone, playMessageSentSound } from '../../communications/services/communicationSounds'
+import { useDeliverableTasks } from '../../projects/hooks/useDeliverableTasks'
+import BusinessProjectSettingsPanel from './BusinessProjectSettingsPanel'
+import DeliverableRoom from '../../projects/components/DeliverableRoom'
+import MilestoneScopePanel from '../../projects/components/MilestoneScopePanel'
+import ProjectStartNotice from '../../projects/components/ProjectStartNotice'
+import MilestoneProgramPanel from '../../projects/components/MilestoneProgramPanel'
+import MilestoneBoardPanel from '../../projects/components/MilestoneBoardPanel'
+import ProjectSprintsPanel from '../../projects/components/ProjectSprintsPanel'
+import ProjectTimelinePanel from '../../projects/components/ProjectTimelinePanel'
+import { useMilestoneWorkspace } from '../../projects/hooks/useMilestoneWorkspace'
+import TeamPanel from '../../projects/components/TeamPanel'
+import { listProjectTeam } from '../../projects/services/projectTeamInviteService'
+import {} from '../../calls/services/callService'
+import {} from '../../calls/getCallMeetingUrl'
+import ProjectConversationPanel from '../../messages/components/ProjectConversationPanel'
+import {} from '../../communications/services/communicationSounds'
 
 const REVIEW_TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'applications', label: 'Applications' },
   { id: 'deliverables', label: 'Work & Deliverables' },
+  { id: 'milestones', label: 'Milestones' },
+  { id: 'board', label: 'Board' },
+  { id: 'sprints', label: 'Sprints' },
+  { id: 'timeline', label: 'Timeline' },
+  { id: 'team', label: 'Team' },
   { id: 'payments', label: 'Payments' },
   { id: 'performance', label: 'Performance' },
   { id: 'messages', label: 'Messages' },
   { id: 'activity', label: 'Activity' },
+  { id: 'settings', label: 'Settings' },
 ]
 
 function getReviewTabs(opportunity, applicationCount = 0) {
@@ -53,9 +67,21 @@ function getReviewTabs(opportunity, applicationCount = 0) {
     return tab
   })
 
-  if (opportunity?.scopeMode === 'milestone') return tabs
+  // Only a team project has a team to show; a task is one student.
+  const isTask = String(opportunity?.opportunityType || '').toLowerCase() === 'task'
+  const withoutTeam = isTask
+    ? tabs.filter((tab) => tab.id !== 'team' && tab.id !== 'settings')
+    : tabs
 
-  return tabs.filter((tab) => tab.id !== 'performance')
+  // Milestone planning surfaces belong to milestone briefs only.
+  const MILESTONE_ONLY = ['milestones', 'board', 'sprints', 'timeline', 'performance']
+  // For a milestone brief the milestones are the work, so Work & Deliverables is
+  // a redundant second view of it.
+  if (opportunity?.scopeMode === 'milestone') {
+    return withoutTeam.filter((tab) => tab.id !== 'deliverables')
+  }
+
+  return withoutTeam.filter((tab) => !MILESTONE_ONLY.includes(tab.id))
 }
 
 const REVIEW_IMAGE = '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp'
@@ -85,13 +111,6 @@ function getSkillList(opportunity) {
     : String(opportunity?.skills || '').split(',').map((item) => item.trim()).filter(Boolean)
 }
 
-function PlatformBadge({ platform }) {
-  const label = platform === 'YouTube' ? '▶' : platform === 'TikTok' ? '♪' : '◎'
-  const tone = platform.toLowerCase().replace(/\s+/g, '-')
-
-  return <span className={`business-review-platform-badge tone-${tone}`}>{label}</span>
-}
-
 function DeliverableIcon({ icon }) {
   if (icon === 'instagram') {
     return <span className="business-review-deliverable-icon tone-instagram"><FiImage aria-hidden="true" /></span>
@@ -118,6 +137,10 @@ function getCurrencyAmount(value) {
 
 function formatKesAmount(value) {
   return `KES ${getCurrencyAmount(value).toLocaleString()}`
+}
+
+function formatCurrencyAmount(value, currency = 'KES') {
+  return `${currency} ${getCurrencyAmount(value).toLocaleString()}`
 }
 
 function formatOpportunityDate(value, fallback = 'Not set') {
@@ -156,6 +179,21 @@ function getOpportunityPaymentScopeItems(opportunity) {
   })
 }
 
+function getContractPaymentScopeItems(opportunity, agreedAmount = 0) {
+  const scopeItems = getOpportunityPaymentScopeItems(opportunity)
+  const contractAmount = getCurrencyAmount(agreedAmount)
+  if (!contractAmount || !scopeItems.length) return scopeItems
+
+  const weightOf = (item) => getCurrencyAmount(item.paymentPercent) || item.budgetAmount
+  const totalWeight = scopeItems.reduce((sum, item) => sum + weightOf(item), 0)
+  const allocated = scopeItems.map((item) => Math.round(
+    contractAmount * (totalWeight > 0 ? weightOf(item) / totalWeight : 1 / scopeItems.length),
+  ))
+  allocated[allocated.length - 1] = contractAmount - allocated.slice(0, -1).reduce((sum, amount) => sum + amount, 0)
+
+  return scopeItems.map((item, index) => ({ ...item, budgetAmount: allocated[index] }))
+}
+
 function getOpportunitySampleFiles(opportunity) {
   return getOpportunityPaymentScopeItems(opportunity).flatMap((item) => {
     const samples = Array.isArray(item.source?.sampleWork) ? item.source.sampleWork : []
@@ -173,8 +211,8 @@ function getOpportunitySampleFiles(opportunity) {
   })
 }
 
-function getOpportunityDeliverableRows(opportunity) {
-  const scopeItems = getOpportunityPaymentScopeItems(opportunity)
+function getOpportunityDeliverableRows(opportunity, agreedAmount = 0, agreedCurrency = 'KES') {
+  const scopeItems = getContractPaymentScopeItems(opportunity, agreedAmount)
   if (!scopeItems.length) return []
 
   return scopeItems.map((item, index) => {
@@ -185,7 +223,7 @@ function getOpportunityDeliverableRows(opportunity) {
       required: true,
       type: `${item.typeLabel} ${index + 1}`,
       description: item.description,
-      dueDate: opportunity?.deadline || 'Scheduled after agreement',
+      dueDate: formatOpportunityDate(opportunity?.deadline, 'Scheduled after agreement'),
       dueMeta: opportunity?.deadline ? 'From brief deadline' : 'No fixed due date',
       submissions: '0',
       status: opportunity?.status === 'Open' ? 'Ready' : opportunity?.status || 'Draft',
@@ -195,7 +233,7 @@ function getOpportunityDeliverableRows(opportunity) {
       evidenceRequired: source.evidenceRequired || 'Defined in the opportunity scope',
       acceptanceCriteria: source.acceptanceCriteria || 'Acceptance criteria can be confirmed during review.',
       paymentRelease: item.release,
-      budget: formatKesAmount(item.budgetAmount),
+      budget: formatCurrencyAmount(item.budgetAmount, agreedCurrency),
       paymentPercent: item.paymentPercent ? `${item.paymentPercent}%` : 'Auto',
       requirement: item.description,
       workflow: source.workflow || source.type || item.typeLabel,
@@ -264,6 +302,16 @@ function toApplicationRow(bid) {
   }
 }
 
+function canNegotiateApplication(application) {
+  const applicationStatus = String(application?.statusId || application?.status || '').toLowerCase()
+  if (['accepted', 'awarded', 'rejected'].includes(applicationStatus)) return false
+
+  const previousOffer = application?.counterOffer
+  if (!previousOffer) return true
+
+  return previousOffer.status === 'rejected' && previousOffer.autoRejectOnDecline !== true
+}
+
 function toSubmittedAttachment(attachment, index) {
   const mimeType = String(attachment.mimeType || '').toLowerCase()
   const configuredFileType = String(attachment.fileType || 'File')
@@ -330,9 +378,191 @@ function AttachmentPreview({ attachment }) {
   )
 }
 
-function ApplicationReviewModal({ application, initialStep = 'review', onClose, onScheduleInterview, onStartInterview }) {
+function ApplicationNegotiationModal({ application, onClose, onCounterOffer, opportunityBudgetAmount = 0 }) {
+  const [counterAmount, setCounterAmount] = useState('')
+  const [isCounterOffering, setIsCounterOffering] = useState(false)
+  const [counterError, setCounterError] = useState('')
+  const [counterNotice, setCounterNotice] = useState('')
+  const [autoRejectOnDecline, setAutoRejectOnDecline] = useState(true)
+  const [latestCounterOffer, setLatestCounterOffer] = useState(application?.counterOffer || null)
+
+  if (!application) return null
+
+  const currency = application.currency || 'KES'
+  const bidAmount = Number(application.bidAmount || 0)
+  const proposedAmount = Number(counterAmount)
+  const canProposeOffer = !latestCounterOffer || (
+    latestCounterOffer.status === 'rejected'
+    && latestCounterOffer.autoRejectOnDecline !== true
+    && String(application.statusId || '').toLowerCase() !== 'rejected'
+  )
+  const canSendOffer = Boolean(
+    canProposeOffer
+    && onCounterOffer
+    && counterAmount.trim()
+    && Number.isFinite(proposedAmount)
+    && proposedAmount > 0,
+  )
+
+  async function sendCounterOffer(event) {
+    event.preventDefault()
+    if (!counterAmount.trim() || !Number.isFinite(proposedAmount) || proposedAmount <= 0) {
+      setCounterError('Enter a valid amount greater than zero.')
+      return
+    }
+    if (bidAmount && proposedAmount >= bidAmount) {
+      setCounterError(`Enter an amount lower than the student's ${currency} ${bidAmount.toLocaleString()} bid.`)
+      return
+    }
+    if (opportunityBudgetAmount > 0 && proposedAmount <= opportunityBudgetAmount) {
+      setCounterError(`Enter an amount above your original ${currency} ${opportunityBudgetAmount.toLocaleString()} budget.`)
+      return
+    }
+
+    setIsCounterOffering(true)
+    setCounterError('')
+    setCounterNotice('')
+    try {
+      const result = await onCounterOffer(application.id, proposedAmount, { autoRejectOnDecline })
+      setLatestCounterOffer(result?.counterOffer || {
+        amount: proposedAmount,
+        autoRejectOnDecline,
+        currency,
+        status: 'pending',
+      })
+      setCounterAmount('')
+      setCounterNotice('Offer sent. The student was notified to accept or decline.')
+    } catch (error) {
+      setCounterError(error instanceof Error ? error.message : 'Could not send the offer.')
+    } finally {
+      setIsCounterOffering(false)
+    }
+  }
+
+  return (
+    <div className="business-review-modal-backdrop" role="presentation">
+      <section
+        className="business-review-negotiation-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="application-negotiation-title"
+      >
+        <header>
+          <div>
+            <span aria-hidden="true"><FiDollarSign /></span>
+            <div>
+              <h2 id="application-negotiation-title">Negotiate application</h2>
+              <p>Propose a new price without leaving the applications list.</p>
+            </div>
+          </div>
+          <button type="button" aria-label="Close price negotiation" onClick={onClose}>
+            <FiX aria-hidden="true" />
+          </button>
+        </header>
+
+        <div className="business-review-negotiation-body">
+          <section className="business-review-negotiation-applicant">
+            <img src={application.avatar} alt="" />
+            <div>
+              <strong>{application.creator}</strong>
+              <span>{application.handle}</span>
+            </div>
+          </section>
+
+          <dl className="business-review-negotiation-summary">
+            <div>
+              <dt>Student&apos;s bid</dt>
+              <dd>{currency} {bidAmount.toLocaleString()}</dd>
+            </div>
+            <div>
+              <dt>Opportunity budget</dt>
+              <dd>{opportunityBudgetAmount > 0 ? `${currency} ${opportunityBudgetAmount.toLocaleString()}` : 'Not specified'}</dd>
+            </div>
+          </dl>
+
+          {latestCounterOffer ? (
+            <p className={`business-review-counter-status is-${latestCounterOffer.status || 'pending'}`}>
+              Latest offer: {latestCounterOffer.currency || currency} {Number(latestCounterOffer.amount || 0).toLocaleString()}
+              {' · '}{latestCounterOffer.status === 'accepted'
+                ? 'Accepted by student'
+                : latestCounterOffer.status === 'rejected'
+                  ? 'Declined by student'
+                  : 'Awaiting student response'}
+            </p>
+          ) : null}
+
+          {canProposeOffer ? (
+            <form className="business-review-negotiation-form" onSubmit={sendCounterOffer}>
+            <label htmlFor={`counter-offer-${application.id}`}>
+              <span>Your proposed amount</span>
+              <div>
+                <strong>{currency}</strong>
+                <input
+                  id={`counter-offer-${application.id}`}
+                  type="number"
+                  min={opportunityBudgetAmount > 0 ? opportunityBudgetAmount + 1 : 1}
+                  max={bidAmount > 1 ? bidAmount - 1 : undefined}
+                  value={counterAmount}
+                  placeholder={opportunityBudgetAmount > 0 ? String(opportunityBudgetAmount) : 'Enter amount'}
+                  autoFocus
+                  onChange={(event) => {
+                    setCounterAmount(event.target.value)
+                    setCounterError('')
+                    setCounterNotice('')
+                  }}
+                />
+              </div>
+            </label>
+            {opportunityBudgetAmount > 0 && bidAmount > opportunityBudgetAmount ? (
+              <p className="business-review-negotiation-range">
+                Valid pushback range: above {currency} {opportunityBudgetAmount.toLocaleString()} and below {currency} {bidAmount.toLocaleString()}.
+              </p>
+            ) : null}
+            <label className="business-review-negotiation-auto-reject">
+              <input
+                type="checkbox"
+                checked={autoRejectOnDecline}
+                onChange={(event) => setAutoRejectOnDecline(event.target.checked)}
+              />
+              <span>
+                <strong>Automatically reject if the offer is declined</strong>
+                <em>The application will move to Rejected immediately, so you won&apos;t need to reject it separately.</em>
+              </span>
+            </label>
+            <p className="business-review-negotiation-notice">The student will receive an in-app notification and can accept or decline this offer.</p>
+            {counterError ? <p className="business-review-counter-error" role="alert">{counterError}</p> : null}
+            </form>
+          ) : (
+            <p className="business-review-negotiation-closed" role="status">
+              {latestCounterOffer?.status === 'pending'
+                ? 'This offer is awaiting the student’s response. You cannot replace it while it is pending.'
+                : latestCounterOffer?.status === 'accepted'
+                  ? 'The student accepted this offer. Price negotiation is complete.'
+                  : 'This application was auto-rejected when the offer was declined. No further offers can be sent.'}
+            </p>
+          )}
+          {counterNotice ? <p className="business-review-counter-notice" role="status">{counterNotice}</p> : null}
+        </div>
+
+        <footer>
+          <Button tone="ghost" disabled={isCounterOffering} onClick={onClose}>{canProposeOffer ? 'Cancel' : 'Close'}</Button>
+          {canProposeOffer ? (
+            <Button tone="brand" disabled={isCounterOffering || !canSendOffer} onClick={sendCounterOffer}>
+              <FiSend aria-hidden="true" />
+              {isCounterOffering ? 'Sending offer...' : latestCounterOffer ? 'Send new offer' : 'Send offer'}
+            </Button>
+          ) : null}
+        </footer>
+      </section>
+    </div>
+  )
+}
+
+function ApplicationReviewModal({ application, initialStep = 'review', onClose, onScheduleInterview, onStartInterview, onAccept, onRequestEscrowTopUp, opportunityBudgetAmount = 0 }) {
   const [reviewStep, setReviewStep] = useState(initialStep)
   const [previewAttachment, setPreviewAttachment] = useState(null)
+  const [isAccepting, setIsAccepting] = useState(false)
+  const [acceptError, setAcceptError] = useState('')
   const [interviewType, setInterviewType] = useState('video')
   const [interviewDate, setInterviewDate] = useState(() => {
     const tomorrow = new Date()
@@ -357,6 +587,35 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose, 
   const canStartInterview = interviewStatus === 'confirmed' && Boolean(application.interview?.meetingUrl)
   const qualificationAnswers = application.questionAnswers
   const submittedAttachments = application.attachments.map(toSubmittedAttachment)
+  const currency = application.currency || 'KES'
+  const bidAmount = Number(application.bidAmount || 0)
+  const isAboveBudget = opportunityBudgetAmount > 0 && bidAmount > opportunityBudgetAmount
+  const escrowShortfall = isAboveBudget ? bidAmount - opportunityBudgetAmount : 0
+  const escrowShortfallMessage = isAboveBudget
+    ? `This applicant's agreed price (${currency} ${bidAmount.toLocaleString()}) is more than the ${currency} ${opportunityBudgetAmount.toLocaleString()} funded in escrow. Add funds to cover it before awarding.`
+    : ''
+  const existingCounterOffer = application.counterOffer
+
+  async function acceptApplication() {
+    if (!onAccept) return
+    // Agreed price exceeds the escrow balance — route to the escrow top-up flow
+    // instead of failing the award. The shortfall is shown at the top of that modal.
+    if (isAboveBudget && onRequestEscrowTopUp) {
+      onRequestEscrowTopUp({ amount: escrowShortfall, applicationId: application.id, message: escrowShortfallMessage })
+      onClose()
+      return
+    }
+    setIsAccepting(true)
+    setAcceptError('')
+    try {
+      await onAccept(application.id)
+      onClose()
+    } catch (error) {
+      setAcceptError(error instanceof Error ? error.message : 'Could not accept this applicant.')
+    } finally {
+      setIsAccepting(false)
+    }
+  }
 
   async function startInterview() {
     if (!application.interview?.meetingUrl) return
@@ -550,7 +809,21 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose, 
                 </li>
                 <li>
                   <h4>Commercial offer</h4>
-                  <p>{application.currency || 'KES'} {Number(application.bidAmount || 0).toLocaleString()} · {application.deliveryTime || 'Delivery time not specified'}</p>
+                  <p>{currency} {bidAmount.toLocaleString()} · {application.deliveryTime || 'Delivery time not specified'}</p>
+                  {isAboveBudget ? (
+                    <p className="business-review-above-budget">
+                      This bid is above your {currency} {opportunityBudgetAmount.toLocaleString()} budget.
+                    </p>
+                  ) : null}
+                  {existingCounterOffer ? (
+                    <p className={`business-review-counter-status is-${existingCounterOffer.status}`}>
+                      {existingCounterOffer.status === 'pending'
+                        ? `Offer of ${existingCounterOffer.currency || currency} ${Number(existingCounterOffer.amount || 0).toLocaleString()} sent — awaiting the student's response.`
+                        : existingCounterOffer.status === 'accepted'
+                          ? `Student accepted your offer of ${existingCounterOffer.currency || currency} ${Number(existingCounterOffer.amount || 0).toLocaleString()}.`
+                          : `Student declined your offer of ${existingCounterOffer.currency || currency} ${Number(existingCounterOffer.amount || 0).toLocaleString()}.`}
+                    </p>
+                  ) : null}
                 </li>
                 {application.coverNote ? (
                   <li>
@@ -667,212 +940,19 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose, 
               {interviewStatus === 'cancelled' ? (
                 <Button tone="brand" onClick={() => setReviewStep('schedule')}>Reschedule Interview</Button>
               ) : null}
-              <Button tone="brand">Accept</Button>
+              {acceptError ? <span className="business-review-schedule-error" role="alert">{acceptError}</span> : null}
+              <Button
+                tone="brand"
+                disabled={isAccepting || application.statusId === 'accepted'}
+                onClick={acceptApplication}
+              >
+                {application.statusId === 'accepted' ? 'Accepted' : isAccepting ? 'Accepting...' : 'Accept'}
+              </Button>
             </>
           )}
         </footer>
       </section>
     </div>
-  )
-}
-
-function RequestChangesDialog({ submission, onCancel, onSend }) {
-  return (
-    <section className="business-review-request-changes-dialog" role="dialog" aria-modal="true" aria-labelledby="request-changes-title">
-      <header>
-        <div>
-          <h3 id="request-changes-title">Request Changes</h3>
-          <p>Send feedback to {submission.creator} and request changes to this submission.</p>
-        </div>
-        <button type="button" aria-label="Close request changes" onClick={onCancel}>
-          <FiX aria-hidden="true" />
-        </button>
-      </header>
-
-      <section className="business-review-request-summary" aria-label="Submission summary">
-        <div>
-          <PlatformBadge platform={submission.platform} />
-          <strong>{submission.deliverable}</strong>
-        </div>
-        <dl>
-          {(submission.summaryItems || []).slice(0, 2).map((item) => (
-            <div key={item.label}><dt>{item.label}</dt><dd>{item.value}<span>{item.meta}</span></dd></div>
-          ))}
-          <div><dt>Submitted on</dt><dd>{submission.submittedDate} · 2:14 PM</dd></div>
-          <div><dt>{submission.result?.label || 'Result'}</dt><dd className="is-positive">{submission.result?.value}<span>{submission.result?.meta}</span></dd></div>
-        </dl>
-      </section>
-
-      <label className="business-review-request-field">
-        <span>What needs to be changed?</span>
-        <em>Be clear and specific so the creator can improve and resubmit.</em>
-        <textarea
-          maxLength="1000"
-          defaultValue={`Thanks for the submission! Please provide the following:\n\n- Align the resubmission with the agreed ${submission.frameworkType} requirements.\n- Include clearer evidence for ${submission.deliverable}.\n- Make sure all files, links or proof items named in the brief are included.\n- Confirm the evidence is native to the submission method, not recreated manually.`}
-        />
-        <small>287/1000</small>
-      </label>
-
-      <section className="business-review-request-support">
-        <h4>Supporting reference (optional)</h4>
-        <button type="button">
-          <FiUpload aria-hidden="true" />
-          <span><strong>Upload file or screenshot</strong><em>PNG, JPG or PDF up to 5MB</em></span>
-        </button>
-      </section>
-
-      <aside className="business-review-request-reminder">
-        <FiMessageSquare aria-hidden="true" />
-        <div>
-          <strong>Reminder to Creator</strong>
-          <span>Please address the requested changes and resubmit within 3 days.</span>
-        </div>
-      </aside>
-
-      <footer>
-        <Button tone="ghost" onClick={onCancel}>Cancel</Button>
-        <Button tone="brand" onClick={onSend}>Send Request</Button>
-      </footer>
-    </section>
-  )
-}
-
-function RatingStars({ score }) {
-  return (
-    <span className="business-review-approve-stars" aria-label={`${score} out of 5`}>
-      {Array.from({ length: 5 }, (_, index) => (
-        <FiStar key={index} className={index < score ? 'is-filled' : ''} aria-hidden="true" />
-      ))}
-    </span>
-  )
-}
-
-function ApproveReleasePaymentDialog({ submission, onCancel, onApprove }) {
-  const ratings = [
-    { label: 'Quality of Work', note: 'How well the creator met the requirements and delivered quality results.', score: 5, result: 'Excellent', icon: FiFileText },
-    { label: 'Communication', note: 'Responsiveness, clarity and professionalism in communication.', score: 4, result: 'Very Good', icon: FiMessageSquare },
-    { label: 'Timeliness', note: 'Adherence to deadlines and submission within the agreed time.', score: 5, result: 'Excellent', icon: FiCalendar },
-    { label: 'Initiative & Creativity', note: 'Proactiveness and ability to go beyond basic expectations.', score: 4, result: 'Very Good', icon: FiHeart },
-    { label: 'Accuracy of Results', note: 'Accuracy and authenticity of the data and results delivered.', score: 5, result: 'Excellent', icon: FiCheckCircle },
-  ]
-
-  return (
-    <section className="business-review-approve-dialog" role="dialog" aria-modal="true" aria-labelledby="approve-payment-title">
-      <header>
-        <div>
-          <div className="business-review-submission-breadcrumbs" aria-label="Approval path">
-            <span>Projects</span>
-            <span>Level Up Your Skills</span>
-            <span>Work & Deliverables</span>
-            <span>Submitted Work</span>
-            <span>Approve & Release Payment</span>
-          </div>
-          <h3 id="approve-payment-title">
-            Approve & Release Payment <StatusPill tone="purple">Campaign</StatusPill>
-          </h3>
-          <p>Review performance, rate the creator and release payment.</p>
-        </div>
-        <button type="button" aria-label="Close approve payment" onClick={onCancel}>
-          <FiX aria-hidden="true" />
-        </button>
-      </header>
-
-      <div className="business-review-approve-body">
-        <main className="business-review-approve-main">
-          <section className="business-profile-card business-review-approve-summary">
-            <h4>Submission Summary</h4>
-            <dl>
-              {(submission.summaryItems || []).map((item) => (
-                <div key={item.label}><dt>{item.label}</dt><dd>{item.value}<span>{item.meta}</span></dd></div>
-              ))}
-              <div><dt>{submission.result?.label || 'Result'}</dt><dd className="is-positive">{submission.result?.value}<span>{submission.result?.meta}</span><StatusPill tone="green">{submission.result?.status}</StatusPill><small>{submission.result?.percent}</small></dd></div>
-            </dl>
-          </section>
-
-          <section className="business-profile-card business-review-approve-ratings">
-            <h4>Rate the Creator on Zumbarl Matrices</h4>
-            <p>Your ratings help maintain quality and unlock better opportunities for creators.</p>
-            <div>
-              {ratings.map((rating) => {
-                const Icon = rating.icon
-                return (
-                  <article key={rating.label}>
-                    <span><Icon aria-hidden="true" /></span>
-                    <div>
-                      <strong>{rating.label}</strong>
-                      <em>{rating.note}</em>
-                    </div>
-                    <RatingStars score={rating.score} />
-                    <b>{rating.result}</b>
-                  </article>
-                )
-              })}
-            </div>
-            <footer>
-              <h5>Overall Rating</h5>
-              <p>Great job! You rated {submission.creator}.</p>
-              <div><strong>4.6 / 5</strong><RatingStars score={5} /><StatusPill tone="green">Excellent</StatusPill></div>
-              <label>
-                <span>Feedback (Optional)</span>
-                <textarea placeholder={`Share feedback with ${submission.creator}. This helps them improve and grow.`} maxLength="500" />
-                <em>0/500</em>
-              </label>
-            </footer>
-          </section>
-
-          <aside className="business-review-approve-note">
-            <FiMessageSquare aria-hidden="true" />
-            <span>By approving, you confirm that the creator has met the deliverable requirements and the results are accurate.</span>
-          </aside>
-        </main>
-
-        <aside className="business-review-approve-side">
-          <section className="business-profile-card business-review-approve-payment-summary">
-            <header><h4>Payment Summary</h4><button type="button">Edit</button></header>
-            <dl>
-              <div><dt>Total Amount</dt><dd>KES 20,000</dd></div>
-              <div><dt>Platform Fee (10%)</dt><dd>-KES 2,000</dd></div>
-              <div><dt>Total Payout</dt><dd>KES 18,000</dd></div>
-            </dl>
-          </section>
-
-          <section className="business-profile-card business-review-submission-payment">
-            <h4>Payment Model</h4>
-            <div className="business-review-payment-split">
-              <strong>{submission.paymentModel || 'Payment model agreed'}</strong>
-              <div><span className="is-paid"><FiCheckCircle aria-hidden="true" /></span><span className="is-pending"><FiCheckCircle aria-hidden="true" /></span></div>
-              <dl>
-                <div><dt>Content Delivery</dt><dd>50%</dd><span>Paid on submission</span><StatusPill tone="green">Paid</StatusPill></div>
-                <div><dt>Verification</dt><dd>50%</dd><span>Paid on approval</span><StatusPill tone="green">{submission.paymentStatus || 'Ready to Release'}</StatusPill></div>
-              </dl>
-            </div>
-          </section>
-
-          <section className="business-profile-card business-review-approve-method">
-            <header><h4>Payment Method</h4><button type="button">Edit</button></header>
-            <div>
-              <FiCreditCard aria-hidden="true" />
-              <span><strong>Bank Transfer</strong><em>Equity Bank **** 1234</em></span>
-            </div>
-          </section>
-
-          <section className="business-profile-card business-review-approve-confirm">
-            <h4>You are about to</h4>
-            <ul>
-              <li><FiCheckCircle aria-hidden="true" /> Approve the submission</li>
-              <li><FiCheckCircle aria-hidden="true" /> Release the remaining payment (KES 18,000) to the creator</li>
-              <li><FiCheckCircle aria-hidden="true" /> Submit your ratings and feedback</li>
-            </ul>
-          </section>
-
-          <Button className="business-review-approve-release" tone="brand" onClick={onApprove}>
-            <FiLock aria-hidden="true" />
-            Approve & Release Payment
-          </Button>
-          <p className="business-review-approve-warning">Once approved, payment will be released immediately and cannot be reversed.</p>
-        </aside>
-      </div>
-    </section>
   )
 }
 
@@ -949,20 +1029,54 @@ function createDeliverableDraft(index = 0) {
   }
 }
 
-function DeliverableDetailsModal({ deliverable, onClose }) {
-  if (!deliverable) return null
+// The scope is reference material - read once when setting expectations, not
+// every time you open the deliverable. It sits behind a button so the live work
+// (tasks, workload, thread) is what the page actually opens on.
+// Releasing the budget is offered only when the team has actually finished the
+// deliverable: every declared task approved and nothing still blocked. The
+// button stays visible but disabled when it is not, so the business can see what
+// is outstanding rather than wondering where the action went.
+function CompleteAndPayButton({ completion, isCompleted, isCompleting, onComplete }) {
+  if (isCompleted) return <span className="business-review-deliverable-complete-badge">Paid</span>
+  if (!completion?.hasTasks) return null
 
+  const reason = completion.blocked
+    ? `${completion.blocked} task${completion.blocked === 1 ? '' : 's'} still blocked`
+    : completion.pending
+      ? `${completion.pending} task${completion.pending === 1 ? '' : 's'} not approved yet`
+      : ''
+
+  return (
+    <button
+      type="button"
+      className="business-review-complete-pay-btn"
+      disabled={!completion.isReady || isCompleting}
+      title={reason || 'Release this deliverable\u2019s budget, split by workload'}
+      onClick={onComplete}
+    >
+      {isCompleting ? 'Completing…' : 'Complete & pay'}
+      {reason ? <em>{reason}</em> : null}
+    </button>
+  )
+}
+
+function DeliverableScopeModal({ deliverable, onClose }) {
   const workflow = getDeliverableWorkflow(deliverable.workflow, deliverable.type)
 
   return (
     <div className="business-review-modal-backdrop" role="presentation">
-      <section className="business-review-deliverable-details-modal" role="dialog" aria-modal="true" aria-labelledby="deliverable-details-title">
+      <section
+        className="business-review-deliverable-details-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="deliverable-scope-title"
+      >
         <header>
           <div>
-            <h2 id="deliverable-details-title">{deliverable.title}</h2>
+            <h2 id="deliverable-scope-title">{deliverable.title}</h2>
             <p>Deliverable scope details from the opportunity setup.</p>
           </div>
-          <button type="button" aria-label="Close deliverable details" onClick={onClose}>
+          <button type="button" aria-label="Close scope details" onClick={onClose}>
             <FiX aria-hidden="true" />
           </button>
         </header>
@@ -1000,6 +1114,73 @@ function DeliverableDetailsModal({ deliverable, onClose }) {
           <Button tone="ghost" onClick={onClose}>Close</Button>
         </footer>
       </section>
+    </div>
+  )
+}
+
+function DeliverableDetailPanel({
+  completion,
+  deliverable,
+  deliverableTasks,
+  isCompleted = false,
+  isCompleting = false,
+  onClose,
+  onComplete,
+  onOpenSubmission,
+  projectId = null,
+  submissions = [],
+}) {
+  const [isScopeOpen, setIsScopeOpen] = useState(false)
+
+  if (!deliverable) return null
+
+  return (
+    <div className="business-review-deliverable-detail">
+      <section className="business-review-deliverable-details-inline" aria-labelledby="deliverable-details-title">
+        <header>
+          <div>
+            <button type="button" className="business-review-deliverable-back" onClick={onClose}>
+              ← All deliverables
+            </button>
+            <h2 id="deliverable-details-title">{deliverable.title}</h2>
+            <p>{deliverable.description || 'How the team is building this deliverable.'}</p>
+          </div>
+          <div className="business-review-deliverable-detail-actions">
+            <button type="button" className="business-review-scope-btn" onClick={() => setIsScopeOpen(true)}>
+              <FiEye aria-hidden="true" />
+              Scope details
+            </button>
+            {onComplete ? (
+              <CompleteAndPayButton
+                completion={completion}
+                isCompleted={isCompleted}
+                isCompleting={isCompleting}
+                onComplete={onComplete}
+              />
+            ) : null}
+          </div>
+        </header>
+
+        <div className="business-review-deliverable-details-body">
+          {projectId ? (
+            <DeliverableWorkloadPanel
+              deliverable={deliverable}
+              deliverableTasks={deliverableTasks}
+              projectId={projectId}
+              submissions={submissions}
+              onOpenSubmission={onOpenSubmission}
+            />
+          ) : (
+            <p className="business-review-empty-note">
+              Task and workload detail appears once this deliverable is part of an awarded team project.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {isScopeOpen ? (
+        <DeliverableScopeModal deliverable={deliverable} onClose={() => setIsScopeOpen(false)} />
+      ) : null}
     </div>
   )
 }
@@ -1161,12 +1342,17 @@ function AddDeliverableModal({ isOpen, onClose, onCreate }) {
   )
 }
 
-function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
+function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen, mode = 'publish', opportunity, type, onClose, onFund, onPublish }) {
   const [publishStep, setPublishStep] = useState(1)
   const [paymentMethod, setPaymentMethod] = useState('wallet')
   const [selectedCardId, setSelectedCardId] = useState('visa-8421')
+  const [isCompletingPayment, setIsCompletingPayment] = useState(false)
+  const [paymentError, setPaymentError] = useState('')
+  const [paymentReference] = useState(() => `opportunity-payment-${opportunity?.backendId || opportunity?.id || 'draft'}-${Date.now()}`)
 
   if (!isOpen) return null
+
+  const isEscrowTopUp = mode === 'topup'
 
   const paymentMethods = {
     wallet: {
@@ -1215,10 +1401,10 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
     },
   }
   const selectedPaymentMethod = paymentMethods[paymentMethod]
-  const paymentScopeItems = getOpportunityPaymentScopeItems(opportunity)
+  const paymentScopeItems = isEscrowTopUp ? [] : getOpportunityPaymentScopeItems(opportunity)
   const scopedBudgetTotal = paymentScopeItems.reduce((total, item) => total + item.budgetAmount, 0)
   const fallbackBudgetTotal = getCurrencyAmount(opportunity.budget || opportunity.budgetAmount)
-  const paymentBudgetTotal = scopedBudgetTotal || fallbackBudgetTotal
+  const paymentBudgetTotal = isEscrowTopUp ? Number(fundingAmount || 0) : scopedBudgetTotal || fallbackBudgetTotal
   const paymentBudgetLabel = formatKesAmount(paymentBudgetTotal)
   const skills = getSkillList(opportunity)
   const modalObjective = opportunity.opportunityType || type
@@ -1228,20 +1414,47 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
     { id: 'mastercard-1134', label: 'Mastercard ending 1134', meta: 'Expires 11/27', brand: 'Mastercard' },
   ]
 
+  async function completePaymentAndPublish() {
+    if (isCompletingPayment) return
+    setIsCompletingPayment(true)
+    setPaymentError('')
+    try {
+      const completeFunding = isEscrowTopUp ? onFund : onPublish
+      await completeFunding?.(opportunity, {
+        amount: paymentBudgetTotal,
+        currency: opportunity.currency || 'KES',
+        reference: paymentReference,
+      })
+      onClose()
+    } catch (error) {
+      setPaymentError(error instanceof Error
+        ? error.message
+        : isEscrowTopUp ? 'Escrow could not be updated.' : 'Payment could not be completed. The opportunity remains private.')
+    } finally {
+      setIsCompletingPayment(false)
+    }
+  }
+
   return (
     <div className="business-review-modal-backdrop" role="presentation">
       <section className="business-review-publish-modal" role="dialog" aria-modal="true" aria-labelledby="publish-opportunity-title">
-        <button type="button" className="business-review-publish-close" aria-label="Close publish opportunity" onClick={onClose}>
+        <button type="button" className="business-review-publish-close" aria-label={isEscrowTopUp ? 'Close escrow update' : 'Close fund and publish opportunity'} onClick={onClose}>
           <FiX aria-hidden="true" />
         </button>
 
         <header className="business-review-publish-head">
-          <h2 id="publish-opportunity-title">Publish Opportunity</h2>
-          <p>Complete the financing details to publish your opportunity.</p>
+          <h2 id="publish-opportunity-title">{isEscrowTopUp ? 'Update Escrow' : 'Fund & Publish Opportunity'}</h2>
+          <p>{isEscrowTopUp
+            ? 'Add the remaining agreed amount before starting the project.'
+            : 'Pay the opportunity budget into escrow before it becomes visible to students.'}</p>
         </header>
 
+        {noticeMessage ? (
+          <p className="business-review-publish-notice" role="alert">{noticeMessage}</p>
+        ) : null}
+
         <ol className="business-review-publish-steps" aria-label="Publish opportunity steps">
-          <li className={publishStep === 1 ? 'is-active' : 'is-complete'}><span>{publishStep > 1 ? <FiCheckCircle aria-hidden="true" /> : '1'}</span><strong>Budget & Services</strong><em>Define budget and services</em></li>
+          <li className={publishStep === 1 ? 'is-active' : 'is-complete'}><span>{publishStep > 1 ? <FiCheckCircle aria-hidden="true" /> : '1'}</span><strong>{isEscrowTopUp ? 'Escrow Shortfall' : 'Budget & Services'}</strong><em>{isEscrowTopUp ? 'Review amount required' : 'Define budget and services'}</em></li>
           <li className={publishStep === 2 ? 'is-active' : publishStep > 2 ? 'is-complete' : ''}><span>{publishStep > 2 ? <FiCheckCircle aria-hidden="true" /> : '2'}</span><strong>Payment Method</strong><em>Choose payment option</em></li>
           <li className={publishStep === 3 ? 'is-active' : ''}><span>3</span><strong>{selectedPaymentMethod.stepLabel}</strong><em>Complete payment</em></li>
         </ol>
@@ -1261,7 +1474,7 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
               </dl>
               <dl>
                 <div><dt>Engagement Mode</dt><dd>{opportunity.engagementMode || 'Remote'}</dd></div>
-                <div><dt>Visibility</dt><dd>Visible to all creators</dd></div>
+                <div><dt>Visibility</dt><dd>{isEscrowTopUp ? 'Already published' : 'Visible to all creators'}</dd></div>
                 <div><dt>Deadline</dt><dd>{modalDeadline}</dd></div>
               </dl>
               <dl>
@@ -1416,8 +1629,10 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
               <section className="business-review-publish-breakdown">
                 <header>
                   <div>
-                    <h2>Budget & Services Breakdown</h2>
-                    <p>Review the payment schedule from this opportunity&apos;s saved scope and budget.</p>
+                    <h2>{isEscrowTopUp ? 'Escrow Shortfall' : 'Budget & Services Breakdown'}</h2>
+                    <p>{isEscrowTopUp
+                      ? 'Review the additional amount required to cover the agreed project price.'
+                      : 'Review the payment schedule from this opportunity\'s saved scope and budget.'}</p>
                   </div>
                 </header>
                 <div className="business-review-publish-table">
@@ -1447,8 +1662,8 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
                         <DeliverableIcon icon="scope" />
                         <strong>{opportunity.title || 'Opportunity budget'}</strong>
                       </div>
-                      <p>No scoped deliverables were found, so the saved opportunity budget is being used.</p>
-                      <span>Budget</span>
+                      <p>{isEscrowTopUp ? 'Additional escrow required before project start.' : 'No scoped deliverables were found, so the saved opportunity budget is being used.'}</p>
+                      <span>{isEscrowTopUp ? 'Top-up' : 'Budget'}</span>
                       <span>100%</span>
                       <strong>{paymentBudgetTotal.toLocaleString()}</strong>
                       <span />
@@ -1474,7 +1689,7 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
               <div>
                 <article><FiUsers aria-hidden="true" /><span><strong>1. {selectedPaymentMethod.stepLabel} Started</strong><em>{paymentMethod === 'wallet' ? 'We will reserve the amount from your wallet.' : paymentMethod === 'mobile-money' ? 'You will receive an STK push on your phone.' : paymentMethod === 'bank' ? 'Use the bank details and reference shown above.' : 'The secure card checkout is ready.'}</em></span></article>
                 <article><FiLock aria-hidden="true" /><span><strong>2. Complete {selectedPaymentMethod.stepLabel}</strong><em>{paymentMethod === 'wallet' ? 'Confirm wallet deduction to fund escrow.' : paymentMethod === 'mobile-money' ? 'Enter your PIN to authorize the payment.' : paymentMethod === 'bank' ? 'Send the transfer and keep the reference visible.' : 'Confirm the secure card payment.'}</em></span></article>
-                <article><FiCheckCircle aria-hidden="true" /><span><strong>3. Payment Confirmed</strong><em>We&apos;ll confirm payment and publish your opportunity.</em></span></article>
+                <article><FiCheckCircle aria-hidden="true" /><span><strong>3. Payment Confirmed</strong><em>{isEscrowTopUp ? 'Escrow will update and project start will become available.' : 'We\'ll confirm payment and publish your opportunity.'}</em></span></article>
               </div>
             </section>
           ) : null}
@@ -1486,187 +1701,21 @@ function PublishOpportunityModal({ isOpen, opportunity, type, onClose }) {
           ) : (
             <Button tone="ghost" onClick={onClose}>Cancel</Button>
           )}
-          {publishStep === 3 ? <p><FiMessageSquare aria-hidden="true" /> {paymentMethod === 'bank' ? 'We will publish after the transfer is confirmed.' : paymentMethod === 'wallet' ? 'Your opportunity will publish after wallet escrow is funded.' : 'You will be redirected after successful payment.'}</p> : null}
-          <Button tone="brand" onClick={() => setPublishStep(Math.min(3, publishStep + 1))}>
-            {publishStep === 3 ? selectedPaymentMethod.actionLabel : publishStep === 2 ? selectedPaymentMethod.nextLabel : 'Next: Payment Method'}
+          {publishStep === 3 ? <p><FiMessageSquare aria-hidden="true" /> {isEscrowTopUp
+            ? 'Project start becomes available after escrow is updated.'
+            : paymentMethod === 'bank' ? 'We will publish after the transfer is confirmed.' : paymentMethod === 'wallet' ? 'Your opportunity will publish after wallet escrow is funded.' : 'You will be redirected after successful payment.'}</p> : null}
+          {paymentError ? <p role="alert">{paymentError}</p> : null}
+          <Button
+            tone="brand"
+            disabled={isCompletingPayment || paymentBudgetTotal <= 0}
+            onClick={publishStep === 3 ? completePaymentAndPublish : () => setPublishStep(Math.min(3, publishStep + 1))}
+          >
+            {isCompletingPayment
+              ? 'Completing payment...'
+              : publishStep === 3 ? selectedPaymentMethod.actionLabel : publishStep === 2 ? selectedPaymentMethod.nextLabel : 'Next: Payment Method'}
           </Button>
         </footer>
       </section>
-    </div>
-  )
-}
-
-function SubmittedWorkReviewModal({ submission, onClose }) {
-  const [isRequestingChanges, setIsRequestingChanges] = useState(false)
-  const [isApprovingPayment, setIsApprovingPayment] = useState(false)
-
-  if (!submission) return null
-
-  return (
-    <div className="business-review-modal-backdrop" role="presentation">
-      <section
-        className={`business-review-application-modal business-review-submission-modal${isRequestingChanges || isApprovingPayment ? ' is-obscured' : ''}`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="submitted-work-review-title"
-      >
-        <header>
-          <div>
-            <div className="business-review-submission-breadcrumbs" aria-label="Review path">
-              <span>Projects</span>
-              <span>Level Up Your Skills</span>
-              <span>Work & Deliverables</span>
-              <span>Submitted Work</span>
-            </div>
-            <h2 id="submitted-work-review-title">
-              Review Submission <StatusPill tone="purple">{submission.frameworkType}</StatusPill>
-            </h2>
-            <p>Review the {submission.deliverable.toLowerCase()} submitted by {submission.creator}.</p>
-          </div>
-          <button type="button" aria-label="Close submitted work review" onClick={onClose}>
-            <FiX aria-hidden="true" />
-          </button>
-        </header>
-
-        <div className="business-review-submission-modal-body">
-          <div className="business-review-submission-main">
-            <section className="business-profile-card business-review-submission-overview">
-              <h3>Submission Overview</h3>
-              <div className="business-review-submission-metrics">
-                <dl>
-                  {(submission.summaryItems || []).map((item) => (
-                    <div key={item.label}>
-                      <dt>{item.label}</dt>
-                      <dd>{item.value}</dd>
-                      <span>{item.meta}</span>
-                    </div>
-                  ))}
-                </dl>
-                <aside>
-                  <span>{submission.result?.label || 'Result'}</span>
-                  <strong>{submission.result?.value}</strong>
-                  <em>{submission.result?.meta}</em>
-                  <StatusPill tone="green">{submission.result?.status}</StatusPill>
-                  <small>{submission.result?.percent}</small>
-                </aside>
-              </div>
-            </section>
-
-            <section className="business-profile-card business-review-submission-creator-card">
-              <h3>Submitted By Creator</h3>
-              <div className="business-review-submission-creator-grid">
-                <PersonRow
-                  avatar={submission.avatar}
-                  name={submission.creator}
-                  subtitle={submission.handle}
-                />
-                <div>
-                  <span>Submitted on</span>
-                  <strong>{submission.submittedDate} · 2:14 PM</strong>
-                </div>
-                <div>
-                  <span>Submitted within 48hrs</span>
-                  <strong><FiCheckCircle aria-hidden="true" /> Yes</strong>
-                </div>
-                <div>
-                  <span>Files Submitted</span>
-                  <strong>{submission.filesSubmitted || (submission.extraFiles ? '2 files' : '1 file')}</strong>
-                </div>
-              </div>
-              <div className="business-review-submission-creator-meta">
-                <span><FiMapPin aria-hidden="true" /> Nairobi, Kenya</span>
-                <span><FiCalendar aria-hidden="true" /> Joined Apr 2023</span>
-                <Button tone="ghost">View Profile</Button>
-              </div>
-
-              <div className="business-review-submission-evidence">
-                <header>
-                  <h4>{submission.evidenceTitle || 'Evidence Submitted'}</h4>
-                  <p>{submission.evidenceDescription || 'Submission evidence attached by the creator.'}</p>
-                </header>
-                <div className="business-review-submission-evidence-grid">
-                  {(submission.evidence || []).map((item) => (
-                    <article key={item.title}>
-                      <strong>{item.title}</strong>
-                      <figure>
-                        <img src={item.image} alt={`${item.title} evidence`} />
-                        <figcaption>
-                          <span>{item.label}</span>
-                          <b>{item.stat}</b>
-                          <em>{item.meta}</em>
-                        </figcaption>
-                      </figure>
-                    </article>
-                  ))}
-                </div>
-                <div className="business-review-submission-verification">
-                  <FiCheckCircle aria-hidden="true" />
-                  <div>
-                    <strong>Verification</strong>
-                    <span>{submission.verification}</span>
-                  </div>
-                  <StatusPill tone="green">Verified</StatusPill>
-                </div>
-              </div>
-            </section>
-
-            <section className="business-profile-card business-review-submission-timeline">
-              <h3>Activity Timeline</h3>
-              <ol>
-                <li className="is-complete"><strong>Submitted by creator</strong><span>{submission.submittedDate} · 2:14 PM</span></li>
-                <li className="is-current"><strong>Under review</strong><span>{submission.submittedDate} · 2:20 PM</span></li>
-                <li><strong>Decision pending</strong><span>Awaiting your review</span></li>
-                <li><strong>Payment release</strong><span>Upon approval</span></li>
-              </ol>
-            </section>
-          </div>
-
-          <aside className="business-review-submission-side">
-            <section className="business-profile-card business-review-submission-payment">
-              <header>
-                <h3>Payment Model</h3>
-                <button type="button">Edit</button>
-              </header>
-              <div className="business-review-payment-split">
-                <strong>{submission.paymentModel || 'Payment model agreed'}</strong>
-                <div><span className="is-paid"><FiCheckCircle aria-hidden="true" /></span><span className="is-pending"><FiCheckCircle aria-hidden="true" /></span></div>
-                <dl>
-                  <div><dt>Submission</dt><dd>50%</dd><span>Paid on submission</span><StatusPill tone="green">Paid</StatusPill></div>
-                  <div><dt>Verification</dt><dd>50%</dd><span>Paid on approval</span><StatusPill tone="blue">{submission.paymentStatus || 'Pending'}</StatusPill></div>
-                </dl>
-              </div>
-            </section>
-
-            <section className="business-profile-card business-review-submission-decision">
-              <h3>Review & Decision</h3>
-              <label>
-                <span>Your Feedback (Optional)</span>
-                <textarea placeholder="Add feedback for the creator..." maxLength="500" />
-                <em>0/500</em>
-              </label>
-              <div>
-                <Button className="business-review-submission-approve" tone="brand" onClick={() => setIsApprovingPayment(true)}>Approve & Release Payment</Button>
-                <Button className="business-review-submission-changes" tone="ghost" onClick={() => setIsRequestingChanges(true)}>Request Changes</Button>
-                <Button className="business-review-submission-reject" tone="ghost">Reject Submission</Button>
-              </div>
-            </section>
-          </aside>
-        </div>
-      </section>
-      {isRequestingChanges ? (
-        <RequestChangesDialog
-          submission={submission}
-          onCancel={() => setIsRequestingChanges(false)}
-          onSend={() => setIsRequestingChanges(false)}
-        />
-      ) : null}
-      {isApprovingPayment ? (
-        <ApproveReleasePaymentDialog
-          submission={submission}
-          onCancel={() => setIsApprovingPayment(false)}
-          onApprove={() => setIsApprovingPayment(false)}
-        />
-      ) : null}
     </div>
   )
 }
@@ -1679,12 +1728,23 @@ function ApplicationsPanel({
   onChangeApplicationStatus,
   onScheduleApplicantInterview,
   onStartApplicantInterview,
+  onAwardApplicant,
+  onCounterOfferApplicant,
+  onRequestEscrowTopUp,
+  onSetOpportunityCapacity,
+  opportunity,
+  projectActionState,
+  opportunityBudgetAmount = 0,
 }) {
   const [selectedApplication, setSelectedApplication] = useState(null)
+  const [negotiatingApplication, setNegotiatingApplication] = useState(null)
   const [initialReviewStep, setInitialReviewStep] = useState('review')
   const [searchQuery, setSearchQuery] = useState('')
   const [startError, setStartError] = useState('')
   const isShortlisted = activeApplicationStatus === 'shortlisted'
+  const isTaskOpportunity = String(opportunity?.opportunityType || '').toLowerCase() === 'task'
+  const applicationsClosed = Boolean(opportunity?.applicationsClosed)
+  const isTogglingCapacity = projectActionState?.pending === 'capacity'
   const applicationRows = applications.map(toApplicationRow)
   const normalizedSearch = searchQuery.trim().toLowerCase()
   const filteredApplications = applicationRows.filter((application) => {
@@ -1745,7 +1805,36 @@ function ApplicationsPanel({
           <h2>All Applications</h2>
           <p>Review, evaluate and manage creator applications.</p>
         </div>
+        <div className="business-review-capacity-control">
+          {applicationsClosed ? (
+            <span className="business-review-capacity-badge is-closed">Applications closed</span>
+          ) : (
+            <span className="business-review-capacity-badge is-open">Accepting applications</span>
+          )}
+          {isTaskOpportunity ? (
+            !applicationsClosed ? (
+              <em>Closes automatically when you hire.</em>
+            ) : null
+          ) : onSetOpportunityCapacity ? (
+            <button
+              type="button"
+              className="business-profile-ghost-btn"
+              disabled={isTogglingCapacity}
+              onClick={() => onSetOpportunityCapacity(!applicationsClosed)}
+            >
+              {isTogglingCapacity
+                ? 'Saving...'
+                : applicationsClosed ? 'Reopen applications' : 'Mark at capacity'}
+            </button>
+          ) : null}
+        </div>
       </header>
+
+      {projectActionState?.error ? (
+        <p className="business-review-capacity-error" role="alert">{projectActionState.error}</p>
+      ) : projectActionState?.notice ? (
+        <p className="business-review-capacity-notice" role="status">{projectActionState.notice}</p>
+      ) : null}
 
       <TabNav
         activeId={activeApplicationStatus}
@@ -1812,6 +1901,7 @@ function ApplicationsPanel({
           </div>
           {filteredApplications.map((row) => {
             const interviewAction = getInterviewAction(row)
+            const rowAboveBudget = opportunityBudgetAmount > 0 && getCurrencyAmount(row.bidAmount) > opportunityBudgetAmount
             return (
             <article key={row.id} className="business-review-shortlisted-row">
               <span><input type="checkbox" aria-label={`Select ${row.creator}`} /></span>
@@ -1831,6 +1921,15 @@ function ApplicationsPanel({
                 <button type="button" disabled={interviewAction.disabled} onClick={() => handleInterviewAction(row)}>
                   {interviewAction.label}
                 </button>
+                {rowAboveBudget && canNegotiateApplication(row) ? (
+                  <button
+                    type="button"
+                    className="business-review-negotiate-btn"
+                    onClick={() => setNegotiatingApplication(row)}
+                  >
+                    Negotiate
+                  </button>
+                ) : null}
                 <button type="button" aria-label={`More actions for ${row.creator}`}><FiMoreVertical aria-hidden="true" /></button>
               </div>
             </article>
@@ -1849,7 +1948,10 @@ function ApplicationsPanel({
           <span>Status</span>
           <span>Actions</span>
         </div>
-        {filteredApplications.map((row) => (
+        {filteredApplications.map((row) => {
+          const rowAboveBudget = opportunityBudgetAmount > 0 && getCurrencyAmount(row.bidAmount) > opportunityBudgetAmount
+          const isNegotiationLocked = row.statusId === 'accepted' || row.counterOffer?.status === 'accepted'
+          return (
           <article key={row.id} className="business-review-application-row">
             <span><input type="checkbox" aria-label={`Select ${row.creator}`} /></span>
             <PersonRow
@@ -1861,15 +1963,31 @@ function ApplicationsPanel({
             />
             <span>{row.course}</span>
             <strong>{row.campus}</strong>
-            <strong className="business-review-engagement-rate">{row.currency || 'KES'} {Number(row.bidAmount || 0).toLocaleString()}</strong>
+            <span className="business-review-engagement-cell">
+              <strong className="business-review-engagement-rate">{row.currency || 'KES'} {Number(row.bidAmount || 0).toLocaleString()}</strong>
+              {isNegotiationLocked ? (
+                <em className="business-review-above-budget-tag is-locked">Agreed price locked</em>
+              ) : rowAboveBudget ? (
+                <em className="business-review-above-budget-tag">Above budget</em>
+              ) : null}
+            </span>
             <time>{row.submitted}<span>{row.submittedAgo}</span></time>
             <StatusPill className="business-review-status-pill" tone={row.tone}>{row.status}</StatusPill>
             <div className="business-review-application-actions">
+              {rowAboveBudget && canNegotiateApplication(row) ? (
+                <button
+                  type="button"
+                  className="business-review-negotiate-btn"
+                  onClick={() => setNegotiatingApplication(row)}
+                >
+                  Negotiate
+                </button>
+              ) : null}
               <button type="button" onClick={() => openApplicationReview(row)}>Review</button>
               <button type="button" aria-label={`More actions for ${row.creator}`}>⋮</button>
             </div>
           </article>
-        ))}
+        )})}
         </div>
       )}
 
@@ -1883,7 +2001,19 @@ function ApplicationsPanel({
         onClose={() => setSelectedApplication(null)}
         onScheduleInterview={onScheduleApplicantInterview}
         onStartInterview={onStartApplicantInterview}
+        onAccept={onAwardApplicant}
+        onRequestEscrowTopUp={onRequestEscrowTopUp}
+        opportunityBudgetAmount={opportunityBudgetAmount}
       />
+      {negotiatingApplication ? (
+        <ApplicationNegotiationModal
+          key={negotiatingApplication.id}
+          application={negotiatingApplication}
+          onClose={() => setNegotiatingApplication(null)}
+          onCounterOffer={onCounterOfferApplicant}
+          opportunityBudgetAmount={opportunityBudgetAmount}
+        />
+      ) : null}
     </section>
   )
 }
@@ -1961,273 +2091,447 @@ function BusinessDeliverableFilesPanel({ opportunity }) {
   )
 }
 
-function BusinessDeliverableMessagesPanel({ conversation = null, opportunity = null }) {
-  const [activeCall, setActiveCall] = useState(null)
-  const [callMessage, setCallMessage] = useState('')
-  const [conversations, setConversations] = useState([])
-  const [activeConversationId, setActiveConversationId] = useState('')
-  const [messages, setMessages] = useState([])
-  const [draft, setDraft] = useState('')
-  const [messageError, setMessageError] = useState('')
-  const [isSending, setIsSending] = useState(false)
-  const opportunityId = conversation?.opportunityId || opportunity?.backendId || null
-  const activeConversation = conversations.find((item) => item.id === activeConversationId) || conversations[0] || null
+function getSubmissionStatus(status) {
+  const key = String(status || '').toLowerCase()
+  if (key === 'approved') return { label: 'Approved', tone: 'green' }
+  if (key === 'changes_requested') return { label: 'Changes Requested', tone: 'orange' }
+  if (key === 'superseded') return { label: 'Replaced by revision', tone: 'gray' }
+  return { label: 'Pending Review', tone: 'blue' }
+}
 
-  async function loadOpportunityConversations(preferredConversation = conversation) {
-    const response = await listConversations()
-    const matching = (response?.data || []).filter((item) => (
-      !opportunityId || item.opportunityId === opportunityId
-    ))
-    setConversations(matching)
-    setActiveConversationId((current) => {
-      const preferredId = preferredConversation
-        ? `${preferredConversation.participant.id}:${preferredConversation.opportunityId || ''}`
-        : ''
-      if (preferredId && matching.some((item) => item.id === preferredId)) return preferredId
-      if (matching.some((item) => item.id === current)) return current
-      return matching[0]?.id || ''
-    })
-  }
+function toOrdinal(value) {
+  const suffixes = ['th', 'st', 'nd', 'rd']
+  const remainder = value % 100
+  return `${value}${suffixes[(remainder - 20) % 10] || suffixes[remainder] || suffixes[0]}`
+}
 
-  useEffect(() => {
-    listConversations()
-      .then((response) => {
-        const matching = (response?.data || []).filter((item) => (
-          !opportunityId || item.opportunityId === opportunityId
-        ))
-        setConversations(matching)
-        const preferredId = conversation
-          ? `${conversation.participant.id}:${conversation.opportunityId || ''}`
-          : ''
-        setActiveConversationId(
-          matching.some((item) => item.id === preferredId) ? preferredId : matching[0]?.id || '',
-        )
-      })
-      .catch((error) => setMessageError(error.message))
-  }, [conversation?.participant?.id, opportunityId])
+function getAttemptLabel(meta) {
+  if (!meta) return ''
+  if (meta.attempt <= 1) return 'First submission'
+  return `Revised work · ${toOrdinal(meta.attempt)} attempt`
+}
 
-  useEffect(() => {
-    if (!activeConversation) return
-    listMessages({
-      participantId: activeConversation.participant.id,
-      opportunityId: activeConversation.opportunityId,
-    })
-      .then((response) => setMessages(response || []))
-      .catch((error) => setMessageError(error.message))
-  }, [activeConversation?.id])
+function SubmissionReviewModal({
+  submission,
+  attemptMeta,
+  completion,
+  isCompleted = false,
+  isCompleting = false,
+  isTeamProject = false,
+  opportunityBudgetLabel,
+  onClose,
+  onComplete,
+  onReview,
+}) {
+  const [feedback, setFeedback] = useState('')
+  const [pendingDecision, setPendingDecision] = useState(null)
+  const [error, setError] = useState('')
+  const [previewFile, setPreviewFile] = useState(null)
 
-  useEffect(() => {
-    const handleMessage = (event) => {
-      const message = event.detail
-      loadOpportunityConversations().catch(() => {})
-      if (
-        activeConversation
-        && message.senderId === activeConversation.participant.id
-        && (message.opportunityId || null) === (activeConversation.opportunityId || null)
-      ) {
-        listMessages({
-          participantId: activeConversation.participant.id,
-          opportunityId: activeConversation.opportunityId,
-        }).then((response) => setMessages(response || [])).catch(() => {})
-      }
-    }
-    const handleReceipt = (event) => {
-      setMessages((current) => current.map((message) => (
-        message.id === event.detail.messageId
-          ? { ...message, ...event.detail, isRead: Boolean(event.detail.readAt) }
-          : message
-      )))
-    }
-    window.addEventListener('zumbarl:message-created', handleMessage)
-    window.addEventListener('zumbarl:message-receipt', handleReceipt)
-    return () => {
-      window.removeEventListener('zumbarl:message-created', handleMessage)
-      window.removeEventListener('zumbarl:message-receipt', handleReceipt)
-    }
-  }, [activeConversation?.id, opportunityId])
+  if (!submission) return null
 
-  useEffect(() => {
-    if (!activeCall?.id || activeCall.status !== 'ringing') return undefined
-    playCallRingtone()
-    const ringtoneIntervalId = window.setInterval(playCallRingtone, 2200)
-    const intervalId = window.setInterval(async () => {
-      try {
-        const call = await readCall(activeCall.id)
-        setActiveCall(call)
-        if (call.status === 'accepted') {
-          setActiveCall(null)
-          setCallMessage('')
-          openCallOverlay(call)
-        } else if (call.status !== 'ringing') {
-          setCallMessage(`Call ${call.status}.`)
-        }
-      } catch (error) {
-        setCallMessage(error.message)
-      }
-    }, 1500)
-    return () => {
-      window.clearInterval(ringtoneIntervalId)
-      window.clearInterval(intervalId)
-    }
-  }, [activeCall?.id, activeCall?.status])
+  const status = getSubmissionStatus(submission.status)
+  const isReviewed = ['approved', 'changes_requested', 'superseded'].includes(String(submission.status).toLowerCase())
+  const payoutAmount = Number(submission.payoutAmount ?? 0)
+  const payoutCurrency = submission.payoutCurrency || submission.projectAgreedCurrency || 'KES'
+  const payoutLabel = payoutAmount > 0
+    ? `${payoutCurrency} ${payoutAmount.toLocaleString()}`
+    : submission.milestoneId
+      ? (submission.milestoneBudget ? `${payoutCurrency} ${Number(submission.milestoneBudget).toLocaleString()}` : 'Milestone budget')
+      : (opportunityBudgetLabel || 'Project budget')
+  const files = Array.isArray(submission.files) ? submission.files : []
+  const submitted = formatApplicationDate(submission.submittedAt)
 
-  async function startCall(callType) {
-    if (!activeConversation?.participant?.id) {
-      setCallMessage('This conversation does not have a real recipient yet.')
+  async function submitDecision(decision) {
+    if (decision === 'changes_requested' && !feedback.trim()) {
+      setError('Add feedback describing the changes needed.')
       return
     }
-    setCallMessage(`Starting ${callType} call…`)
+    setPendingDecision(decision)
+    setError('')
     try {
-      const call = await createCall({
-        recipientId: activeConversation.participant.id,
-        opportunityId: activeConversation.opportunityId,
-        callType,
-      })
-      setActiveCall(call)
-      setCallMessage(`Calling ${activeConversation.participant.name || 'student'}…`)
-    } catch (error) {
-      setCallMessage(error.message)
-    }
-  }
-
-  async function stopCalling() {
-    if (!activeCall?.id) return
-    await cancelCall(activeCall.id).catch(() => {})
-    setActiveCall(null)
-    setCallMessage('Call cancelled.')
-  }
-
-  async function submitMessage(event) {
-    event.preventDefault()
-    const body = draft.trim()
-    if (!body || !activeConversation || isSending) return
-    setIsSending(true)
-    setMessageError('')
-    try {
-      const message = await sendMessage({
-        recipientId: activeConversation.participant.id,
-        opportunityId: activeConversation.opportunityId,
-        body,
-      })
-      setMessages((current) => [...current, message])
-      setDraft('')
-      playMessageSentSound()
-      await loadOpportunityConversations()
-    } catch (error) {
-      setMessageError(error.message)
-    } finally {
-      setIsSending(false)
+      await onReview(submission.id, { decision, feedback: feedback.trim() || undefined })
+      onClose()
+    } catch (reviewError) {
+      setError(reviewError instanceof Error ? reviewError.message : 'Could not submit the review.')
+      setPendingDecision(null)
     }
   }
 
   return (
-    <section className="business-review-messages-grid">
-      <aside className="business-review-message-list">
-        <h3>Messages</h3>
-        <label>
-          <FiMessageSquare aria-hidden="true" />
-          <input type="search" placeholder="Search messages" />
-        </label>
-        {conversations.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={item.id === activeConversation?.id ? 'is-active' : ''}
-            onClick={() => setActiveConversationId(item.id)}
-          >
-            <img src={item.participant.avatarUrl || '/assets/index/bee_nobg.png'} alt="" />
-            <span>
-              <strong>{item.participant.name}</strong>
-              <em>{item.latestMessage.body}</em>
-            </span>
-            {item.unreadCount ? <small>{item.unreadCount}</small> : null}
-          </button>
-        ))}
-        {!conversations.length ? <p>No real conversations for this opportunity yet.</p> : null}
-      </aside>
-
-      {activeConversation ? (
-        <section className="business-review-chat">
-          <header>
-            <img src={activeConversation.participant.avatarUrl || '/assets/index/bee_nobg.png'} alt="" />
-            <div>
-              <h3>{activeConversation.participant.name || 'Student applicant'}</h3>
-              <p>{opportunity?.title || 'Opportunity conversation'}</p>
-            </div>
-            <button type="button" aria-label="Call" onClick={() => startCall('audio')}><FiPhone aria-hidden="true" /></button>
-            <button type="button" aria-label="Video call" onClick={() => startCall('video')}><FiVideo aria-hidden="true" /></button>
-            <button type="button" aria-label="Thread info"><FiSettings aria-hidden="true" /></button>
-          </header>
-
-          <div className="business-review-chat-body">
-            {callMessage ? (
-              <div className="business-call-status" role="status">
-                <span>{callMessage}</span>
-                {activeCall?.status === 'ringing' ? <button type="button" onClick={stopCalling}>Cancel</button> : null}
-              </div>
-            ) : null}
-            <p className="business-review-chat-start">
-              This is the beginning of your conversation for {opportunity?.title || 'this opportunity'}.
-            </p>
-            {messages.map((message) => (
-              <article key={message.id} className={message.senderId !== activeConversation.participant.id ? 'is-mine' : ''}>
-                {message.senderId === activeConversation.participant.id ? <img src={activeConversation.participant.avatarUrl || '/assets/index/bee_nobg.png'} alt="" /> : null}
-                <div>
-                  <p>
-                    <strong>{message.senderId !== activeConversation.participant.id ? 'You' : activeConversation.participant.name}</strong>
-                    <span>
-                      {new Date(message.createdAt).toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit' })}
-                      {message.senderId !== activeConversation.participant.id
-                        ? ` · ${message.isRead ? 'Read' : message.deliveredAt ? 'Delivered' : 'Sent'}`
-                        : ''}
-                    </span>
-                  </p>
-                  <div className="business-review-chat-bubble">{message.body}</div>
-                </div>
-              </article>
-            ))}
+    <div className="business-review-modal-backdrop" role="presentation">
+      <section className="business-review-application-modal business-review-submission-modal" role="dialog" aria-modal="true" aria-labelledby="submission-review-title">
+        <header>
+          <div>
+            <h2 id="submission-review-title">
+              Review Submission <StatusPill tone={status.tone}>{status.label}</StatusPill>
+              {attemptMeta ? (
+                <StatusPill tone={attemptMeta.attempt > 1 ? 'orange' : 'blue'}>{getAttemptLabel(attemptMeta)}</StatusPill>
+              ) : null}
+              {submission.isRevision ? <StatusPill tone="orange">Revised work</StatusPill> : null}
+            </h2>
+            <p>{submission.milestoneTitle ? `Milestone: ${submission.milestoneTitle}` : submission.scopeItemLabel ? `Deliverable: ${submission.scopeItemLabel}` : submission.projectTitle || 'Whole project'}</p>
           </div>
-          <form onSubmit={submitMessage}>
-            <input
-              type="text"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              placeholder={`Message ${activeConversation.participant.name}`}
-              aria-label="Opportunity message"
-            />
-            <button type="submit" className="business-profile-primary-btn" aria-label="Send opportunity message" disabled={!draft.trim() || isSending}>
-              <FiSend aria-hidden="true" />
-            </button>
-          </form>
-          {messageError ? <p className="business-message-error" role="alert">{messageError}</p> : null}
-        </section>
-      ) : (
-        <section className="business-review-chat business-review-chat-empty">
-          <FiMessageSquare aria-hidden="true" />
-          <h3>No conversation selected</h3>
-          <p>Start an interview or open Messages to begin a verified conversation.</p>
-        </section>
-      )}
-    </section>
+          <button type="button" aria-label="Close submission review" onClick={onClose}>
+            <FiX aria-hidden="true" />
+          </button>
+        </header>
+
+        <div className="business-review-application-modal-body">
+          <section className="business-profile-card">
+            <div className="business-review-applicant-head">
+              <img src={submission.student?.avatarUrl || '/assets/index/bee_nobg.png'} alt={`${submission.student?.name || 'Student'} avatar`} />
+              <div>
+                <h3>{submission.student?.name || 'Student applicant'}</h3>
+                <p>{[submission.student?.course, submission.student?.campus].filter(Boolean).join(' · ') || 'Zumbarl student'}</p>
+              </div>
+            </div>
+            <dl className="business-review-applicant-stats">
+              <div><dt>{submission.title}</dt><dd>Work title</dd></div>
+              <div><dt>{submitted.date}</dt><dd>Submitted</dd></div>
+              {isTeamProject ? (
+                <div>
+                  <dt>Split by workload</dt>
+                  <dd>Paid when the deliverable is marked complete</dd>
+                </div>
+              ) : (
+                <div><dt>{payoutLabel}</dt><dd>Payout on approval</dd></div>
+              )}
+            </dl>
+            {submission.notes ? (
+              <>
+                <h4>Description</h4>
+                <p>{submission.notes}</p>
+              </>
+            ) : null}
+            {submission.feedbackRequest ? (
+              <>
+                <h4>Feedback requested</h4>
+                <p>{submission.feedbackRequest}</p>
+              </>
+            ) : null}
+          </section>
+
+          <section className="business-profile-card">
+            <h3>Submitted Files</h3>
+            {files.length ? (
+              <div className="business-review-submission-files">
+                {files.map((file, index) => (
+                  <article key={`${file.fileName || file.name || 'file'}-${index}`}>
+                    <FiFileText aria-hidden="true" />
+                    <div>
+                      <strong>{file.fileName || file.name || `File ${index + 1}`}</strong>
+                      <span>{file.mimeType || 'Attachment'}</span>
+                    </div>
+                    {file.url ? (
+                      <div className="business-review-submission-file-actions">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewFile(toSubmittedAttachment({
+                            fileName: file.fileName || file.name,
+                            mimeType: file.mimeType,
+                            url: file.url,
+                          }, index))}
+                        >
+                          <FiEye aria-hidden="true" /> Preview
+                        </button>
+                        <a href={file.url} target="_blank" rel="noreferrer"><FiDownload aria-hidden="true" /> Open</a>
+                      </div>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            ) : <p>No files were attached to this submission.</p>}
+          </section>
+
+          <section className="business-profile-card">
+            <h3>Review &amp; Decision</h3>
+            {isReviewed ? (
+              <div className="business-review-submission-outcome">
+                <FiCheckCircle aria-hidden="true" />
+                <div>
+                  <strong>{status.label}</strong>
+                  {submission.feedback ? <p>{submission.feedback}</p> : null}
+                </div>
+              </div>
+            ) : (
+              <>
+                <label className="business-review-request-field">
+                  <span>Feedback to the creator</span>
+                  <textarea
+                    value={feedback}
+                    maxLength={1000}
+                    placeholder="Share what looks good, or exactly what needs to change before approval."
+                    onChange={(event) => setFeedback(event.target.value)}
+                  />
+                </label>
+                {error ? <p className="business-review-schedule-error" role="alert">{error}</p> : null}
+              </>
+            )}
+          </section>
+        </div>
+
+        {previewFile ? (
+          <section className="business-review-attachment-preview-modal" role="dialog" aria-modal="true" aria-labelledby="submission-file-preview-title">
+            <header>
+              <div>
+                <h3 id="submission-file-preview-title">{previewFile.title}</h3>
+                <p>{previewFile.fileType} preview</p>
+              </div>
+              <button type="button" aria-label="Close file preview" onClick={() => setPreviewFile(null)}>
+                <FiX aria-hidden="true" />
+              </button>
+            </header>
+            <div>
+              <AttachmentPreview attachment={previewFile} />
+            </div>
+            <footer>
+              <a href={previewFile.src} target="_blank" rel="noreferrer">
+                <FiDownload aria-hidden="true" />
+                Open original
+              </a>
+              <Button tone="ghost" onClick={() => setPreviewFile(null)}>Close preview</Button>
+            </footer>
+          </section>
+        ) : null}
+
+        <footer>
+          <Button tone="ghost" onClick={onClose}>Close</Button>
+          {!isReviewed ? (
+            <>
+              <Button
+                tone="ghost"
+                disabled={Boolean(pendingDecision)}
+                onClick={() => submitDecision('changes_requested')}
+              >
+                {pendingDecision === 'changes_requested' ? 'Sending…' : 'Request Changes'}
+              </Button>
+              <Button
+                tone="brand"
+                disabled={Boolean(pendingDecision)}
+                onClick={() => submitDecision('approved')}
+              >
+                {pendingDecision === 'approved'
+                  ? 'Approving…'
+                  : isTeamProject ? 'Approve submission' : `Approve & Release (${payoutLabel})`}
+              </Button>
+              {isTeamProject && onComplete ? (
+                <CompleteAndPayButton
+                  completion={completion}
+                  isCompleted={isCompleted}
+                  isCompleting={isCompleting}
+                  onComplete={onComplete}
+                />
+              ) : null}
+            </>
+          ) : null}
+        </footer>
+      </section>
+    </div>
   )
 }
 
-function DeliverablesPanel({ onRequestPayment, opportunity }) {
+// The business shapes milestone scope: adds milestones and their deliverables,
+// sets windows, releases funding and activates. Same panel the team reads on its
+// Milestones tab, with the scope controls switched on and no submit action -
+// submitting is the team's move.
+// The business plans the project the same way the team does: the same milestone
+// scope, board, sprints and timeline, from the same components. It shapes scope
+// and plans sprints; money (funding, activation, completion) stays its own.
+function BusinessProjectPlanningPanel({
+  hasStarted = true,
+  onCompleteScopeTarget,
+  onStartProject,
+  projectActionState,
+  projectId,
+  view,
+}) {
+  const milestoneWorkspace = useMilestoneWorkspace(projectId, { enabled: Boolean(projectId) })
+  const deliverableTasks = useDeliverableTasks(projectId, { enabled: Boolean(projectId) })
+  const [openDeliverableId, setOpenDeliverableId] = useState('')
+
+  if (!projectId) {
+    return <p className="business-review-empty-note">Planning appears once this opportunity is awarded.</p>
+  }
+  if (milestoneWorkspace.isLoading) return <p className="business-review-empty-note">Loading project plan…</p>
+  if (milestoneWorkspace.error) {
+    return <p className="business-review-empty-note is-error" role="alert">{milestoneWorkspace.error}</p>
+  }
+
+  if (view === 'timeline') {
+    return <ProjectTimelinePanel timeline={milestoneWorkspace.timeline} />
+  }
+
+  if (view === 'sprints') {
+    return (
+      <ProjectSprintsPanel
+        canPlan
+        deliverables={milestoneWorkspace.deliverablesWithMilestone}
+        milestones={milestoneWorkspace.milestones}
+        onAddBacklogItem={(payload) => deliverableTasks.onDeclareTask({ ...payload, ownerId: null })}
+        pending={milestoneWorkspace.pending}
+        sprints={milestoneWorkspace.sprints}
+        tasks={deliverableTasks.tasks}
+        onAssignTasks={milestoneWorkspace.onAssignTasks}
+        onCreateSprint={milestoneWorkspace.onCreateSprint}
+        onUpdateSprint={milestoneWorkspace.onUpdateSprint}
+      />
+    )
+  }
+
+  // Opening a deliverable from the milestone list swaps in its board in place,
+  // so adding tasks never means hunting for another tab.
+  if (view === 'board' || openDeliverableId) {
+    return (
+      <MilestoneBoardPanel
+        deliverableTasks={deliverableTasks}
+        deliverablesByMilestone={milestoneWorkspace.deliverablesByMilestone}
+        milestones={milestoneWorkspace.milestones}
+        openDeliverableId={openDeliverableId}
+        sprints={milestoneWorkspace.sprints}
+        onOpenDeliverable={setOpenDeliverableId}
+      />
+    )
+  }
+
+  return (
+    <>
+      <ProjectStartNotice
+        hasStarted={hasStarted}
+        isPending={projectActionState?.pending === 'start'}
+        onStartProject={onStartProject}
+      />
+      <MilestoneScopePanel
+        canPlan
+        canSettle
+        completionPending={projectActionState?.pending || ''}
+        deliverablesByMilestone={milestoneWorkspace.deliverablesByMilestone}
+        milestones={milestoneWorkspace.milestones}
+        pending={milestoneWorkspace.pending}
+        tasks={deliverableTasks.tasks}
+        onActivateMilestone={milestoneWorkspace.onActivateMilestone}
+        onCompleteMilestone={(milestone) => onCompleteScopeTarget?.(projectId, { milestoneId: milestone.id })}
+        onCreateDeliverable={milestoneWorkspace.onCreateDeliverable}
+        onCreateMilestone={milestoneWorkspace.onCreateMilestone}
+        onFundMilestone={milestoneWorkspace.onFundMilestone}
+        onOpenDeliverable={(deliverable) => setOpenDeliverableId(deliverable.id)}
+        onUpdateMilestone={milestoneWorkspace.onUpdateMilestone}
+      />
+      <MilestoneProgramPanel programGates={milestoneWorkspace.programGates} />
+    </>
+  )
+}
+
+function BusinessTeamPanel({ projectId }) {
+  const [team, setTeam] = useState({ members: [], invites: [] })
+  const [error, setError] = useState('')
+  // Its own task read: the Team tab is project-level and no longer sits inside
+  // the deliverables panel that used to supply them.
+  const { tasks } = useDeliverableTasks(projectId, { enabled: Boolean(projectId) })
+
+  useEffect(() => {
+    if (!projectId) return undefined
+
+    let isCurrent = true
+    listProjectTeam(projectId)
+      .then((response) => {
+        if (!isCurrent) return
+        setTeam({
+          members: Array.isArray(response?.members) ? response.members : [],
+          invites: Array.isArray(response?.invites) ? response.invites : [],
+        })
+      })
+      .catch((teamError) => {
+        if (isCurrent) setError(teamError?.message || 'Could not load the project team.')
+      })
+
+    return () => { isCurrent = false }
+  }, [projectId])
+
+  if (!projectId) {
+    return <p className="business-review-empty-note">The team appears once this opportunity is awarded.</p>
+  }
+  if (error) return <p className="business-review-empty-note is-error" role="alert">{error}</p>
+
+  return <TeamPanel invites={team.invites} members={team.members} tasks={tasks} />
+}
+
+function DeliverablesPanel({ agreedAmount = 0, agreedCurrency = 'KES', canAddDeliverables = true, hasStarted = true, onRequestPayment, onStartProject, opportunity, submissions = [], submissionsError = '', isLoadingSubmissions = false, onReviewSubmission, onCompleteScopeTarget, projectId, isTeamProject = false, isMilestoneScope = false, projectActionState }) {
   const [activeDeliverableTab, setActiveDeliverableTab] = useState('deliverables')
   const [selectedSubmission, setSelectedSubmission] = useState(null)
   const [selectedDeliverable, setSelectedDeliverable] = useState(null)
+  // Bumped after every review decision so the deliverable's task board reloads.
+  const [reviewSignal, setReviewSignal] = useState(0)
   const [addedDeliverableRows, setAddedDeliverableRows] = useState([])
   const [isAddingDeliverable, setIsAddingDeliverable] = useState(false)
+  const deliverableTasks = useDeliverableTasks(projectId, {
+    enabled: isTeamProject && Boolean(projectId),
+  })
+  const { refresh: refreshDeliverableTasks } = deliverableTasks
+
+  const handleReviewSubmission = async (...args) => {
+    const result = await onReviewSubmission?.(...args)
+    setReviewSignal((current) => current + 1)
+    return result
+  }
+
+  // A review decision moves tasks between states, so the board reloads once the
+  // business has ruled on a submission.
+  useEffect(() => {
+    if (reviewSignal) refreshDeliverableTasks()
+  }, [refreshDeliverableTasks, reviewSignal])
+
+  // Settled means the budget was actually released, not that every submission
+  // happens to be approved: approving the last task must not close a deliverable
+  // the team can still add work to.
+  const isScopePaid = (scopeItemId) => (
+    submissions.some((item) => item.scopeItemId === scopeItemId && item.scopeItemPaid)
+  )
+
+  // Paying out is only offered once the team has actually finished: every task
+  // approved, nothing still blocked. A deliverable with no declared tasks stays
+  // on the board's own completion rule.
+  const getScopeCompletion = (scopeItemId) => {
+    const scopeTasks = deliverableTasks.tasks.filter((task) => (
+      (task.scopeItemId || '') === (scopeItemId || '') && task.status !== 'dropped'
+    ))
+    if (!scopeTasks.length) return { hasTasks: false, isReady: false, pending: 0, blocked: 0 }
+
+    const blocked = scopeTasks.filter((task) => task.blockedBy?.length).length
+    const pending = scopeTasks.filter((task) => task.status !== 'done').length
+    return { hasTasks: true, isReady: pending === 0 && blocked === 0, pending, blocked }
+  }
+
   const isSubmittedWork = activeDeliverableTab === 'submitted-work'
   const isFiles = activeDeliverableTab === 'files'
   const isMessages = activeDeliverableTab === 'messages'
-  const deliverableRows = [...addedDeliverableRows, ...getOpportunityDeliverableRows(opportunity)]
+  const deliverableRows = [...addedDeliverableRows, ...getOpportunityDeliverableRows(opportunity, agreedAmount, agreedCurrency)]
   const deliverableCount = deliverableRows.length
   const sampleFiles = getOpportunitySampleFiles(opportunity)
   const deliverableTabCounts = {
     deliverables: deliverableCount,
     files: sampleFiles.length,
+    'submitted-work': submissions.length,
   }
+
+  // Real submission count per deliverable (scope item), and the attempt number
+  // for each submission (1 = first submission, 2+ = revision/resubmission).
+  const submissionCountByScopeId = submissions.reduce((counts, item) => {
+    if (item.scopeItemId) counts[item.scopeItemId] = (counts[item.scopeItemId] || 0) + 1
+    return counts
+  }, {})
+  const submissionMeta = {}
+  Object.values(submissions.reduce((groups, item) => {
+    const key = item.milestoneId || item.scopeItemId || 'project'
+    groups[key] = groups[key] || []
+    groups[key].push(item)
+    return groups
+  }, {})).forEach((group) => {
+    const ordered = [...group].sort((left, right) => new Date(left.submittedAt) - new Date(right.submittedAt))
+    ordered.forEach((item, index) => {
+      submissionMeta[item.id] = { attempt: index + 1, total: ordered.length }
+    })
+  })
 
   function getDeliverableIcon(type) {
     if (type.includes('Code')) return 'x'
@@ -2275,15 +2579,29 @@ function DeliverablesPanel({ onRequestPayment, opportunity }) {
     <section className="business-profile-card business-review-deliverables-card">
       <header>
         <div>
-          <h2>{isMessages ? 'Messages' : isFiles ? 'Files' : isSubmittedWork ? 'Submitted Work' : 'Work & Deliverables'}</h2>
-          <p>{isMessages ? 'Coordinate with creators around evidence, revisions and approvals.' : isFiles ? 'Access all submitted files and reference assets.' : isSubmittedWork ? 'Review and provide feedback on creator submissions.' : 'Manage the deliverables, review submissions and files.'}</p>
+          <h2>
+            {isMessages ? 'Messages'
+              : isFiles ? 'Files'
+                : isSubmittedWork ? 'Submitted Work'
+                  : isMilestoneScope ? 'Milestones' : 'Work & Deliverables'}
+          </h2>
+          <p>
+            {isMessages ? 'Coordinate with creators around evidence, revisions and approvals.'
+              : isFiles ? 'Access all submitted files and reference assets.'
+                : isSubmittedWork ? 'Review and provide feedback on creator submissions.'
+                  : isMilestoneScope
+                    ? 'Shape the milestones, release their budgets and review the work against them.'
+                    : 'Manage the deliverables, review submissions and files.'}
+          </p>
         </div>
-        {!isSubmittedWork && !isFiles && !isMessages ? (
+        {!isSubmittedWork && !isFiles && !isMessages && !isMilestoneScope ? (
           <div>
-            <button type="button" className="business-profile-primary-btn" onClick={() => setIsAddingDeliverable(true)}>
-              <FiPlus aria-hidden="true" />
-              Add Deliverable
-            </button>
+            {canAddDeliverables ? (
+              <button type="button" className="business-profile-primary-btn" onClick={() => setIsAddingDeliverable(true)}>
+                <FiPlus aria-hidden="true" />
+                Add Deliverable
+              </button>
+            ) : null}
             <button type="button" className="business-profile-ghost-btn">Actions</button>
           </div>
         ) : null}
@@ -2293,7 +2611,11 @@ function DeliverablesPanel({ onRequestPayment, opportunity }) {
         activeId={activeDeliverableTab}
         ariaLabel="Deliverable sections"
         className="business-review-application-tabs"
-        items={DELIVERABLE_FILTERS}
+        items={isMilestoneScope
+          ? DELIVERABLE_FILTERS.map((filter) => (
+            filter.id === 'deliverables' ? { ...filter, label: 'Milestones' } : filter
+          ))
+          : DELIVERABLE_FILTERS}
         onChange={setActiveDeliverableTab}
         renderTab={(filter) => (
           <>
@@ -2304,19 +2626,91 @@ function DeliverablesPanel({ onRequestPayment, opportunity }) {
       />
 
       {isMessages ? (
-        <BusinessDeliverableMessagesPanel />
+        <ProjectConversationPanel opportunity={opportunity} />
       ) : isFiles ? (
         <BusinessDeliverableFilesPanel opportunity={opportunity} />
       ) : isSubmittedWork ? (
         <>
-          <p className="business-review-empty-note">
-            No work submitted yet. When awarded creators submit deliverables, their evidence will appear here for review.
-          </p>
-          <SubmittedWorkReviewModal
-            submission={selectedSubmission}
-            onClose={() => setSelectedSubmission(null)}
-          />
+          {isLoadingSubmissions ? (
+            <p className="business-review-empty-note">Loading submissions…</p>
+          ) : submissionsError ? (
+            <p className="business-review-empty-note is-error" role="alert">{submissionsError}</p>
+          ) : !submissions.length ? (
+            <p className="business-review-empty-note">
+              No work submitted yet. When awarded creators submit deliverables, their evidence will appear here for review.
+            </p>
+          ) : (
+            <div className="business-review-submissions-list">
+              {submissions.map((item) => {
+                const status = getSubmissionStatus(item.status)
+                const fileCount = Array.isArray(item.files) ? item.files.length : 0
+                const meta = submissionMeta[item.id]
+                const targetLabel = item.milestoneTitle
+                  ? `Milestone: ${item.milestoneTitle}`
+                  : item.scopeItemLabel ? `Deliverable: ${item.scopeItemLabel}` : 'Whole project'
+                return (
+                  <article
+                    key={item.id}
+                    className="business-review-submission-row is-clickable"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedSubmission(item)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault()
+                        setSelectedSubmission(item)
+                      }
+                    }}
+                  >
+                    <div className="business-review-submission-creator">
+                      <img src={item.student?.avatarUrl || '/assets/index/bee_nobg.png'} alt="" />
+                      <div>
+                        <strong>{item.student?.name || 'Student applicant'}</strong>
+                        <span>{targetLabel}</span>
+                      </div>
+                    </div>
+                    <div className="business-review-submission-info">
+                      <strong>{item.title}</strong>
+                      <span>{fileCount} file{fileCount === 1 ? '' : 's'} · {formatApplicationDate(item.submittedAt).date}</span>
+                      {meta ? (
+                        <em className={meta.attempt > 1 ? 'is-revision' : ''}>{getAttemptLabel(meta)}{meta.total > 1 ? ` (of ${meta.total})` : ''}</em>
+                      ) : null}
+                    </div>
+                    <div className="business-review-submission-statuses">
+                      {item.isRevision ? <StatusPill tone="orange">Revised work</StatusPill> : null}
+                      <StatusPill tone={status.tone}>{status.label}</StatusPill>
+                    </div>
+                    <Button tone="ghost" onClick={(event) => { event.stopPropagation(); setSelectedSubmission(item) }}>Review</Button>
+                  </article>
+                )
+              })}
+            </div>
+          )}
         </>
+      ) : isMilestoneScope ? (
+        <BusinessProjectPlanningPanel
+          hasStarted={hasStarted}
+          projectActionState={projectActionState}
+          projectId={projectId}
+          view="milestones"
+          onCompleteScopeTarget={onCompleteScopeTarget}
+          onStartProject={onStartProject}
+        />
+      ) : selectedDeliverable ? (
+        <DeliverableDetailPanel
+          completion={getScopeCompletion(selectedDeliverable.id)}
+          deliverable={selectedDeliverable}
+          deliverableTasks={deliverableTasks}
+          isCompleted={isScopePaid(selectedDeliverable.id)}
+          isCompleting={projectActionState?.pending === `complete-${selectedDeliverable.id}`}
+          projectId={isTeamProject ? projectId : null}
+          submissions={submissions}
+          onClose={() => setSelectedDeliverable(null)}
+          onComplete={isTeamProject && projectId
+            ? () => onCompleteScopeTarget?.(projectId, { scopeItemId: selectedDeliverable.id })
+            : undefined}
+          onOpenSubmission={setSelectedSubmission}
+        />
       ) : (
         <>
           <div className="business-review-deliverable-toolbar">
@@ -2332,6 +2726,20 @@ function DeliverablesPanel({ onRequestPayment, opportunity }) {
             </select>
           </div>
 
+          {isTeamProject ? (
+            projectActionState?.error ? (
+              <p className="business-review-capacity-error" role="alert">{projectActionState.error}</p>
+            ) : projectActionState?.notice ? (
+              <p className="business-review-capacity-notice" role="status">{projectActionState.notice}</p>
+            ) : (
+              <p className="business-review-deliverable-team-hint">
+                This is a team project — approving submissions gives feedback only and marks the covered tasks done.
+                Click <strong>Complete &amp; pay</strong> on a deliverable to release its budget, split by the workload
+                each student's approved tasks account for.
+              </p>
+            )
+          ) : null}
+
           <div className="business-review-deliverable-table">
             <div className="business-review-deliverable-head">
               <span aria-hidden="true" />
@@ -2344,9 +2752,26 @@ function DeliverablesPanel({ onRequestPayment, opportunity }) {
               <span>Actions</span>
             </div>
 
-            {deliverableRows.map((row) => (
-              <article key={row.id} className="business-review-deliverable-row">
-                <button type="button" className="business-review-deliverable-drag" aria-label={`Reorder ${row.title}`}>⋮⋮</button>
+            {deliverableRows.map((row) => {
+              const isDraftRow = String(row.id).startsWith('added-deliverable')
+              const rowCompleted = isScopePaid(row.id)
+              const rowCompleting = projectActionState?.pending === `complete-${row.id}`
+              const canComplete = isTeamProject && projectId && !isDraftRow
+              return (
+              <article
+                key={row.id}
+                className="business-review-deliverable-row is-clickable"
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedDeliverable(row)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    setSelectedDeliverable(row)
+                  }
+                }}
+              >
+                <button type="button" className="business-review-deliverable-drag" aria-label={`Reorder ${row.title}`} onClick={(event) => event.stopPropagation()}>⋮⋮</button>
                 <div className="business-review-deliverable-title">
                   <DeliverableIcon icon={row.icon} />
                   <div>
@@ -2360,16 +2785,30 @@ function DeliverablesPanel({ onRequestPayment, opportunity }) {
                   <span><FiCalendar aria-hidden="true" /> {row.dueDate}</span>
                   <em className={row.dueMeta === 'Overdue' ? 'is-overdue' : ''}>{row.dueMeta}</em>
                 </time>
-                <strong className="business-review-deliverable-submissions">{row.submissions}</strong>
+                <strong className="business-review-deliverable-submissions">{submissionCountByScopeId[row.id] ?? row.submissions}</strong>
                 <StatusPill className="business-review-status-pill" tone={row.tone}>{row.status}</StatusPill>
                 <div className="business-review-deliverable-actions">
-                  <button type="button" onClick={() => setSelectedDeliverable(row)}>View</button>
-                  <button type="button" aria-label={`More actions for ${row.title}`}>
+                  {canComplete ? (
+                    rowCompleted ? (
+                      <span className="business-review-deliverable-complete-badge">Completed</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="business-review-deliverable-complete-btn"
+                        disabled={rowCompleting}
+                        onClick={(event) => { event.stopPropagation(); onCompleteScopeTarget?.(projectId, { scopeItemId: row.id }) }}
+                      >
+                        {rowCompleting ? 'Completing...' : 'Complete & pay'}
+                      </button>
+                    )
+                  ) : null}
+                  <button type="button" onClick={(event) => { event.stopPropagation(); setSelectedDeliverable(row) }}>Open</button>
+                  <button type="button" aria-label={`More actions for ${row.title}`} onClick={(event) => event.stopPropagation()}>
                     <FiMoreVertical aria-hidden="true" />
                   </button>
                 </div>
               </article>
-            ))}
+            )})}
           </div>
 
           <footer className="business-review-deliverable-footer">
@@ -2377,33 +2816,90 @@ function DeliverablesPanel({ onRequestPayment, opportunity }) {
           </footer>
         </>
       )}
-      <DeliverableDetailsModal
-        deliverable={selectedDeliverable}
-        onClose={() => setSelectedDeliverable(null)}
-      />
-      <AddDeliverableModal
-        isOpen={isAddingDeliverable}
-        onClose={() => setIsAddingDeliverable(false)}
-        onCreate={createDeliverableRows}
+      {canAddDeliverables ? (
+        <AddDeliverableModal
+          isOpen={isAddingDeliverable}
+          onClose={() => setIsAddingDeliverable(false)}
+          onCreate={createDeliverableRows}
+        />
+      ) : null}
+
+      <SubmissionReviewModal
+        submission={selectedSubmission}
+        attemptMeta={selectedSubmission ? submissionMeta[selectedSubmission.id] : null}
+        completion={selectedSubmission ? getScopeCompletion(selectedSubmission.scopeItemId) : null}
+        isCompleted={selectedSubmission ? isScopePaid(selectedSubmission.scopeItemId) : false}
+        isCompleting={projectActionState?.pending === `complete-${selectedSubmission?.scopeItemId}`}
+        isTeamProject={isTeamProject}
+        opportunityBudgetLabel={opportunity?.budget}
+        onClose={() => setSelectedSubmission(null)}
+        onComplete={isTeamProject && projectId && selectedSubmission?.scopeItemId
+          ? () => onCompleteScopeTarget?.(projectId, { scopeItemId: selectedSubmission.scopeItemId })
+          : undefined}
+        onReview={handleReviewSubmission}
       />
     </section>
   )
 }
 
-function PaymentsPanel({ applications = [], onRequestPayment = () => {}, opportunity }) {
-  const budgetAmount = getCurrencyAmount(opportunity?.budgetAmount || opportunity?.budget)
+
+// Read-only mirror of the team's workload board. The business sees exactly what
+// the students see — who is on what, what is stuck and for how long — but has no
+// write action anywhere: the split is the team's to agree, not the client's to
+// direct.
+// The business sees the same Deliverable Room the team works in - same stats,
+// workload split, task pool and thread - rather than a separate summary that
+// could drift from it. Tasks and weights stay read-only; the thread and the
+// dependencies the business is holding up are shared ground.
+function DeliverableWorkloadPanel({ deliverable, deliverableTasks, onOpenSubmission, projectId, submissions = [] }) {
+  if (!projectId) return null
+
+  const scopeKey = deliverable?.id || ''
+  const submissionById = new Map(submissions.map((submission) => [submission.id, submission]))
+  const openSubmissionForTask = (task) => {
+    // Tasks carry the submission they were included in. Older tasks predate that
+    // link, so fall back to the deliverable's latest live submission.
+    const submission = (task.submissionId && submissionById.get(task.submissionId))
+      || submissions.find((item) => item.scopeItemId === scopeKey && item.status !== 'superseded')
+    if (submission) onOpenSubmission?.(submission)
+  }
+
+  return (
+    <DeliverableRoom
+      canEdit={false}
+      canParticipate={deliverableTasks.canParticipate}
+      deliverable={deliverable}
+      dependencies={deliverableTasks.dependencies}
+      embedded
+      error={deliverableTasks.error}
+      isLoading={deliverableTasks.isLoading}
+      isPending={Boolean(deliverableTasks.pendingTaskId)}
+      notes={deliverableTasks.notesByScopeItem.get(scopeKey) || []}
+      splitLock={deliverableTasks.splitLockByScopeItem.get(scopeKey)}
+      tasks={deliverableTasks.tasksByScopeItem.get(scopeKey) || []}
+      viewerStudentId={deliverableTasks.viewerStudentId}
+      onAddNote={(payload) => deliverableTasks.onAddNote({ ...payload, scopeItemId: scopeKey })}
+      onResolveDependency={deliverableTasks.onResolveDependency}
+      onRetry={deliverableTasks.refresh}
+      onReviewTask={onOpenSubmission ? openSubmissionForTask : undefined}
+    />
+  )
+}
+
+function PaymentsPanel({ agreedAmount = 0, agreedCurrency = 'KES', applications = [], onRequestPayment = () => {}, opportunity }) {
+  const budgetAmount = getCurrencyAmount(agreedAmount || opportunity?.budgetAmount || opportunity?.budget)
   const isFunded = String(opportunity?.escrowStatus || 'unfunded') !== 'unfunded'
   const awardedApplications = applications.filter((application) => (
     ['awarded', 'accepted'].includes(String(application.status || '').toLowerCase())
   ))
   const committedAmount = awardedApplications
-    .reduce((total, application) => total + getCurrencyAmount(application.bidAmount), 0)
+    .reduce((total, application) => total + getCurrencyAmount(application.project?.agreedAmount || application.bidAmount), 0)
   const scopeCount = getOpportunityPaymentScopeItems(opportunity).length
   const paymentMetrics = [
-    { label: 'Total Budget', value: formatKesAmount(budgetAmount), meta: '100% of budget', tone: 'blue' },
+    { label: agreedAmount ? 'Agreed Budget' : 'Total Budget', value: formatCurrencyAmount(budgetAmount, agreedCurrency), meta: '100% of budget', tone: 'blue' },
     { label: 'Escrow', value: isFunded ? 'Funded' : 'Not funded', meta: isFunded ? 'Held for payouts' : 'Fund to release payments', tone: isFunded ? 'green' : 'orange' },
-    { label: 'Committed', value: formatKesAmount(committedAmount), meta: `${awardedApplications.length} awarded bid${awardedApplications.length === 1 ? '' : 's'}`, tone: 'purple' },
-    { label: 'Remaining', value: formatKesAmount(Math.max(0, budgetAmount - committedAmount)), meta: 'Uncommitted budget', tone: 'green' },
+    { label: 'Committed', value: formatCurrencyAmount(committedAmount, agreedCurrency), meta: `${awardedApplications.length} awarded bid${awardedApplications.length === 1 ? '' : 's'}`, tone: 'purple' },
+    { label: 'Remaining', value: formatCurrencyAmount(Math.max(0, budgetAmount - committedAmount), agreedCurrency), meta: 'Uncommitted budget', tone: 'green' },
   ]
 
   return (
@@ -2457,7 +2953,7 @@ function PaymentsPanel({ applications = [], onRequestPayment = () => {}, opportu
               subtitle={row.student?.username ? `@${row.student.username}` : 'Zumbarl student'}
             />
             <strong>{scopeCount ? `${scopeCount} Deliverable${scopeCount === 1 ? '' : 's'}` : 'Full scope'}</strong>
-            <strong>{formatKesAmount(getCurrencyAmount(row.bidAmount))}</strong>
+            <strong>{formatCurrencyAmount(getCurrencyAmount(row.project?.agreedAmount || row.bidAmount), row.project?.agreedCurrency || agreedCurrency)}</strong>
             <StatusPill className="business-review-status-pill" tone={isFunded ? 'green' : 'blue'}>
               {isFunded ? 'Escrow funded' : 'Awaiting funding'}
             </StatusPill>
@@ -2607,13 +3103,35 @@ function DetailBlock({ items, title }) {
   )
 }
 
-function OverviewPanel({ applications = [], onViewSchedule = () => {}, opportunity, skills, type }) {
+function OverviewPanel({ agreedAmount = 0, agreedCurrency = 'KES', applications = [], onInviteApplicants, onViewSchedule = () => {}, opportunity, skills, type }) {
   const deadline = opportunity.deadline === 'Rolling' ? 'Rolling' : formatOpportunityDate(opportunity.deadline, 'Rolling')
-  const paymentScopeItems = getOpportunityPaymentScopeItems(opportunity)
+  const paymentScopeItems = getContractPaymentScopeItems(opportunity, agreedAmount)
   const scopedBudgetTotal = paymentScopeItems.reduce((total, item) => total + item.budgetAmount, 0)
-  const budget = formatKesAmount(scopedBudgetTotal || opportunity.budget || opportunity.budgetAmount)
+  const budget = formatCurrencyAmount(agreedAmount || scopedBudgetTotal || opportunity.budget || opportunity.budgetAmount, agreedCurrency)
   const newApplicationCount = applications
     .filter((application) => getApplicationStatus(application.status).id === 'new').length
+  const isTeamProject = String(opportunity?.opportunityType || '').toLowerCase() !== 'task'
+  const acceptedMembers = applications
+    .filter((application) => application.projectId && ['accepted', 'awarded'].includes(String(application.status || '').toLowerCase()))
+    .map((application) => {
+      const projectStatus = String(application.project?.status || '').toLowerCase()
+      const memberStatus = application.project?.endedAt || ['ended', 'closed'].includes(projectStatus)
+        ? 'Ended'
+        : application.project?.startedAt || ['active', 'in_progress', 'in progress'].includes(projectStatus)
+          ? 'In progress'
+          : projectStatus === 'completed' || projectStatus === 'approved'
+            ? 'Completed'
+            : 'Awarded'
+      const amount = Number(application.bidAmount || application.project?.agreedAmount || 0)
+      return {
+        id: application.id,
+        name: application.student?.name || application.bidderName || 'Team member',
+        handle: application.handle || application.student?.username || '',
+        avatar: application.student?.avatarUrl || '/assets/index/bee_nobg.png',
+        status: memberStatus,
+        amountLabel: amount ? formatCurrencyAmount(amount, application.currency || application.project?.agreedCurrency || 'KES') : '',
+      }
+    })
   const upcomingInterviews = applications
     .filter((application) => application.interview && application.interview.status !== 'cancelled')
     .map((application) => {
@@ -2642,9 +3160,14 @@ function OverviewPanel({ applications = [], onViewSchedule = () => {}, opportuni
           <p>Read-only summary of the brief, applicant access and upcoming hiring actions.</p>
         </div>
         <div>
-          <button type="button" className="business-profile-primary-btn">
+          <button
+            type="button"
+            className="business-profile-primary-btn"
+            disabled={!opportunity.canInvite || opportunity.applicationsClosed || opportunity.projectEnded}
+            onClick={() => onInviteApplicants?.(opportunity)}
+          >
             <FiSend aria-hidden="true" />
-            Invite Applicants
+            {opportunity.projectEnded ? 'Project Ended' : opportunity.applicationsClosed ? 'Applications Closed' : 'Invite Applicants'}
           </button>
         </div>
       </header>
@@ -2696,6 +3219,34 @@ function OverviewPanel({ applications = [], onViewSchedule = () => {}, opportuni
         </div>
       </section>
 
+      {acceptedMembers.length ? (
+        <section className="business-review-team-roster">
+          <header>
+            <div>
+              <h3>{isTeamProject ? 'Project Team' : 'Hired'}</h3>
+              <p>
+                {isTeamProject
+                  ? `${acceptedMembers.length} student${acceptedMembers.length === 1 ? '' : 's'} accepted into this team project.`
+                  : 'The student hired for this task.'}
+              </p>
+            </div>
+          </header>
+          <div className="business-review-team-list">
+            {acceptedMembers.map((member) => (
+              <article key={member.id}>
+                <img src={member.avatar} alt="" />
+                <div>
+                  <strong>{member.name}</strong>
+                  {member.handle ? <em>{member.handle}</em> : null}
+                </div>
+                {member.amountLabel ? <span className="business-review-team-amount">{member.amountLabel}</span> : null}
+                <StatusPill tone={member.status === 'Completed' ? 'green' : member.status === 'In progress' ? 'purple' : member.status === 'Ended' ? 'orange' : 'blue'}>{member.status}</StatusPill>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <div className="business-review-readonly-grid">
         <DetailBlock
           title="Brief Details"
@@ -2737,13 +3288,13 @@ function OverviewPanel({ applications = [], onViewSchedule = () => {}, opportuni
         <section className="business-review-detail-block">
           <h3>Budget & Compensation</h3>
           <dl>
-            <div><dt>Total budget</dt><dd>{budget}</dd></div>
+            <div><dt>{agreedAmount ? 'Agreed budget' : 'Total budget'}</dt><dd>{budget}</dd></div>
             <div><dt>Compensation model</dt><dd>{opportunity.paymentTerms || 'Pay per deliverable'}</dd></div>
             <div><dt>Duration</dt><dd>{opportunity.duration || 'Flexible'}</dd></div>
           </dl>
           <ul>
             {paymentScopeItems.length ? paymentScopeItems.map((item) => (
-              <li key={item.id}><span>{item.title}</span><strong>{formatKesAmount(item.budgetAmount)}</strong><em>{item.paymentPercent ? `${item.paymentPercent}%` : 'Auto'}</em></li>
+              <li key={item.id}><span>{item.title}</span><strong>{formatCurrencyAmount(item.budgetAmount, agreedCurrency)}</strong><em>{item.paymentPercent ? `${item.paymentPercent}%` : 'Auto'}</em></li>
             )) : (
               <li><span>Saved budget</span><strong>{budget}</strong><em>100%</em></li>
             )}
@@ -2773,13 +3324,42 @@ export function BusinessOpportunityReviewWorkspace({
   onBack,
   onChangeApplicationStatus,
   onChangeReviewTab,
+  onInviteApplicants,
   onPublishOpportunity,
   onScheduleApplicantInterview,
   onStartApplicantInterview,
+  onAwardApplicant,
+  onCounterOfferApplicant,
+  onSetOpportunityCapacity,
+  onStartProject,
+  onEndProject,
+  onFundOpportunity,
+  projectActionState,
+  submissions = [],
+  submissionsError = '',
+  isLoadingSubmissions = false,
+  onReviewSubmission,
+  onCompleteScopeTarget,
   openPublishPayment = false,
   opportunity,
 }) {
-  const [isPublishingOpportunity, setIsPublishingOpportunity] = useState(openPublishPayment)
+  const navigate = useNavigate()
+  const [fundingModalMode, setFundingModalMode] = useState(openPublishPayment ? 'publish' : null)
+  const [escrowTopUpRequest, setEscrowTopUpRequest] = useState(null)
+
+  const acceptedProject = applications.find((application) => (
+    application.projectId && ['accepted', 'awarded'].includes(String(application.status || '').toLowerCase())
+  ))
+  const acceptedProjectId = acceptedProject?.projectId || acceptedProject?.project?.id || ''
+
+  // Once hiring has produced a project, project work belongs in the same
+  // dedicated workspace the student uses. Keeping it embedded in the
+  // opportunity-review shell gave the two parties conflicting views of the
+  // same milestones, board and team.
+  useEffect(() => {
+    if (!acceptedProjectId) return
+    navigate(`/business/projects/${acceptedProjectId}`, { replace: true })
+  }, [acceptedProjectId, navigate])
 
   if (!opportunity) return null
 
@@ -2792,12 +3372,27 @@ export function BusinessOpportunityReviewWorkspace({
   const deadline = opportunity.deadline === 'Rolling' ? 'Rolling' : formatOpportunityDate(opportunity.deadline, 'Rolling')
   const objective = opportunity.opportunityType || type
   const skillSummary = skills.length ? `${skills.slice(0, 3).join(', ')}${skills.length > 3 ? ` +${skills.length - 3}` : ''}` : 'Not specified'
+  const acceptedProjectStatus = String(acceptedProject?.project?.status || '').toLowerCase()
+  const acceptedProjectHasStarted = Boolean(acceptedProject?.project?.startedAt)
+    || ['active', 'in_progress', 'in progress'].includes(acceptedProjectStatus)
+  const acceptedProjectHasEnded = Boolean(acceptedProject?.project?.endedAt)
+    || ['ended', 'closed'].includes(acceptedProjectStatus)
+  const acceptedProjectCanEnd = acceptedProjectHasStarted
+    && ['approved', 'completed'].includes(acceptedProjectStatus)
+  const acceptedProjectAgreedAmount = Number(acceptedProject?.project?.agreedAmount || acceptedProject?.bidAmount || 0)
+  const acceptedProjectAgreedCurrency = acceptedProject?.project?.agreedCurrency || acceptedProject?.currency || 'KES'
+  const workspaceBudgetLabel = acceptedProjectAgreedAmount > 0
+    ? formatCurrencyAmount(acceptedProjectAgreedAmount, acceptedProjectAgreedCurrency)
+    : opportunity.budget
+  const acceptedProjectEscrowCoverage = Number(acceptedProject?.project?.escrowCoverage || 0)
+  const acceptedProjectEscrowShortfall = Math.max(0, acceptedProjectAgreedAmount - acceptedProjectEscrowCoverage)
 
   function startPublishPayment() {
-    if (opportunity.status === 'Draft') {
-      onPublishOpportunity?.(opportunity)
+    if (opportunity.canPublish) {
+      setFundingModalMode('publish')
+    } else if (acceptedProjectEscrowShortfall > 0) {
+      setFundingModalMode('topup')
     }
-    setIsPublishingOpportunity(true)
   }
 
   return (
@@ -2812,18 +3407,50 @@ export function BusinessOpportunityReviewWorkspace({
           <h1>{opportunity.title}</h1>
           <span>{type}</span>
         </div>
-        <p>{opportunity.description}</p>
         <aside>
-          <button type="button" className="business-profile-primary-btn" onClick={startPublishPayment}>
-            <FiPlus aria-hidden="true" />
-            Publish Opportunity
-          </button>
-          <button type="button" className="business-profile-ghost-btn" onClick={() => onChangeReviewTab?.('overview')}>
-            <FiEye aria-hidden="true" />
-            Preview Opportunity
-          </button>
+          {acceptedProject && !acceptedProjectHasStarted && !acceptedProjectHasEnded && acceptedProjectEscrowShortfall > 0 ? (
+            <button
+              type="button"
+              className="business-profile-primary-btn"
+              disabled={projectActionState?.pending === 'fund'}
+              onClick={() => setFundingModalMode('topup')}
+            >
+              <FiCreditCard aria-hidden="true" />
+              {projectActionState?.pending === 'fund' ? 'Updating escrow...' : 'Update escrow'}
+            </button>
+          ) : acceptedProject && !acceptedProjectHasStarted && !acceptedProjectHasEnded ? (
+            <button
+              type="button"
+              className="business-profile-primary-btn"
+              disabled={projectActionState?.pending === 'start'}
+              onClick={() => onStartProject?.(acceptedProject.projectId)}
+            >
+              <FiCheckCircle aria-hidden="true" />
+              {projectActionState?.pending === 'start' ? 'Starting project...' : 'Start project'}
+            </button>
+          ) : acceptedProject && acceptedProjectCanEnd && !acceptedProjectHasEnded ? (
+            <button
+              type="button"
+              className="business-profile-ghost-btn"
+              disabled={projectActionState?.pending === 'end'}
+              onClick={() => onEndProject?.(acceptedProject.projectId)}
+            >
+              {projectActionState?.pending === 'end' ? 'Ending project...' : 'End project'}
+            </button>
+          ) : opportunity.canPublish ? (
+            <button type="button" className="business-profile-primary-btn" onClick={startPublishPayment}>
+              <FiCreditCard aria-hidden="true" />
+              Pay &amp; Publish Opportunity
+            </button>
+          ) : null}
         </aside>
       </header>
+
+      {projectActionState?.error ? (
+        <p className="business-project-controls-error" role="alert">{projectActionState.error}</p>
+      ) : projectActionState?.notice ? (
+        <p className="business-project-controls-notice" role="status">{projectActionState.notice}</p>
+      ) : null}
 
       <section className="business-profile-card business-review-overview-card">
         <div className="business-review-cover">
@@ -2836,9 +3463,9 @@ export function BusinessOpportunityReviewWorkspace({
           <div><dt>Skills</dt><dd>{skillSummary}</dd></div>
         </dl>
         <dl>
-          <div><dt>Budget</dt><dd>{opportunity.budget}</dd></div>
+          <div><dt>{acceptedProjectAgreedAmount > 0 ? 'Agreed budget' : 'Budget'}</dt><dd>{workspaceBudgetLabel}</dd></div>
           <div><dt>Applications</dt><dd>{applications.length} ({applications.filter((application) => getApplicationStatus(application.status).id === 'new').length} new)</dd></div>
-          <div><dt>Status</dt><dd><span>{opportunity.status}</span></dd></div>
+          <div><dt>Status</dt><dd><span>{opportunity.statusLabel || opportunity.status}</span></dd></div>
           <div><dt>Deadline</dt><dd>{deadline}</dd></div>
         </dl>
         <dl>
@@ -2872,11 +3499,62 @@ export function BusinessOpportunityReviewWorkspace({
           onChangeApplicationStatus={onChangeApplicationStatus}
           onScheduleApplicantInterview={onScheduleApplicantInterview}
           onStartApplicantInterview={onStartApplicantInterview}
+          onAwardApplicant={onAwardApplicant}
+          onCounterOfferApplicant={onCounterOfferApplicant}
+          onRequestEscrowTopUp={setEscrowTopUpRequest}
+          onSetOpportunityCapacity={onSetOpportunityCapacity}
+          opportunity={opportunity}
+          projectActionState={projectActionState}
+          opportunityBudgetAmount={getCurrencyAmount(opportunity.budgetAmount) || getCurrencyAmount(opportunity.budget)}
         />
-      ) : activeReviewTab === 'deliverables' ? (
-        <DeliverablesPanel onRequestPayment={startPublishPayment} opportunity={opportunity} />
+      ) : activeReviewTab === 'deliverables' || activeReviewTab === 'milestones' ? (
+        <DeliverablesPanel
+          isMilestoneScope={opportunity?.scopeMode === 'milestone'}
+          hasStarted={acceptedProjectHasStarted}
+          onStartProject={acceptedProject && !acceptedProjectHasStarted
+            ? () => onStartProject?.(acceptedProject.projectId)
+            : undefined}
+          agreedAmount={acceptedProjectAgreedAmount}
+          agreedCurrency={acceptedProjectAgreedCurrency}
+          canAddDeliverables={!isLoadingApplications && !acceptedProjectHasStarted && !acceptedProjectHasEnded}
+          onRequestPayment={startPublishPayment}
+          opportunity={opportunity}
+          submissions={submissions}
+          submissionsError={submissionsError}
+          isLoadingSubmissions={isLoadingSubmissions}
+          onReviewSubmission={onReviewSubmission}
+          onCompleteScopeTarget={onCompleteScopeTarget}
+          projectId={acceptedProject?.projectId || acceptedProject?.project?.id || null}
+          isTeamProject={String(opportunity?.opportunityType || '').toLowerCase() !== 'task'}
+          projectActionState={projectActionState}
+        />
+      ) : activeReviewTab === 'settings' ? (
+        <BusinessProjectSettingsPanel
+          projectId={acceptedProject?.projectId || acceptedProject?.project?.id || null}
+        />
+      ) : ['board', 'sprints', 'timeline'].includes(activeReviewTab) ? (
+        <BusinessProjectPlanningPanel
+          hasStarted={acceptedProjectHasStarted}
+          projectActionState={projectActionState}
+          projectId={acceptedProject?.projectId || acceptedProject?.project?.id || null}
+          view={activeReviewTab}
+          onCompleteScopeTarget={onCompleteScopeTarget}
+          onStartProject={acceptedProject && !acceptedProjectHasStarted
+            ? () => onStartProject?.(acceptedProject.projectId)
+            : undefined}
+        />
+      ) : activeReviewTab === 'team' ? (
+        <BusinessTeamPanel
+          projectId={acceptedProject?.projectId || acceptedProject?.project?.id || null}
+        />
       ) : activeReviewTab === 'payments' ? (
-        <PaymentsPanel applications={applications} onRequestPayment={startPublishPayment} opportunity={opportunity} />
+        <PaymentsPanel
+          agreedAmount={acceptedProjectAgreedAmount}
+          agreedCurrency={acceptedProjectAgreedCurrency}
+          applications={applications}
+          onRequestPayment={startPublishPayment}
+          opportunity={opportunity}
+        />
       ) : activeReviewTab === 'performance' && canShowPerformance ? (
         <PerformancePanel />
       ) : activeReviewTab === 'messages' ? (
@@ -2887,13 +3565,16 @@ export function BusinessOpportunityReviewWorkspace({
               <p>Coordinate with creators around evidence, revisions and approvals.</p>
             </div>
           </header>
-          <BusinessDeliverableMessagesPanel conversation={activeInterviewConversation} opportunity={opportunity} />
+          <ProjectConversationPanel conversation={activeInterviewConversation} opportunity={opportunity} />
         </section>
       ) : activeReviewTab === 'activity' ? (
         <ActivityPanel opportunityId={opportunity.backendId || opportunity.id} />
       ) : (
         <OverviewPanel
+          agreedAmount={acceptedProjectAgreedAmount}
+          agreedCurrency={acceptedProjectAgreedCurrency}
           applications={applications}
+          onInviteApplicants={onInviteApplicants}
           onViewSchedule={() => onChangeReviewTab?.('applications')}
           opportunity={opportunity}
           skills={skills}
@@ -2901,10 +3582,27 @@ export function BusinessOpportunityReviewWorkspace({
         />
       )}
       <PublishOpportunityModal
-        isOpen={isPublishingOpportunity}
+        key={`${opportunity.id}-${escrowTopUpRequest ? 'topup-request' : fundingModalMode || 'closed'}`}
+        fundingAmount={escrowTopUpRequest ? escrowTopUpRequest.amount : acceptedProjectEscrowShortfall}
+        noticeMessage={escrowTopUpRequest?.message || ''}
+        isOpen={Boolean(fundingModalMode) || Boolean(escrowTopUpRequest)}
+        mode={escrowTopUpRequest ? 'topup' : fundingModalMode || 'publish'}
         opportunity={opportunity}
         type={type}
-        onClose={() => setIsPublishingOpportunity(false)}
+        onClose={() => {
+          setFundingModalMode(null)
+          setEscrowTopUpRequest(null)
+        }}
+        onFund={async (fundedOpportunity, payment) => {
+          const escrow = await onFundOpportunity?.(fundedOpportunity, payment)
+          // When the top-up was triggered from an Accept, award the applicant now
+          // that the escrow covers the agreed price.
+          if (escrowTopUpRequest?.applicationId) {
+            await onAwardApplicant?.(escrowTopUpRequest.applicationId)
+          }
+          return escrow
+        }}
+        onPublish={onPublishOpportunity}
       />
     </>
   )

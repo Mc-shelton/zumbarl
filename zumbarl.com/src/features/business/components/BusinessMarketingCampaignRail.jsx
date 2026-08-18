@@ -7,7 +7,7 @@ function SummaryCard({ campaign }) {
     ['Created by', campaign.detail.createdBy],
     ['Campaign Type', campaign.detail.campaignType],
     ['Engagement Mode', campaign.detail.engagementMode],
-    ['Application Visibility', campaign.detail.applicationVisibility],
+    ['Pickup Access', campaign.detail.pickupAccess],
     ['Auto Close', campaign.detail.autoClose],
   ]
 

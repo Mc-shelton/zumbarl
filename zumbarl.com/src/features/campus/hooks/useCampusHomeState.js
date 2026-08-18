@@ -1,10 +1,33 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { readCampusHomeExperience } from '../services/readCampusExperience'
+import { readCampusHomeExperience, sendCampusAssistantQuery } from '../services/readCampusExperience'
 import useMarketplaceSlideshow from './useMarketplaceSlideshow'
 import useTypewriterPromptHint from './useTypewriterPromptHint'
 
 const EMPTY_ARRAY = []
+
+const ASSISTANT_KIND_LABELS = {
+  gig: 'Gig',
+  product: 'Product',
+  service: 'Service',
+  person: 'Person',
+  event: 'Event',
+  resource: 'Resource',
+}
+
+// Map a backend deep-search result into the discovery card shape the UI renders.
+function toDiscoveryCard(result) {
+  const label = ASSISTANT_KIND_LABELS[result.kind] || 'Result'
+  return {
+    id: result.id,
+    type: label,
+    title: result.title,
+    summary: result.summary || result.meta || '',
+    href: result.href || undefined,
+    actionLabel: result.href ? 'Open' : undefined,
+    chip: label,
+  }
+}
 
 function getSearchableText(item) {
   return [
@@ -64,6 +87,8 @@ function useCampusHomeState() {
   const [chatMessages, setChatMessages] = useState([])
   const [campusExperience, setCampusExperience] = useState(null)
   const [showBackToAiButton, setShowBackToAiButton] = useState(false)
+  const [assistantResults, setAssistantResults] = useState(null)
+  const [isAssistantThinking, setIsAssistantThinking] = useState(false)
 
   const assistant = campusExperience?.assistant ?? {}
   const activeHints = chatMode ? assistant.chatPromptHints ?? EMPTY_ARRAY : assistant.searchPromptHints ?? EMPTY_ARRAY
@@ -107,10 +132,14 @@ function useCampusHomeState() {
     () => campusExperience?.discoveryLibrary ?? EMPTY_ARRAY,
     [campusExperience?.discoveryLibrary]
   )
-  const discoverySuggestions = useMemo(
-    () => getDiscoverySuggestions(chatMode ? activePrompt : '', discoveryLibrary),
-    [chatMode, activePrompt, discoveryLibrary]
-  )
+  const discoverySuggestions = useMemo(() => {
+    // Prefer the live deep-search results from the backend once a query has run;
+    // fall back to ranking the seeded discovery library locally.
+    if (chatMode && Array.isArray(assistantResults)) {
+      return assistantResults.map(toDiscoveryCard)
+    }
+    return getDiscoverySuggestions(chatMode ? activePrompt : '', discoveryLibrary)
+  }, [assistantResults, chatMode, activePrompt, discoveryLibrary])
 
   const discoveryChips = useMemo(() => {
     if (!chatMode) {
@@ -120,31 +149,52 @@ function useCampusHomeState() {
     return [...new Set(chips)].slice(0, 5)
   }, [assistant.defaultChips, chatMode, discoverySuggestions])
 
-  const handlePromptSubmit = (event) => {
+  const handlePromptSubmit = async (event) => {
     event.preventDefault()
     const trimmedPrompt = prompt.trim()
 
-    if (!trimmedPrompt) {
+    if (!trimmedPrompt || isAssistantThinking) {
       return
     }
 
-    const suggestions = getDiscoverySuggestions(trimmedPrompt, discoveryLibrary)
+    const requestId = `${Date.now()}`
     const userMessage = {
-      id: `${Date.now()}-user`,
+      id: `${requestId}-user`,
       role: 'user',
       content: trimmedPrompt,
     }
-    const assistantMessage = {
-      id: `${Date.now()}-assistant`,
+    const pendingMessage = {
+      id: `${requestId}-assistant`,
       role: 'assistant',
-      content: formatAssistantReply(trimmedPrompt, suggestions, assistant),
+      content: '',
+      pending: true,
     }
 
     setActivePrompt(trimmedPrompt)
     setChatMode(true)
-    setChatMessages((previous) => [...previous, userMessage, assistantMessage])
+    setChatMessages((previous) => [...previous, userMessage, pendingMessage])
     setPrompt('')
+    setIsAssistantThinking(true)
     resetHint()
+
+    const finishMessage = (content) => {
+      setChatMessages((previous) => previous.map((message) => (
+        message.id === pendingMessage.id ? { ...message, content, pending: false } : message
+      )))
+    }
+
+    try {
+      const response = await sendCampusAssistantQuery(trimmedPrompt)
+      setAssistantResults(Array.isArray(response?.results) ? response.results : [])
+      finishMessage(response?.reply || 'I could not find anything for that just yet.')
+    } catch {
+      // Backend/AI unavailable — fall back to the local discovery library search.
+      const suggestions = getDiscoverySuggestions(trimmedPrompt, discoveryLibrary)
+      setAssistantResults(null)
+      finishMessage(formatAssistantReply(trimmedPrompt, suggestions, assistant))
+    } finally {
+      setIsAssistantThinking(false)
+    }
   }
 
   const resetChatSurface = () => {
@@ -152,6 +202,8 @@ function useCampusHomeState() {
     setActivePrompt('')
     setPrompt('')
     setChatMessages([])
+    setAssistantResults(null)
+    setIsAssistantThinking(false)
     resetHint()
   }
 
@@ -195,7 +247,11 @@ function useCampusHomeState() {
     ? `${chatMode ? 'Ask Zumbarl AI: ' : 'Try: '}${activeHint}${hintDeleting ? '' : '|'}`
     : ''
 
-  const openRecommendedGig = (opportunityUuid, owner) => {
+  const openRecommendedGig = (opportunityUuid, owner, href) => {
+    if (href) {
+      navigate(href)
+      return
+    }
     const params = new URLSearchParams()
     if (typeof opportunityUuid === 'string' && opportunityUuid.trim() !== '') {
       params.set('opportunity', opportunityUuid)
@@ -214,6 +270,8 @@ function useCampusHomeState() {
     discoveryChips,
     discoverySuggestions,
     hero: campusExperience?.hero ?? null,
+    rail: campusExperience?.rail ?? null,
+    viewer: campusExperience?.viewer ?? null,
     quickActions: campusExperience?.quickActions ?? [],
     trustPoints: campusExperience?.trustPoints ?? [],
     focusPromptInput,
@@ -223,6 +281,7 @@ function useCampusHomeState() {
     handleMarketplaceHoverStart,
     handlePromptSubmit,
     heroCardRef,
+    isAssistantThinking,
     mainScrollRef,
     openRecommendedGig,
     prompt,

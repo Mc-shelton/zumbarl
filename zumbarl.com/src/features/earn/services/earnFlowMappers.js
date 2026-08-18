@@ -40,6 +40,7 @@ function getBidAmount(gig, proposal) {
 }
 
 const BID_STATUS_PRESENTATION = {
+  draft: { status: 'Draft', statusTone: 'is-draft', stage: 'Application draft', progress: 0 },
   pending: { status: 'Submitted', statusTone: 'is-reviewing', stage: 'Client reviewing proposal', progress: 24 },
   submitted: { status: 'Submitted', statusTone: 'is-reviewing', stage: 'Client reviewing proposal', progress: 24 },
   shortlisted: { status: 'Shortlisted', statusTone: 'is-shortlisted', stage: 'Awaiting final decision', progress: 56 },
@@ -74,30 +75,48 @@ export function toStudentBidCard(bid) {
   const opportunity = bid.opportunity || {}
   const presentation = BID_STATUS_PRESENTATION[String(bid.status || '').toLowerCase()]
     || BID_STATUS_PRESENTATION.submitted
+  const isDraft = String(bid.status || '').toLowerCase() === 'draft'
+
+  const counterOffer = bid.metadata && typeof bid.metadata === 'object' ? bid.metadata.counterOffer : null
 
   return {
     id: bid.id,
     opportunityId: bid.opportunityId,
     projectId: bid.projectId || null,
+    counterOffer: counterOffer && counterOffer.amount != null
+      ? {
+          amount: Number(counterOffer.amount) || 0,
+          currency: counterOffer.currency || 'KES',
+          amountLabel: `${counterOffer.currency || 'KES'} ${(Number(counterOffer.amount) || 0).toLocaleString('en-KE')}`,
+          previousAmountLabel: counterOffer.previousAmount != null
+            ? `${counterOffer.currency || 'KES'} ${(Number(counterOffer.previousAmount) || 0).toLocaleString('en-KE')}`
+            : '',
+          autoRejectOnDecline: counterOffer.autoRejectOnDecline === true,
+          status: counterOffer.status || 'pending',
+        }
+      : null,
     category: opportunity.category || 'Campus Work',
     title: opportunity.company ? `${opportunity.title} for ${opportunity.company}` : opportunity.title || 'Opportunity bid',
-    description: bid.proposal || bid.coverNote || 'Submitted proposal awaiting client review.',
+    description: bid.proposal || bid.coverNote || (isDraft ? 'Continue this application when you are ready.' : 'Submitted proposal awaiting client review.'),
     client: opportunity.company || 'Zumbarl client',
     company: opportunity.company || 'Zumbarl client',
-    bidAmount: bid.bidAmount
+    bidAmount: bid.bidAmount != null
       ? `${bid.currency || 'KES'} ${Math.round(bid.bidAmount).toLocaleString('en-KE')}`
-      : opportunity.budget || 'Budget pending',
-    submitted: formatBackendDateLabel('Submitted', bid.appliedAt, 'Submitted recently'),
-    lastSeen: 'Client activity pending',
-    responseEta: 'Expected response in 24-48h',
+      : isDraft ? 'Not set' : opportunity.budget || 'Budget pending',
+    submitted: formatBackendDateLabel(isDraft ? 'Saved' : 'Submitted', bid.appliedAt, isDraft ? 'Saved recently' : 'Submitted recently'),
+    lastSeen: isDraft ? 'Not visible to client' : 'Client activity pending',
+    responseEta: isDraft ? 'Complete before the deadline' : 'Expected response in 24-48h',
     stage: presentation.stage,
     progress: presentation.progress,
     progressNote: bid.deliveryTime
       ? `Proposed delivery: ${bid.deliveryTime}`
-      : 'Your bid is waiting for client review.',
+      : isDraft
+        ? 'Continue and submit before the opportunity deadline.'
+        : 'Your bid is waiting for client review.',
     image: opportunity.image || opportunity.previewImage || DEFAULT_IMAGE,
     status: presentation.status,
     statusTone: presentation.statusTone,
+    isDraft,
     ...resolveIntentPresentation(bid.intentId),
     source: 'database',
   }

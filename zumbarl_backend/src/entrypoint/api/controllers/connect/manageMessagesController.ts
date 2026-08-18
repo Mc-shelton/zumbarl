@@ -1,11 +1,13 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { requireBody } from '../../../../lib/http.js'
 import { subscribeToRealtimeEvents } from '../../../../lib/realtimeEvents.js'
-import { createMessageSchema, messageQuerySchema } from '../../../validators/connect/index.js'
+import { createMessageSchema, createProjectGroupMessageSchema, messageQuerySchema } from '../../../validators/connect/index.js'
 import {
   createMessageService,
+  createProjectGroupMessageService,
   listConversationsService,
-  listMessagesService
+  listMessagesService,
+  listProjectGroupMessagesService
 } from '../../../../adapters/services/connect/index.js'
 
 async function listConversationsController(request: FastifyRequest, reply: FastifyReply) {
@@ -20,6 +22,20 @@ async function createMessageController(request: FastifyRequest, reply: FastifyRe
   return reply.code(201).send(await createMessageService(
     request.authUser?.id,
     requireBody(createMessageSchema, request)
+  ))
+}
+
+async function listProjectGroupMessagesController(request: FastifyRequest, reply: FastifyReply) {
+  const { projectId } = request.params as { projectId: string }
+  return reply.send(await listProjectGroupMessagesService(request.authUser?.id, projectId))
+}
+
+async function createProjectGroupMessageController(request: FastifyRequest, reply: FastifyReply) {
+  const { projectId } = request.params as { projectId: string }
+  return reply.code(201).send(await createProjectGroupMessageService(
+    request.authUser?.id,
+    projectId,
+    requireBody(createProjectGroupMessageSchema, request)
   ))
 }
 
@@ -57,5 +73,7 @@ export {
   listConversationsController,
   listMessagesController,
   createMessageController,
+  listProjectGroupMessagesController,
+  createProjectGroupMessageController,
   realtimeEventsController
 }

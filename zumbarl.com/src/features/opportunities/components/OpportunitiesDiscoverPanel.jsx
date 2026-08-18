@@ -1,19 +1,3 @@
-import { useEffect, useState } from 'react'
-import {
-  getBusinessMarketingCampaigns,
-  listBusinessMarketingCampaignsFromBackend,
-} from '../../business/services/businessMarketingService'
-
-const MARKETING_PREVIEW_IMAGES = {
-  'level-up-skills': '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp',
-  'summer-collection-launch': '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-  'stay-hydrated': '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
-}
-
-function getMarketingPreviewImage(campaign) {
-  return campaign.previewImage || MARKETING_PREVIEW_IMAGES[campaign.id] || '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp'
-}
-
 function handleKeyboardActivation(event, onActivate) {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
@@ -25,35 +9,12 @@ function OpportunitiesDiscoverPanel({
   activeOpportunityIntentId,
   activeOpportunityTypeId,
   onClearFilters,
-  onOpenMarketingCampaign,
   onOpportunitySelect,
   onOpportunityTypeChange,
   opportunities,
   opportunityTypeOptions = [],
   selectedOpportunityUuid,
 }) {
-  const [marketingCampaigns, setMarketingCampaigns] = useState(() => getBusinessMarketingCampaigns())
-  const [showAllMarketing, setShowAllMarketing] = useState(false)
-  const activeMarketingCampaigns = marketingCampaigns
-    .filter((campaign) => ['Active', 'Scheduled', 'published', 'funding'].includes(campaign.status))
-  const marketingOpportunities = showAllMarketing
-    ? activeMarketingCampaigns
-    : activeMarketingCampaigns.slice(0, 3)
-
-  useEffect(() => {
-    let isActive = true
-
-    listBusinessMarketingCampaignsFromBackend()
-      .then((campaigns) => {
-        if (isActive && campaigns.length) setMarketingCampaigns(campaigns)
-      })
-      .catch(() => {})
-
-    return () => {
-      isActive = false
-    }
-  }, [])
-
   return (
     <>
       <section className="opportunities-types" aria-label="Opportunity categories">
@@ -105,7 +66,11 @@ function OpportunitiesDiscoverPanel({
               <div className="opportunities-job-main">
                 <div className="opportunities-job-head">
                   <h3>{item.title}</h3>
-                  {item.badge ? <span className="opportunities-badge">{item.badge}</span> : null}
+                  {item.badge ? (
+                    <span className={`opportunities-badge${item.isInvited ? ' is-invited' : ''}`}>
+                      {item.badge}
+                    </span>
+                  ) : null}
                 </div>
                 <div className="opportunities-job-intent-row">
                   <span className="opportunities-intent-pill">Fits: {item.careerPath}</span>
@@ -135,54 +100,6 @@ function OpportunitiesDiscoverPanel({
           {!opportunities.length ? (
             <p className="opportunities-list-empty">No opportunities match this category yet. Try another category or clear your filters.</p>
           ) : null}
-        </div>
-      </section>
-
-      <section className="opportunities-marketing-opportunities" aria-label="Marketing opportunities from businesses">
-        <header>
-          <div>
-            <h2>Marketing opportunities from businesses</h2>
-            <p>Accept a campaign, download the material, share it to your socials, then submit proof.</p>
-          </div>
-          {activeMarketingCampaigns.length > 3 ? (
-            <button
-              type="button"
-              className="campus-link-btn"
-              onClick={() => setShowAllMarketing((current) => !current)}
-            >
-              {showAllMarketing ? 'Show less' : `View all (${activeMarketingCampaigns.length})`}
-            </button>
-          ) : null}
-        </header>
-
-        <div>
-          {marketingOpportunities.map((campaign) => (
-            <article key={campaign.id} className="opportunities-marketing-opportunity-card">
-              <figure className="opportunities-marketing-opportunity-thumb">
-                <img src={getMarketingPreviewImage(campaign)} alt={`${campaign.title} marketing material preview`} loading="lazy" />
-                <figcaption>
-                  <strong>{campaign.thumbnailTitle}</strong>
-                  <span>{campaign.thumbnailMeta}</span>
-                </figcaption>
-              </figure>
-              <div className="opportunities-marketing-opportunity-body">
-                <span>{campaign.type}</span>
-                <h3>{campaign.title}</h3>
-                <p>{campaign.description}</p>
-                <ul aria-label={`${campaign.title} platforms`}>
-                  {(campaign.platforms || []).map((platform) => <li key={platform}>{platform}</li>)}
-                </ul>
-              </div>
-              <dl>
-                <div><dt>Budget</dt><dd>{campaign.budget || `KES ${(campaign.budgetAmount || 0).toLocaleString()}`}</dd></div>
-                <div><dt>{campaign.timelineLabel || 'Ends in'}</dt><dd>{campaign.timelineValue || campaign.endsAt || 'Open'}</dd></div>
-                <div><dt>Creators</dt><dd>{(campaign.creators?.length || 0) + (campaign.creatorOverflow || campaign.creatorsLimit || 0)}</dd></div>
-              </dl>
-              <button type="button" className="opportunities-detail-bid-btn" onClick={() => onOpenMarketingCampaign(campaign.id)}>
-                Accept
-              </button>
-            </article>
-          ))}
         </div>
       </section>
     </>

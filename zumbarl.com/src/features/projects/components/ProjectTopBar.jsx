@@ -11,12 +11,17 @@ import {
 import CampusTopActions from '../../../components/layout/CampusTopActions'
 import { Breadcrumb } from '../../../components/ui'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
+import { getCurrentLoginRole } from '../../auth/roleConfig'
 import { getProjectTabs } from '../constants'
 
-function ProjectTopBar({ activeProject, activeTab, onTabChange, onSubmitWork }) {
-  const tabs = getProjectTabs(activeProject)
+function ProjectTopBar({ activeProject, activeTab, isBusinessViewer = false, onTabChange, onSubmitWork }) {
+  const tabs = getProjectTabs(activeProject, {
+    isBusinessViewer: getCurrentLoginRole()?.side === 'company',
+  })
   const canDiscoverPrograms = hasAccess(ACCESS_KEYS.campus.opportunities)
-  const canSubmitWork = hasAccess(ACCESS_KEYS.projects.submitWork)
+  const canSubmitWork = !isBusinessViewer
+    && hasAccess(ACCESS_KEYS.projects.submitWork)
+    && activeProject.canSubmitWork !== false
   const primaryAction = canDiscoverPrograms ? (
     <button type="button" className="project-program-btn">
       <FiPlus aria-hidden="true" />
@@ -31,7 +36,12 @@ function ProjectTopBar({ activeProject, activeTab, onTabChange, onSubmitWork }) 
         <Breadcrumb
           className="project-workspace-breadcrumb"
           items={[
-            { label: 'Projects', href: '/campus/opportunities?tab=service-orders' },
+            {
+              label: 'Projects',
+              href: isBusinessViewer
+                ? '/business/opportunities'
+                : '/campus/opportunities?tab=service-orders',
+            },
             { label: activeProject.title },
           ]}
         />
@@ -54,7 +64,7 @@ function ProjectTopBar({ activeProject, activeTab, onTabChange, onSubmitWork }) 
         {canSubmitWork ? (
           <button type="button" className="project-primary-btn" onClick={onSubmitWork}>
             <FiUploadCloud aria-hidden="true" />
-            Submit Work
+            {activeProject.workActionLabel || 'Submit Work'}
           </button>
         ) : null}
         <button type="button" className="project-icon-btn" aria-label="More project actions">
@@ -73,7 +83,7 @@ function ProjectTopBar({ activeProject, activeTab, onTabChange, onSubmitWork }) 
         </span>
         <span>
           <FiCreditCard aria-hidden="true" />
-          Budget: {activeProject.budget}
+          {activeProject.projectAmountTitle || 'Budget'}: {activeProject.projectAmountLabel || activeProject.budget}
         </span>
         <span>
           <FiCalendar aria-hidden="true" />

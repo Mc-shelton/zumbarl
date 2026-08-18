@@ -7,6 +7,7 @@ import {
   FiArrowRight,
   FiRadio,
   FiSend,
+  FiTrash2,
   FiVideo,
 } from 'react-icons/fi'
 import { getSplashCropStyle } from '../../../lib/getSplashCropStyle'
@@ -64,7 +65,10 @@ function OpportunityMedia({ opportunity }) {
 }
 
 export function BusinessOpportunityBoard({
+  deleteOpportunityError,
+  deletingOpportunityId,
   onContinueDraftOpportunity,
+  onDeleteDraftOpportunity,
   onOpenInvitePanel,
   onPublishOpportunity,
   onReviewOpportunity,
@@ -81,12 +85,13 @@ export function BusinessOpportunityBoard({
   }
 
   return (
-    <section
-      className={`business-opportunities-board is-${viewMode}`}
-      aria-label="Business opportunities"
-    >
-      {opportunities.map((opportunity) => (
-        <article key={opportunity.id} className="business-profile-card business-opportunities-card">
+    <>
+      {deleteOpportunityError ? (
+        <p className="business-opportunities-delete-error" role="alert">{deleteOpportunityError}</p>
+      ) : null}
+      <section className={`business-opportunities-board is-${viewMode}`} aria-label="Business opportunities">
+        {opportunities.map((opportunity) => (
+          <article key={opportunity.id} className="business-profile-card business-opportunities-card">
           <OpportunityMedia opportunity={opportunity} />
 
           <div className="business-opportunities-card-main">
@@ -123,16 +128,27 @@ export function BusinessOpportunityBoard({
           </dl>
 
           <aside className="business-opportunities-card-status">
-            <strong className={`tone-${opportunity.tone}`}>{opportunity.status}</strong>
+            <strong className={`tone-${opportunity.tone}`}>{opportunity.statusLabel || opportunity.status}</strong>
             <time>{opportunity.time}</time>
           </aside>
 
           <div className="business-opportunities-card-actions">
             {opportunity.status === 'Draft' ? (
-              <button type="button" onClick={() => onContinueDraftOpportunity?.(opportunity)}>
-                <FiArrowRight aria-hidden="true" />
-                Continue
-              </button>
+              <>
+                <button type="button" onClick={() => onContinueDraftOpportunity?.(opportunity)}>
+                  <FiArrowRight aria-hidden="true" />
+                  Continue
+                </button>
+                <button
+                  type="button"
+                  className="business-opportunities-delete-btn"
+                  disabled={deletingOpportunityId === opportunity.id}
+                  onClick={() => onDeleteDraftOpportunity?.(opportunity)}
+                >
+                  <FiTrash2 aria-hidden="true" />
+                  {deletingOpportunityId === opportunity.id ? 'Deleting…' : 'Delete'}
+                </button>
+              </>
             ) : null}
             {opportunity.status !== 'Draft' && opportunity.canPublish ? (
               <button type="button" onClick={() => onPublishOpportunity?.(opportunity)}>
@@ -141,7 +157,11 @@ export function BusinessOpportunityBoard({
               </button>
             ) : null}
             {opportunity.status !== 'Draft' && opportunity.canInvite ? (
-              <button type="button" onClick={() => onOpenInvitePanel?.(opportunity)}>
+              <button
+                type="button"
+                disabled={opportunity.applicationsClosed || opportunity.projectEnded}
+                onClick={() => onOpenInvitePanel?.(opportunity)}
+              >
                 <FiSend aria-hidden="true" />
                 Invite bidders
               </button>
@@ -151,14 +171,15 @@ export function BusinessOpportunityBoard({
                 type="button"
                 className="business-opportunities-review-btn"
                 onClick={() => onReviewOpportunity?.(opportunity)}
-                aria-label={`Review applicants for ${opportunity.title}`}
+                aria-label={`Open ${opportunity.title}`}
               >
-                Review
+                Open
               </button>
             ) : null}
           </div>
-        </article>
-      ))}
-    </section>
+          </article>
+        ))}
+      </section>
+    </>
   )
 }

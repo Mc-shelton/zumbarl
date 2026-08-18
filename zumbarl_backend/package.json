@@ -16,11 +16,13 @@
     "jitsi:down": "docker compose --project-directory ../infrastructure/jitsi down",
     "jitsi:logs": "docker compose --project-directory ../infrastructure/jitsi logs -f",
     "db:push": "prisma db push",
+    "titles:normalize": "tsx src/data/normalizeStoredTitles.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "prisma:studio": "prisma studio"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.114.0",
     "@fastify/cors": "^11.2.0",
     "@fastify/helmet": "^13.0.2",
     "@fastify/jwt": "^10.1.0",
@@ -35,6 +37,7 @@
     "fastify": "^5.8.5",
     "ioredis": "^5.11.1",
     "nanoid": "^5.0.7",
+    "tesseract.js": "^6.0.1",
     "zod": "^3.23.8"
   },
   "devDependencies": {

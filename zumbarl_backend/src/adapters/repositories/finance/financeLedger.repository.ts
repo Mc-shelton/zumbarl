@@ -1,21 +1,42 @@
+import { pageEnvelope } from '../../../lib/http.js'
+import { prisma } from '../../../lib/prisma.js'
 import { createPrismaRecordRepository, runPrismaRecordTransaction } from '../../../shared/repositories/index.js'
+import { mapStudentWallet } from '../../../shared/services/walletLedger.js'
 
-const wallets = createPrismaRecordRepository('wallets')
-const walletEntries = createPrismaRecordRepository('walletEntries')
 const escrows = createPrismaRecordRepository('escrows')
 const payouts = createPrismaRecordRepository('payouts')
 
 class FinanceLedgerRepository {
-  listWallets(ownerId: string | undefined, isAdmin: boolean) {
-    return wallets.listAll((wallet) => wallet.ownerId === ownerId || wallet.studentId === ownerId || isAdmin)
+  async listWallets(ownerId: string | undefined, isAdmin: boolean) {
+    const wallets = await prisma.wallet.findMany({
+      where: isAdmin ? {} : { studentId: ownerId },
+      orderBy: { createdAt: 'asc' }
+    })
+    return wallets.map(mapStudentWallet)
   }
 
-  findWallet(id: string) {
-    return wallets.findById(id)
+  async findWallet(id: string) {
+    return mapStudentWallet(await prisma.wallet.findUnique({ where: { id } }))
   }
 
-  listWalletEntries(walletId: string, query: Record<string, unknown>) {
-    return walletEntries.list(query, (entry) => entry.walletId === walletId)
+  async listWalletEntries(walletId: string, query: Record<string, unknown>) {
+    const transactions = await prisma.transaction.findMany({
+      where: { walletId },
+      orderBy: { createdAt: 'desc' }
+    })
+    return pageEnvelope(transactions.map((transaction) => ({
+      id: transaction.id,
+      walletId: transaction.walletId,
+      type: transaction.type,
+      status: transaction.status,
+      direction: transaction.amount >= 0 ? 'credit' : 'debit',
+      amount: transaction.amount,
+      currency: transaction.currency,
+      description: transaction.description,
+      opportunityId: transaction.opportunityId,
+      metadata: transaction.metadata,
+      createdAt: transaction.createdAt.toISOString()
+    })), query)
   }
 
   createEscrow(payload: Record<string, any>) {

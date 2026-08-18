@@ -14,6 +14,8 @@ function OpportunitiesHeader({
   opportunitySearchRef,
   searchQuery = '',
 }) {
+  const isMarketingTab = activeOpportunityTab === 'Marketing'
+
   return (
     <div className="opportunities-sticky-head">
       <header className="campus-header opportunities-header">
@@ -22,12 +24,14 @@ function OpportunitiesHeader({
             className="opportunities-breadcrumb"
             items={[
               { label: 'Opportunities' },
-              { label: 'Jobs & Gigs' },
+              { label: isMarketingTab ? 'Marketing' : 'Jobs & Gigs' },
             ]}
           />
-          <h1 className="opportunities-title">Jobs & Gigs</h1>
+          <h1 className={`opportunities-title${isMarketingTab ? ' is-marketing' : ''}`}>{isMarketingTab ? 'Marketing' : 'Jobs & Gigs'}</h1>
           <p className="opportunities-subtitle">
-            Find flexible work, gigs and opportunities that fit your skills and schedule.
+            {isMarketingTab
+              ? 'Pick up creator campaigns, post approved materials, and earn from your social reach.'
+              : 'Find flexible work, gigs and opportunities that fit your skills and schedule.'}
           </p>
         </div>
         <CampusTopActions
@@ -36,31 +40,33 @@ function OpportunitiesHeader({
         />
       </header>
 
-      <section className="opportunities-search-row" aria-label="Search opportunities">
+      <section className={`opportunities-search-row${isMarketingTab ? ' is-marketing' : ''}`} aria-label={isMarketingTab ? 'Search marketing campaigns' : 'Search opportunities'}>
         <div className="opportunities-search-field">
           <FiSearch aria-hidden="true" />
           <input
             ref={opportunitySearchRef}
             type="search"
-            placeholder="Search jobs, gigs or companies..."
+            placeholder={isMarketingTab ? 'Search campaigns, platforms or keywords...' : 'Search jobs, gigs or companies...'}
             value={searchQuery}
             onChange={(event) => onSearchQueryChange(event.target.value)}
           />
         </div>
-        <label className="opportunities-location-btn">
-          <FiMapPin aria-hidden="true" />
-          <select
-            aria-label="Filter by location"
-            value={activeLocation}
-            onChange={(event) => onLocationChange(event.target.value)}
-          >
-            <option value="all">All locations</option>
-            {locationOptions.map((location) => (
-              <option key={location} value={location}>{location}</option>
-            ))}
-          </select>
-          <FiChevronDown aria-hidden="true" />
-        </label>
+        {!isMarketingTab ? (
+          <label className="opportunities-location-btn">
+            <FiMapPin aria-hidden="true" />
+            <select
+              aria-label="Filter by location"
+              value={activeLocation}
+              onChange={(event) => onLocationChange(event.target.value)}
+            >
+              <option value="all">All locations</option>
+              {locationOptions.map((location) => (
+                <option key={location} value={location}>{location}</option>
+              ))}
+            </select>
+            <FiChevronDown aria-hidden="true" />
+          </label>
+        ) : null}
         <button
           type="button"
           className="opportunities-search-btn"

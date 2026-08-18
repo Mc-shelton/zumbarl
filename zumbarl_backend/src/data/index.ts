@@ -1,2 +1,6 @@
+export * from './seedMilestoneProjectFixture.js'
+export * from './backfillOpportunityLifecycle.js'
 export * from './migrateLegacyAppRecords.js'
+export * from './migrateWorkflowDomains.js'
+export * from './normalizeStoredTitles.js'
 export * from './seedDatabase.js'

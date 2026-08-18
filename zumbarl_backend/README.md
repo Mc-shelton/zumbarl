@@ -26,6 +26,21 @@ npm run dev
 
 The API runs on `http://localhost:4100`. Swagger UI is available at `http://localhost:4100/docs`.
 
+### Local road-distance routing
+
+Marketplace delivery quotes use the locally hosted OSRM service at `http://127.0.0.1:55000`. The service calculates driving distance over OpenStreetMap roads. Prepare the Kenya graph once (and repeat these commands whenever the map extract is refreshed):
+
+```bash
+mkdir -p osrm-data
+curl -fL https://download.geofabrik.de/africa/kenya-latest.osm.pbf -o osrm-data/kenya-latest.osm.pbf
+docker run --rm -t -v "$PWD/osrm-data:/data" ghcr.io/project-osrm/osrm-backend:v6.0.0 osrm-extract -p /opt/car.lua /data/kenya-latest.osm.pbf
+docker run --rm -t -v "$PWD/osrm-data:/data" ghcr.io/project-osrm/osrm-backend:v6.0.0 osrm-partition /data/kenya-latest.osrm
+docker run --rm -t -v "$PWD/osrm-data:/data" ghcr.io/project-osrm/osrm-backend:v6.0.0 osrm-customize /data/kenya-latest.osrm
+docker compose up -d osrm
+```
+
+If OSRM is temporarily unavailable or cannot find a connected driving route, quotes use the configured adjusted-Haversine fallback and identify the distance source accordingly.
+
 Seed users are created in Postgres through the Prisma-backed database seeder:
 
 - `student@zumbarl.test` / `password123`

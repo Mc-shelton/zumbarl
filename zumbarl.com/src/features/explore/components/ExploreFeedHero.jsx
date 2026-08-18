@@ -1,15 +1,25 @@
-import { FiChevronRight, FiUsers } from 'react-icons/fi'
+import { FiUsers } from 'react-icons/fi'
 import { Breadcrumb } from '../../../components/ui'
 
 function ExploreFeedHero({
+  activeFilter,
   areStoriesVisible,
   filters,
+  onOpenStory,
+  onSelectFilter,
   onPrepareProfile,
   onPublishStory,
-  profileReady,
   stories,
-  storyPublished,
 }) {
+  const orderedStories = [...stories].sort((first, second) => {
+    if (first.own !== second.own) return first.own ? -1 : 1
+    const firstHasUnseen = first.items?.some((item) => !item.isViewed)
+    const secondHasUnseen = second.items?.some((item) => !item.isViewed)
+    const unseenPriority = Number(secondHasUnseen) - Number(firstHasUnseen)
+    if (unseenPriority) return unseenPriority
+    return Number(second.isSameCampus) - Number(first.isSameCampus)
+  })
+
   return (
     <section className="explore-campus-feed-hero" aria-label="Explore campus feed">
       <Breadcrumb
@@ -29,20 +39,20 @@ function ExploreFeedHero({
           </p>
         </div>
         <div className="explore-campus-feed-hero-actions">
-          <button type="button" className="explore-campus-ghost-btn" disabled={storyPublished} onClick={onPublishStory}>
+          <button type="button" className="explore-campus-ghost-btn" onClick={onPublishStory}>
             <FiUsers aria-hidden="true" />
-            {storyPublished ? 'Story live' : profileReady ? 'Publish story' : 'Prepare profile'}
+            Add story
           </button>
-          <button type="button" className="explore-campus-ghost-btn" disabled={profileReady} onClick={onPrepareProfile}>
+          <button type="button" className="explore-campus-ghost-btn" onClick={onPrepareProfile}>
             <FiUsers aria-hidden="true" />
-            Prepare Connect profile
+            Connect settings
           </button>
         </div>
       </header>
 
       <nav className="explore-campus-feed-tabs" aria-label="Explore campus feed filters">
-        {filters.map((filter, index) => (
-          <button key={filter} type="button" className={index === 0 ? 'is-active' : ''}>
+        {filters.map((filter) => (
+          <button key={filter} type="button" className={activeFilter === filter ? 'is-active' : ''} aria-pressed={activeFilter === filter} onClick={() => onSelectFilter(filter)}>
             {filter}
           </button>
         ))}
@@ -51,28 +61,28 @@ function ExploreFeedHero({
       <section className={`explore-campus-stories${areStoriesVisible ? '' : ' is-hidden'}`} aria-label="Stories">
         <h2>Stories</h2>
         <div className="explore-campus-stories-row">
-          {stories.map((story) => (
-            <button
-              key={story.id}
-              type="button"
-              className={`explore-campus-story-item${story.own && storyPublished ? ' is-live' : ''}`}
-              onClick={() => {
-                if (story.own) {
-                  onPublishStory()
-                }
-              }}
-            >
-              <div className={`explore-campus-story-avatar${story.own ? ' is-own' : ''}${story.own && storyPublished ? ' is-published' : ''}`}>
-                <img src={story.avatar} alt={story.name} loading="lazy" />
-                {story.own ? <span className="explore-campus-story-plus">{storyPublished ? '✓' : '+'}</span> : null}
-                {story.online ? <span className="explore-campus-story-online" /> : null}
-              </div>
-              <p>{story.own && storyPublished ? 'Your status' : story.name}</p>
-            </button>
-          ))}
-          <button type="button" className="explore-campus-story-more" aria-label="More stories">
-            <FiChevronRight aria-hidden="true" />
+          <button type="button" className="explore-campus-story-item explore-campus-story-add" onClick={onPublishStory} aria-label="Add another story">
+            <div className="explore-campus-story-avatar is-own"><span className="explore-campus-story-add-icon">+</span><span className="explore-campus-story-plus">+</span></div>
+            <p>Add story</p>
           </button>
+          <div className="explore-campus-stories-scroll" aria-label="Active stories">
+            {orderedStories.filter((story) => story.items?.length).map((story) => (
+              <button
+                key={story.id}
+                type="button"
+                className={`explore-campus-story-item${story.items.some((item) => !item.isViewed) ? ' is-unseen' : ' is-viewed'}${story.own ? ' is-live' : ''}`}
+                onClick={() => onOpenStory(story.id)}
+                aria-label={`View ${story.shortName || story.name}'s stories`}
+              >
+                <div className={`explore-campus-story-avatar${story.own ? ' is-own is-published' : ''}`}>
+                  <img src={story.avatar} alt={story.name} loading="lazy" />
+                  {story.own ? <span className="explore-campus-story-plus">✓</span> : null}
+                  {story.online ? <span className="explore-campus-story-online" /> : null}
+                </div>
+                <p>{story.own ? 'Your story' : (story.shortName || story.name)}</p>
+              </button>
+            ))}
+          </div>
         </div>
       </section>
     </section>

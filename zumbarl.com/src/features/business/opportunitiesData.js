@@ -30,7 +30,8 @@ export const BUSINESS_OPPORTUNITY_FILTERS = {
   stages: [
     { label: 'All Stages', value: 'all' },
     { label: 'Open', value: 'Open' },
-    { label: 'Pending', value: 'Pending' },
+    { label: 'In Progress', value: 'In Progress' },
+    { label: 'Completed', value: 'Completed' },
     { label: 'Draft', value: 'Draft' },
   ],
 }

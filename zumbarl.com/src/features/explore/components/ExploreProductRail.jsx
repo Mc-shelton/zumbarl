@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   FiChevronLeft,
   FiChevronRight,
@@ -5,11 +7,13 @@ import {
   FiMapPin,
   FiMessageCircle,
   FiRepeat,
-  FiShoppingBag,
+  FiTag,
   FiStar,
   FiX,
 } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
+import MarketplaceOfferModal from '../../opportunities/components/MarketplaceOfferModal'
+import { sendMarketplaceOffer } from '../../opportunities/services/marketplaceInteractionService'
 
 function ExploreProductRail({
   activeRailProduct,
@@ -22,8 +26,38 @@ function ExploreProductRail({
   onSetTab,
   onStepImage,
 }) {
+  const navigate = useNavigate()
   const canBuy = hasAccess(ACCESS_KEYS.marketplace.buy)
-  const canUseCart = canBuy && hasAccess(ACCESS_KEYS.cart.view)
+  const [isOfferOpen, setIsOfferOpen] = useState(false)
+  const [actionStatus, setActionStatus] = useState('')
+  const sellerName = activeRailProduct.seller || 'Seller'
+  const sellerFirstName = sellerName.split(/\s+/)[0]
+  const seller = { name: sellerName }
+  const offerItem = {
+    id: activeRailProduct.id,
+    title: activeRailProduct.title,
+    price: activeRailProduct.price,
+    image: activeRailProductImage || activeRailProduct.gallery?.[0] || '',
+  }
+
+  async function handleSendOffer(amount) {
+    await sendMarketplaceOffer(activeRailProduct.id, {
+      sellerUsername: activeRailProduct.sellerUsername,
+      amount,
+      currency: 'KES',
+      product: {
+        ...offerItem,
+        href: `/campus/explore?product=${encodeURIComponent(activeRailProduct.id)}`,
+      },
+    })
+    setIsOfferOpen(false)
+    setActionStatus(`Your KSh ${amount.toLocaleString('en-KE')} offer was sent to ${sellerName}.`)
+  }
+
+  function handleMoreFromSeller() {
+    onClose()
+    navigate(`/campus/explore?q=${encodeURIComponent(sellerName)}`)
+  }
 
   return (
     <section className="campus-rail-card explore-campus-right-card explore-campus-product-detail-card">
@@ -91,19 +125,16 @@ function ExploreProductRail({
         ))}
       </div>
 
-      {canUseCart || canBuy ? (
+      {canBuy ? (
         <div className="explore-campus-product-actions">
-          {canUseCart ? (
-            <button type="button" className="explore-campus-product-action-btn is-primary">
-              <FiShoppingBag aria-hidden="true" />
-              Add to Cart
-            </button>
-          ) : null}
-          {canBuy ? (
-            <button type="button" className="explore-campus-product-action-btn is-ghost">Buy Now</button>
-          ) : null}
+          <button type="button" className="explore-campus-product-action-btn is-primary" onClick={() => setIsOfferOpen(true)}>
+            <FiTag aria-hidden="true" />
+            Make an Offer
+          </button>
+          <button type="button" className="explore-campus-product-action-btn is-ghost" onClick={handleMoreFromSeller}>More from {sellerFirstName}</button>
         </div>
       ) : null}
+      {actionStatus ? <p className="explore-campus-product-action-status" role="status">{actionStatus}</p> : null}
 
       <div className="explore-campus-product-switcher">
         <button type="button" className={activeRailProductTab === 'details' ? 'is-active' : ''} onClick={() => onSetTab('details')}>
@@ -164,6 +195,13 @@ function ExploreProductRail({
           ))}
         </section>
       )}
+      <MarketplaceOfferModal
+        isOpen={isOfferOpen}
+        item={offerItem}
+        onClose={() => setIsOfferOpen(false)}
+        onSubmit={handleSendOffer}
+        seller={seller}
+      />
     </section>
   )
 }

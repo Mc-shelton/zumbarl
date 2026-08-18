@@ -6,7 +6,7 @@ import {
   RECENT_ACTIVITY,
 } from '../constants'
 
-function ProfileDefaultRail({ relationships = PIPELINE_RELATIONSHIPS, recentActivity = RECENT_ACTIVITY }) {
+function ProfileDefaultRail({ isOwnProfile = false, relationships = PIPELINE_RELATIONSHIPS, recentActivity = RECENT_ACTIVITY }) {
   const quickActions = filterByAccess(QUICK_ACTIONS)
 
   return (
@@ -60,7 +60,7 @@ function ProfileDefaultRail({ relationships = PIPELINE_RELATIONSHIPS, recentActi
         </div>
       </article>
 
-      {quickActions.length ? (
+      {isOwnProfile && quickActions.length ? (
         <article className="campus-rail-card campus-profile-side-card">
           <header className="campus-profile-card-head">
             <h2>Quick Actions</h2>

@@ -1,17 +1,7 @@
 import { useState } from 'react'
 import { FiChevronDown, FiChevronUp, FiCode, FiFileText, FiImage, FiInfo, FiMapPin, FiMove, FiPlus, FiTrendingUp, FiUploadCloud, FiX } from 'react-icons/fi'
 import { BUSINESS_OPPORTUNITY_BRIEF_SELECTS } from '../opportunityBriefCreateData'
-
-const SAMPLE_WORK_FILE_TYPE_OPTIONS = [
-  'Any accepted file',
-  'Image',
-  'Video',
-  'PDF',
-  'DOCX',
-  'Spreadsheet',
-  'ZIP',
-  'Link',
-]
+import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
 
 const DELIVERABLE_TYPE_META = {
   'File Asset Deliverables': {
@@ -68,14 +58,37 @@ function numberValue(value) {
   return Number(String(value || '').replace(/[^\d.]/g, '')) || 0
 }
 
-function toFileMetadata(file) {
+function toFileMetadata(file, upload) {
   return {
-    id: `file-${file.name}-${file.lastModified}`,
-    name: file.name,
-    type: file.type || 'application/octet-stream',
-    size: file.size,
+    id: upload?.id || `file-${file.name}-${file.lastModified}`,
+    name: upload?.fileName || file.name,
+    fileName: upload?.fileName || file.name,
+    url: upload?.url || '',
+    uploadId: upload?.id,
+    bucket: upload?.bucket,
+    storageKey: upload?.storageKey,
+    type: upload?.mimeType || file.type || 'application/octet-stream',
+    mimeType: upload?.mimeType || file.type || 'application/octet-stream',
+    size: upload?.sizeBytes ?? file.size,
+    sizeBytes: upload?.sizeBytes ?? file.size,
     lastModified: file.lastModified,
+    uploadedAt: new Date().toISOString(),
   }
+}
+
+function toLinkSampleFile(sample, url) {
+  return {
+    id: `link-${sample.id}`,
+    kind: 'link',
+    name: sample.label || url,
+    url,
+    type: 'text/uri-list',
+    size: 0,
+  }
+}
+
+function getSampleLinkUrl(sample) {
+  return sample.files?.find((file) => file.kind === 'link')?.url || ''
 }
 
 function formatFileSize(size = 0) {
@@ -88,7 +101,6 @@ function createSampleWork(index = 0) {
   return {
     id: `sample-work-${Date.now()}-${index}`,
     label: '',
-    fileType: SAMPLE_WORK_FILE_TYPE_OPTIONS[0],
     files: [],
   }
 }
@@ -200,37 +212,6 @@ function getScopeItems(form, scopeMode) {
   return form.deliverableMilestones?.length ? form.deliverableMilestones : [createDeliverableMilestone('File Asset Deliverables', 0)]
 }
 
-function getAcceptedSampleFileTypes(fileType) {
-  const normalized = String(fileType || '').toLowerCase()
-
-  if (normalized === 'image') return 'image/*'
-  if (normalized === 'video') return 'video/*'
-  if (normalized === 'pdf') return 'application/pdf'
-  if (normalized === 'docx') return '.doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-  if (normalized === 'spreadsheet') return '.xls,.xlsx,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv'
-  if (normalized === 'zip') return '.zip,application/zip,application/x-zip-compressed'
-  if (normalized === 'link') return ''
-
-  return ''
-}
-
-function isAcceptedSampleFile(file, fileType) {
-  const normalized = String(fileType || '').toLowerCase()
-  const name = file.name.toLowerCase()
-  const mimeType = file.type.toLowerCase()
-
-  if (!normalized || normalized === 'any accepted file') return true
-  if (normalized === 'image') return mimeType.startsWith('image/')
-  if (normalized === 'video') return mimeType.startsWith('video/')
-  if (normalized === 'pdf') return mimeType === 'application/pdf' || name.endsWith('.pdf')
-  if (normalized === 'docx') return name.endsWith('.doc') || name.endsWith('.docx')
-  if (normalized === 'spreadsheet') return ['.xls', '.xlsx', '.csv'].some((extension) => name.endsWith(extension))
-  if (normalized === 'zip') return name.endsWith('.zip')
-  if (normalized === 'link') return false
-
-  return true
-}
-
 function DeliverableMilestoneCard({
   dragState,
   index,
@@ -248,6 +229,7 @@ function DeliverableMilestoneCard({
   const workflow = milestone.workflow || milestone.type || (isMilestoneScope ? 'Hybrid Deliverables' : 'File Asset Deliverables')
   const meta = DELIVERABLE_TYPE_META[workflow] || DELIVERABLE_TYPE_META['File Asset Deliverables']
   const sampleWorkItems = Array.isArray(milestone.sampleWork) ? milestone.sampleWork : []
+  const [sampleUploadState, setSampleUploadState] = useState({})
 
   function updateMilestone(field, value) {
     if (field === 'workflow') {
@@ -288,6 +270,32 @@ function DeliverableMilestoneCard({
 
   function removeSampleWork(sampleId) {
     updateSampleWork(sampleWorkItems.filter((sample) => sample.id !== sampleId))
+  }
+
+  async function uploadSampleFiles(sample, fileList) {
+    const selectedFiles = Array.from(fileList || [])
+    if (!selectedFiles.length) return
+
+    setSampleUploadState((current) => ({ ...current, [sample.id]: { isUploading: true, error: '' } }))
+    try {
+      const uploadedFiles = await Promise.all(selectedFiles.map(async (file) => {
+        const upload = await uploadZumbarlFile(file, {
+          scope: 'opportunity-sample-work',
+          metadata: { placement: 'opportunity_sample_work' },
+        })
+        return toFileMetadata(file, upload)
+      }))
+      updateSampleFiles(sample.id, [...(sample.files || []), ...uploadedFiles])
+      setSampleUploadState((current) => ({ ...current, [sample.id]: { isUploading: false, error: '' } }))
+    } catch (error) {
+      setSampleUploadState((current) => ({
+        ...current,
+        [sample.id]: {
+          isUploading: false,
+          error: error instanceof Error ? error.message : 'Could not upload sample work file.',
+        },
+      }))
+    }
   }
 
   return (
@@ -390,29 +398,36 @@ function DeliverableMilestoneCard({
                   />
                 </label>
                 <label>
-                  <span>File type</span>
-                  <select
-                    value={sample.fileType}
-                    onChange={(event) => updateSampleWorkItem(sample.id, 'fileType', event.target.value)}
-                  >
-                    {SAMPLE_WORK_FILE_TYPE_OPTIONS.map((option) => (
-                      <option key={option} value={option}>{option}</option>
-                    ))}
-                  </select>
+                  <span>Reference link (optional)</span>
+                  <input
+                    type="url"
+                    value={getSampleLinkUrl(sample)}
+                    placeholder="https://example.com/reference"
+                    onChange={(event) => {
+                      const url = event.target.value.trim()
+                      const uploadedFiles = (sample.files || []).filter((file) => file.kind !== 'link')
+                      updateSampleFiles(sample.id, url ? [...uploadedFiles, toLinkSampleFile(sample, url)] : uploadedFiles)
+                    }}
+                  />
                 </label>
                 <label className="business-create-sample-upload">
-                  <span>Upload</span>
+                  <span>Upload files (optional)</span>
                   <div>
                     <FiUploadCloud aria-hidden="true" />
-                    <strong>{sample.files?.length ? `${sample.files.length} file${sample.files.length === 1 ? '' : 's'}` : 'Browse files'}</strong>
+                    <strong>
+                      {sampleUploadState[sample.id]?.isUploading
+                        ? 'Uploading...'
+                        : sample.files?.filter((file) => file.kind !== 'link').length
+                          ? `${sample.files.filter((file) => file.kind !== 'link').length} file${sample.files.filter((file) => file.kind !== 'link').length === 1 ? '' : 's'}`
+                          : 'Browse files'}
+                    </strong>
                   </div>
                   <input
                     multiple
-                    accept={getAcceptedSampleFileTypes(sample.fileType)}
                     type="file"
+                    disabled={sampleUploadState[sample.id]?.isUploading}
                     onChange={(event) => {
-                      const acceptedFiles = Array.from(event.target.files || []).filter((file) => isAcceptedSampleFile(file, sample.fileType))
-                      updateSampleFiles(sample.id, acceptedFiles.map(toFileMetadata))
+                      uploadSampleFiles(sample, event.target.files)
                       event.target.value = ''
                     }}
                   />
@@ -424,9 +439,17 @@ function DeliverableMilestoneCard({
                 >
                   <FiX aria-hidden="true" />
                 </button>
-                {sample.files?.length ? (
+                {sampleUploadState[sample.id]?.error ? (
+                  <p className="business-create-sample-file-list business-create-upload-error" role="alert">
+                    {sampleUploadState[sample.id].error}
+                  </p>
+                ) : sample.files?.length ? (
                   <p className="business-create-sample-file-list">
-                    {sample.files.map((file) => `${file.name} (${formatFileSize(file.size)})`).join(', ')}
+                    {sample.files.map((file) => (
+                      file.kind === 'link'
+                        ? file.url
+                        : `${file.name} (${formatFileSize(file.size)})${file.url ? '' : ' - not uploaded, re-attach to save'}`
+                    )).join(', ')}
                   </p>
                 ) : null}
               </article>

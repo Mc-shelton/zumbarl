@@ -1,13 +1,17 @@
 import { prisma } from '../../../lib/prisma.js'
+import { OPPORTUNITY_APPLICABLE_STATUSES } from '../../../shared/opportunities/opportunityLifecycle.js'
 
 function toProfileHeader(student: Record<string, any> | null) {
   if (!student) return null
   return {
     id: student.id,
     name: `${student.firstName} ${student.lastName}`.trim(),
+    firstName: student.firstName,
+    lastName: student.lastName,
     role: 'Student',
     headline: `${student.campus?.name ?? 'Campus'} · Year ${Math.max(new Date().getFullYear() - student.yearJoined + 1, 1)} · ${student.careerPath ?? student.course?.name ?? 'Student'}`,
     location: student.locationCity,
+    careerPath: student.careerPath,
     handle: student.user?.email ? `@${student.user.email.split('@')[0].replace(/[^a-z0-9_]/gi, '_')}` : '@student',
     avatar: student.avatarUrl,
     bio: student.bio,
@@ -47,6 +51,15 @@ function formatKes(value: number) {
   return `KES ${Math.round(value).toLocaleString('en-KE')}`
 }
 
+function formatEventDate(value: Date) {
+  return value.toLocaleDateString('en-KE', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  })
+}
+
 function mapOpportunity(opportunity: Record<string, any>) {
   const splash = opportunity.opportunitySplash && typeof opportunity.opportunitySplash === 'object'
     ? opportunity.opportunitySplash
@@ -78,6 +91,17 @@ function mapMarketplaceListing(listing: Record<string, any>) {
     org: listing.shop?.name ?? `${listing.seller?.firstName ?? 'Student'} shop`,
     meta: `${listing.category} · ${listing.listingType.toLowerCase()}`,
     value: formatKes(listing.priceAmount ?? 0),
+    priceAmount: listing.priceAmount,
+    currency: listing.currency,
+    condition: listing.condition,
+    listingType: listing.listingType,
+    status: listing.status,
+    stock: listing.stockCount,
+    stockCount: listing.stockCount,
+    images: listing.images,
+    gallery: listing.images,
+    deliveryOptions: listing.deliveryOptions,
+    variants: listing.variants,
     thumbnail: image,
     image,
     thumbnails: listing.images?.length ? listing.images : [image],
@@ -107,8 +131,10 @@ function mapCampusEvent(event: Record<string, any>) {
     thumbnail: event.coverImageUrl,
     image: event.coverImageUrl,
     tags: event.tags ?? [],
-    href: `/campus/events/${event.id}`,
-    actionLabel: 'View event'
+    href: '/campus/explore',
+    actionLabel: 'View event',
+    attendeeCount: event._count?.rsvps ?? 0,
+    isGoing: event.rsvps?.some((rsvp: Record<string, any>) => rsvp.status === 'GOING') ?? false
   }
 }
 
@@ -126,7 +152,7 @@ function mapCampusPost(post: Record<string, any>) {
     image,
     thumbnails: post.mediaUrls ?? [],
     tags: post.tags ?? [],
-    href: `/campus/posts/${post.id}`,
+    href: '/campus/explore',
     actionLabel: 'Read post'
   }
 }
@@ -143,7 +169,7 @@ function mapStudentStory(story: Record<string, any>) {
     thumbnail: story.thumbnailUrl ?? story.mediaUrl,
     image: story.mediaUrl,
     thumbnails: [story.thumbnailUrl ?? story.mediaUrl],
-    href: `/campus/stories/${story.id}`,
+    href: '/campus/explore',
     actionLabel: 'View story'
   }
 }
@@ -160,12 +186,43 @@ function mapCareerRoadmap(roadmap: Record<string, any>) {
     thumbnail: roadmap.coverImageUrl,
     image: roadmap.coverImageUrl,
     tags: roadmap.skills ?? [],
-    href: `/campus/learn/roadmaps/${roadmap.slug}`,
+    href: '/campus/learn',
     actionLabel: 'Open roadmap'
   }
 }
 
 class CampusExperienceRepository {
+  async updateProfile(studentId: string | undefined, payload: Record<string, any>) {
+    if (!studentId) return null
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.studentProfile.findUnique({ where: { id: studentId } })
+      if (!existing) return null
+      await tx.studentProfile.update({
+        where: { id: studentId },
+        data: {
+          firstName: payload.firstName,
+          lastName: payload.lastName,
+          locationCity: payload.location,
+          careerPath: payload.careerPath || null,
+          bio: payload.bio || null,
+          avatarUrl: payload.avatarUrl || null
+        }
+      })
+      if (payload.username) await tx.user.update({ where: { id: existing.userId }, data: { username: payload.username } })
+      const requestedSkills: string[] = Array.isArray(payload.skills) ? payload.skills.map((skill: unknown) => String(skill).trim()).filter(Boolean) : []
+      const skills: string[] = [...new Set<string>(requestedSkills)].slice(0, 12)
+      await tx.skillLevel_.deleteMany({ where: { studentId, verifiedByGigs: 0, skillName: { notIn: skills } } })
+      for (const skillName of skills) {
+        await tx.skillLevel_.upsert({
+          where: { studentId_skillName: { studentId, skillName } },
+          update: {},
+          create: { studentId, skillName, level: 'BEGINNER' }
+        })
+      }
+      const updated = await tx.studentProfile.findUnique({ where: { id: studentId }, include: { campus: true, course: true, user: true, skillLevels: true } })
+      return toProfileHeader(updated)
+    })
+  }
   async listNotifications(userId?: string) {
     if (!userId) return { data: [], unreadCount: 0 }
 
@@ -225,7 +282,18 @@ class CampusExperienceRepository {
   }
 
   async readHomeExperience(studentId?: string) {
-    const student = studentId ? await prisma.studentProfile.findUnique({ where: { id: studentId }, include: { campus: true } }) : null
+    const student = studentId ? await prisma.studentProfile.findUnique({
+      where: { id: studentId },
+      include: {
+        campus: true,
+        course: true,
+        zumbarl: true,
+        wallets: { orderBy: { createdAt: 'asc' } },
+        roadmapEnrollments: true,
+        pipelineRelationships: true,
+        portfolioItems: true
+      }
+    }) : null
     const campusWhere = student?.campusId ? { OR: [{ campusId: student.campusId }, { campusId: null }] } : {}
     const [items, opportunities, listings, events, posts, stories, roadmaps] = await Promise.all([
       prisma.campusContentItem.findMany({
@@ -242,10 +310,9 @@ class CampusExperienceRepository {
       }),
       prisma.opportunity.findMany({
         where: {
-          OR: [
-            { status: { in: ['published', 'open'] } },
-            { visibility: 'public' }
-          ]
+          status: { in: OPPORTUNITY_APPLICABLE_STATUSES },
+          visibility: 'public',
+          publishedAt: { not: null }
         },
         include: { company: true },
         orderBy: { createdAt: 'desc' },
@@ -258,7 +325,11 @@ class CampusExperienceRepository {
         take: 8
       }),
       prisma.campusEvent.findMany({
-        where: { status: 'PUBLISHED', ...campusWhere },
+        where: { status: 'PUBLISHED', startsAt: { gte: new Date() }, ...campusWhere },
+        include: {
+          _count: { select: { rsvps: true } },
+          ...(studentId ? { rsvps: { where: { studentId } } } : {})
+        },
         orderBy: { startsAt: 'asc' },
         take: 6
       }),
@@ -285,8 +356,20 @@ class CampusExperienceRepository {
     const marketplaceItems = listings.filter((listing) => listing.listingType !== 'SERVICE').map(mapMarketplaceListing)
     const serviceItems = listings.filter((listing) => listing.listingType === 'SERVICE').map(mapMarketplaceListing)
     const assistantConfig = grouped.get('assistant')?.[0] ?? {}
+    const score = student?.zumbarl
+    const mainWallet = student?.wallets.find((wallet) => wallet.type === 'MAIN') ?? student?.wallets[0]
+    const currentYear = new Date().getFullYear()
+    const yearOfStudy = student ? Math.max(currentYear - student.yearJoined + 1, 1) : null
+    const mappedEvents = events.map(mapCampusEvent)
     return {
-      viewer: student ? { campus: student.campus?.name, city: student.locationCity } : null,
+      viewer: student ? {
+        name: `${student.firstName} ${student.lastName}`.trim(),
+        firstName: student.firstName,
+        campus: student.campus?.name,
+        course: student.careerPath ?? student.course?.name,
+        yearOfStudy,
+        city: student.locationCity
+      } : null,
       hero: grouped.get('hero')?.[0] ?? null,
       quickActions: grouped.get('quick_actions') ?? [],
       recommendationSections: [
@@ -295,13 +378,42 @@ class CampusExperienceRepository {
         { id: 'gigs', title: 'Recommended for you', subtitle: 'Gigs and paid work matched to your campus activity', items: opportunities.map(mapOpportunity) },
         { id: 'marketplace', title: 'Marketplace picks', subtitle: 'Student shops, products and useful campus items', items: marketplaceItems },
         { id: 'communities', title: 'Communities', subtitle: 'Groups and chamas you may want to join', items: grouped.get('communities') ?? [] },
-        { id: 'events', title: 'Events', subtitle: 'Campus activity worth showing up for', items: events.map(mapCampusEvent) },
+        { id: 'events', title: 'Events', subtitle: 'Campus activity worth showing up for', items: mappedEvents },
         { id: 'roadmaps', title: 'Career roadmaps', subtitle: 'Skill paths that connect learning to portfolio proof', items: roadmaps.map(mapCareerRoadmap) },
         { id: 'services', title: 'Services', subtitle: 'Student services available near you', items: serviceItems }
       ],
       trustPoints: grouped.get('trust') ?? [],
       discoveryLibrary: grouped.get('discovery') ?? [],
-      assistant: assistantConfig
+      assistant: assistantConfig,
+      rail: student ? {
+        wallet: {
+          balance: mainWallet?.balance ?? 0,
+          pendingBalance: mainWallet?.pendingBalance ?? 0,
+          currency: mainWallet?.currency ?? 'KES',
+          type: mainWallet?.type ?? 'MAIN'
+        },
+        portfolio: {
+          meta: [student.campus?.name, yearOfStudy ? `Year ${yearOfStudy}` : null, student.careerPath ?? student.course?.name].filter(Boolean).join(' · '),
+          stats: [
+            { label: 'Zumbarl Score', value: Math.round(score?.currentScore ?? 0), detail: score?.tier ?? 'BRONZE', trend: score?.trendDirection ?? 'Building profile' },
+            { label: 'Gigs Completed', value: score?.totalGigsCompleted ?? 0, detail: `${score?.endorsementCount ?? 0} endorsements`, trend: `${student.portfolioItems.length} portfolio pieces` }
+          ],
+          groups: [
+            { name: 'Quality score', value: `${Math.round(score?.qualityScore ?? 0)} / 100`, progress: Math.round(score?.qualityScore ?? 0) },
+            { name: 'Average rating', value: score?.avgRating ? `${score.avgRating.toFixed(1)} / 5` : 'Not rated', progress: Math.round((score?.avgRating ?? 0) * 20) },
+            { name: 'Delivery rate', value: `${Math.round(score?.deliveryRate ?? 0)}%`, progress: Math.round(score?.deliveryRate ?? 0) }
+          ]
+        },
+        events: mappedEvents.slice(0, 3).map((event) => ({
+          ...event,
+          time: formatEventDate(new Date(event.meta)),
+          attendees: event.attendeeCount
+        })),
+        learning: {
+          title: student.roadmapEnrollments[0]?.status === 'IN_PROGRESS' ? 'Roadmap in progress' : 'Explore career roadmaps',
+          detail: student.roadmapEnrollments[0] ? `${Math.round(student.roadmapEnrollments[0].progressPercent)}% complete` : 'Build verified skills'
+        }
+      } : null
     }
   }
 
@@ -426,6 +538,120 @@ class CampusExperienceRepository {
         meta: transaction.createdAt.toISOString()
       }))
     }
+  }
+
+  /**
+   * Deep system search across the live catalogue — gigs, marketplace products
+   * and services, people, events, and study resources — scoped to the query.
+   * Returns a flat, normalized list of result cards ranked by relevance.
+   */
+  async searchSystem(rawQuery: string, studentId?: string) {
+    const query = rawQuery.trim().slice(0, 200)
+    if (!query) return []
+
+    const contains = { contains: query, mode: 'insensitive' as const }
+    const student = studentId
+      ? await prisma.studentProfile.findUnique({ where: { id: studentId }, select: { campusId: true } })
+      : null
+    const campusScope = student?.campusId
+      ? { OR: [{ campusId: student.campusId }, { campusId: null }] }
+      : {}
+
+    const [gigs, listings, people, events, resources] = await Promise.all([
+      prisma.opportunity.findMany({
+        where: {
+          status: { in: OPPORTUNITY_APPLICABLE_STATUSES },
+          visibility: 'public',
+          publishedAt: { not: null },
+          OR: [{ title: contains }, { summary: contains }, { category: contains }, { skills: { has: query } }]
+        },
+        include: { company: true },
+        orderBy: { createdAt: 'desc' },
+        take: 5
+      }),
+      prisma.marketplaceListing.findMany({
+        where: {
+          status: 'ACTIVE',
+          ...campusScope,
+          OR: [{ title: contains }, { description: contains }, { category: contains }]
+        },
+        include: { seller: true },
+        orderBy: { createdAt: 'desc' },
+        take: 5
+      }),
+      prisma.studentProfile.findMany({
+        where: {
+          isOpenToHire: true,
+          OR: [{ firstName: contains }, { lastName: contains }, { careerPath: contains }, { bio: contains }]
+        },
+        include: { campus: true, course: true },
+        orderBy: { updatedAt: 'desc' },
+        take: 5
+      }),
+      prisma.campusEvent.findMany({
+        where: {
+          status: 'PUBLISHED',
+          startsAt: { gte: new Date() },
+          ...campusScope,
+          OR: [{ title: contains }, { description: contains }, { category: contains }, { tags: { has: query } }]
+        },
+        orderBy: { startsAt: 'asc' },
+        take: 5
+      }),
+      prisma.campusContentItem.findMany({
+        where: {
+          isActive: true,
+          OR: [{ title: contains }, { subtitle: contains }, { description: contains }, { tags: { has: query } }]
+        },
+        orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
+        take: 5
+      })
+    ])
+
+    const results = [
+      ...gigs.map((gig) => ({
+        id: gig.id,
+        kind: 'gig',
+        title: gig.title,
+        summary: gig.summary,
+        meta: [gig.company?.name, gig.budgetLabel ?? (gig.budgetAmount ? `${gig.currency} ${gig.budgetAmount.toLocaleString()}` : null)].filter(Boolean).join(' · ') || null,
+        href: `/campus/opportunities?opportunity=${gig.id}`
+      })),
+      ...listings.map((listing) => ({
+        id: listing.id,
+        kind: listing.listingType === 'SERVICE' ? 'service' : 'product',
+        title: listing.title,
+        summary: listing.description,
+        meta: [`${listing.currency} ${listing.priceAmount.toLocaleString()}`, listing.locationLabel].filter(Boolean).join(' · ') || null,
+        href: '/campus/opportunities/buy-sell'
+      })),
+      ...people.map((person) => ({
+        id: person.id,
+        kind: 'person',
+        title: `${person.firstName} ${person.lastName}`.trim(),
+        summary: person.bio ?? person.careerPath ?? null,
+        meta: [person.careerPath ?? person.course?.name, person.campus?.name].filter(Boolean).join(' · ') || null,
+        href: `/campus/profiles/${person.id}`
+      })),
+      ...events.map((event) => ({
+        id: event.id,
+        kind: 'event',
+        title: event.title,
+        summary: event.description,
+        meta: [event.locationName, event.startsAt.toISOString()].filter(Boolean).join(' · ') || null,
+        href: '/campus/opportunities?tab=Ongoing'
+      })),
+      ...resources.map((item) => ({
+        id: item.id,
+        kind: 'resource',
+        title: item.title,
+        summary: item.description ?? item.subtitle ?? null,
+        meta: item.org ?? item.meta ?? null,
+        href: item.href ?? null
+      }))
+    ]
+
+    return results
   }
 }
 

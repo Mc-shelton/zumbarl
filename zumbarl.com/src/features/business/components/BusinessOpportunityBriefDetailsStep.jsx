@@ -24,11 +24,16 @@ function toFileMetadata(file, upload, localPreviewUrl = '') {
   return {
     id: upload?.id || `file-${file.name}-${file.lastModified}`,
     name: upload?.fileName || file.name,
+    fileName: upload?.fileName || file.name,
     previewUrl: uploadUrl || localPreviewUrl,
     url: uploadUrl,
     uploadId: upload?.id,
-    type: file.type || 'application/octet-stream',
-    size: upload?.sizeBytes || file.size,
+    storageKey: upload?.storageKey,
+    provider: upload?.provider,
+    type: upload?.mimeType || file.type || 'application/octet-stream',
+    mimeType: upload?.mimeType || file.type || 'application/octet-stream',
+    size: upload?.sizeBytes ?? file.size,
+    sizeBytes: upload?.sizeBytes ?? file.size,
     lastModified: file.lastModified,
     bucket: upload?.bucket,
     crop: DEFAULT_SPLASH_CROP,
@@ -42,7 +47,7 @@ function formatFileSize(size = 0) {
   return `${size} B`
 }
 
-function BusinessOpportunitySplashField({ splash, onUpdateField }) {
+function BusinessOpportunitySplashField({ splash, onSplashUploadStateChange, onUpdateField }) {
   const [fileInputKey, setFileInputKey] = useState(0)
   const [previewFailed, setPreviewFailed] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
@@ -102,8 +107,12 @@ function BusinessOpportunitySplashField({ splash, onUpdateField }) {
             const localPreviewUrl = URL.createObjectURL(file)
 
             setPreviewFailed(false)
-            onUpdateField('opportunitySplash', toFileMetadata(file, null, localPreviewUrl))
+            onUpdateField('opportunitySplash', {
+              ...toFileMetadata(file, null, localPreviewUrl),
+              uploadStatus: 'uploading',
+            })
             setIsUploading(true)
+            onSplashUploadStateChange?.(true)
             setUploadError('')
             try {
               const upload = await uploadZumbarlFile(file, {
@@ -111,12 +120,20 @@ function BusinessOpportunitySplashField({ splash, onUpdateField }) {
                 metadata: { placement: 'opportunity_splash' },
               })
               setPreviewFailed(false)
-              onUpdateField('opportunitySplash', toFileMetadata(file, upload, localPreviewUrl))
+              onUpdateField('opportunitySplash', {
+                ...toFileMetadata(file, upload, localPreviewUrl),
+                uploadStatus: 'complete',
+              })
               URL.revokeObjectURL(localPreviewUrl)
             } catch (error) {
+              onUpdateField('opportunitySplash', {
+                ...toFileMetadata(file, null, localPreviewUrl),
+                uploadStatus: 'failed',
+              })
               setUploadError(error instanceof Error ? error.message : 'Could not upload splash file.')
             } finally {
               setIsUploading(false)
+              onSplashUploadStateChange?.(false)
               event.target.value = ''
             }
           }}
@@ -200,7 +217,7 @@ function BusinessOpportunitySplashField({ splash, onUpdateField }) {
   )
 }
 
-export function BusinessOpportunityBriefDetailsStep({ form, onUpdateField }) {
+export function BusinessOpportunityBriefDetailsStep({ form, onSplashUploadStateChange, onUpdateField }) {
   return (
     <>
       <div className="business-create-section-head">
@@ -210,6 +227,7 @@ export function BusinessOpportunityBriefDetailsStep({ form, onUpdateField }) {
       <BusinessCreateInputField
         label="Opportunity Title"
         name="title"
+        placeholder="e.g. Social media manager for a four-week campaign"
         required
         value={form.title}
         onUpdateField={onUpdateField}
@@ -218,6 +236,7 @@ export function BusinessOpportunityBriefDetailsStep({ form, onUpdateField }) {
         label="Category"
         name="category"
         options={BUSINESS_OPPORTUNITY_BRIEF_SELECTS.category}
+        placeholder="Select a category"
         required
         value={form.category}
         onUpdateField={onUpdateField}
@@ -228,6 +247,7 @@ export function BusinessOpportunityBriefDetailsStep({ form, onUpdateField }) {
         label="Short Description"
         maxLength={150}
         name="summary"
+        placeholder="Briefly describe the opportunity, expected outcome, and who it is for."
         required
         value={form.summary}
         onUpdateField={onUpdateField}
@@ -240,6 +260,7 @@ export function BusinessOpportunityBriefDetailsStep({ form, onUpdateField }) {
               <input
                 type="radio"
                 name="opportunityType"
+                required
                 checked={form.opportunityType === option.id}
                 onChange={() => onUpdateField('opportunityType', option.id)}
               />
@@ -254,6 +275,7 @@ export function BusinessOpportunityBriefDetailsStep({ form, onUpdateField }) {
           label="Experience Level"
           name="experienceLevel"
           options={BUSINESS_OPPORTUNITY_BRIEF_SELECTS.experienceLevel}
+          placeholder="Select an experience level"
           value={form.experienceLevel}
           onUpdateField={onUpdateField}
         />
@@ -261,6 +283,7 @@ export function BusinessOpportunityBriefDetailsStep({ form, onUpdateField }) {
           label="Engagement Mode"
           name="engagementMode"
           options={BUSINESS_OPPORTUNITY_BRIEF_SELECTS.engagementMode}
+          placeholder="Select an engagement mode"
           value={form.engagementMode}
           onUpdateField={onUpdateField}
         />
@@ -268,6 +291,7 @@ export function BusinessOpportunityBriefDetailsStep({ form, onUpdateField }) {
           label="Availability"
           name="availability"
           options={BUSINESS_OPPORTUNITY_BRIEF_SELECTS.availability}
+          placeholder="Select availability"
           value={form.availability}
           onUpdateField={onUpdateField}
         />
@@ -277,6 +301,7 @@ export function BusinessOpportunityBriefDetailsStep({ form, onUpdateField }) {
           label="Estimated Project Duration"
           name="duration"
           options={BUSINESS_OPPORTUNITY_BRIEF_SELECTS.duration}
+          placeholder="Select an estimated duration"
           required
           value={form.duration}
           onUpdateField={onUpdateField}
@@ -291,6 +316,7 @@ export function BusinessOpportunityBriefDetailsStep({ form, onUpdateField }) {
       </div>
       <BusinessOpportunitySplashField
         splash={form.opportunitySplash}
+        onSplashUploadStateChange={onSplashUploadStateChange}
         onUpdateField={onUpdateField}
       />
       <hr />

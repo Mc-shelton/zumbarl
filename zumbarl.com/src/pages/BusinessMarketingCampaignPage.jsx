@@ -1,22 +1,24 @@
-import { Navigate, useParams } from 'react-router-dom'
-import Seo from '../components/Seo'
-import { BusinessMarketingCampaignBody } from '../features/business/components/BusinessMarketingCampaignBody'
-import { BusinessMarketingCampaignHero } from '../features/business/components/BusinessMarketingCampaignHero'
-import { BusinessMarketingCampaignRail } from '../features/business/components/BusinessMarketingCampaignRail'
-import { BusinessMarketingCampaignTabs } from '../features/business/components/BusinessMarketingCampaignTabs'
-import { BusinessMarketingCampaignTopBar } from '../features/business/components/BusinessMarketingCampaignTopBar'
-import { BusinessWorkspaceSidebar } from '../features/business/components/BusinessApplicantSidebar'
-import { useBusinessMarketingCampaign } from '../features/business/hooks/useBusinessMarketingCampaign'
-import '../styles/campus.css'
-import '../styles/business.css'
-import '../styles/workflows.css'
+import { Navigate, useParams } from "react-router-dom";
+import Seo from "../components/Seo";
+import { BusinessMarketingCampaignBody } from "../features/business/components/BusinessMarketingCampaignBody";
+import { BusinessMarketingCampaignHero } from "../features/business/components/BusinessMarketingCampaignHero";
+import { BusinessMarketingCampaignRail } from "../features/business/components/BusinessMarketingCampaignRail";
+import { BusinessMarketingCampaignTabs } from "../features/business/components/BusinessMarketingCampaignTabs";
+import { BusinessMarketingCampaignTopBar } from "../features/business/components/BusinessMarketingCampaignTopBar";
+import { BusinessWorkspaceSidebar } from "../features/business/components/BusinessApplicantSidebar";
+import { useBusinessMarketingCampaign } from "../features/business/hooks/useBusinessMarketingCampaign";
+import "../styles/campus.css";
+import "../styles/business.css";
+import "../styles/workflows.css";
 
 function BusinessMarketingCampaignPage() {
-  const { campaignId } = useParams()
-  const campaignState = useBusinessMarketingCampaign(campaignId)
+  const { campaignId } = useParams();
+  const campaignState = useBusinessMarketingCampaign(campaignId);
 
+  if (campaignState.isLoading)
+    return <main className="business-company-state">Loading campaign…</main>;
   if (!campaignState.campaign) {
-    return <Navigate to="/business/marketing" replace />
+    return <Navigate to="/business/marketing" replace />;
   }
 
   return (
@@ -32,10 +34,11 @@ function BusinessMarketingCampaignPage() {
           <BusinessWorkspaceSidebar activeItemId="marketing" />
 
           <section className="campus-main business-workspace-main business-marketing-detail-main">
-            <BusinessMarketingCampaignTopBar campaign={campaignState.campaign} />
+            <BusinessMarketingCampaignTopBar
+              campaign={campaignState.campaign}
+            />
             <BusinessMarketingCampaignHero
               campaign={campaignState.campaign}
-              isPaused={campaignState.isPaused}
               onTogglePause={campaignState.onTogglePause}
             />
             <BusinessMarketingCampaignTabs
@@ -46,9 +49,6 @@ function BusinessMarketingCampaignPage() {
             <BusinessMarketingCampaignBody
               activeTab={campaignState.activeTab}
               campaign={campaignState.campaign}
-              onEndorseTopCampaigners={campaignState.onEndorseTopCampaigners}
-              onGenerateStats={campaignState.onGenerateStats}
-              onSubmitProof={campaignState.onSubmitProof}
             />
           </section>
 
@@ -56,7 +56,7 @@ function BusinessMarketingCampaignPage() {
         </div>
       </div>
     </main>
-  )
+  );
 }
 
-export default BusinessMarketingCampaignPage
+export default BusinessMarketingCampaignPage;

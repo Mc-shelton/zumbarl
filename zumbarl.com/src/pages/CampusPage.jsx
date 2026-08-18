@@ -3,6 +3,7 @@ import Seo from '../components/Seo'
 import CampusHeroPanel from '../features/campus/components/CampusHeroPanel'
 import CampusHomeHeader from '../features/campus/components/CampusHomeHeader'
 import CampusHomeRail from '../features/campus/components/CampusHomeRail'
+import CampusProjectInvites from '../features/campus/components/CampusProjectInvites'
 import CampusQuickActions from '../features/campus/components/CampusQuickActions'
 import CampusRecommendations from '../features/campus/components/CampusRecommendations'
 import CampusSearchForm from '../features/campus/components/CampusSearchForm'
@@ -33,11 +34,13 @@ function CampusPage() {
     promptInputRef,
     promptPlaceholder,
     quickActions,
+    rail,
     recommendationSections,
     resetChatSurface,
     setPrompt,
     showBackToAiButton,
     trustPoints,
+    viewer,
   } = useCampusHomeState()
 
   return (
@@ -62,7 +65,9 @@ function CampusPage() {
             <CampusHomeHeader
               onBackToAi={handleBackToAi}
               showBackToAiButton={showBackToAiButton}
+              viewer={viewer}
             />
+            <CampusProjectInvites />
             <CampusHeroPanel
               chatMessages={chatMessages}
               chatMode={chatMode}
@@ -93,7 +98,7 @@ function CampusPage() {
             <CampusTrustStrip trustPoints={trustPoints} />
           </section>
 
-          <CampusHomeRail />
+          <CampusHomeRail rail={rail} />
         </div>
       </div>
     </main>

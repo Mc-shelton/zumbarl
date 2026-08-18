@@ -41,6 +41,14 @@
   font-weight: 800;
 }
 
+@keyframes app-route-spin {
+  to { transform: rotate(360deg); }
+}
+
+.app-route-spinner {
+  animation: app-route-spin 800ms linear infinite;
+}
+
 .app-route-error {
   min-height: 100vh;
   background: #f8f8fb;

@@ -1,0 +1,420 @@
+.marketing-create-shell {
+  grid-template-columns: 262px minmax(0, 1fr) 320px;
+}
+.marketing-create-main {
+  min-width: 0;
+  padding-bottom: 32px;
+}
+.marketing-create-steps {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin: 18px 0;
+}
+.marketing-create-steps button {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e3e5ee;
+  border-radius: 12px;
+  background: #fff;
+  color: #69718a;
+  text-align: left;
+}
+.marketing-create-steps button > span {
+  display: grid;
+  flex: 0 0 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 50%;
+  background: #f1f2f6;
+  font-weight: 800;
+}
+.marketing-create-steps button div {
+  min-width: 0;
+}
+.marketing-create-steps strong,
+.marketing-create-steps small {
+  display: block;
+}
+.marketing-create-steps strong {
+  color: #26283a;
+}
+.marketing-create-steps small {
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.marketing-create-steps button.is-active {
+  border-color: #79506f;
+  box-shadow: 0 0 0 2px rgba(121, 80, 111, 0.1);
+}
+.marketing-create-steps button.is-active > span,
+.marketing-create-steps button.is-complete > span {
+  background: #79506f;
+  color: #fff;
+}
+.marketing-form-card,
+.marketing-create-rail {
+  border: 1px solid #e3e5ee;
+  border-radius: 14px;
+  background: #fff;
+}
+.marketing-form-card {
+  min-height: 420px;
+  padding: 24px;
+}
+.marketing-form-card h2,
+.marketing-create-rail h2 {
+  margin: 0;
+  color: #252738;
+}
+.marketing-form-card > p,
+.marketing-create-rail > p {
+  margin: 6px 0 22px;
+  color: #69718a;
+}
+.marketing-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.marketing-form-grid label {
+  display: grid;
+  gap: 7px;
+  color: #35384b;
+  font-size: 13px;
+  font-weight: 700;
+}
+.marketing-form-grid label.is-wide {
+  grid-column: 1 / -1;
+}
+.marketing-form-grid strong {
+  color: #b1334b;
+}
+.marketing-form-grid input,
+.marketing-form-grid select,
+.marketing-form-grid textarea {
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid #dfe2eb;
+  border-radius: 9px;
+  background: #fcfcfe;
+  color: #252738;
+  font: inherit;
+  font-weight: 500;
+}
+.marketing-form-grid textarea {
+  min-height: 108px;
+  resize: vertical;
+}
+.marketing-form-grid small {
+  color: #7b8298;
+  font-weight: 500;
+  line-height: 1.45;
+}
+.marketing-media-upload {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 12px;
+  padding-top: 4px;
+}
+.marketing-media-upload header h3,
+.marketing-media-upload header p {
+  margin: 0;
+}
+.marketing-media-upload header h3 {
+  color: #35384b;
+  font-size: 14px;
+}
+.marketing-media-upload header p {
+  margin-top: 5px;
+  color: #69718a;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.marketing-media-dropzone {
+  min-height: 220px;
+  padding: 28px;
+  border: 2px dashed #cfc6d0;
+  border-radius: 14px;
+  background: #fcf9fc;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 8px;
+  color: #79506f;
+  cursor: pointer;
+  text-align: center;
+}
+.marketing-media-dropzone > svg {
+  width: 34px;
+  height: 34px;
+}
+.marketing-media-dropzone strong {
+  color: #35384b;
+  font-size: 15px;
+}
+.marketing-media-dropzone span {
+  color: #7b8298;
+  font-size: 12px;
+  font-weight: 600;
+}
+.marketing-media-dropzone b,
+.marketing-media-replace {
+  padding: 9px 13px;
+  border-radius: 9px;
+  background: #79506f;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+.marketing-media-dropzone input,
+.marketing-media-replace input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+}
+.marketing-media-preview {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #e0e2ea;
+  border-radius: 14px;
+  background: #f8f9fc;
+  display: grid;
+  grid-template-columns: minmax(180px, 0.8fr) minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+}
+.marketing-media-preview img,
+.marketing-media-preview video {
+  width: 100%;
+  height: 180px;
+  border-radius: 10px;
+  background: #171927;
+  display: block;
+  object-fit: contain;
+}
+.marketing-media-preview > div {
+  min-width: 0;
+  display: grid;
+  gap: 6px;
+}
+.marketing-media-preview strong,
+.marketing-media-preview span,
+.marketing-media-preview em {
+  overflow-wrap: anywhere;
+}
+.marketing-media-preview strong {
+  color: #2a2d40;
+}
+.marketing-media-preview span {
+  color: #777f95;
+  font-size: 12px;
+}
+.marketing-media-preview em {
+  color: #287a68;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 800;
+}
+.marketing-media-preview button {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #e4cfd3;
+  border-radius: 9px;
+  background: #fff;
+  color: #a43a50;
+  display: grid;
+  place-items: center;
+}
+.marketing-media-replace {
+  width: max-content;
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  cursor: pointer;
+}
+.marketing-choice-group {
+  margin: 0 0 22px;
+  padding: 0;
+  border: 0;
+}
+.marketing-choice-group legend {
+  margin-bottom: 9px;
+  color: #35384b;
+  font-size: 13px;
+  font-weight: 800;
+}
+.marketing-choice-group > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.marketing-choice-group label input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.marketing-choice-group label span {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  padding: 9px 12px;
+  border: 1px solid #dfe2eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #555d73;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+}
+.marketing-choice-group label.is-selected span {
+  border-color: #79506f;
+  background: #f5eef5;
+  color: #704867;
+}
+.marketing-capacity,
+.marketing-rail-note {
+  display: flex;
+  gap: 10px;
+  padding: 13px;
+  border-radius: 10px;
+  line-height: 1.45;
+}
+.marketing-capacity {
+  margin-top: 20px;
+  background: #f4f0ff;
+  color: #514876;
+}
+.marketing-review {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  overflow: hidden;
+  border: 1px solid #e4e6ed;
+  border-radius: 10px;
+  background: #e4e6ed;
+}
+.marketing-review div {
+  padding: 14px;
+  background: #fff;
+}
+.marketing-review div.is-wide {
+  grid-column: 1 / -1;
+}
+.marketing-review dt,
+.marketing-create-rail dt {
+  color: #757d93;
+  font-size: 12px;
+  font-weight: 700;
+}
+.marketing-review dd,
+.marketing-create-rail dd {
+  margin: 5px 0 0;
+  color: #292c3e;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.marketing-create-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+}
+.marketing-create-actions > div {
+  display: flex;
+  gap: 9px;
+}
+.marketing-create-actions button {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  padding: 11px 16px;
+  border: 1px solid #79506f;
+  border-radius: 9px;
+  background: #79506f;
+  color: #fff;
+  font-weight: 800;
+}
+.marketing-create-actions button.is-secondary {
+  border-color: #dfe2eb;
+  background: #fff;
+  color: #3d4155;
+}
+.marketing-create-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.marketing-form-error {
+  margin: 0 0 12px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  background: #fff0f1;
+  color: #9c293f;
+  font-weight: 700;
+}
+.marketing-create-rail {
+  position: sticky;
+  top: 16px;
+  align-self: start;
+  margin: 12px 16px 0 0;
+  padding: 20px;
+}
+.marketing-create-rail dl {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+}
+.marketing-create-rail dl div {
+  padding-bottom: 12px;
+  border-bottom: 1px solid #eceef3;
+}
+.marketing-rail-note {
+  margin-top: 18px;
+  background: #f4f0ff;
+  color: #514876;
+  font-size: 13px;
+}
+@media (max-width: 1280px) {
+  .marketing-create-shell {
+    grid-template-columns: 228px minmax(0, 1fr);
+  }
+  .marketing-create-rail {
+    display: none;
+  }
+}
+@media (max-width: 980px) {
+  .marketing-create-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 860px) {
+  .marketing-create-steps {
+    grid-template-columns: repeat(5, auto);
+    overflow-x: auto;
+  }
+  .marketing-create-steps button div {
+    display: none;
+  }
+  .marketing-form-grid,
+  .marketing-review {
+    grid-template-columns: 1fr;
+  }
+  .marketing-form-grid label.is-wide,
+  .marketing-review div.is-wide {
+    grid-column: auto;
+  }
+  .marketing-media-preview {
+    grid-template-columns: 1fr auto;
+  }
+  .marketing-media-preview img,
+  .marketing-media-preview video {
+    grid-column: 1 / -1;
+  }
+}

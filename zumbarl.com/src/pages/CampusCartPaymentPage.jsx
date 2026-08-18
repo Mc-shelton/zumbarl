@@ -12,23 +12,21 @@ import {
   CHECKOUT_BREADCRUMBS,
   CHECKOUT_STEPS,
 } from '../features/cart/checkoutData'
-import { ORDER_ITEMS } from '../features/cart/cartData'
-import { getOrderTotals } from '../features/cart/pricing'
+import { useCartPageState } from '../features/cart/hooks/useCartPageState'
 import { CAMPUS_CART_PAYMENT_SEO } from '../features/seo/constants'
 import '../styles/campus.css'
 import '../styles/cart.css'
 
-const orderTotals = getOrderTotals(ORDER_ITEMS)
-
 function CampusCartPaymentPage() {
   const navigate = useNavigate()
+  const { cartItems, totals: orderTotals } = useCartPageState()
 
   return (
     <CartShell
       checkout
       rail={(
         <CheckoutOrderSummaryRail
-          items={ORDER_ITEMS}
+          items={cartItems}
           showImages
           totals={orderTotals}
         >

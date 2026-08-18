@@ -1,0 +1,13 @@
+.zumbarl-confirm-backdrop { position: fixed; inset: 0; z-index: 10000; display: grid; place-items: center; padding: 20px; background: rgba(17, 20, 39, .58); backdrop-filter: blur(3px); }
+.zumbarl-confirm-dialog { width: min(430px, 100%); border: 1px solid #e1e3ed; border-radius: 18px; padding: 24px; color: #171b3a; background: #fff; box-shadow: 0 24px 70px rgba(16, 20, 48, .25); }
+.zumbarl-confirm-dialog > header { display: flex; align-items: center; justify-content: space-between; }
+.zumbarl-confirm-dialog > header > span { width: 44px; height: 44px; border-radius: 13px; display: grid; place-items: center; color: #c63f4e; background: #fff0f2; }
+.zumbarl-confirm-dialog > header > span svg { width: 21px; height: 21px; }
+.zumbarl-confirm-dialog > header > button { width: 34px; height: 34px; border: 0; border-radius: 10px; display: grid; place-items: center; color: #74788d; background: #f5f6fa; cursor: pointer; }
+.zumbarl-confirm-dialog h2 { margin: 18px 0 8px; font-size: 22px; line-height: 1.2; }
+.zumbarl-confirm-dialog p { margin: 0; color: #646980; font-size: 14px; line-height: 1.6; }
+.zumbarl-confirm-dialog footer { margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px; }
+.zumbarl-confirm-dialog footer button { min-height: 42px; border: 1px solid #dfe1e9; border-radius: 11px; padding: 0 18px; color: #373b50; background: #fff; font: inherit; font-weight: 800; cursor: pointer; }
+.zumbarl-confirm-dialog footer button.is-destructive { border-color: #c63f4e; color: #fff; background: #c63f4e; }
+.zumbarl-confirm-dialog button:disabled { opacity: .6; cursor: wait; }
+@media (max-width: 520px) { .zumbarl-confirm-dialog footer { flex-direction: column-reverse; } .zumbarl-confirm-dialog footer button { width: 100%; } }

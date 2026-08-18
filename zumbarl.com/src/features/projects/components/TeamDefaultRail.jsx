@@ -9,7 +9,7 @@ const TEAM_QUICK_ACTIONS = [
   { label: 'Sprint Settings', requiredAccess: ACCESS_KEYS.projects.createSprint },
 ]
 
-function TeamDefaultRail() {
+function TeamDefaultRail({ onInviteMember }) {
   const quickActions = filterByAccess(TEAM_QUICK_ACTIONS)
 
   return (
@@ -33,7 +33,13 @@ function TeamDefaultRail() {
         <section className="campus-rail-card team-rail-card">
           <h3>Quick Actions</h3>
           {quickActions.map((item) => (
-            <button key={item.label} type="button">{item.label}</button>
+            <button
+              key={item.label}
+              type="button"
+              onClick={item.label === 'Invite Team Member' ? onInviteMember : undefined}
+            >
+              {item.label}
+            </button>
           ))}
         </section>
       ) : null}

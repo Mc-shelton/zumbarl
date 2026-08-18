@@ -7,6 +7,26 @@ import { APP_ROUTES } from './features/navigation/routeConfig'
 
 const DYNAMIC_IMPORT_RELOAD_KEY = 'zumbarl.dynamicImportReloaded'
 
+const loadingScreenStyle = {
+  minHeight: '100vh',
+  display: 'grid',
+  placeItems: 'center',
+  background: '#f7f8fb',
+  color: '#343342',
+  fontFamily: 'Inter, system-ui, sans-serif',
+}
+
+function AppLoading() {
+  return (
+    <main style={loadingScreenStyle} role="status" aria-live="polite">
+      <div style={{ display: 'grid', justifyItems: 'center', gap: 12 }}>
+        <span className="app-route-spinner" style={{ width: 34, height: 34, border: '3px solid #e4deea', borderTopColor: '#79506f', borderRadius: '50%' }} />
+        <strong>Loading Zumbarl…</strong>
+      </div>
+    </main>
+  )
+}
+
 function renderRouteElement(route) {
   const page = route.access
     ? <AccessRoute access={route.access}>{route.element}</AccessRoute>
@@ -50,9 +70,8 @@ function AppRouteError() {
   }
 
   return (
-    <main className="app-route-error" role="alert">
-      <section>
-        <img src="/assets/index/bee_nobg.png" alt="" />
+    <main className="app-route-error" style={loadingScreenStyle} role="alert">
+      <section style={{ width: 'min(440px, calc(100% - 32px))', padding: 28, borderRadius: 18, background: '#fff', textAlign: 'center', boxSizing: 'border-box' }}>
         <h1>Workspace view could not load</h1>
         <p>
           {shouldAutoReload
@@ -73,7 +92,7 @@ const router = createBrowserRouter(APP_ROUTES.map((route) => ({
 
 function App() {
   return (
-    <Suspense fallback={<div className="app-route-loading" role="status">Loading Zumbarl...</div>}>
+    <Suspense fallback={<AppLoading />}>
       <RouterProvider router={router} />
     </Suspense>
   )

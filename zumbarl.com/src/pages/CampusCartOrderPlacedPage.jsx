@@ -12,16 +12,14 @@ import {
   CHECKOUT_BREADCRUMBS,
   CHECKOUT_STEPS,
 } from '../features/cart/checkoutData'
-import { ORDER_ITEMS } from '../features/cart/cartData'
-import { getOrderTotals } from '../features/cart/pricing'
+import { useCartPageState } from '../features/cart/hooks/useCartPageState'
 import { CAMPUS_CART_ORDER_PLACED_SEO } from '../features/seo/constants'
 import '../styles/campus.css'
 import '../styles/cart.css'
 
-const orderTotals = getOrderTotals(ORDER_ITEMS)
-
 function CampusCartOrderPlacedPage() {
   const navigate = useNavigate()
+  const { cartItems, totals: orderTotals } = useCartPageState()
 
   return (
     <CartShell
@@ -31,7 +29,7 @@ function CampusCartOrderPlacedPage() {
           compact
           editLabel="View Orders"
           editPath="/campus/opportunities?tab=service-orders"
-          items={ORDER_ITEMS}
+          items={cartItems}
           totals={orderTotals}
         >
           <OrderDeliverySummaryNote />

@@ -1,6 +1,7 @@
 import {
   FiChevronLeft,
   FiChevronRight,
+  FiEdit3,
   FiHeart,
   FiMapPin,
   FiMessageCircle,
@@ -16,16 +17,18 @@ function ProfileShopDetailRail({
   activeShopDetailImage,
   activeShopDetailTab,
   normalizedShopDetailImageIndex,
+  isOwner = false,
   onClose,
   onDetailImageChange,
   onDetailTabChange,
   onNextImage,
   onPreviousImage,
+  onEditListing,
   selectedShopProduct,
   selectedShopProductDetail,
 }) {
   const gallery = selectedShopProductDetail?.gallery || []
-  const canBuy = hasAccess(ACCESS_KEYS.marketplace.buy)
+  const canBuy = hasAccess(ACCESS_KEYS.marketplace.buy) && !isOwner
   const canUseCart = canBuy && hasAccess(ACCESS_KEYS.cart.view)
 
   return (
@@ -99,7 +102,14 @@ function ProfileShopDetailRail({
         ))}
       </div>
 
-      {canUseCart || canBuy ? (
+      {isOwner ? (
+        <div className="campus-shop-detail-actions">
+          <button type="button" className="campus-shop-detail-action-btn is-primary" onClick={() => onEditListing(selectedShopProduct)}>
+            <FiEdit3 aria-hidden="true" />
+            Edit listing
+          </button>
+        </div>
+      ) : canUseCart || canBuy ? (
         <div className="campus-shop-detail-actions">
           {canUseCart ? (
             <button type="button" className="campus-shop-detail-action-btn is-primary">

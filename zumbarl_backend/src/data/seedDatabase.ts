@@ -6,9 +6,6 @@ import { copyLocalSeedAsset } from '../adapters/storage/index.js'
 import { createPrismaRecordRepository } from '../shared/repositories/index.js'
 
 const projects = createPrismaRecordRepository('projects')
-const campaigns = createPrismaRecordRepository('campaigns')
-const shops = createPrismaRecordRepository('shops')
-const wallets = createPrismaRecordRepository('wallets')
 
 type SeedAssets = Awaited<ReturnType<typeof seedLocalFileAssets>>
 
@@ -528,6 +525,12 @@ async function seedCampusContent(campusId: string, assets: SeedAssets) {
 }
 
 async function seedStructuredCampusExperience(campusId: string, studentId: string, assets: SeedAssets) {
+  const eventStart = new Date()
+  eventStart.setDate(eventStart.getDate() + 7)
+  eventStart.setHours(14, 0, 0, 0)
+  const eventEnd = new Date(eventStart)
+  eventEnd.setHours(17, 0, 0, 0)
+
   const shop = await prisma.marketplaceShop.upsert({
     where: { slug: 'aisha-campus-studio' },
     update: {
@@ -687,6 +690,121 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         stockCount: 10
       }
     }),
+    prisma.marketplaceListing.upsert({
+      where: { id: 'featured-macbook' },
+      update: {
+        shopId: shop.id,
+        sellerId: studentId,
+        campusId,
+        title: 'MacBook Air M1',
+        description: 'MacBook Air M1 in excellent condition. Lightly used for school and personal projects. Battery health is 95% and the original charger is included.',
+        category: 'Electronics',
+        listingType: 'PRODUCT',
+        condition: 'Like New',
+        priceAmount: 75000,
+        currency: 'KES',
+        images: [assets.event, assets.marketplace, assets.campaign, assets.marketplacePreview],
+        deliveryOptions: ['Campus pickup'],
+        status: 'ACTIVE',
+        stockCount: 1,
+        payload: {
+          subtitle: 'Powerful. Portable. Perfect for students and creators.',
+          brand: 'Apple',
+          model: 'MacBook Air M1',
+          storage: '256GB SSD',
+          ram: '8GB',
+          color: 'Space Gray',
+          included: 'Charger, Original Box'
+        }
+      },
+      create: {
+        id: 'featured-macbook',
+        shopId: shop.id,
+        sellerId: studentId,
+        campusId,
+        title: 'MacBook Air M1',
+        description: 'MacBook Air M1 in excellent condition. Lightly used for school and personal projects. Battery health is 95% and the original charger is included.',
+        category: 'Electronics',
+        listingType: 'PRODUCT',
+        condition: 'Like New',
+        priceAmount: 75000,
+        currency: 'KES',
+        images: [assets.event, assets.marketplace, assets.campaign, assets.marketplacePreview],
+        deliveryOptions: ['Campus pickup'],
+        stockCount: 1,
+        payload: {
+          subtitle: 'Powerful. Portable. Perfect for students and creators.',
+          brand: 'Apple',
+          model: 'MacBook Air M1',
+          storage: '256GB SSD',
+          ram: '8GB',
+          color: 'Space Gray',
+          included: 'Charger, Original Box'
+        }
+      }
+    }),
+    prisma.marketplaceListing.upsert({
+      where: { id: 'featured-accounting-notes' },
+      update: {
+        shopId: shop.id,
+        sellerId: studentId,
+        campusId,
+        title: 'Fundamentals of Accounting',
+        description: 'Well maintained textbook and concise notes. Ideal for exam prep and revision groups.',
+        category: 'Books & Notes',
+        listingType: 'PRODUCT',
+        condition: 'Used - Good',
+        priceAmount: 1200,
+        currency: 'KES',
+        images: [assets.marketplacePreview, assets.marketplace, assets.event],
+        deliveryOptions: ['Campus pickup'],
+        locationLabel: 'Zetech University',
+        status: 'ACTIVE',
+        stockCount: 1,
+        payload: {
+          subtitle: 'Clean notes and textbook bundle for first-year accounting units.',
+          brand: 'Pearson',
+          model: 'Fundamentals of Accounting',
+          color: 'Multicolor',
+          included: 'Textbook + Notes',
+          variants: [],
+          negotiable: true,
+          minimumOffer: 1000,
+          pickupInstructions: 'Meet at the student centre during daytime hours.',
+          returnPolicy: 'Inspect the bundle during handoff before confirming collection.'
+        }
+      },
+      create: {
+        id: 'featured-accounting-notes',
+        shopId: shop.id,
+        sellerId: studentId,
+        campusId,
+        title: 'Fundamentals of Accounting',
+        description: 'Well maintained textbook and concise notes. Ideal for exam prep and revision groups.',
+        category: 'Books & Notes',
+        listingType: 'PRODUCT',
+        condition: 'Used - Good',
+        priceAmount: 1200,
+        currency: 'KES',
+        images: [assets.marketplacePreview, assets.marketplace, assets.event],
+        deliveryOptions: ['Campus pickup'],
+        locationLabel: 'Zetech University',
+        status: 'ACTIVE',
+        stockCount: 1,
+        payload: {
+          subtitle: 'Clean notes and textbook bundle for first-year accounting units.',
+          brand: 'Pearson',
+          model: 'Fundamentals of Accounting',
+          color: 'Multicolor',
+          included: 'Textbook + Notes',
+          variants: [],
+          negotiable: true,
+          minimumOffer: 1000,
+          pickupInstructions: 'Meet at the student centre during daytime hours.',
+          returnPolicy: 'Inspect the bundle during handoff before confirming collection.'
+        }
+      }
+    }),
     prisma.campusEvent.upsert({
       where: { id: 'event-creative-career-day' },
       update: {
@@ -698,8 +816,8 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         coverImageUrl: assets.event,
         locationName: 'Innovation Hub',
         locationAddress: 'Zetech University, Nairobi',
-        startsAt: new Date('2026-07-10T11:00:00.000Z'),
-        endsAt: new Date('2026-07-10T14:00:00.000Z'),
+        startsAt: eventStart,
+        endsAt: eventEnd,
         capacity: 120,
         priceAmount: 0,
         tags: ['Portfolio', 'Career', 'Networking'],
@@ -717,8 +835,8 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         coverImageUrl: assets.event,
         locationName: 'Innovation Hub',
         locationAddress: 'Zetech University, Nairobi',
-        startsAt: new Date('2026-07-10T11:00:00.000Z'),
-        endsAt: new Date('2026-07-10T14:00:00.000Z'),
+        startsAt: eventStart,
+        endsAt: eventEnd,
         capacity: 120,
         tags: ['Portfolio', 'Career', 'Networking']
       }
@@ -833,6 +951,25 @@ async function seedDatabase() {
       city: 'Nairobi'
     }
   })
+  const kenyattaCampus = await prisma.campus.upsert({
+    where: { id: 'campus-kenyatta-university' },
+    update: {
+      name: 'Kenyatta University',
+      city: 'Nairobi',
+      locationLabel: 'Kahawa, Nairobi',
+      latitude: -1.1802,
+      longitude: 36.9275,
+      isActive: true
+    },
+    create: {
+      id: 'campus-kenyatta-university',
+      name: 'Kenyatta University',
+      city: 'Nairobi',
+      locationLabel: 'Kahawa, Nairobi',
+      latitude: -1.1802,
+      longitude: 36.9275
+    }
+  })
   const course = await prisma.course.upsert({
     where: { id: 'course-marketing-design' },
     update: { name: 'Marketing & Design', category: 'BUSINESS', duration: 4 },
@@ -889,7 +1026,7 @@ async function seedDatabase() {
       isActive: true
     }
   })
-  await prisma.user.upsert({
+  const adminUser = await prisma.user.upsert({
     where: { email: 'admin@zumbarl.test' },
     update: {
       name: 'Zumbarl Admin',
@@ -909,6 +1046,91 @@ async function seedDatabase() {
       passwordHash: await hashPassword('password123'),
       role: 'SUPER_ADMIN',
       isActive: true
+    }
+  })
+
+  const kenyattaProfile = await prisma.managedProfile.upsert({
+    where: { slug: 'kenyatta-university-official' },
+    update: {
+      type: 'campus',
+      name: 'Kenyatta University Official',
+      handle: 'KU_Official',
+      campusId: kenyattaCampus.id,
+      locationLabel: 'Kahawa, Nairobi',
+      websiteUrl: 'https://www.ku.ac.ke',
+      email: 'info@ku.ac.ke',
+      details: {
+        tagline: 'Discover. Learn. Innovate.',
+        studentLife: ['Clubs & societies', 'Sports & recreation', 'Arts & culture', 'Community outreach'],
+        services: ['Student affairs', 'Academic support', 'Health services', 'Security and safety'],
+        facilities: ['Library', 'Innovation hub', 'Sports facilities', 'Chandaria Auditorium'],
+        importantContacts: [{ label: 'General enquiries', value: '+254 20 8703000' }, { label: 'Security hotline', value: '+254 725 471 487' }]
+      },
+      isVerified: true,
+      status: 'active'
+    },
+    create: {
+      id: 'profile-kenyatta-university-official',
+      type: 'campus',
+      slug: 'kenyatta-university-official',
+      name: 'Kenyatta University Official',
+      handle: 'KU_Official',
+      bio: 'The official Kenyatta University campus profile on Zumbarl.',
+      campusId: kenyattaCampus.id,
+      locationLabel: 'Kahawa, Nairobi',
+      websiteUrl: 'https://www.ku.ac.ke',
+      email: 'info@ku.ac.ke',
+      details: {
+        tagline: 'Discover. Learn. Innovate.',
+        studentLife: ['Clubs & societies', 'Sports & recreation', 'Arts & culture', 'Community outreach'],
+        services: ['Student affairs', 'Academic support', 'Health services', 'Security and safety'],
+        facilities: ['Library', 'Innovation hub', 'Sports facilities', 'Chandaria Auditorium'],
+        importantContacts: [{ label: 'General enquiries', value: '+254 20 8703000' }, { label: 'Security hotline', value: '+254 725 471 487' }]
+      },
+      isVerified: true
+    }
+  })
+  await prisma.managedProfileManager.upsert({
+    where: { managedProfileId_userId: { managedProfileId: kenyattaProfile.id, userId: adminUser.id } },
+    update: { role: 'owner' },
+    create: { managedProfileId: kenyattaProfile.id, userId: adminUser.id, role: 'owner' }
+  })
+  await prisma.connectPost.upsert({
+    where: { id: 'post-ku-innovation-summit' },
+    update: {
+      managedProfileId: kenyattaProfile.id,
+      studentId: null,
+      type: 'event',
+      body: 'The 3rd Annual Innovation & Entrepreneurship Summit is here! Join industry leaders, alumni and students as we shape the future together.',
+      visibility: 'public',
+      status: 'published',
+      payload: {
+        seedKey: 'ku-innovation-summit',
+        isPinnedAnnouncement: true,
+        eventDate: '2024-05-24',
+        eventTime: '9:00 AM - 4:00 PM',
+        venue: 'Chandaria Auditorium',
+        announcementRequest: { status: 'approved', targetType: 'campus', targetId: kenyattaCampus.id }
+      }
+    },
+    create: {
+      id: 'post-ku-innovation-summit',
+      managedProfileId: kenyattaProfile.id,
+      type: 'event',
+      body: 'The 3rd Annual Innovation & Entrepreneurship Summit is here! Join industry leaders, alumni and students as we shape the future together.',
+      visibility: 'public',
+      status: 'published',
+      reactions: {},
+      saves: 0,
+      reposts: 0,
+      payload: {
+        seedKey: 'ku-innovation-summit',
+        isPinnedAnnouncement: true,
+        eventDate: '2024-05-24',
+        eventTime: '9:00 AM - 4:00 PM',
+        venue: 'Chandaria Auditorium',
+        announcementRequest: { status: 'approved', targetType: 'campus', targetId: kenyattaCampus.id }
+      }
     }
   })
 
@@ -942,6 +1164,136 @@ async function seedDatabase() {
     }
   })
 
+  await prisma.connectProfile.upsert({
+    where: { studentId: student.id },
+    update: {
+      payload: {
+        socialAccounts: [
+          {
+            platform: 'Instagram',
+            handle: '@aisha_creates',
+            followers: 12500,
+            averageLikes: 3000,
+            averageEngagement: 4000,
+            verified: true
+          },
+          {
+            platform: 'TikTok',
+            handle: '@aisha_creates',
+            followers: 18900,
+            averageLikes: 3000,
+            averageEngagement: 4000,
+            verified: true
+          }
+        ]
+      }
+    },
+    create: {
+      studentId: student.id,
+      interests: ['Content creation', 'Digital marketing'],
+      payload: {
+        socialAccounts: [
+          {
+            platform: 'Instagram',
+            handle: '@aisha_creates',
+            followers: 12500,
+            averageLikes: 3000,
+            averageEngagement: 4000,
+            verified: true
+          },
+          {
+            platform: 'TikTok',
+            handle: '@aisha_creates',
+            followers: 18900,
+            averageLikes: 3000,
+            averageEngagement: 4000,
+            verified: true
+          }
+        ]
+      }
+    }
+  })
+
+  const candidatePasswordHash = await hashPassword('password123')
+  const projectTeamCandidateSeeds = [
+    {
+      email: 'brian.otieno@zumbarl.test',
+      firstName: 'Brian',
+      lastName: 'Otieno',
+      phone: '+254700100011',
+      skills: ['Graphic Design', 'Canva', 'Content Creation']
+    },
+    {
+      email: 'grace.wanjiku@zumbarl.test',
+      firstName: 'Grace',
+      lastName: 'Wanjiku',
+      phone: '+254700100012',
+      skills: ['Copywriting', 'Content Strategy', 'Social Media']
+    },
+    {
+      email: 'kevin.mutua@zumbarl.test',
+      firstName: 'Kevin',
+      lastName: 'Mutua',
+      phone: '+254700100013',
+      skills: ['Video Editing', 'Analytics', 'Reporting']
+    }
+  ]
+
+  for (const candidateSeed of projectTeamCandidateSeeds) {
+    const name = `${candidateSeed.firstName} ${candidateSeed.lastName}`
+    const candidateUser = await prisma.user.upsert({
+      where: { email: candidateSeed.email },
+      update: {
+        name,
+        firstName: candidateSeed.firstName,
+        lastName: candidateSeed.lastName,
+        passwordHash: candidatePasswordHash,
+        role: 'STUDENT_STANDARD',
+        isActive: true
+      },
+      create: {
+        email: candidateSeed.email,
+        name,
+        firstName: candidateSeed.firstName,
+        lastName: candidateSeed.lastName,
+        username: `${candidateSeed.firstName}_${candidateSeed.lastName}`.toLowerCase(),
+        phone: candidateSeed.phone,
+        passwordHash: candidatePasswordHash,
+        role: 'STUDENT_STANDARD',
+        isActive: true
+      }
+    })
+    const candidateProfile = await prisma.studentProfile.upsert({
+      where: { userId: candidateUser.id },
+      update: {
+        firstName: candidateSeed.firstName,
+        lastName: candidateSeed.lastName,
+        campusId: campus.id,
+        courseId: course.id,
+        avatarUrl: assets.avatar,
+        isOpenToHire: true,
+        kycStatus: 'APPROVED'
+      },
+      create: {
+        userId: candidateUser.id,
+        firstName: candidateSeed.firstName,
+        lastName: candidateSeed.lastName,
+        dateOfBirth: new Date('2000-01-01T00:00:00.000Z'),
+        campusId: campus.id,
+        courseId: course.id,
+        yearJoined: new Date().getFullYear() - 2,
+        courseDuration: course.duration,
+        expectedGraduation: new Date(`${new Date().getFullYear() + 2}-12-31T00:00:00.000Z`),
+        bio: `${name} is available for collaborative student projects.`,
+        careerPath: 'Marketing & Design',
+        avatarUrl: assets.avatar,
+        isOpenToHire: true,
+        kycStatus: 'APPROVED'
+      }
+    })
+    await syncSeedStudentSkills(candidateProfile.id, candidateSeed.skills)
+  }
+
   const business = await prisma.company.upsert({
     where: { registrationNumber: 'ZETECH-STUDIOS-SEED' },
     update: {
@@ -969,6 +1321,20 @@ async function seedDatabase() {
       isOwner: true
     }
   })
+  const businessProfile = await prisma.managedProfile.upsert({
+    where: { slug: 'zetech-studios' },
+    update: { type: 'business', name: business.name, handle: 'zetech_studios', companyId: business.id, bio: business.description, isVerified: true, details: { sector: business.sector, size: business.size, services: ['Digital campaigns', 'Creative production'], studentEngagement: ['Paid gigs', 'Internships', 'Portfolio projects'], partnershipTypes: ['Recruitment', 'Events', 'Student projects'] } },
+    create: { type: 'business', slug: 'zetech-studios', name: business.name, handle: 'zetech_studios', companyId: business.id, bio: business.description, isVerified: true, details: { sector: business.sector, size: business.size, services: ['Digital campaigns', 'Creative production'], studentEngagement: ['Paid gigs', 'Internships', 'Portfolio projects'], partnershipTypes: ['Recruitment', 'Events', 'Student projects'] } }
+  })
+  await prisma.managedProfileManager.upsert({ where: { managedProfileId_userId: { managedProfileId: businessProfile.id, userId: businessUser.id } }, update: { role: 'owner' }, create: { managedProfileId: businessProfile.id, userId: businessUser.id, role: 'owner' } })
+
+  const innovationClub = await prisma.communityGroup.upsert({ where: { id: 'group-ku-innovation-club' }, update: { name: 'KU Innovation & Design Club', category: 'club', campus: kenyattaCampus.name, status: 'active' }, create: { id: 'group-ku-innovation-club', name: 'KU Innovation & Design Club', category: 'club', purpose: 'Turn student ideas into practical innovations.', campus: kenyattaCampus.name } })
+  const innovationProfile = await prisma.managedProfile.upsert({ where: { slug: 'ku-innovation-design-club' }, update: { type: 'club', name: innovationClub.name, handle: 'ku_innovation', communityGroupId: innovationClub.id, isVerified: true, details: { purpose: innovationClub.purpose, eligibility: 'Open to all Kenyatta University students', patron: 'Directorate of Student Affairs', meetingSchedule: 'Fridays · 4:00 PM', membership: { status: 'open', memberCount: 42 }, focusAreas: ['Innovation', 'Design', 'Entrepreneurship'], governance: ['Chairperson', 'Vice chairperson', 'Secretary', 'Treasurer'], requirements: ['Registered student', 'Accept the club constitution'] } }, create: { type: 'club', slug: 'ku-innovation-design-club', name: innovationClub.name, handle: 'ku_innovation', communityGroupId: innovationClub.id, isVerified: true, details: { purpose: innovationClub.purpose, eligibility: 'Open to all Kenyatta University students', patron: 'Directorate of Student Affairs', meetingSchedule: 'Fridays · 4:00 PM', membership: { status: 'open', memberCount: 42 }, focusAreas: ['Innovation', 'Design', 'Entrepreneurship'], governance: ['Chairperson', 'Vice chairperson', 'Secretary', 'Treasurer'], requirements: ['Registered student', 'Accept the club constitution'] } } })
+  await prisma.managedProfileManager.upsert({ where: { managedProfileId_userId: { managedProfileId: innovationProfile.id, userId: adminUser.id } }, update: { role: 'owner' }, create: { managedProfileId: innovationProfile.id, userId: adminUser.id, role: 'owner' } })
+
+  const welfareAssociation = await prisma.communityGroup.upsert({ where: { id: 'group-ku-student-welfare-association' }, update: { name: 'KU Student Welfare Association', category: 'association', campus: kenyattaCampus.name, status: 'active' }, create: { id: 'group-ku-student-welfare-association', name: 'KU Student Welfare Association', category: 'association', purpose: 'Represent student welfare priorities and connect students to support.', campus: kenyattaCampus.name } })
+  const welfareProfile = await prisma.managedProfile.upsert({ where: { slug: 'ku-student-welfare-association' }, update: { type: 'association', name: welfareAssociation.name, handle: 'ku_welfare', communityGroupId: welfareAssociation.id, isVerified: true, details: { mandate: welfareAssociation.purpose, constituency: 'All registered KU students', welfareAreas: ['Academic welfare', 'Accommodation', 'Health', 'Safety', 'Accessibility'], leadership: ['Chairperson', 'Secretary', 'Welfare representative'], electionCycle: 'Annual', membership: { status: 'open' }, accountability: ['Constitution', 'Member register', 'Annual elections', 'Semester action plan'] } }, create: { type: 'association', slug: 'ku-student-welfare-association', name: welfareAssociation.name, handle: 'ku_welfare', communityGroupId: welfareAssociation.id, isVerified: true, details: { mandate: welfareAssociation.purpose, constituency: 'All registered KU students', welfareAreas: ['Academic welfare', 'Accommodation', 'Health', 'Safety', 'Accessibility'], leadership: ['Chairperson', 'Secretary', 'Welfare representative'], electionCycle: 'Annual', membership: { status: 'open' }, accountability: ['Constitution', 'Member register', 'Annual elections', 'Semester action plan'] } } })
+  await prisma.managedProfileManager.upsert({ where: { managedProfileId_userId: { managedProfileId: welfareProfile.id, userId: adminUser.id } }, update: { role: 'owner' }, create: { managedProfileId: welfareProfile.id, userId: adminUser.id, role: 'owner' } })
   await prisma.companyWallet.upsert({
     where: { companyId: business.id },
     update: {},
@@ -1110,6 +1476,21 @@ async function seedDatabase() {
     }
   })
 
+  const existingMainWallet = await prisma.wallet.findFirst({
+    where: { studentId: student.id, type: 'MAIN' },
+    orderBy: { createdAt: 'asc' }
+  })
+  if (existingMainWallet) {
+    await prisma.wallet.update({
+      where: { id: existingMainWallet.id },
+      data: { balance: 7850, pendingBalance: 1200, currency: 'KES' }
+    })
+  } else {
+    await prisma.wallet.create({
+      data: { studentId: student.id, type: 'MAIN', balance: 7850, pendingBalance: 1200, currency: 'KES' }
+    })
+  }
+
   await Promise.all(['Social Media', 'Graphic Design', 'Canva', 'Copywriting', 'Analytics', 'Video Editing'].map((skillName, index) => prisma.skillLevel_.upsert({
     where: { studentId_skillName: { studentId: student.id, skillName } },
     update: { level: index < 2 ? 'ADVANCED' : 'INTERMEDIATE', verifiedByGigs: 3 + index },
@@ -1194,6 +1575,53 @@ async function seedDatabase() {
   await seedCampusContent(campus.id, assets)
   await seedStructuredCampusExperience(campus.id, student.id, assets)
 
+  const marketplaceBuyer = await prisma.user.findUnique({
+    where: { email: 'brian.otieno@zumbarl.test' },
+    include: { studentProfile: true }
+  })
+  if (marketplaceBuyer?.studentProfile) {
+    const aishaOrderItem = {
+      listingId: 'marketplace-aisha-template-pack',
+      sellerId: student.id,
+      title: 'Campus campaign template pack',
+      description: 'Editable Canva templates for campus events, flyers and WhatsApp status promos.',
+      image: assets.marketplace,
+      quantity: 1,
+      unitAmount: 750,
+      currency: 'KES',
+      fulfilment: { method: 'digital', location: 'Canva link sent through Zumbarl Messages', fee: 0, quoted: true },
+      deliveryOptions: ['Instant download', 'Canva link']
+    }
+    await prisma.marketplaceOrder.upsert({
+      where: { id: 'order-aisha-template-pack-new' },
+      update: {
+        studentId: marketplaceBuyer.studentProfile.id,
+        items: [aishaOrderItem],
+        totalAmount: 750,
+        currency: 'KES',
+        status: 'paid',
+        fulfillmentStatus: 'seller_confirmation',
+        handoffType: 'drop-off',
+        handoffSpot: 'Digital delivery through Zumbarl Messages',
+        paymentReference: 'ZMB-AISHA-001',
+        payload: { buyerUserId: marketplaceBuyer.id, buyerName: 'Brian Otieno', seeded: true }
+      },
+      create: {
+        id: 'order-aisha-template-pack-new',
+        studentId: marketplaceBuyer.studentProfile.id,
+        items: [aishaOrderItem],
+        totalAmount: 750,
+        currency: 'KES',
+        status: 'paid',
+        fulfillmentStatus: 'seller_confirmation',
+        handoffType: 'drop-off',
+        handoffSpot: 'Digital delivery through Zumbarl Messages',
+        paymentReference: 'ZMB-AISHA-001',
+        payload: { buyerUserId: marketplaceBuyer.id, buyerName: 'Brian Otieno', seeded: true }
+      }
+    })
+  }
+
   const opportunity = await prisma.opportunity.upsert({
     where: { id: 'opportunity-social-media-manager' },
     update: {
@@ -1276,7 +1704,43 @@ async function seedDatabase() {
     scopeLocked: false,
     terms: ['stipend-role', 'attachment', 'internship', 'per-deliverable']
   })
-  await upsertWorkflowRecord(campaigns, 'seed-level-up-skills-campaign', {
+  await prisma.workflowRecord.upsert({
+    where: { id: 'team-social-media-content-creation' },
+    update: {
+      collection: 'projects',
+      data: {
+        seedKey: 'seed-team-social-media-project',
+        opportunityId: opportunity.id,
+        businessId: business.id,
+        studentId: student.id,
+        ownerId: studentUser.id,
+        title: 'Team Social Media Content Creation',
+        status: 'planning',
+        fundingStatus: 'unfunded',
+        scopeLocked: false,
+        hasTeam: true,
+        terms: ['stipend-role', 'attachment', 'internship', 'per-deliverable']
+      }
+    },
+    create: {
+      id: 'team-social-media-content-creation',
+      collection: 'projects',
+      data: {
+        seedKey: 'seed-team-social-media-project',
+        opportunityId: opportunity.id,
+        businessId: business.id,
+        studentId: student.id,
+        ownerId: studentUser.id,
+        title: 'Team Social Media Content Creation',
+        status: 'planning',
+        fundingStatus: 'unfunded',
+        scopeLocked: false,
+        hasTeam: true,
+        terms: ['stipend-role', 'attachment', 'internship', 'per-deliverable']
+      }
+    }
+  })
+  const campaignSeed = {
     businessId: business.id,
     title: 'Level Up Skills',
     type: 'Brand Awareness',
@@ -1286,11 +1750,10 @@ async function seedDatabase() {
     budget: 'KES 50,000',
     currency: 'KES',
     payoutPerCampaigner: 1500,
-    inviteOnlyUntil: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    inviteOnlyUntil: new Date(Date.now() + 24 * 60 * 60 * 1000),
     platforms: ['Instagram', 'TikTok'],
     minimumFollowers: 500,
     proofRequirements: ['Live social link', 'Screenshot proof', 'Reach and engagement stats'],
-    acceptedBudget: 0,
     workflow: { proofSubmitted: false, statsGenerated: false, endorsed: false },
     previewImage: assets.campaign,
     thumbnailTitle: 'LEVEL UP YOUR SKILLS',
@@ -1299,21 +1762,18 @@ async function seedDatabase() {
     timelineValue: '5 days',
     creatorsLimit: 10,
     materials: [{ type: 'image', url: assets.campaign, label: 'Campaign creative' }]
+  }
+  await prisma.marketingCampaign.upsert({
+    where: { seedKey: 'seed-level-up-skills-campaign' },
+    update: campaignSeed,
+    create: { seedKey: 'seed-level-up-skills-campaign', ...campaignSeed }
   })
-  await upsertWorkflowRecord(shops, 'seed-aisha-campus-shop', {
-    studentId: student.id,
-    name: "Aisha's Campus Shop",
-    campus: 'Zetech University',
-    status: 'open',
-    score: 88
-  })
-  await upsertWorkflowRecord(wallets, 'seed-aisha-wallet', {
-    ownerType: 'student',
-    ownerId: student.id,
-    currency: 'KES',
-    availableBalance: 0,
-    pendingBalance: 0
-  })
+  const existingWallet = await prisma.wallet.findFirst({ where: { studentId: student.id, type: 'MAIN' } })
+  if (!existingWallet) {
+    await prisma.wallet.create({
+      data: { studentId: student.id, type: 'MAIN', balance: 0, pendingBalance: 0, currency: 'KES' }
+    })
+  }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

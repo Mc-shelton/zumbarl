@@ -1,5 +1,4 @@
-export const DELIVERY_FEE = 150
-export const PLATFORM_FEE = 100
+export const SELLER_COMMISSION_RATE = 0.075
 
 export function formatKes(amount) {
   return `KES ${amount.toLocaleString()}`
@@ -20,14 +19,20 @@ export function getOrderTotals(items) {
     0
   )
   const hasItems = items.length > 0
-  const deliveryFee = hasItems ? DELIVERY_FEE : 0
-  const platformFee = hasItems ? PLATFORM_FEE : 0
+  const deliveryFee = items.reduce((sum, item) => sum + Number(item.fulfilment?.fee || 0), 0)
+  const deliveryPending = hasItems && items.some((item) => item.fulfilment?.quoted === false || item.fulfilment?.method === 'unquoted')
+  const platformFee = 0
 
   return {
     deliveryFee,
+    deliveryPending,
     finalTotal: subtotal + deliveryFee + platformFee,
     itemCount,
     platformFee,
     subtotal,
   }
+}
+
+export function getSellerCommission(subtotal) {
+  return Math.round(subtotal * SELLER_COMMISSION_RATE)
 }

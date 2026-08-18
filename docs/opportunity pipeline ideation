@@ -1,0 +1,477 @@
+The idea should become Zumbarl’s core product loop: a **Career Evidence Pipeline** where learning leads to work, work produces verified evidence, evidence unlocks the next level of work, and businesses build long-term talent relationships from that progression.
+
+The key is to connect three pipelines without confusing them:
+
+```text
+Student Career Track
+        ↓
+Recommended learning + work exposure
+        ↓
+Gig/project engagement ─────→ Business application pipeline
+        ↓                              ↓
+Verified competency evidence    Business talent relationship
+        ↓                              ↓
+Stage advancement ←──────── Future gig, internship or placement
+```
+
+## 1. The three connected pipelines
+
+### A. Student Career Pipeline
+
+This answers:
+
+- What career is the student pursuing?
+- What stage are they currently at?
+- Which competencies have they demonstrated?
+- What evidence is still missing?
+- What should they do next?
+
+### B. Opportunity Pipeline
+
+This is the per-opportunity flow already represented by Reviewing → Shortlisted → Interviewing → Awarded.
+
+It answers:
+
+- Is the student being considered?
+- Were they awarded the work?
+- Is the work active, submitted, revised or accepted?
+
+This should remain separate from career progression. Winning an opportunity does not automatically advance a career stage; the resulting evidence might.
+
+### C. Business Talent Pipeline
+
+This is a long-term company–student relationship:
+
+```text
+Discovered → Emerging → Active Talent → Repeat Talent
+→ Placement Ready → Placed/Employed
+```
+
+It continues across multiple opportunities. A business can complete one project with a student, retain them in its talent pool, give them progressively harder work, then offer an internship or job.
+
+The existing `PipelineRelationship` model is a suitable starting point for this long-term relationship, while the existing applicant pipeline continues to handle individual applications.
+
+## 2. Keep career progression separate from Zumbarl Score
+
+The previous Zumbarl Score recommendation measures professional trust and reliability.
+
+The Career Pipeline measures demonstrated readiness for a particular occupation.
+
+A student might therefore have:
+
+```text
+Zumbarl Work Score: 78
+Frontend Developer Stage: Build & Apply
+React competency: Applied, established evidence
+API integration: Foundation, emerging evidence
+Professional reliability: Silver
+```
+
+That is better than trying to compress trust, skill, education and career stage into one number.
+
+The Career Pipeline may use the Work Score as a later-stage gate—for example, professional readiness might require Reliability ≥75—but it should not use the Work Score as proof of technical competence.
+
+## 3. Use the five existing stages
+
+Your current backend already defines five sensible stages in [schema.prisma](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl_backend/prisma/schema.prisma:45).
+
+| Stage | Student behaviour | Appropriate exposure |
+|---|---|---|
+| 1. Explore & Foundation | Learns vocabulary, tools and basic procedures | Diagnostics, simulations, micro-gigs, shadowing |
+| 2. Build & Apply | Completes scoped work with guidance | Small gigs, assisted deliverables, mentor-reviewed projects |
+| 3. Grow & Specialize | Delivers independently in a chosen specialty | End-to-end gigs, client projects, attachments |
+| 4. Lead & Impact | Handles complexity, stakeholders and measurable outcomes | Larger projects, team roles, internships, repeat-client work |
+| 5. Advance & Mentor | Leads others and transfers knowledge | Team leadership, mentorship, employment or entrepreneurship |
+
+The difference between stages should principally be **autonomy, complexity, responsibility and impact**, not merely the number of gigs. This follows the logic of the [SFIA responsibility levels](https://sfia-online.org/en/about-sfia/how-sfia-works?set_language=en), which distinguish professional levels through responsibility, accountability and workplace impact.
+
+## 4. Define tracks through competencies
+
+A career track should not be a list of course titles. It should be a versioned competency framework.
+
+For example:
+
+```text
+Digital Marketing Operator
+├── Audience research
+├── Content strategy
+├── Copywriting
+├── Visual content production
+├── Campaign execution
+├── Campaign analytics
+├── Client communication
+└── Reporting and recommendations
+```
+
+Every competency needs:
+
+- Observable behaviour.
+- Proficiency level.
+- Assessment rubric.
+- Acceptable evidence types.
+- Minimum evidence diversity.
+- Required or optional status.
+- Recommended learning resources.
+- Relevant certifications.
+- Expiry or recency policy where appropriate.
+
+Use [O\*NET’s Content Model](https://www.onetcenter.org/content.html) and [ESCO’s skill–occupation classification](https://esco.ec.europa.eu/en/classification) as source vocabularies. Do not import their entire taxonomies. Select and localize the competencies relevant to Zumbarl’s initial career tracks.
+
+For Kenyan alignment, the design should follow the Kenya National Qualifications Framework’s distinction between **knowledge, skills and competence**, including formal, non-formal and informal learning. See the [KNQF framework](https://knqa.go.ke/qualifications-framework/). TVETA’s competency-assessment guidance also provides a valuable evidence rule: evidence should be valid, sufficient, current and authentic. See [TVETA standards](https://www.tveta.go.ke/tvet-standards/).
+
+These should be design references; Zumbarl should not claim KNQF accreditation without formal approval.
+
+## 5. Turn every opportunity into a learning contract
+
+During opportunity creation, the business should specify—or approve an AI suggestion for:
+
+- Relevant career tracks.
+- Target stage range.
+- Competencies exercised.
+- Difficulty and complexity.
+- Required autonomy: guided, assisted, independent or leading.
+- Deliverables that demonstrate each competency.
+- Acceptance rubric.
+- Mentorship/support available.
+- Expected evidence.
+- Whether it is primarily a delivery, developmental or transition opportunity.
+
+Example:
+
+```text
+Opportunity: Manage a four-week social media campaign
+Track: Digital Marketing Operator
+Target stage: Build & Apply
+Competencies:
+  - Content planning: Applied
+  - Copywriting: Applied
+  - Campaign analytics: Foundation
+  - Client communication: Applied
+
+Evidence:
+  - Approved content calendar
+  - Published posts
+  - Campaign analytics report
+  - Business rubric
+```
+
+The business does not manually decide “this student is now Stage 3.” It evaluates the work against the agreed rubric. The progression engine determines what the evidence proves.
+
+## 6. Define “enough exposure” properly
+
+A gig should not advance a student simply because it was completed. Enough exposure requires five properties:
+
+1. **Quality** — Was the work good enough?
+2. **Breadth** — Were enough competencies demonstrated?
+3. **Depth** — Was the work sufficiently difficult?
+4. **Independence** — Did the student perform independently?
+5. **Consistency** — Was performance repeated across engagements or contexts?
+
+For each competency, calculate:
+
+```text
+Career Mastery =
+80% verified experiential evidence
++ 20% assessments and verified learning
+```
+
+This retains the 80/20 direction already described in [zumbarl_processes.md](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/docs/zumbarl_processes.md:59), but the 80% should come from evaluated evidence rather than arbitrary point additions.
+
+For each evidence item:
+
+```text
+evidence weight =
+verification strength
+× rubric alignment
+× difficulty
+× autonomy
+× recency
+× context diversity
+```
+
+Use Bayesian updating for competency mastery, just as with reputation:
+
+```text
+mastery(c) =
+(prior evidence + weighted demonstrated success)
+/
+(prior strength + total evidence weight)
+```
+
+Suggested evidence strength:
+
+| Evidence | Relative strength |
+|---|---:|
+| Self-declared skill | Very low; profile only |
+| Course completion | Low |
+| Standardized assessment | Medium |
+| Portfolio artifact without external verification | Medium |
+| Business-approved deliverable | High |
+| Independent work across multiple clients | Very high |
+| Verified certification | Medium/high, depending on issuer |
+| Repeated independent performance | Highest |
+
+## 7. Stage advancement rules
+
+A visible progress percentage is useful, but it must not be the sole advancement rule.
+
+```text
+stage progress =
+weighted completion of stage competency requirements
+```
+
+A stage advances only when all hard gates pass:
+
+```text
+all critical competencies meet mastery threshold
+AND minimum effective evidence is reached
+AND required number of contexts/clients is reached
+AND at least one independent artifact exists
+AND required knowledge checks are complete
+AND applicable reliability threshold is met
+AND no safety restriction is active
+```
+
+Suggested initial gates:
+
+- Critical competency mastery: at least 80%.
+- Supporting competency mastery: at least 70%.
+- At least two verified work-evidence events before Stage 3.
+- Evidence from at least two contexts or businesses before Stage 4.
+- At least one independently completed engagement.
+- Stage 4/5 requires established Work Score confidence.
+- Manual assessor review for high-stakes transition credentials.
+
+AI may suggest mappings, summarize evidence and flag inconsistencies. It should not be the sole authority deciding that a student is professionally ready.
+
+## 8. Recommendation engine
+
+The recommendations should optimize for the student’s **next missing exposure**, not simply opportunities containing skills already listed in their profile.
+
+The current business matcher calculates essentially a percentage of matching skill names in [businessWorkflows.repository.ts](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl_backend/src/adapters/repositories/business/businessWorkflows.repository.ts:845). That can find familiar work, but it cannot build a career path.
+
+### Build Career Mode
+
+Recommended ranking:
+
+```text
+35% competency-gap closure
+25% stage and difficulty fit
+15% predicted completion likelihood
+10% evidence diversity
+10% pay, location and availability fit
+ 5% quality of learning support
+```
+
+A good match should be slightly challenging but still achievable—the next rung, not work far below or above the student.
+
+### Earn Mode
+
+Recommended ranking:
+
+```text
+35% expected earnings and logistics
+25% predicted successful completion
+20% verified skill alignment
+10% business relationship
+10% career-development value
+```
+
+The student should be able to switch modes or choose a blended preference.
+
+Add a 10–15% exploration allowance so the recommender occasionally exposes students to adjacent skills or new businesses. Otherwise, the algorithm will repeatedly recommend what the student has already done and trap them in a narrow feedback loop.
+
+Every recommendation should explain itself:
+
+```text
+Recommended because:
+✓ Matches your Build & Apply stage
+✓ Builds Campaign Analytics, your largest current gap
+✓ Produces independent client-reporting evidence
+✓ Fits your availability
+```
+
+## 9. Business experience
+
+Businesses should receive two matching groups:
+
+- **Ready now** — demonstrated competencies and sufficient confidence.
+- **Ready with support** — close to ready and appropriate for a developmental opportunity.
+
+Business features should include:
+
+- Map an opportunity to career tracks and competencies.
+- Browse stage-qualified talent pools.
+- See competency evidence, confidence and relevant artifacts.
+- Create development cohorts or sponsored career tracks.
+- Retain successful students as Repeat Talent.
+- Offer the next higher-complexity project.
+- Invite placement-ready students to internships or jobs.
+- See a skill-supply heatmap across participating campuses.
+- Track conversion from gig → repeat gig → attachment → internship → employment.
+
+The existing per-opportunity pipeline should remain Reviewing → Shortlisted → Interviewing → Awarded in [businessPipelineService.js](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl.com/src/features/business/services/businessPipelineService.js:8). The longer relationship belongs in the existing `PipelineRelationship` concept in [schema.prisma](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl_backend/prisma/schema.prisma:1193).
+
+## 10. Visibility and privacy
+
+“Visible to everyone” needs permission levels:
+
+- **Public:** career stage, verified competencies, credentials, selected portfolio evidence and confidence.
+- **Businesses with consent or an active application:** detailed relevant evidence, rubric summaries and readiness gaps.
+- **Student only:** full development plan, weaknesses, private reflections and disputed evidence.
+- **Zumbarl operations:** moderation history, fraud signals and audit trail.
+
+Raw private feedback and weaknesses should not become permanent public labels.
+
+## 11. Learning resources and certifications
+
+A resource should be mapped to:
+
+- Competencies.
+- Stage.
+- Prerequisites.
+- Modality.
+- Cost and duration.
+- Provider quality.
+- Expected outcome.
+- Required follow-up evidence.
+
+Completing a course should improve knowledge readiness, but should not prove applied competence until the student demonstrates it through work.
+
+For portable credentials, use [Open Badges 3.0](https://www.1edtech.org/standards/open-badges), which supports issuer, criteria and evidence metadata and is compatible with the [W3C Verifiable Credentials model](https://www.w3.org/TR/vc-data-model/).
+
+Certification logic should consider:
+
+- Trusted issuer.
+- Competencies covered.
+- Level.
+- Issue and expiry dates.
+- Verification status.
+- Whether practical evidence was included.
+- Revocation status.
+
+## 12. Data model to build toward
+
+The present schema has useful pieces—`Skill`, `OpportunitySkill`, roadmaps, enrollments, certificates and pipeline relationships—but needs an evidence layer.
+
+Core additions:
+
+```text
+CareerTrack
+CareerTrackVersion
+CareerStage
+Competency
+StageCompetency
+StudentTrackEnrollment
+StudentCompetencyState
+OpportunityCompetency
+EngagementEvidence
+EvidenceAssessment
+StageTransition
+LearningResource
+ResourceCompetency
+CredentialDefinition
+TalentRelationshipEvent
+RecommendationSnapshot
+```
+
+Important design choices:
+
+- A `Skill` is a taxonomy term.
+- A `Competency` is an observable application of a skill at a proficiency level.
+- Career tracks must be versioned.
+- Evidence should be append-only and auditable.
+- Derived progress can be recalculated from evidence.
+- Every automatic advancement needs a reason and model/configuration version.
+- Use idempotent events so accepting the same deliverable twice cannot duplicate evidence.
+
+The current Learn backend blindly marks submitted evidence verified and adds its supplied score in [roadmaps.repository.ts](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl_backend/src/adapters/repositories/learn/roadmaps.repository.ts:33). It should be replaced by rubric-based evaluation linked to actual opportunity submissions.
+
+There is also a current threshold inconsistency: backend verification accepts every checkpoint at 70 in [manageRoadmapsService.ts](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl_backend/src/adapters/services/learn/manageRoadmapsService.ts:45), while the frontend requires 90 in [LearnPage.jsx](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl.com/src/pages/LearnPage.jsx:30).
+
+## 13. Practical implementation sequence
+
+### Phase 1: One complete pilot track
+
+Start with Digital Marketing because the existing seed data already contains Content Strategy, Canva, Analytics, Copywriting and Client Communication.
+
+Define:
+
+- Five stages.
+- Approximately 8 core competencies.
+- Observable rubrics.
+- Evidence and advancement requirements.
+- Twenty curated resources.
+- Five example opportunity templates.
+
+Validate this with several businesses and students before adding more tracks.
+
+### Phase 2: Persistent evidence foundation
+
+- Introduce the versioned track and competency models.
+- Map opportunity deliverables to competencies.
+- Convert approved submissions into evidence events.
+- Add business rubric evaluation.
+- Implement mastery recalculation and stage-gate evaluation.
+- Record stage-transition history.
+
+### Phase 3: Replace the Learn mock
+
+The current Learn UI uses local state and fixed `+16` evidence and `+8` test changes in [workflowData.js](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl.com/src/features/workflows/workflowData.js:688).
+
+Replace it with API-driven:
+
+- Current stage.
+- Competency progress.
+- Evidence timeline.
+- Missing requirements.
+- Recommendation explanations.
+- Advancement history.
+
+### Phase 4: Recommendation engine
+
+Begin with deterministic weighted rules. Do not begin with machine learning.
+
+- Apply eligibility filters.
+- Rank by career or earn mode.
+- Store recommendation reasons.
+- Track impressions, applications, awards and successful outcomes.
+- Introduce learned ranking only after enough outcome data exists.
+
+### Phase 5: Business talent pipeline
+
+- Stage-qualified candidate pools.
+- Ready-now versus developmental matches.
+- Long-term student-company relationship timeline.
+- Repeat-talent lists.
+- Placement and conversion reporting.
+
+### Phase 6: Credentials and intelligence
+
+- Open Badges issuance and verification.
+- External certification providers.
+- AI-assisted opportunity-to-competency mapping.
+- Rater-bias correction.
+- Recommendation calibration and fairness audits.
+
+## MVP definition of done
+
+The first release is complete when:
+
+1. A student chooses a career track.
+2. A business maps an opportunity to stage competencies.
+3. The student completes real work.
+4. Accepted deliverables generate verified competency evidence.
+5. The business evaluates evidence using a rubric.
+6. Competency mastery updates without duplicate counting.
+7. Stage advancement follows explicit gates.
+8. The student feed changes based on the next evidence gap.
+9. The business sees the student in an appropriate talent pool.
+10. Both parties can see why progress or a recommendation changed.
+
+That closes the actual Zumbarl growth loop:
+
+```text
+Learn → get relevant work → prove capability → build trust
+→ unlock harder work → enter business talent pools → transition
+```

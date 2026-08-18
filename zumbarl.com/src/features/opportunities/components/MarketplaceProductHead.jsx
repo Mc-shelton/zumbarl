@@ -2,7 +2,7 @@ import { FiSave, FiShare2 } from 'react-icons/fi'
 import { Breadcrumb } from '../../../components/ui'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 
-function MarketplaceProductHead({ item }) {
+function MarketplaceProductHead({ isOwner = false, item }) {
   const canSaveItem = hasAccess(ACCESS_KEYS.marketplace.buy)
 
   return (
@@ -28,7 +28,7 @@ function MarketplaceProductHead({ item }) {
           <FiShare2 aria-hidden="true" />
           Share
         </button>
-        {canSaveItem ? (
+        {canSaveItem && !isOwner ? (
           <button type="button">
             <FiSave aria-hidden="true" />
             Save

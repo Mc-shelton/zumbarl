@@ -71,30 +71,36 @@ export const ORDER_TIMELINE_ITEMS = [
   {
     id: 'arrival',
     title: 'Delivered',
-    detail: 'Expected between May 27 - May 29, 2024.',
+    detail: 'Complete the handoff within the agreed pickup window.',
     state: 'pending',
   },
 ]
 
 export const CUSTOMER_DETAILS = {
-  name: 'Brian Mwangi',
-  phone: '+254 712 345 678',
-  email: 'brian.mwangi@student.ku.ac.ke',
-  location: 'Westlands, Nairobi',
-  county: 'Nairobi, Nairobi County',
-  postal: '00100, Kenya',
+  name: 'Brian Otieno',
+  phone: '+254 700 100 011',
+  email: 'brian.otieno@zumbarl.test',
+  location: 'Zetech University',
+  county: 'Approved campus pickup point',
+  postal: 'Confirm the handoff time with the seller',
 }
 
+const deliveryStart = new Date()
+deliveryStart.setDate(deliveryStart.getDate() + 1)
+const deliveryEnd = new Date()
+deliveryEnd.setDate(deliveryEnd.getDate() + 3)
+const deliveryDateRange = `${deliveryStart.toLocaleDateString('en-KE', { month: 'short', day: 'numeric' })} - ${deliveryEnd.toLocaleDateString('en-KE', { month: 'short', day: 'numeric', year: 'numeric' })}`
+
 export const DELIVERY_ESTIMATE = {
-  dateRange: 'May 27 - May 29, 2024',
-  location: 'Nairobi, Kenya',
-  addressSummary: 'Westlands, Nairobi County, 00100',
+  dateRange: deliveryDateRange,
+  location: 'Zetech University',
+  addressSummary: 'Campus pickup · exact handoff point confirmed in Messages',
 }
 
 export const PAYMENT_SUMMARY = {
   method: 'Card Payment',
-  card: 'Visa ending in 3456',
-  brand: 'VISA',
+  card: 'Select a payment method',
+  brand: 'PAY',
 }
 
 export const ORDER_ID = 'ZMB-2026-0525-019'

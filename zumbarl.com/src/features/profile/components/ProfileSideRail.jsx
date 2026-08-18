@@ -8,6 +8,7 @@ function ProfileSideRail({
   activeShopDetailImage,
   activeShopDetailTab,
   isExperienceTab,
+  isOwnProfile = false,
   isShopProductDetailOpen,
   isShopTab,
   isSkillsTab,
@@ -16,8 +17,10 @@ function ProfileSideRail({
   onDetailImageChange,
   onDetailTabChange,
   onNextShopImage,
+  onEditListing,
   onPreviousShopImage,
   profileExperience,
+  shop,
   selectedShopProduct,
   selectedShopProductDetail,
   skillsTrendCoordinates,
@@ -46,20 +49,23 @@ function ProfileSideRail({
           <ProfileShopDetailRail
             activeShopDetailImage={activeShopDetailImage}
             activeShopDetailTab={activeShopDetailTab}
+            isOwner={isOwnProfile}
             normalizedShopDetailImageIndex={normalizedShopDetailImageIndex}
             onClose={onCloseShopDetail}
             onDetailImageChange={onDetailImageChange}
             onDetailTabChange={onDetailTabChange}
             onNextImage={onNextShopImage}
+            onEditListing={onEditListing}
             onPreviousImage={onPreviousShopImage}
             selectedShopProduct={selectedShopProduct}
             selectedShopProductDetail={selectedShopProductDetail}
           />
         ) : (
-          <ProfileShopRail />
+          <ProfileShopRail shop={shop} />
         )
       ) : (
         <ProfileDefaultRail
+          isOwnProfile={isOwnProfile}
           recentActivity={profileExperience?.recentActivity}
           relationships={profileExperience?.relationships}
         />

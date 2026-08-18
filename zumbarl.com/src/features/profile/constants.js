@@ -5,6 +5,7 @@ import { ACCESS_KEYS, filterByAccess } from '../auth/roleConfig'
 export const PROFILE_TAGS = ['Social Media', 'Graphic Design', 'Canva', 'Copywriting', '+4']
 export const PROFILE_TAB_ITEMS = [
   { label: 'Overview', requiredAccess: ACCESS_KEYS.profile.viewOwn },
+  { label: 'Marketing', requiredAccess: ACCESS_KEYS.profile.viewOwn },
   { label: 'Portfolio', requiredAccess: ACCESS_KEYS.profile.portfolio },
   { label: 'Experience', requiredAccess: ACCESS_KEYS.profile.experience },
   { label: 'Skills', requiredAccess: ACCESS_KEYS.profile.skills },

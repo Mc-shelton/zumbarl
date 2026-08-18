@@ -1,0 +1,2180 @@
+/* Milestone, sprint and timeline planning surfaces. Shared by the student
+   workspace and the business review workspace: both sides plan the same
+   project, so both must render it identically. Tokens are declared locally so
+   this does not depend on either page's stylesheet. */
+
+:where(.milestone-scope, .project-sprints, .project-timeline, .milestone-board, .milestone-program-footer) {
+  --project-ink: var(--color-text-strong);
+  --project-muted: var(--color-text-muted);
+  --project-primary: var(--color-action);
+  --project-accent: var(--color-accent);
+  --project-primary-soft: var(--color-surface-brand-soft);
+  --project-border: var(--color-border);
+  --project-green: var(--color-success);
+  --project-heading-font: var(--font-heading);
+}
+
+/* Task Kanban. Inspired by the compact, scan-first Odoo project cards, but
+   organized around Zumbarl's actual task lifecycle rather than projects. */
+.milestone-kanban {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface-muted, #f7f8fb);
+}
+
+.milestone-kanban-toolbar {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) auto minmax(190px, 260px) minmax(150px, 210px) auto;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.milestone-kanban-toolbar h3,
+.milestone-kanban-toolbar p {
+  margin: 0;
+}
+
+.milestone-kanban-toolbar h3 {
+  color: var(--color-text-strong);
+  font-family: var(--font-heading);
+  font-size: 18px;
+}
+
+.milestone-kanban-toolbar p {
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.milestone-kanban-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+}
+
+.milestone-kanban-search input,
+.milestone-kanban-toolbar > select {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text-strong);
+  font: inherit;
+  font-size: 12px;
+}
+
+.milestone-kanban-toolbar > select {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-surface);
+}
+
+.milestone-kanban-progress {
+  display: grid;
+  gap: 5px;
+  min-width: 90px;
+  color: var(--color-text-muted);
+  font-size: 11px;
+}
+
+.milestone-kanban-progress strong {
+  color: var(--color-text-strong);
+}
+
+.milestone-kanban-progress i {
+  width: 100%;
+  height: 4px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-border);
+}
+
+.milestone-kanban-progress b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-success);
+}
+
+.milestone-kanban-columns {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(220px, 1fr));
+  gap: 10px;
+  overflow-x: auto;
+  padding-bottom: 5px;
+  scrollbar-width: thin;
+}
+
+.milestone-kanban-column {
+  min-height: 440px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
+  border-top: 3px solid #a8adba;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-surface) 74%, transparent);
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.milestone-kanban-column.is-drag-over {
+  border-color: color-mix(in srgb, var(--color-action) 60%, var(--color-border));
+  background: color-mix(in srgb, var(--color-surface-brand-soft) 42%, var(--color-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-action) 18%, transparent);
+}
+
+.milestone-kanban-column.is-drag-over.is-locked-stage {
+  border-color: color-mix(in srgb, var(--color-accent) 55%, var(--color-border));
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
+}
+
+.milestone-kanban-column.is-active { border-top-color: var(--color-action); }
+.milestone-kanban-column.is-blocked { border-top-color: var(--color-danger, #d85d69); }
+.milestone-kanban-column.is-submitted { border-top-color: var(--color-accent); }
+.milestone-kanban-column.is-done { border-top-color: var(--color-success); }
+
+.milestone-kanban-column > header {
+  min-height: 53px;
+  padding: 2px 2px 10px;
+}
+
+.milestone-kanban-column > header div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--color-text-strong);
+}
+
+.milestone-kanban-column > header div > svg {
+  width: 14px;
+  height: 14px;
+}
+
+.milestone-kanban-column > header strong {
+  font-size: 12px;
+}
+
+.milestone-kanban-column > header span {
+  display: grid;
+  min-width: 21px;
+  height: 21px;
+  margin-left: auto;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--color-surface-muted, #eef0f5);
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.milestone-kanban-column > header p {
+  margin: 4px 0 0 21px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+.milestone-kanban-stack {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.milestone-kanban-card {
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-surface);
+  box-shadow: 0 1px 2px rgb(28 32 45 / 4%);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.milestone-kanban-card[draggable="true"] {
+  cursor: grab;
+}
+
+.milestone-kanban-card[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.milestone-kanban-card.is-dragging {
+  opacity: .42;
+  transform: rotate(1deg) scale(.98);
+}
+
+.milestone-kanban-card:hover {
+  border-color: color-mix(in srgb, var(--color-action) 38%, var(--color-border));
+  box-shadow: 0 7px 18px rgb(28 32 45 / 8%);
+  transform: translateY(-1px);
+}
+
+.milestone-kanban-card-open {
+  display: grid;
+  gap: 7px;
+  width: 100%;
+  padding: 11px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.milestone-kanban-card-open strong {
+  color: var(--color-text-strong);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.milestone-kanban-card-scope {
+  overflow: hidden;
+  color: var(--color-action);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .045em;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.milestone-kanban-card-open em {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-danger, #c94d5b);
+  font-size: 10px;
+  font-style: normal;
+}
+
+.milestone-kanban-card footer {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 11px;
+  border-top: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.milestone-kanban-points,
+.milestone-kanban-sprint {
+  padding: 3px 6px;
+  border-radius: 5px;
+  background: var(--color-surface-muted, #f0f1f5);
+  font-weight: 700;
+}
+
+.milestone-kanban-owner {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.milestone-kanban-owner b {
+  display: grid;
+  flex: 0 0 auto;
+  width: 20px;
+  height: 20px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--color-surface-brand-soft);
+  color: var(--color-action);
+  font-size: 9px;
+}
+
+.milestone-kanban-owner.is-empty {
+  color: var(--color-text-muted);
+  font-style: italic;
+}
+
+.milestone-kanban-assign {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  padding: 8px 11px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.milestone-kanban-move {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  padding: 8px 11px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 9px;
+}
+
+.milestone-kanban-move select {
+  min-width: 0;
+  padding: 5px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-strong);
+  font: inherit;
+  font-size: 10px;
+}
+
+.milestone-kanban-notice {
+  margin: -5px 0 12px;
+  padding: 8px 11px;
+  border: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
+  color: var(--color-text-strong);
+  font-size: 11px;
+}
+
+.milestone-kanban-assign select {
+  min-width: 0;
+  padding: 5px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-strong);
+  font: inherit;
+  font-size: 10px;
+}
+
+.milestone-kanban-claim {
+  width: 100%;
+  padding: 8px 11px;
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  background: transparent;
+  color: var(--color-action);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.milestone-kanban-empty {
+  display: grid;
+  min-height: 72px;
+  margin: 0;
+  place-items: center;
+  border: 1px dashed var(--color-border);
+  border-radius: 8px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+}
+
+@media (max-width: 1200px) {
+  .milestone-kanban-toolbar {
+    grid-template-columns: 1fr auto auto;
+  }
+
+  .milestone-kanban-progress { display: none; }
+  .milestone-kanban-search { grid-column: 1 / 3; }
+}
+
+:where(.milestone-scope, .project-sprints, .project-timeline) :where(.project-card),
+:where(.milestone-board).project-card {
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  background: var(--color-surface);
+}
+
+:where(.milestone-scope, .project-sprints, .milestone-board) :where(.project-primary-btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 15px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-action);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.project-timeline-list {
+  position: relative;
+  display: grid;
+  gap: 18px;
+  margin-top: 24px;
+}
+
+.project-timeline-list::before {
+  content: "";
+  position: absolute;
+  left: 13px;
+  top: 20px;
+  bottom: 18px;
+  width: 2px;
+  background: #d8d1ff;
+}
+
+.project-timeline-list article {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: start;
+}
+
+.project-timeline-list article > span {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 2px solid #c6c9dc;
+  background: #ffffff;
+  color: #5c638c;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.project-timeline-list article.is-complete > span {
+  border-color: var(--project-green);
+  background: var(--project-green);
+  color: #ffffff;
+}
+
+.project-timeline-list article.is-current > span {
+  border-color: var(--project-primary);
+  background: var(--project-primary);
+  color: #ffffff;
+}
+
+.project-timeline-list strong,
+.project-timeline-list p {
+  margin: 0;
+  color: var(--project-ink);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.project-timeline-list p {
+  color: #4b527f;
+  font-size: 13px;
+}
+
+.project-timeline-list em {
+  display: inline-flex;
+  margin-top: 8px;
+  border-radius: 6px;
+  background: var(--project-primary-soft);
+  color: var(--project-primary);
+  padding: 6px 12px;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+/* Milestone workspace: program gates, milestone scope, sprints and timeline.
+   All four replaced mock panels, so they follow the project card language. */
+.milestone-program-panel > header,
+.project-sprints-head,
+.project-timeline-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.milestone-program-panel h3,
+.milestone-scope-card h3 {
+  margin: 0;
+  color: var(--project-ink);
+  font-family: var(--project-heading-font);
+  font-size: 17px;
+}
+
+.milestone-program-panel header p,
+.milestone-scope-card header p {
+  margin: 4px 0 0;
+  color: var(--project-muted);
+  font-size: 13px;
+}
+
+.milestone-scope,
+.project-sprints,
+.project-sprint-list,
+.project-timeline {
+  display: grid;
+  gap: 14px;
+}
+
+.milestone-scope-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.milestone-scope-status {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--project-ink) 7%, transparent);
+  color: var(--project-muted);
+  font-size: 11px;
+  text-transform: capitalize;
+}
+
+.milestone-scope-deliverables {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.milestone-scope-deliverables li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--color-surface-muted, #f6f7fc);
+}
+
+.milestone-scope-deliverables strong {
+  display: block;
+  color: var(--project-ink);
+  font-size: 13px;
+}
+
+.milestone-scope-deliverables em {
+  color: var(--project-muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.milestone-scope-deliverables li > span {
+  color: var(--project-muted);
+  font-size: 12px;
+  text-transform: capitalize;
+}
+
+.milestone-scope-empty {
+  margin: 14px 0 0;
+  color: var(--project-muted);
+  font-size: 13px;
+}
+
+.milestone-scope-add,
+.milestone-scope-form button,
+.project-sprint-actions button,
+.project-sprint-form-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  padding: 7px 13px;
+  border: 1px solid var(--project-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--project-ink);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.milestone-scope-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.milestone-scope-form input {
+  flex: 1 1 220px;
+  padding: 8px 12px;
+  border: 1px solid var(--project-border);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.project-sprint-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+}
+
+.project-sprint-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.project-sprint-form input,
+.project-sprint-form select {
+  padding: 8px 11px;
+  border: 1px solid var(--project-border);
+  border-radius: 10px;
+  color: var(--project-ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.project-sprint-form-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.project-sprint-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.project-sprint-card h4 {
+  margin: 0;
+  color: var(--project-ink);
+  font-size: 15px;
+}
+
+.project-sprint-card header p {
+  margin: 3px 0 0;
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.project-sprint-status {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--project-ink) 7%, transparent);
+  color: var(--project-muted);
+  font-size: 11px;
+  text-transform: capitalize;
+}
+
+.project-sprint-status.is-active {
+  background: var(--project-primary-soft);
+  color: var(--project-primary);
+}
+
+.project-sprint-status.is-completed {
+  background: color-mix(in srgb, var(--project-green) 15%, transparent);
+  color: var(--project-green);
+}
+
+.project-sprint-card dl {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin: 14px 0 0;
+}
+
+.project-sprint-card dt {
+  color: var(--project-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.project-sprint-card dd {
+  margin: 3px 0 0;
+  color: var(--project-ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.project-sprint-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.project-timeline-track ul {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-timeline-track li {
+  display: grid;
+  grid-template-columns: minmax(120px, 200px) minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.project-timeline-track h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--project-ink);
+  font-size: 14px;
+}
+
+.project-timeline-track h4 span {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--project-ink) 8%, transparent);
+  font-size: 11px;
+}
+
+.project-timeline-track header p {
+  margin: 3px 0 0;
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.project-timeline-label {
+  overflow: hidden;
+  color: var(--project-ink);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-timeline-rail {
+  position: relative;
+  display: block;
+  height: 14px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--project-ink) 6%, transparent);
+}
+
+.project-timeline-bar {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  min-width: 6px;
+  border-radius: 999px;
+  background: var(--project-primary);
+}
+
+.project-timeline-bar.is-deliverables {
+  background: var(--project-accent, #fbb130);
+}
+
+.project-timeline-bar.is-sprints {
+  background: var(--project-green);
+}
+
+/* Unified project schedule. The left column explains each item while every
+   bar uses the same calendar grid, making cross-track overlaps readable. */
+.project-timeline-redesign {
+  gap: 16px;
+}
+
+.project-timeline-overview {
+  align-items: center;
+}
+
+.project-timeline-overview h3,
+.project-timeline-empty h3 {
+  margin: 0;
+  color: var(--project-ink);
+  font-family: var(--project-heading-font);
+  font-size: 18px;
+}
+
+.project-timeline-overview > div:first-child p,
+.project-timeline-empty p {
+  margin: 5px 0 0;
+  color: var(--project-muted);
+  font-size: 13px;
+}
+
+.project-timeline-summary {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.project-timeline-summary span {
+  color: var(--project-muted);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.project-timeline-summary strong {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--project-ink);
+  font-size: 13px;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+.project-timeline-summary > i {
+  width: 34px;
+  height: 1px;
+  background: var(--project-border);
+}
+
+.project-timeline-summary em {
+  margin-left: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #f2f1f7;
+  color: var(--project-muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.project-timeline-board {
+  --timeline-label-width: 280px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.project-timeline-axis-row,
+.project-timeline-group article {
+  display: grid;
+  grid-template-columns: var(--timeline-label-width) minmax(520px, 1fr);
+}
+
+.project-timeline-axis-row {
+  min-height: 66px;
+  border-bottom: 1px solid var(--project-border);
+  background: #fbfbfd;
+}
+
+.project-timeline-axis-row > div:first-child {
+  padding: 15px 18px;
+  border-right: 1px solid var(--project-border);
+}
+
+.project-timeline-axis-row span,
+.project-timeline-axis-row small {
+  display: block;
+}
+
+.project-timeline-axis-row span {
+  color: var(--project-ink);
+  font-size: 12px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.project-timeline-axis-row small {
+  margin-top: 4px;
+  color: var(--project-muted);
+  font-size: 11px;
+}
+
+.project-timeline-axis {
+  position: relative;
+  margin: 0 22px;
+}
+
+.project-timeline-axis time {
+  position: absolute;
+  top: 50%;
+  color: var(--project-muted);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+  transform: translate(-50%, -50%);
+}
+
+.project-timeline-axis time:first-child {
+  transform: translate(0, -50%);
+}
+
+.project-timeline-axis time:last-child {
+  transform: translate(-100%, -50%);
+}
+
+.project-timeline-group + .project-timeline-group {
+  border-top: 1px solid var(--project-border);
+}
+
+.project-timeline-group > header {
+  min-height: 38px;
+  padding: 0 18px;
+  border-bottom: 1px solid #eceef5;
+  background: #f7f8fb;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-timeline-group > header svg {
+  color: var(--timeline-track-color);
+}
+
+.project-timeline-group > header strong {
+  color: var(--project-ink);
+  font-size: 12px;
+}
+
+.project-timeline-group > header span {
+  min-width: 20px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  background: #e8e9f0;
+  color: var(--project-muted);
+  font-size: 10px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.project-timeline-group.is-milestones {
+  --timeline-track-color: #3b3948;
+}
+
+.project-timeline-group.is-sprints {
+  --timeline-track-color: #3297a2;
+}
+
+.project-timeline-group.is-deliverables {
+  --timeline-track-color: #f3a628;
+}
+
+.project-timeline-group article {
+  min-height: 68px;
+  border-bottom: 1px solid #f0f1f6;
+}
+
+.project-timeline-group article:last-child {
+  border-bottom: 0;
+}
+
+.project-timeline-item-copy {
+  min-width: 0;
+  padding: 12px 18px;
+  border-right: 1px solid var(--project-border);
+}
+
+.project-timeline-item-copy > strong {
+  display: block;
+  overflow: hidden;
+  color: var(--project-ink);
+  font-size: 12px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-timeline-item-copy p {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 7px 0 0;
+  color: var(--project-muted);
+  font-size: 10px;
+}
+
+.project-timeline-item-copy p time,
+.project-timeline-item-copy p small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-timeline-item-copy p small::before {
+  content: '·';
+  margin-right: 7px;
+}
+
+.project-timeline-status {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #ececf1;
+  color: #696d7d;
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.project-timeline-status.is-active {
+  background: #e7f8f4;
+  color: #16856f;
+}
+
+.project-timeline-status.is-complete {
+  background: #e9f7ee;
+  color: #23844c;
+}
+
+.project-timeline-status.is-blocked {
+  background: #fff0f1;
+  color: #bd3b49;
+}
+
+.project-timeline-canvas {
+  position: relative;
+  min-width: 0;
+  margin: 0 22px;
+  background-image: linear-gradient(to right, #e8eaf1 1px, transparent 1px);
+  background-size: calc(100% / var(--timeline-columns)) 100%;
+}
+
+.project-timeline-period {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  height: 22px;
+  min-width: 8px;
+  border-radius: 7px;
+  background: var(--timeline-track-color);
+  transform: translateY(-50%);
+  overflow: hidden;
+}
+
+.project-timeline-period b {
+  display: block;
+  overflow: hidden;
+  padding: 4px 8px;
+  color: #fff;
+  font-size: 9px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-timeline-period.is-planned {
+  opacity: 0.55;
+}
+
+.project-timeline-period.is-complete {
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.38);
+}
+
+.project-timeline-period.is-blocked {
+  background: #c94a58;
+}
+
+.project-timeline-period.is-point {
+  width: 14px !important;
+  height: 14px;
+  min-width: 14px;
+  border: 3px solid #fff;
+  border-radius: 999px;
+  box-shadow: 0 0 0 2px var(--timeline-track-color);
+  transform: translate(-50%, -50%);
+}
+
+.project-timeline-today {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 1px;
+  background: #ef5d67;
+}
+
+.project-timeline-today i {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #ef5d67;
+  transform: translateX(-50%);
+}
+
+.project-timeline-undated {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border: 1px dashed #cfd2de;
+  border-radius: 7px;
+  padding: 5px 10px;
+  color: #8a8f9f;
+  font-size: 10px;
+  font-weight: 800;
+  text-align: center;
+  transform: translateY(-50%);
+}
+
+.project-timeline-group-empty {
+  margin: 0;
+  padding: 14px 18px;
+  color: var(--project-muted);
+  font-size: 11px;
+}
+
+.project-timeline-footnote {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 16px;
+}
+
+.project-timeline-footnote span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--project-muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.project-timeline-footnote i {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+  background: #3b3948;
+}
+
+.project-timeline-footnote i.is-sprints {
+  background: #3297a2;
+}
+
+.project-timeline-footnote i.is-deliverables {
+  background: #f3a628;
+}
+
+.project-timeline-footnote i.is-today {
+  width: 2px;
+  border-radius: 0;
+  background: #ef5d67;
+}
+
+.project-timeline-empty {
+  min-height: 280px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.project-timeline-empty > svg {
+  width: 42px;
+  height: 42px;
+  margin-bottom: 14px;
+  padding: 11px;
+  border-radius: 999px;
+  background: var(--project-primary-soft);
+  color: var(--project-primary);
+}
+
+@media (max-width: 1120px) {
+  .project-timeline-board {
+    --timeline-label-width: 240px;
+    overflow-x: auto;
+  }
+
+  .project-timeline-axis-row,
+  .project-timeline-group article {
+    min-width: 820px;
+  }
+}
+
+@media (max-width: 720px) {
+  .project-timeline-overview,
+  .project-timeline-summary {
+    align-items: flex-start;
+  }
+
+  .project-timeline-overview {
+    flex-direction: column;
+  }
+
+  .project-timeline-summary {
+    flex-wrap: wrap;
+  }
+}
+
+.milestone-scope-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.milestone-scope-dates-btn,
+.milestone-scope-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid var(--project-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--project-ink);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.milestone-scope-dates {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--project-border);
+}
+
+.milestone-scope-dates label {
+  display: grid;
+  gap: 5px;
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.milestone-scope-dates input {
+  padding: 7px 10px;
+  border: 1px solid var(--project-border);
+  border-radius: 9px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.milestone-scope-dates button {
+  padding: 7px 13px;
+  border: 1px solid var(--project-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--project-ink);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.milestone-scope-submit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--project-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.milestone-scope-toolbar {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.milestone-scope-toolbar h3 {
+  margin: 0;
+  color: var(--project-ink);
+  font-family: var(--project-heading-font);
+  font-size: 17px;
+}
+
+.milestone-scope-toolbar p {
+  margin: 4px 0 0;
+  color: var(--project-muted);
+  font-size: 13px;
+}
+
+.milestone-add-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+}
+
+.milestone-add-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.milestone-add-form input {
+  padding: 8px 11px;
+  border: 1px solid var(--project-border);
+  border-radius: 10px;
+  color: var(--project-ink);
+  font: inherit;
+  font-size: 13px;
+}
+
+.milestone-add-form-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.milestone-add-form-actions button[type='button'] {
+  padding: 9px 14px;
+  border: 1px solid var(--project-border);
+  border-radius: 10px;
+  background: none;
+  color: var(--project-ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.milestone-scope-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--project-border);
+}
+
+.milestone-scope-actions .milestone-scope-add,
+.milestone-scope-actions .milestone-scope-form {
+  margin-top: 0;
+}
+
+.milestone-scope-submit:disabled {
+  background: color-mix(in srgb, var(--project-ink) 10%, transparent);
+  color: var(--project-muted);
+  cursor: not-allowed;
+}
+
+.milestone-scope-approved {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  color: var(--project-green);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.milestone-scope-dates-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.project-sprint-form label.is-wide {
+  grid-column: 1 / -1;
+}
+
+.project-sprint-form textarea {
+  padding: 8px 11px;
+  border: 1px solid var(--project-border);
+  border-radius: 10px;
+  color: var(--project-ink);
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.project-sprint-backlog-card h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  color: var(--project-ink);
+  font-size: 15px;
+}
+
+.project-sprint-backlog-card h4 span {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--project-ink) 8%, transparent);
+  font-size: 12px;
+}
+
+.project-sprint-backlog-card header p {
+  margin: 4px 0 12px;
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.project-sprint-backlog-preview {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-sprint-backlog-preview li {
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--color-surface-muted, #f6f7fc);
+}
+
+.project-sprint-backlog-card,
+.project-sprint-card {
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+}
+
+.project-sprint-backlog-card.is-drag-over,
+.project-sprint-card.is-drag-over {
+  border-color: color-mix(in srgb, var(--project-primary) 58%, var(--project-border));
+  background: color-mix(in srgb, var(--project-primary-soft) 38%, var(--color-surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--project-primary) 18%, transparent);
+}
+
+.project-sprint-card.is-drag-over::before {
+  content: "Drop task into this sprint";
+  display: block;
+  margin: -4px 0 10px;
+  color: var(--project-primary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.project-sprint-card:has(.project-sprint-status.is-active) {
+  border-color: color-mix(in srgb, var(--project-primary) 34%, var(--project-border));
+}
+
+.project-sprint-kicker {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--project-primary);
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.project-sprint-card .project-sprint-backlog-table {
+  margin-top: 14px;
+}
+
+.project-sprint-backlog-table {
+  overflow-x: auto;
+  border: 1px solid var(--project-border);
+  border-radius: 11px;
+}
+
+.project-sprint-backlog-row {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.5fr) minmax(140px, 1fr) minmax(120px, .8fr) 70px 90px minmax(145px, .9fr);
+  min-width: 780px;
+  align-items: center;
+  gap: 12px;
+  min-height: 48px;
+  padding: 9px 12px;
+  border-top: 1px solid var(--project-border);
+  background: var(--color-surface);
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.project-sprint-backlog-row:first-child {
+  border-top: 0;
+}
+
+.project-sprint-backlog-row.is-head {
+  min-height: 38px;
+  background: var(--color-surface-muted, #f6f7fc);
+  color: var(--project-muted);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .035em;
+  text-transform: uppercase;
+}
+
+.project-sprint-backlog-row[draggable="true"] {
+  cursor: grab;
+}
+
+.project-sprint-backlog-row[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.project-sprint-backlog-row.is-dragging,
+.project-sprint-tasks li.is-dragging {
+  opacity: .42;
+}
+
+.project-sprint-backlog-task {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.project-sprint-backlog-task svg {
+  flex: 0 0 auto;
+  color: var(--project-muted);
+}
+
+.project-sprint-backlog-task strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-sprint-backlog-row > span:not(.project-sprint-task-state) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-sprint-backlog-row select {
+  min-width: 0;
+  width: 100%;
+  padding: 7px 9px;
+  border: 1px solid var(--project-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--project-ink);
+  font: inherit;
+  font-size: 11px;
+}
+
+.project-sprint-return-btn {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 9px;
+  border: 1px solid var(--project-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  color: var(--project-muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.project-sprint-return-btn:disabled {
+  cursor: wait;
+  opacity: .55;
+}
+
+.project-sprint-drop-hint {
+  margin-top: 14px;
+  padding: 18px;
+  border: 1px dashed color-mix(in srgb, var(--project-primary) 42%, var(--project-border));
+  border-radius: 10px;
+  text-align: center;
+}
+
+.project-sprint-action-note {
+  align-self: center;
+  color: var(--project-muted);
+  font-size: 11px;
+}
+
+.project-sprint-empty-state h4,
+.project-sprint-other-section h4 {
+  margin: 0;
+  color: var(--project-ink);
+  font-size: 15px;
+}
+
+.project-sprint-empty-state p,
+.project-sprint-other-section > header p {
+  margin: 4px 0 0;
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.project-sprint-other-section {
+  display: grid;
+  gap: 10px;
+  padding-top: 4px;
+}
+
+.project-sprint-other-section h4 span {
+  display: inline-flex;
+  min-width: 22px;
+  min-height: 22px;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  border-radius: 999px;
+  background: var(--project-primary-soft);
+  color: var(--project-primary);
+  font-size: 11px;
+}
+
+.project-sprint-backlog-preview strong,
+.project-sprint-tasks strong,
+.project-sprint-backlog strong {
+  display: block;
+  color: var(--project-ink);
+  font-size: 13px;
+}
+
+.project-sprint-backlog-preview em,
+.project-sprint-tasks em,
+.project-sprint-backlog em {
+  color: var(--project-muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.project-sprint-tasks {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-sprint-tasks li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--color-surface-muted, #f6f7fc);
+}
+
+.project-sprint-tasks li[draggable="true"] {
+  cursor: grab;
+}
+
+.project-sprint-tasks li button {
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--project-muted);
+  cursor: pointer;
+}
+
+.project-sprint-task-state {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--project-ink) 7%, transparent);
+  color: var(--project-muted);
+  font-size: 11px;
+  text-transform: capitalize;
+}
+
+.project-sprint-task-state.is-done {
+  background: color-mix(in srgb, var(--project-green) 15%, transparent);
+  color: var(--project-green);
+}
+
+.project-sprint-backlog {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--project-border);
+}
+
+.project-sprint-backlog > input {
+  width: min(320px, 100%);
+  padding: 8px 11px;
+  margin-bottom: 10px;
+  border: 1px solid var(--project-border);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+}
+
+.project-sprint-backlog ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-sprint-backlog li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 12px;
+  border: 1px solid var(--project-border);
+  border-radius: 10px;
+}
+
+.project-sprint-backlog li button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid var(--project-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--project-ink);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.project-sprint-empty {
+  margin: 12px 0 0;
+  color: var(--project-muted);
+  font-size: 13px;
+}
+
+.project-sprint-card dl > div.is-blocked dd {
+  color: #a33b38;
+}
+
+.milestone-scope-progress-note {
+  margin-left: auto;
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.deliverable-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.deliverable-modal {
+  width: min(680px, 100%);
+  max-height: calc(100vh - 64px);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  border-radius: 16px;
+  background: var(--color-surface, #fff);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.32);
+  overflow: hidden;
+}
+
+.deliverable-modal > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--color-border, #e7e8f1);
+}
+
+.deliverable-modal h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.deliverable-modal > header p {
+  margin: 4px 0 0;
+  color: var(--color-text-muted, #707590);
+  font-size: 0.8rem;
+}
+
+.deliverable-modal > header button {
+  padding: 4px;
+  border: 0;
+  background: none;
+  color: var(--color-text-muted, #707590);
+  cursor: pointer;
+}
+
+.deliverable-modal-body {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  padding: 20px 24px 24px;
+  overflow: auto;
+}
+
+.deliverable-modal-body label {
+  display: grid;
+  gap: 5px;
+  color: var(--color-text-muted, #707590);
+  font-size: 12px;
+}
+
+.deliverable-modal-body label.is-wide {
+  grid-column: 1 / -1;
+}
+
+.deliverable-modal-body input,
+.deliverable-modal-body select,
+.deliverable-modal-body textarea {
+  padding: 9px 12px;
+  border: 1px solid var(--color-border, #e7e8f1);
+  border-radius: 10px;
+  background: var(--color-surface, #fff);
+  color: var(--color-text-strong, #1f2340);
+  font: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+
+.deliverable-modal-body footer {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 6px;
+  border-top: 1px solid var(--color-border, #e7e8f1);
+}
+
+.deliverable-modal-body footer button[type='button'] {
+  padding: 9px 16px;
+  border: 1px solid var(--color-border, #e7e8f1);
+  border-radius: 10px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.project-sprint-backlog-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.project-sprint-backlog-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+  padding: 14px;
+  border: 1px solid var(--project-border);
+  border-radius: 12px;
+}
+
+.project-sprint-backlog-form label {
+  display: grid;
+  gap: 5px;
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.project-sprint-backlog-form input,
+.project-sprint-backlog-form select {
+  padding: 8px 11px;
+  border: 1px solid var(--project-border);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 13px;
+}
+
+
+/* Milestone lifecycle: reference material, so it sits at the foot of the view as
+   a collapsed strip rather than a grid of cards competing with the actual work. */
+.milestone-program-footer {
+  border: 1px solid var(--project-border);
+  border-radius: 12px;
+  background: var(--color-surface-muted, #f6f7fc);
+  overflow: hidden;
+}
+
+.milestone-program-footer-head {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  color: var(--project-ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.milestone-program-footer-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.milestone-program-footer-label em {
+  color: var(--project-muted);
+  font-style: normal;
+  font-weight: 400;
+}
+
+.milestone-program-footer-progress {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--project-primary-soft);
+  color: var(--project-primary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.milestone-program-footer-next {
+  margin-left: auto;
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.milestone-program-footer-gates {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0 16px 14px;
+  list-style: none;
+}
+
+.milestone-program-footer-gates li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 1px solid var(--project-border);
+  border-radius: 999px;
+  background: var(--color-surface, #fff);
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.milestone-program-footer-gates li svg {
+  width: 13px;
+  height: 13px;
+}
+
+.milestone-program-footer-gates li.is-done {
+  border-color: color-mix(in srgb, var(--project-green) 45%, transparent);
+  color: var(--project-green);
+}
+
+.project-start-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 11px 14px;
+  border: 1px solid color-mix(in srgb, var(--color-accent, #fbb130) 45%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-accent, #fbb130) 12%, transparent);
+  color: var(--color-text-strong, #1f2340);
+  font-size: 13px;
+}
+
+.project-start-notice svg {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+}
+
+.project-start-notice button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 7px 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-action, #6c4cf0);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.project-lifecycle-error {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: color-mix(in srgb, #d9534f 10%, transparent);
+  color: #a33b38;
+  font-size: 13px;
+}
+
+.project-lifecycle-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 12px;
+}
+
+.project-lifecycle-actions button {
+  padding: 7px 14px;
+  border: 1px solid var(--color-border, #e7e8f1);
+  border-radius: 999px;
+  background: none;
+  color: var(--color-text-strong, #1f2340);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.milestone-scope-gate-note {
+  color: var(--project-muted);
+  font-size: 12px;
+}
+
+.project-rail-card header h3 {
+  margin: 0 0 10px;
+  font-size: 0.95rem;
+}
+
+.project-rail-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-rail-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--color-surface-muted, #f6f7fc);
+}
+
+.project-rail-list strong {
+  display: block;
+  font-size: 13px;
+}
+
+.project-rail-list em {
+  color: var(--color-text-muted, #707590);
+  font-size: 11px;
+  font-style: normal;
+}
+
+.project-rail-pill {
+  flex-shrink: 0;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text-strong, #1f2340) 8%, transparent);
+  color: var(--color-text-muted, #707590);
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.project-rail-pill.is-active {
+  background: var(--color-surface-brand-soft, #f4f2ff);
+  color: var(--color-action, #6c4cf0);
+}
+
+.project-rail-pill.is-approved {
+  background: color-mix(in srgb, var(--color-success, #3c8b93) 15%, transparent);
+  color: var(--color-success, #3c8b93);
+}
+
+.project-rail-meter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.project-rail-meter i {
+  flex: 1;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-text-strong, #1f2340) 8%, transparent);
+  overflow: hidden;
+}
+
+.project-rail-meter b {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--color-action, #6c4cf0);
+}
+
+.project-rail-meter span {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.project-rail-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.project-rail-stats li {
+  padding: 9px 6px;
+  border: 1px solid var(--color-border, #e7e8f1);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.project-rail-stats strong {
+  display: block;
+  font-size: 17px;
+}
+
+.project-rail-stats span {
+  color: var(--color-text-muted, #707590);
+  font-size: 11px;
+}
+
+.project-rail-stats li.is-blocked strong {
+  color: #a33b38;
+}
+
+.project-rail-note {
+  margin: 10px 0 0;
+  color: var(--color-text-muted, #707590);
+  font-size: 12px;
+}
+
+.project-rail-note.is-muted {
+  opacity: 0.85;
+}
+
+.milestone-scope-overcommit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 14px 0 0;
+  padding: 11px 14px;
+  border: 1px solid color-mix(in srgb, #d9534f 40%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, #d9534f 9%, transparent);
+  color: var(--project-ink);
+  font-size: 12px;
+}
+
+.milestone-scope-overcommit svg {
+  flex-shrink: 0;
+  color: #a33b38;
+}
+
+.milestone-scope-overcommit button {
+  margin-left: auto;
+  padding: 6px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--project-primary);
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.milestone-scope-dormant {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: color-mix(in srgb, #d9534f 12%, transparent);
+  color: #a33b38;
+  font-size: 11px;
+}
+
+.deliverable-modal-hint {
+  color: var(--color-text-muted, #707590);
+  font-size: 11px;
+  font-style: normal;
+}

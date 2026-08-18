@@ -3221,6 +3221,23 @@ font-size: clamp(10px, 1vw, 18px);
   color: var(--theme-dark);
 }
 
+.business-opportunities-card-actions .business-opportunities-delete-btn {
+  border-color: var(--color-danger);
+  background: var(--theme-white);
+  color: var(--color-danger);
+}
+
+.business-opportunities-delete-error {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--color-danger) 35%, transparent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-danger) 8%, var(--theme-white));
+  color: var(--color-danger);
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
 .business-opportunities-card-actions button:disabled {
   border-color: var(--color-border-strong);
   background: var(--color-surface-muted);
@@ -3460,6 +3477,72 @@ font-size: clamp(10px, 1vw, 18px);
   font-size: 0.72rem;
   font-weight: 900;
   cursor: pointer;
+}
+
+.business-review-team-roster {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: #f7f3ff;
+  display: grid;
+  gap: 12px;
+}
+
+.business-review-team-roster > header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 950;
+  color: var(--theme-dark);
+}
+
+.business-review-team-roster > header p {
+  margin: 4px 0 0;
+  font-size: 0.8rem;
+  font-weight: 760;
+  color: #626984;
+}
+
+.business-review-team-list {
+  display: grid;
+  gap: 8px;
+}
+
+.business-review-team-list article {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--theme-white);
+}
+
+.business-review-team-list img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.business-review-team-list strong {
+  display: block;
+  font-size: 0.86rem;
+  font-weight: 900;
+  color: var(--theme-dark);
+}
+
+.business-review-team-list em {
+  font-style: normal;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #626984;
+}
+
+.business-review-team-amount {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: var(--theme-dark);
 }
 
 .business-review-upcoming-interviews {
@@ -3790,6 +3873,425 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-applications-card {
   display: grid;
   gap: 16px;
+}
+
+.business-review-submission-row.is-clickable,
+.business-review-deliverable-row.is-clickable {
+  cursor: pointer;
+}
+
+.business-review-submission-row.is-clickable:hover,
+.business-review-deliverable-row.is-clickable:hover {
+  background: #f7f3ff;
+}
+
+.business-review-submission-files {
+  display: grid;
+  gap: 10px;
+}
+
+.business-review-submission-files article {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+}
+
+.business-review-submission-files a {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--theme-dark);
+  font-weight: 800;
+}
+
+.business-review-submission-file-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.business-review-submission-file-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  color: var(--theme-dark);
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.business-review-submission-file-actions button:hover,
+.business-review-submission-files a:hover {
+  text-decoration: underline;
+}
+
+.business-review-submissions-list {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.business-review-submission-row {
+  display: grid;
+  grid-template-columns: minmax(210px, 1fr) minmax(220px, 1.4fr) minmax(130px, auto) auto;
+  gap: 18px;
+  align-items: center;
+  padding: 16px 18px;
+  border: 1px solid var(--project-border, #e2e8f0);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.business-review-submission-creator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.business-review-submission-creator img {
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--color-border);
+  border-radius: 50%;
+  background: #f8f9fc;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.business-review-submission-creator > div,
+.business-review-submission-info {
+  min-width: 0;
+}
+
+.business-review-submission-creator strong {
+  display: block;
+  overflow: hidden;
+  color: var(--theme-dark);
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.business-review-submission-creator span {
+  display: block;
+  margin-top: 3px;
+  overflow: hidden;
+  color: #64708a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.business-review-submission-info strong {
+  display: block;
+  overflow: hidden;
+  color: var(--theme-dark);
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.business-review-submission-info span {
+  display: block;
+  margin-top: 3px;
+  color: #64708a;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.business-review-submission-info em {
+  display: inline-block;
+  margin-top: 7px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #4338ca;
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.business-review-submission-info em.is-revision {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.business-review-submission-statuses {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.business-review-submission-row > .ui-button {
+  justify-self: end;
+}
+
+.business-review-submission-outcome {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .business-review-submission-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 12px 18px;
+  }
+
+  .business-review-submission-info {
+    grid-column: 1;
+  }
+
+  .business-review-submission-statuses {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  .business-review-submission-row > .ui-button {
+    grid-column: 2;
+    grid-row: 2;
+  }
+}
+
+@media (max-width: 720px) {
+  .business-review-submission-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .business-review-submission-info,
+  .business-review-submission-statuses,
+  .business-review-submission-row > .ui-button {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+  }
+
+  .business-review-submission-row > .ui-button {
+    width: 100%;
+  }
+
+  .business-review-submission-files article {
+    grid-template-columns: 24px minmax(0, 1fr);
+  }
+
+  .business-review-submission-file-actions {
+    grid-column: 2;
+  }
+}
+
+.business-review-above-budget {
+  margin-top: 6px;
+  color: #b5561f;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.business-review-capacity-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.business-review-capacity-control em {
+  color: #626984;
+  font-size: 0.76rem;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.business-review-capacity-badge {
+  min-height: 24px;
+  padding: 0 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.business-review-capacity-badge.is-open {
+  background: #e7f6ee;
+  color: #1f7a4d;
+}
+
+.business-review-capacity-badge.is-closed {
+  background: #fbe9ec;
+  color: #c0354f;
+}
+
+.business-review-capacity-notice {
+  margin: 0;
+  color: #1f7a4d;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.business-review-deliverable-team-hint {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #f7f3ff;
+  color: #4a4270;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.business-review-deliverable-complete-btn {
+  border: 1px solid var(--color-brand-primary) !important;
+  color: var(--color-brand-primary) !important;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.business-review-deliverable-complete-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 10px;
+  min-height: 26px;
+  border-radius: 999px;
+  background: #e7f6ee;
+  color: #1f7a4d;
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.business-review-capacity-error {
+  margin: 0;
+  color: #c0354f;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.business-review-engagement-cell {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.business-review-above-budget-tag {
+  color: #b5561f;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.business-review-above-budget-tag.is-locked {
+  color: #167a55;
+}
+
+.business-review-negotiate-btn {
+  border-color: var(--color-brand-primary) !important;
+  color: var(--color-brand-primary) !important;
+  font-weight: 800;
+}
+
+.business-review-counter-status {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.business-review-counter-status.is-pending { color: #7a5a1f; }
+.business-review-counter-status.is-accepted { color: #1f7a4d; }
+.business-review-counter-status.is-rejected { color: #c0354f; }
+
+.business-review-counter-error {
+  margin-top: 6px;
+  color: #c0354f;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.business-review-counter-notice {
+  margin-top: 6px;
+  color: #1f7a4d;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.business-project-controls-list {
+  display: grid;
+  gap: 12px;
+}
+
+.business-project-controls {
+  padding: 14px 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #f7f3ff;
+  display: grid;
+  gap: 12px;
+}
+
+.business-project-controls > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.business-project-controls strong {
+  display: block;
+  color: var(--theme-dark);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+.business-project-controls span {
+  color: #626984;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.business-project-controls-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.business-project-propose-form {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.business-project-propose-form input {
+  flex: 1 1 200px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+}
+
+.business-project-controls-error {
+  margin: 0;
+  color: #c0354f;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.business-project-controls-notice {
+  margin: 0;
+  color: #1f7a4d;
+  font-size: 0.82rem;
+  font-weight: 800;
 }
 
 .business-review-application-tabs {
@@ -4188,6 +4690,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .business-review-shortlisted-actions button {
@@ -4228,6 +4731,280 @@ font-size: clamp(10px, 1vw, 18px);
   z-index: 1000;
   display: grid;
   place-items: center;
+}
+
+.business-review-negotiation-modal {
+  width: min(560px, calc(100vw - 48px));
+  max-height: calc(100vh - 48px);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--theme-white);
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.business-review-negotiation-modal h2,
+.business-review-negotiation-modal p,
+.business-review-negotiation-modal dl,
+.business-review-negotiation-modal dd {
+  margin: 0;
+}
+
+.business-review-negotiation-modal > header {
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.business-review-negotiation-modal > header > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.business-review-negotiation-modal > header > div > span {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  background: #f0eaff;
+  color: var(--color-brand-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  font-size: 1.1rem;
+}
+
+.business-review-negotiation-modal h2 {
+  color: var(--theme-dark);
+  font-size: 1.18rem;
+}
+
+.business-review-negotiation-modal > header p {
+  margin-top: 5px;
+  color: var(--color-text-subtle);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.business-review-negotiation-modal > header > button {
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--theme-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.business-review-negotiation-body {
+  min-height: 0;
+  padding: 22px 24px;
+  display: grid;
+  gap: 18px;
+  overflow-y: auto;
+}
+
+.business-review-negotiation-applicant {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.business-review-negotiation-applicant img {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.business-review-negotiation-applicant div {
+  display: grid;
+  gap: 3px;
+}
+
+.business-review-negotiation-applicant strong {
+  color: var(--theme-dark);
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.business-review-negotiation-applicant span {
+  color: var(--color-text-subtle);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.business-review-negotiation-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.business-review-negotiation-summary > div {
+  padding: 13px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #faf9fd;
+  display: grid;
+  gap: 5px;
+}
+
+.business-review-negotiation-summary dt {
+  color: var(--color-text-subtle);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.business-review-negotiation-summary dd {
+  color: var(--theme-dark);
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.business-review-negotiation-body > .business-review-counter-status {
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  background: #fff8e8;
+}
+
+.business-review-negotiation-form {
+  display: grid;
+  gap: 9px;
+}
+
+.business-review-negotiation-form label {
+  display: grid;
+  gap: 7px;
+}
+
+.business-review-negotiation-form label > span {
+  color: var(--theme-dark);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.business-review-negotiation-form label > div {
+  min-height: 46px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.business-review-negotiation-form label > div:focus-within {
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px rgba(107, 47, 232, 0.12);
+}
+
+.business-review-negotiation-form label > div > strong {
+  align-self: stretch;
+  padding: 0 13px;
+  border-right: 1px solid var(--color-border);
+  background: #faf9fd;
+  color: var(--color-text-subtle);
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.8rem;
+}
+
+.business-review-negotiation-form input[type="number"] {
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 13px;
+  border: 0;
+  outline: 0;
+  color: var(--theme-dark);
+  font: inherit;
+  font-weight: 850;
+}
+
+.business-review-negotiation-form .business-review-negotiation-auto-reject {
+  margin-top: 4px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #faf9fd;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.business-review-negotiation-auto-reject input {
+  width: 17px;
+  height: 17px;
+  margin: 2px 0 0;
+  accent-color: var(--color-brand-primary);
+}
+
+.business-review-negotiation-form .business-review-negotiation-auto-reject > span {
+  display: grid;
+  gap: 4px;
+}
+
+.business-review-negotiation-auto-reject strong {
+  color: var(--theme-dark);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.business-review-negotiation-auto-reject em {
+  color: var(--color-text-subtle);
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.business-review-negotiation-range,
+.business-review-negotiation-notice {
+  color: var(--color-text-subtle);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.business-review-negotiation-range {
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: #f5f1ff;
+  color: #5d35a8;
+  font-weight: 800;
+}
+
+.business-review-negotiation-closed {
+  padding: 12px 14px;
+  border: 1px solid #e3d8bf;
+  border-radius: var(--radius-sm);
+  background: #fff9eb;
+  color: #76551f;
+  font-size: 0.8rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+
+.business-review-negotiation-modal > footer {
+  padding: 16px 24px 20px;
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.business-review-negotiation-modal > footer .ui-button {
+  min-width: 118px;
 }
 
 .business-review-application-modal {
@@ -6468,6 +7245,76 @@ font-size: clamp(10px, 1vw, 18px);
   overflow: hidden;
 }
 
+/* The deliverable detail opens down the page in place of the table, the same
+   way the student's Deliverable Room does, so both sides read the same shape. */
+.business-review-deliverable-details-inline {
+  display: grid;
+  gap: 0;
+}
+
+.business-review-deliverable-details-inline > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.business-review-scope-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  min-height: 34px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: none;
+  color: var(--theme-dark);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.business-review-scope-btn:hover {
+  border-color: var(--color-action);
+  color: var(--color-action);
+}
+
+.business-review-deliverable-details-inline h2,
+.business-review-deliverable-details-inline h3,
+.business-review-deliverable-details-inline p {
+  margin: 0;
+}
+
+.business-review-deliverable-details-inline h2 {
+  margin-top: 6px;
+  color: var(--theme-dark);
+  font-size: 1.25rem;
+}
+
+.business-review-deliverable-details-inline > header p {
+  margin-top: 6px;
+  color: #4d5374;
+  font-size: var(--font-size-xs);
+}
+
+.business-review-deliverable-back {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--color-action);
+  font: inherit;
+  font-size: var(--font-size-xs);
+  cursor: pointer;
+}
+
+.business-review-deliverable-details-inline .business-review-deliverable-details-body {
+  padding: 16px 0 0;
+  overflow: visible;
+}
+
 .business-review-deliverable-details-modal > header {
   padding: 22px 26px 16px;
   border-bottom: 1px solid var(--color-border);
@@ -6622,6 +7469,17 @@ font-size: clamp(10px, 1vw, 18px);
   color: #1f2544;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-heavy);
+}
+
+.business-review-publish-notice {
+  margin: 16px 26px 0;
+  padding: 10px 14px;
+  border: 1px solid rgba(208, 24, 24, 0.25);
+  border-radius: var(--radius-sm);
+  color: var(--color-danger);
+  background: rgba(208, 24, 24, 0.06);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-black);
 }
 
 .business-review-publish-steps {
@@ -7063,6 +7921,57 @@ font-size: clamp(10px, 1vw, 18px);
 .business-settings-payment-card {
   display: grid;
   gap: 18px;
+}
+
+.business-settings-company-card > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.business-settings-company-card > header h2 {
+  margin: 0;
+  color: var(--theme-dark);
+  font-size: 1rem;
+  font-weight: 950;
+}
+
+.business-settings-company-card > header p {
+  margin: 6px 0 0;
+  color: #626984;
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+.business-settings-company-footer {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.business-settings-company-footer .business-profile-primary-btn {
+  flex-shrink: 0;
+}
+
+.business-settings-company-error,
+.business-settings-company-saved {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.business-settings-company-error {
+  color: #c0354f;
+}
+
+.business-settings-company-saved {
+  color: #1f7a4d;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .business-settings-payment-card > header {
@@ -7907,15 +8816,25 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-deliverable-table {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  overflow: hidden;
+  /* Scroll rather than clip: `overflow: hidden` was silently cutting the
+     Actions column off the right edge on narrower viewports. */
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.business-review-deliverable-head,
+.business-review-deliverable-row {
+  min-width: 1020px;
 }
 
 .business-review-deliverable-head,
 .business-review-deliverable-row {
   display: grid;
-  grid-template-columns: 28px minmax(170px, 1.35fr) minmax(110px, 0.82fr) minmax(190px, 1.35fr) minmax(120px, 0.9fr) minmax(90px, 0.72fr) minmax(105px, 0.72fr) minmax(96px, 0.72fr);
+  /* The last column holds up to three actions, so it is sized to its content
+     rather than sharing a fraction - it was being clipped at narrower widths. */
+  grid-template-columns: 22px minmax(150px, 1.3fr) minmax(92px, 0.62fr) minmax(160px, 1.25fr) minmax(104px, 0.72fr) 74px 96px minmax(190px, max-content);
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .business-review-deliverable-head {
@@ -8057,6 +8976,8 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-deliverable-actions {
   display: flex;
   align-items: center;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
   gap: 8px;
 }
 
@@ -8569,6 +9490,22 @@ font-size: clamp(10px, 1vw, 18px);
   object-fit: cover;
 }
 
+.business-review-group-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #eee8ff;
+  color: var(--color-brand-primary);
+  display: grid;
+  place-items: center;
+  font-size: 16px;
+}
+
+.business-review-chat > header .business-review-group-avatar {
+  width: 40px;
+  height: 40px;
+}
+
 .business-review-message-list strong,
 .business-review-message-list em,
 .business-review-message-list small {
@@ -8604,6 +9541,10 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
 }
 
+.business-review-chat > header.is-group {
+  grid-template-columns: 40px minmax(0, 1fr) 34px;
+}
+
 .business-review-chat > header p {
   margin: 4px 0 0;
   color: #12a150;
@@ -8630,6 +9571,13 @@ font-size: clamp(10px, 1vw, 18px);
   align-content: start;
   gap: 16px;
   overflow: auto;
+}
+
+.business-review-chat-loading {
+  margin: 8px auto;
+  color: #8c95b2;
+  font-size: 12px;
+  font-weight: 800;
 }
 
 .business-review-chat-start {
@@ -10753,6 +11701,25 @@ font-size: clamp(10px, 1vw, 18px);
   top: -18px;
 }
 
+.business-marketing-thumb.has-media {
+  padding: 0;
+  background: #171927;
+}
+
+.business-marketing-thumb.has-media::after {
+  display: none;
+}
+
+.business-marketing-thumb.has-media img,
+.business-marketing-thumb.has-media video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
 .business-marketing-thumb strong {
   max-width: 78px;
   font-size: 0.82rem;
@@ -11497,6 +12464,210 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 20px;
 }
 
+.business-marketing-live-progress {
+  padding: 20px;
+  border-color: #ded7e9;
+  background: linear-gradient(135deg, #fff 0%, #faf8fb 100%);
+  box-shadow: 0 14px 40px rgba(55, 54, 67, 0.05);
+}
+
+.business-marketing-live-progress > header,
+.business-marketing-live-progress > header > div,
+.business-marketing-live-summary,
+.business-marketing-live-summary > article,
+.business-marketing-creator-clicks article {
+  display: flex;
+  align-items: center;
+}
+
+.business-marketing-live-progress > header {
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.business-marketing-live-progress > header > div {
+  gap: 11px;
+}
+
+.business-marketing-live-progress h2,
+.business-marketing-live-progress header p {
+  margin: 0;
+}
+
+.business-marketing-live-progress h2 {
+  color: var(--theme-dark);
+  font-size: 0.98rem;
+}
+
+.business-marketing-live-progress header p {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.business-marketing-live-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: 12px;
+  background: #74516f;
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.business-marketing-live-progress > header > em {
+  color: #43705a;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.business-marketing-live-progress > header > em i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #2ca772;
+  box-shadow: 0 0 0 4px #e1f4ea;
+}
+
+.business-marketing-live-summary {
+  margin-top: 18px;
+  align-items: stretch;
+  gap: 12px;
+}
+
+.business-marketing-live-summary > article {
+  min-width: 190px;
+  padding: 17px;
+  border-radius: 14px;
+  background: #373643;
+  color: #fff;
+  gap: 13px;
+}
+
+.business-marketing-live-summary > article > svg {
+  width: 38px;
+  height: 38px;
+  padding: 10px;
+  border-radius: 11px;
+  background: rgba(251, 177, 48, 0.15);
+  color: #fbb130;
+}
+
+.business-marketing-live-summary > article strong,
+.business-marketing-live-summary > article span {
+  display: block;
+}
+
+.business-marketing-live-summary > article.is-visits {
+  border: 1px solid #ded7e9;
+  background: #fff;
+  color: #373643;
+}
+
+.business-marketing-live-summary > article.is-visits > svg {
+  background: #f1edf4;
+  color: #74516f;
+}
+
+.business-marketing-live-summary > article.is-visits span {
+  color: #77717e;
+}
+
+.business-marketing-live-summary > article strong {
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.business-marketing-live-summary > article span {
+  margin-top: 5px;
+  color: #c9c6cf;
+  font-size: 0.68rem;
+  font-weight: 750;
+}
+
+.business-marketing-creator-clicks {
+  min-width: 0;
+  flex: 1;
+  display: grid;
+  gap: 8px;
+}
+
+.business-marketing-creator-clicks article {
+  min-height: 52px;
+  padding: 7px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 11px;
+  background: #fff;
+  gap: 10px;
+}
+
+.business-marketing-creator-clicks article > div {
+  min-width: 0;
+  flex: 1;
+}
+
+.business-marketing-creator-clicks article > div strong,
+.business-marketing-creator-clicks article > div small,
+.business-marketing-creator-clicks article > p strong,
+.business-marketing-creator-clicks article > p span {
+  display: block;
+}
+
+.business-marketing-creator-clicks article > div strong {
+  color: var(--theme-dark);
+  font-size: 0.76rem;
+}
+
+.business-marketing-creator-clicks article > div small {
+  margin-top: 3px;
+  color: var(--color-text-muted);
+  font-size: 0.64rem;
+  font-weight: 700;
+}
+
+.business-marketing-creator-clicks article > p {
+  margin: 0;
+  text-align: right;
+}
+
+.business-marketing-creator-clicks article > p strong {
+  color: #74516f;
+  font-size: 1rem;
+}
+
+.business-marketing-creator-clicks article > p span {
+  color: var(--color-text-muted);
+  font-size: 0.6rem;
+  font-weight: 750;
+}
+
+.business-marketing-no-clicks {
+  margin: 0;
+  padding: 16px;
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 12px;
+  color: var(--color-text-muted);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.business-marketing-click-count {
+  min-width: 40px;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #f1edf4;
+  color: #74516f;
+  display: inline-flex;
+  justify-content: center;
+  font-size: 0.78rem;
+}
+
 .business-marketing-table-wrap {
   margin-top: 16px;
   overflow-x: auto;
@@ -11701,6 +12872,240 @@ font-size: clamp(10px, 1vw, 18px);
   gap: 10px;
   font-size: 0.84rem;
   font-weight: 780;
+}
+
+.business-marketing-outlets-card {
+  padding: 22px;
+}
+
+.business-marketing-outlets-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.business-marketing-outlets-header h2,
+.business-marketing-outlets-header p,
+.business-marketing-outlet-details p,
+.business-marketing-outlets-empty h3,
+.business-marketing-outlets-empty p {
+  margin: 0;
+}
+
+.business-marketing-outlets-header p {
+  margin-top: 6px;
+  color: #58607c;
+  font-size: 0.82rem;
+  font-weight: 760;
+}
+
+.business-marketing-outlet-count {
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: rgba(124, 79, 255, 0.1);
+  color: #6b2fe8;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  font-size: 0.74rem;
+  font-weight: 950;
+}
+
+.business-marketing-outlet-list {
+  margin-top: 20px;
+  display: grid;
+  gap: 12px;
+}
+
+.business-marketing-outlet {
+  padding: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  display: grid;
+  grid-template-columns: 46px minmax(260px, 1fr) auto auto;
+  gap: 16px;
+  align-items: center;
+}
+
+.business-marketing-outlet-platform {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--theme-dark);
+  color: var(--theme-white);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.74rem;
+  font-weight: 950;
+}
+
+.business-marketing-outlet-platform.is-instagram {
+  background: linear-gradient(135deg, #7b2bd4, #e1306c, #f5a623);
+}
+
+.business-marketing-outlet-platform.is-facebook {
+  background: #1877f2;
+}
+
+.business-marketing-outlet-platform.is-youtube {
+  background: #ff0033;
+}
+
+.business-marketing-outlet-platform.is-linkedin {
+  background: #0a66c2;
+}
+
+.business-marketing-outlet-details {
+  min-width: 0;
+}
+
+.business-marketing-outlet-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.business-marketing-outlet-title strong {
+  color: var(--theme-dark);
+  font-size: 0.86rem;
+  font-weight: 950;
+}
+
+.business-marketing-outlet-title span {
+  color: #6b2fe8;
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.business-marketing-outlet-details > a {
+  margin-top: 7px;
+  min-width: 0;
+  color: #303550;
+  display: grid;
+  grid-template-columns: 16px auto minmax(0, 1fr);
+  gap: 7px;
+  align-items: center;
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.business-marketing-outlet-details > a:hover span {
+  color: #6b2fe8;
+  text-decoration: underline;
+}
+
+.business-marketing-outlet-details small {
+  min-width: 0;
+  color: #7b8198;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.business-marketing-outlet-details p {
+  margin-top: 6px;
+  color: #7b8198;
+  font-size: 0.7rem;
+  font-weight: 760;
+}
+
+.business-marketing-outlet-metrics {
+  margin: 0;
+  display: flex;
+  gap: 20px;
+}
+
+.business-marketing-outlet-metrics div {
+  min-width: 72px;
+}
+
+.business-marketing-outlet-metrics dt {
+  color: #7b8198;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.business-marketing-outlet-metrics dd {
+  margin: 4px 0 0;
+  color: var(--theme-dark);
+  font-size: 0.86rem;
+  font-weight: 950;
+}
+
+.business-marketing-outlet-actions {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.business-marketing-outlet-actions button,
+.business-marketing-outlet-actions a {
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--theme-white);
+  color: #303550;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  white-space: nowrap;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.business-marketing-outlet-actions button:hover,
+.business-marketing-outlet-actions a:hover {
+  border-color: #6b2fe8;
+  color: #6b2fe8;
+}
+
+.business-marketing-outlets-empty {
+  min-height: 280px;
+  padding: 36px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.business-marketing-outlets-empty > span {
+  width: 58px;
+  height: 58px;
+  border-radius: 18px;
+  background: rgba(124, 79, 255, 0.1);
+  color: #6b2fe8;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.business-marketing-outlets-empty h3 {
+  margin-top: 16px;
+  color: var(--theme-dark);
+  font-size: 1rem;
+}
+
+.business-marketing-outlets-empty p {
+  margin-top: 8px;
+  max-width: 500px;
+  color: #58607c;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  font-weight: 740;
 }
 
 .business-marketing-detail-summary dl {
@@ -12633,6 +14038,7 @@ font-size: clamp(10px, 1vw, 18px);
   border: 1px solid var(--color-border-strong);
   background: var(--theme-white);
   color: var(--theme-dark);
+  text-decoration: none;
 }
 
 .business-profile-icon-btn,
@@ -14130,6 +15536,12 @@ font-size: clamp(10px, 1vw, 18px);
   color: #626984;
   font-size: 0.82rem;
   font-weight: 800;
+}
+
+.business-create-footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .business-create-copy-grid,
@@ -16080,7 +17492,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-review-actions {
   display: grid;
-  grid-template-columns: auto minmax(160px, 1fr) minmax(200px, 1.2fr);
+  grid-template-columns: auto auto minmax(160px, 1fr) minmax(200px, 1.2fr);
   gap: 14px;
 }
 
@@ -16594,6 +18006,15 @@ font-size: clamp(10px, 1vw, 18px);
     padding-top: 22px;
   }
 
+  .business-marketing-outlet {
+    grid-template-columns: 46px minmax(200px, 1fr) auto;
+  }
+
+  .business-marketing-outlet-actions {
+    grid-column: 2 / -1;
+    justify-content: flex-end;
+  }
+
   .business-marketing-budget-body {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -16669,6 +18090,30 @@ font-size: clamp(10px, 1vw, 18px);
 
   .business-review-modal-backdrop {
     padding: 14px;
+  }
+
+  .business-review-negotiation-modal {
+    width: calc(100vw - 28px);
+    max-height: calc(100vh - 28px);
+  }
+
+  .business-review-negotiation-modal > header,
+  .business-review-negotiation-body,
+  .business-review-negotiation-modal > footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .business-review-negotiation-summary {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .business-review-negotiation-modal > footer {
+    flex-direction: column-reverse;
+  }
+
+  .business-review-negotiation-modal > footer .ui-button {
+    width: 100%;
   }
 
   .business-review-submission-modal {
@@ -17282,6 +18727,36 @@ font-size: clamp(10px, 1vw, 18px);
     justify-content: flex-start;
   }
 
+  .business-marketing-outlets-card {
+    padding: 18px;
+  }
+
+  .business-marketing-outlet {
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .business-marketing-outlet-platform {
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+  }
+
+  .business-marketing-outlet-metrics,
+  .business-marketing-outlet-actions {
+    grid-column: 2;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .business-marketing-outlet-details > a {
+    grid-template-columns: 16px minmax(0, 1fr);
+  }
+
+  .business-marketing-outlet-details small {
+    grid-column: 2;
+  }
+
   .business-create-form-card,
   .business-create-summary-card,
   .business-create-settings-card {
@@ -17309,6 +18784,21 @@ font-size: clamp(10px, 1vw, 18px);
     align-items: flex-start;
     flex-direction: column;
     justify-content: flex-start;
+  }
+
+  .business-create-form footer .business-create-footer-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .business-settings-company-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .business-settings-company-card > header {
+    flex-direction: column;
   }
 
   .business-create-form footer .business-profile-primary-btn,
@@ -17709,5 +19199,121 @@ font-size: clamp(10px, 1vw, 18px);
   .super-admin-boundary-grid,
   .super-admin-action-form {
     grid-template-columns: 1fr;
+  }
+}
+
+
+.business-review-deliverable-detail-actions {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 10px;
+}
+
+.business-review-complete-pay-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  min-height: 34px;
+  padding: 5px 16px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color-action);
+  color: #fff;
+  font: inherit;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-heavy);
+  cursor: pointer;
+}
+
+.business-review-complete-pay-btn:disabled {
+  background: var(--color-surface-muted, #eef0f6);
+  color: #6b7288;
+  cursor: not-allowed;
+}
+
+.business-review-complete-pay-btn em {
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: var(--font-weight-regular, 400);
+  opacity: 0.85;
+}
+
+.business-review-submission-modal .business-review-complete-pay-btn {
+  margin-left: 8px;
+}
+
+.business-project-settings > header p {
+  margin: 6px 0 0;
+  max-width: 68ch;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+.business-project-settings-roles {
+  display: grid;
+  gap: 14px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.business-project-settings-roles > li {
+  padding: 16px 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.business-project-settings-role-head label {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.business-project-settings-role-head strong {
+  display: block;
+  font-size: var(--font-size-sm);
+}
+
+.business-project-settings-role-head em {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+  font-style: normal;
+}
+
+.business-project-settings-factor {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.business-project-settings-factor label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: var(--font-size-xs);
+}
+
+.business-project-settings-factor input[type='range'] {
+  width: min(360px, 100%);
+}
+
+.business-project-settings-factor p {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-xs);
+}
+
+@media (max-width: 760px) {
+  .business-marketing-live-progress > header,
+  .business-marketing-live-summary {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .business-marketing-live-summary > article,
+  .business-marketing-creator-clicks {
+    width: 100%;
   }
 }

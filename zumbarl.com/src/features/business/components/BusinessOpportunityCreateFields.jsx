@@ -14,12 +14,18 @@ export function BusinessCreateInputField({
   label,
   name,
   onUpdateField,
+  placeholder = '',
   required = false,
   value,
 }) {
   return (
     <BusinessCreateField isWide={isWide} label={label} required={required}>
-      <input required={required} value={value} onChange={(event) => onUpdateField(name, event.target.value)} />
+      <input
+        placeholder={placeholder}
+        required={required}
+        value={value}
+        onChange={(event) => onUpdateField(name, event.target.value)}
+      />
     </BusinessCreateField>
   )
 }
@@ -31,6 +37,7 @@ export function BusinessCreateTextareaField({
   maxLength,
   name,
   onUpdateField,
+  placeholder = '',
   required = false,
   value,
 }) {
@@ -38,6 +45,7 @@ export function BusinessCreateTextareaField({
     <BusinessCreateField isWide={isWide} label={label} required={required}>
       <textarea
         maxLength={maxLength}
+        placeholder={placeholder}
         required={required}
         value={value}
         onChange={(event) => onUpdateField(name, event.target.value)}
@@ -52,6 +60,7 @@ export function BusinessCreateSelectField({
   name,
   onUpdateField,
   options,
+  placeholder = 'Select an option',
   required = false,
   value,
 }) {
@@ -59,6 +68,7 @@ export function BusinessCreateSelectField({
     <BusinessCreateField label={label} required={required}>
       <span className="business-create-select-wrap">
         <select required={required} value={value} onChange={(event) => onUpdateField(name, event.target.value)}>
+          <option value="" disabled>{placeholder}</option>
           {options.map((option) => <option key={option} value={option}>{option}</option>)}
         </select>
         <FiChevronDown aria-hidden="true" />

@@ -1,6 +1,6 @@
 import { FiClock, FiMapPin, FiShoppingBag, FiX } from 'react-icons/fi'
 
-function ExploreDefaultRail({ announcements, events, marketplaceItems, people }) {
+function ExploreDefaultRail({ announcements, events, marketplaceItems, onOpenEvent, people }) {
   return (
     <>
       <section className="campus-rail-card explore-campus-right-card">
@@ -54,7 +54,7 @@ function ExploreDefaultRail({ announcements, events, marketplaceItems, people })
 
         <div className="explore-campus-events-list">
           {events.map((event) => (
-            <article key={event.id} className="explore-campus-event-item">
+            <button type="button" key={event.id} className="explore-campus-event-item" onClick={() => onOpenEvent?.(event.post || event)}>
               <div>
                 <h4>{event.title}</h4>
                 <p>
@@ -67,7 +67,7 @@ function ExploreDefaultRail({ announcements, events, marketplaceItems, people })
                 </span>
               </div>
               <img src={event.image} alt={event.title} loading="lazy" />
-            </article>
+            </button>
           ))}
         </div>
       </section>

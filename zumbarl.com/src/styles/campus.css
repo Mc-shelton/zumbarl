@@ -658,6 +658,16 @@
   align-items: stretch;
 }
 
+.campus-hero-card.is-chat-mode .campus-chat-panel,
+.campus-hero-card.is-chat-mode .campus-discovery-panel {
+  height: 100%;
+  max-height: none;
+}
+
+.campus-hero-card.is-chat-mode .campus-chat-thread {
+  align-content: end;
+}
+
 .campus-splash-panel {
   border: 1px solid rgba(39, 44, 78, 0.13);
   border-radius: 18px;
@@ -1011,6 +1021,40 @@
   background: #2f385f;
   /* background: var(--theme-dark); */
   color: #ffffff;
+}
+
+.campus-chat-typing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 0;
+}
+
+.campus-chat-typing-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #9aa2cf;
+  animation: campus-chat-typing-bounce 1.2s infinite ease-in-out;
+}
+
+.campus-chat-typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.campus-chat-typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes campus-chat-typing-bounce {
+  0%, 60%, 100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-4px);
+    opacity: 1;
+  }
 }
 
 .campus-section {
@@ -1510,7 +1554,8 @@ a.campus-action-card {
   gap: 6px;
 }
 
-.campus-wallet-actions button {
+.campus-wallet-actions button,
+.campus-wallet-actions a {
   border: 0;
   border-radius: 10px;
   padding: 8px 6px;
@@ -1524,6 +1569,147 @@ a.campus-action-card {
   font-weight: 700;
   cursor: pointer;
   color: var(--theme-dark) ;
+  text-decoration: none;
+}
+
+.campus-project-invites {
+  display: grid;
+  gap: 12px;
+  margin: 16px 24px 0;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-action) 24%, var(--color-border));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-surface-brand-soft) 45%, var(--color-surface));
+}
+
+.campus-project-invites > header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.campus-project-invites > header > span {
+  display: grid;
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-action);
+}
+
+.campus-project-invites h2,
+.campus-project-invites h3,
+.campus-project-invites p {
+  margin: 0;
+}
+
+.campus-project-invites h2 {
+  color: var(--color-text-strong);
+  font-size: 1rem;
+}
+
+.campus-project-invites > header p,
+.campus-project-invite-list article p,
+.campus-project-invite-list article > div:first-child > span {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}
+
+.campus-project-invites > header > strong {
+  margin-left: auto;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: var(--color-surface);
+  color: var(--color-action);
+  font-size: 0.72rem;
+}
+
+.campus-project-invite-list {
+  display: grid;
+  gap: 8px;
+}
+
+.campus-project-invite-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.campus-project-invite-list article h3 {
+  margin: 3px 0 5px;
+  color: var(--color-text-strong);
+  font-size: 0.95rem;
+}
+
+.campus-project-invite-list article > div:last-child {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.campus-project-invite-list button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-surface);
+  color: var(--color-text-strong);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.campus-project-invite-list button.project-primary-btn {
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: #fff;
+}
+
+.campus-project-invite-list button:disabled {
+  cursor: wait;
+  opacity: 0.58;
+}
+
+.campus-project-invites-error {
+  color: var(--color-danger, #c2414b);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+@media (max-width: 720px) {
+  .campus-project-invites {
+    margin-inline: 14px;
+  }
+
+  .campus-project-invite-list article {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
+.campus-link-btn,
+.campus-join-btn,
+.campus-papers,
+.campus-reco-card {
+  text-decoration: none;
+}
+
+.campus-rail-empty {
+  margin: 4px 0;
+  color: #697292;
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .campus-rail-list {

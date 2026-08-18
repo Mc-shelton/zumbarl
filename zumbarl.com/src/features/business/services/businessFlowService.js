@@ -1,11 +1,14 @@
 import {
   createBackendBusinessOpportunity,
+  deleteBackendBusinessOpportunity,
+  fundBackendBusinessOpportunity,
   listBackendBusinessOpportunities,
   publishBackendBusinessOpportunity,
   sendBackendOpportunityInvites,
   updateBackendBusinessOpportunity,
 } from './persistBusinessOpportunity'
 import { getOpportunityStatusForAction } from './businessPipelineService'
+import { normalizeZumbarlFileMetadata } from '../../../lib/normalizeZumbarlFileUrl'
 
 const STORAGE_KEY = 'zumbarl.businessFlow.v1'
 const STATE_VERSION = 2
@@ -110,6 +113,7 @@ function normalizeOpportunity(opportunity) {
     ...source,
     applicationDeadline: source.applicationDeadline || source.deadline || fallback.applicationDeadline,
     deadline: source.deadline || source.applicationDeadline || fallback.deadline,
+    opportunitySplash: normalizeZumbarlFileMetadata(source.opportunitySplash),
   }
 }
 
@@ -119,6 +123,7 @@ function getDisplayOpportunityStatus(status) {
   if (normalized === 'draft' || normalized === 'draft ready') return 'Draft'
   if (normalized === 'published' || normalized === 'open') return 'Open'
   if (normalized === 'ready') return 'Draft'
+  if (normalized === 'in_progress' || normalized === 'in progress' || normalized === 'awarded') return 'In Progress'
   if (normalized === 'in_review' || normalized === 'in review') return 'In Review'
   if (normalized === 'shortlisted') return 'Shortlisted'
   if (normalized === 'completed') return 'Completed'
@@ -154,9 +159,11 @@ function mergeBackendOpportunities(opportunities) {
 export function hydrateBusinessOpportunitiesFromBackend() {
   return listBackendBusinessOpportunities()
     .then((response) => {
-      const opportunities = response?.data || []
-      if (opportunities.length) mergeBackendOpportunities(opportunities)
-      return opportunities
+      // Merge even when the backend returns nothing. Skipping that left any
+      // opportunity the backend no longer has stranded in local state forever,
+      // rendering a ghost card whose every request 404s.
+      mergeBackendOpportunities(response?.data || [])
+      return response?.data || []
     })
     .catch(() => [])
 }
@@ -233,33 +240,42 @@ export async function createBusinessOpportunity(payload, options = {}) {
   return mergeSavedOpportunity(opportunity, backendOpportunity)
 }
 
-export function publishBusinessOpportunity(opportunityId) {
-  let updatedOpportunity = null
+export async function deleteBusinessOpportunity(opportunityId) {
+  const opportunity = currentState.opportunities.find((item) => item.id === opportunityId)
+  if (!opportunity) return null
+  if (getDisplayOpportunityStatus(opportunity.status) !== 'Draft') {
+    throw new Error('Only draft opportunities can be deleted.')
+  }
+
+  if (opportunity.backendId) {
+    await deleteBackendBusinessOpportunity(opportunity.backendId)
+  }
 
   setBusinessFlowState((state) => ({
     ...state,
-    opportunities: state.opportunities.map((opportunity) => {
-      if (opportunity.id !== opportunityId) return opportunity
-
-      updatedOpportunity = {
-        ...opportunity,
-        publishedAt: formatCreatedAt(),
-        status: 'Open',
-      }
-
-      return updatedOpportunity
-    }),
+    opportunities: state.opportunities.filter((item) => item.id !== opportunityId),
+    opportunityInvites: state.opportunityInvites.filter((invite) => invite.opportunityId !== opportunityId),
+    opportunityBids: state.opportunityBids.filter((bid) => bid.opportunityId !== opportunityId),
+    reviewEvents: state.reviewEvents.filter((event) => event.opportunityId !== opportunityId),
+    selectedOpportunityId: state.selectedOpportunityId === opportunityId ? null : state.selectedOpportunityId,
   }))
 
-  if (updatedOpportunity) {
-    mirrorBackendWrite(() => publishBackendBusinessOpportunity(updatedOpportunity.backendId || opportunityId))
-    recordApplicantReviewEvent({
-      action: 'opportunity_published',
-      detail: `${updatedOpportunity.title} published from the opportunities workspace.`,
-      opportunityId,
-    })
-  }
+  return opportunity
+}
 
+export async function publishBusinessOpportunity(opportunityId, payment) {
+  const opportunity = currentState.opportunities.find((item) => item.id === opportunityId)
+  if (!opportunity) return null
+
+  const backendId = opportunity.backendId || opportunityId
+  await fundBackendBusinessOpportunity(backendId, payment)
+  const backendOpportunity = await publishBackendBusinessOpportunity(backendId)
+  const updatedOpportunity = mergeSavedOpportunity(opportunity, backendOpportunity)
+  recordApplicantReviewEvent({
+    action: 'opportunity_published',
+    detail: `${updatedOpportunity.title} funded and published from the opportunities workspace.`,
+    opportunityId,
+  })
   return updatedOpportunity
 }
 

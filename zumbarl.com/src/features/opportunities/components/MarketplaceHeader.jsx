@@ -1,9 +1,9 @@
-import { FiChevronDown, FiMapPin, FiPlus, FiSearch } from 'react-icons/fi'
+import { FiChevronDown, FiMapPin, FiPackage, FiPlus, FiSearch } from 'react-icons/fi'
 import CampusTopActions from '../../../components/layout/CampusTopActions'
 import { Breadcrumb } from '../../../components/ui'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 
-function MarketplaceHeader({ showSearch = true }) {
+function MarketplaceHeader({ isOrdersOpen = false, onOpenOrders, onPostItem, showSearch = true }) {
   const canPostItem = hasAccess(ACCESS_KEYS.marketplace.sell)
 
   return (
@@ -23,12 +23,10 @@ function MarketplaceHeader({ showSearch = true }) {
 
         <CampusTopActions
           className="campus-header-actions opportunities-marketplace-actions"
-          primaryAction={canPostItem ? (
-            <button type="button" className="opportunities-marketplace-post-btn">
-              <FiPlus aria-hidden="true" />
-              Post an Item
-            </button>
-          ) : null}
+          primaryAction={<div className="opportunities-marketplace-primary-actions">
+            <button type="button" className={`opportunities-marketplace-orders-btn${isOrdersOpen ? ' is-active' : ''}`} onClick={onOpenOrders}><FiPackage aria-hidden="true" /> My Orders</button>
+            {canPostItem ? <button type="button" className="opportunities-marketplace-post-btn" onClick={onPostItem}><FiPlus aria-hidden="true" /> Post an Item</button> : null}
+          </div>}
           userButtonClassName="opportunities-user-btn"
         />
       </header>

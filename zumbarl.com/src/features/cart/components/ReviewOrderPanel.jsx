@@ -13,24 +13,25 @@ import {
   DELIVERY_ESTIMATE,
   PAYMENT_SUMMARY,
 } from '../checkoutData'
-import { ORDER_ITEMS } from '../cartData'
 import { formatKes, getLineItemPrice, getLineItemQuantity } from '../pricing'
 
-export function ReviewOrderPanel({ onBack, onPlaceOrder }) {
+export function ReviewOrderPanel({ error = '', isPlacingOrder = false, items, onBack, onPlaceOrder }) {
   return (
     <section className="campus-checkout-panel campus-review-stack">
       <DeliveryInformationCard />
       <PaymentInformationCard />
-      <ReviewItemsCard />
+      <ReviewItemsCard items={items} />
+
+      {error ? <p className="campus-checkout-order-error" role="alert">{error}</p> : null}
 
       <footer className="campus-checkout-actions">
         <button type="button" className="campus-checkout-back-btn" onClick={onBack}>
           <FiArrowRight aria-hidden="true" />
           Back to Payment
         </button>
-        <button type="button" className="campus-checkout-next-btn" onClick={onPlaceOrder}>
+        <button type="button" className="campus-checkout-next-btn" disabled={isPlacingOrder || !items.length} onClick={onPlaceOrder}>
           <FiLock aria-hidden="true" />
-          Place Order
+          {isPlacingOrder ? 'Placing Order…' : 'Place Order'}
           <FiArrowRight aria-hidden="true" />
         </button>
       </footer>
@@ -86,15 +87,15 @@ function PaymentInformationCard() {
   )
 }
 
-function ReviewItemsCard() {
+function ReviewItemsCard({ items }) {
   return (
     <article className="campus-review-card">
       <header>
-        <h2>Order Items ({ORDER_ITEMS.length})</h2>
+        <h2>Order Items ({items.length})</h2>
         <Link to="/campus/cart">Edit Cart</Link>
       </header>
       <div className="campus-review-item-list">
-        {ORDER_ITEMS.map((item) => {
+        {items.map((item) => {
           const quantity = getLineItemQuantity(item)
           const lineTotal = getLineItemPrice(item) * quantity
 

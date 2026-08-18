@@ -7,41 +7,52 @@ import {
   FiMoreHorizontal,
   FiSend,
 } from 'react-icons/fi'
-import {
-  EVENTS,
-  GROUPS,
-  PORTFOLIO_STATS,
-} from '../homeData'
+import { Link } from 'react-router-dom'
+import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 
-function CampusHomeRail() {
+function formatBalance(wallet) {
+  return new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency: wallet?.currency || 'KES',
+    maximumFractionDigits: 0,
+  }).format(wallet?.balance || 0)
+}
+
+function CampusHomeRail({ rail }) {
+  const wallet = rail?.wallet
+  const portfolio = rail?.portfolio
+  const events = rail?.events ?? []
+  const groups = portfolio?.groups ?? []
+  const portfolioStats = portfolio?.stats ?? []
+
   return (
     <aside className="campus-rail">
       <section className="campus-rail-card">
         <header>
           <h3>My Wallet</h3>
-          <button type="button" className="campus-link-btn">View all</button>
+          <Link to="/campus/profile" className="campus-link-btn">View all</Link>
         </header>
         <div className="campus-wallet">
           <p>Total Balance</p>
-          <h4>KSh 7,850</h4>
-          <span>Wallet · Main</span>
+          <h4>{formatBalance(wallet)}</h4>
+          <span>Wallet · {wallet?.type ? wallet.type.charAt(0) + wallet.type.slice(1).toLowerCase() : 'Main'}</span>
           <div className="campus-wallet-actions">
-            <button type="button">
+            <Link to="/campus/profile">
               <FiSend aria-hidden="true" />
               Send
-            </button>
-            <button type="button">
+            </Link>
+            <Link to="/campus/profile">
               <FiDownload aria-hidden="true" />
               Request
-            </button>
-            <button type="button">
+            </Link>
+            <Link to="/campus/profile">
               <FiCreditCard aria-hidden="true" />
               Save
-            </button>
-            <button type="button">
+            </Link>
+            <Link to="/campus/profile">
               <FiClock aria-hidden="true" />
               History
-            </button>
+            </Link>
           </div>
         </div>
       </section>
@@ -49,12 +60,12 @@ function CampusHomeRail() {
       <section className="campus-rail-card">
         <header>
           <h3>Your Portfolio</h3>
-          <button type="button" className="campus-link-btn">View all</button>
+          <Link to="/campus/profile" className="campus-link-btn">View all</Link>
         </header>
         <section className="campus-portfolio-overview" aria-label="Portfolio highlights">
-          <p className="campus-portfolio-meta">Strathmore University · Year 3 · Marketing & Design</p>
+          <p className="campus-portfolio-meta">{portfolio?.meta || 'Complete your student profile'}</p>
           <div className="campus-portfolio-stats">
-            {PORTFOLIO_STATS.map((stat) => (
+            {portfolioStats.map((stat) => (
               <article key={stat.label} className="campus-portfolio-stat">
                 <p className="campus-portfolio-stat-label">{stat.label}</p>
                 <p className="campus-portfolio-stat-value">{stat.value}</p>
@@ -65,7 +76,7 @@ function CampusHomeRail() {
           </div>
         </section>
         <div className="campus-rail-list is-portfolio">
-          {GROUPS.map((group) => (
+          {groups.map((group) => (
             <article key={group.name} className="campus-list-item">
               <div className="campus-list-head">
                 <div>
@@ -87,34 +98,35 @@ function CampusHomeRail() {
       <section className="campus-rail-card">
         <header>
           <h3>Upcoming Events</h3>
-          <button type="button" className="campus-link-btn">View all</button>
+          <Link to="/campus/explore" className="campus-link-btn">View all</Link>
         </header>
         <div className="campus-rail-list">
-          {EVENTS.map((event) => (
+          {events.map((event) => (
             <article key={event.title} className="campus-event-item">
-              <img className="campus-event-thumb" src={event.thumbnail} alt={`${event.title} thumbnail`} loading="lazy" />
+              <img className="campus-event-thumb" src={normalizeZumbarlFileUrl(event.thumbnail)} alt={`${event.title} thumbnail`} loading="lazy" />
               <div>
                 <h4>{event.title}</h4>
                 <p>{event.time}</p>
                 <span>{event.attendees} attending</span>
               </div>
-              <button type="button" className="campus-join-btn">Join</button>
+              <Link to="/campus/explore" className="campus-join-btn">{event.isGoing ? 'Going' : 'View'}</Link>
             </article>
           ))}
+          {!events.length ? <p className="campus-rail-empty">No upcoming campus events yet.</p> : null}
         </div>
       </section>
 
       <section className="campus-rail-card">
-        <article className="campus-papers">
+        <Link to="/campus/learn" className="campus-papers">
           <div className="campus-paper-icon">
             <FiBookOpen aria-hidden="true" />
           </div>
           <div>
-            <h4>New Past Papers</h4>
-            <p>12 new past papers uploaded</p>
+            <h4>{rail?.learning?.title || 'Explore learning resources'}</h4>
+            <p>{rail?.learning?.detail || 'Roadmaps, notes and verified skills'}</p>
           </div>
           <FiChevronRight aria-hidden="true" />
-        </article>
+        </Link>
       </section>
     </aside>
   )

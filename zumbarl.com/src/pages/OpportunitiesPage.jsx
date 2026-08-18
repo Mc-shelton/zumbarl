@@ -53,20 +53,27 @@ function OpportunitiesPage() {
               onCreateBooking={pageState.onCreateBooking}
               onDeclineInvite={pageState.onDeclineInvite}
               onMarkInvitesSeen={pageState.onMarkInvitesSeen}
+              onOpenInviteProject={pageState.onOpenInviteProject}
               onOpenMarketingCampaign={pageState.onOpenMarketingCampaign}
               onOpenMessages={pageState.onOpenMessages}
               onOpenPlaceBid={pageState.onOpenPlaceBid}
               onOpenProject={pageState.onOpenProject}
+              onResumeBidDraft={pageState.onResumeBidDraft}
+              onRespondCounterOffer={pageState.onRespondCounterOffer}
               onViewBidOpportunity={pageState.onViewBidOpportunity}
               onOpportunitySelect={pageState.onOpportunitySelect}
               onOpportunityTypeChange={pageState.onOpportunityTypeChange}
               onViewBooking={pageState.onViewBooking}
               opportunityTypeOptions={pageState.opportunityTypeOptions}
               projects={pageState.projects}
+              projectTeamInvites={pageState.projectTeamInvites}
+              projectTeamInviteState={pageState.projectTeamInviteState}
+              onRespondProjectTeamInvite={pageState.onRespondProjectTeamInvite}
               activeOpportunityIntentId={pageState.activeOpportunityIntent.id}
               activeOpportunityTypeId={pageState.activeOpportunityTypeId}
               selectedBidId={pageState.selectedBidId}
               selectedOpportunityUuid={pageState.selectedOpportunityUuid}
+              searchQuery={pageState.searchQuery}
               visibleBids={pageState.visibleBids}
               visibleOpportunities={pageState.visibleOpportunities}
             />

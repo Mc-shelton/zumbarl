@@ -249,13 +249,22 @@ const COMPANY_STANDARD_ACCESS = [
   ACCESS_KEYS.business.analytics,
   ACCESS_KEYS.business.rateStudents,
   ACCESS_KEYS.business.companyProfile,
+  ACCESS_KEYS.business.settings,
   ACCESS_KEYS.finance.companyBilling,
   ACCESS_KEYS.projects.view,
   ACCESS_KEYS.projects.messages,
   ACCESS_KEYS.projects.files,
   ACCESS_KEYS.projects.manageFiles,
+  ACCESS_KEYS.projects.milestones,
+  ACCESS_KEYS.projects.team,
+  ACCESS_KEYS.projects.board,
+  ACCESS_KEYS.projects.timeline,
+  ACCESS_KEYS.projects.sprints,
   ACCESS_KEYS.projects.reviews,
   ACCESS_KEYS.projects.activityLogs,
+  ACCESS_KEYS.projects.createTask,
+  ACCESS_KEYS.projects.createSprint,
+  ACCESS_KEYS.projects.createMilestone,
 ]
 
 const COMPANY_PIPELINE_ACCESS = [
@@ -482,8 +491,8 @@ const BACKEND_ROLE_TO_AUTH_ROLE_ID = {
 export const TEMP_CURRENT_LOGIN_ROLE_ID = AUTH_ROLES.studentStandard.id
 
 export const TEMP_CURRENT_LOGIN_PROFILE = {
-  name: 'Brian Mwangi',
-  campus: 'Kenyatta University',
+  name: 'Zumbarl Student',
+  campus: '',
   avatar: '/assets/index/bee_nobg.png',
 }
 

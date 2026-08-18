@@ -43,13 +43,11 @@ export function CheckoutOrderSummaryRail({
         </article>
         <article>
           <p>Delivery Fee</p>
-          <strong>{formatKes(totals.deliveryFee)}</strong>
-        </article>
-        <article>
-          <p>Platform Fee</p>
-          <strong>{formatKes(totals.platformFee)}</strong>
+          <strong>{totals.deliveryPending ? 'Not yet quoted' : totals.deliveryFee ? formatKes(totals.deliveryFee) : 'Free'}</strong>
         </article>
       </div>
+
+      {totals.deliveryPending ? <p className="campus-cart-delivery-warning" role="status">Delivery is not included yet. Confirm the delivery price with the seller before paying.</p> : null}
 
       <div className="campus-cart-summary-total">
         <p>Total</p>

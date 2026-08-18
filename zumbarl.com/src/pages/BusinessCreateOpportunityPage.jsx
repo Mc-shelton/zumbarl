@@ -18,7 +18,7 @@ function BusinessCreateOpportunityPage() {
     <main className="campus-page business-workspace-page business-create-opportunity-page">
       <Seo
         title="Create Opportunity | Zumbarl"
-        description="Create and publish a Zumbarl business opportunity for student talent."
+        description="Create, fund and publish a Zumbarl business opportunity for student talent."
         path="/business/opportunities/create"
       />
 
@@ -37,7 +37,6 @@ function BusinessCreateOpportunityPage() {
             <BusinessWorkspaceHeader
               title="Create Opportunity"
               description="Fill in the details below to post a new opportunity and find the right student talent."
-              onCreateOpportunity={createOpportunity.onReset}
             />
             <BusinessOpportunityBriefSteps
               activeStep={createOpportunity.activeStep}
@@ -49,12 +48,15 @@ function BusinessCreateOpportunityPage() {
               form={createOpportunity.form}
               isPublishReady={createOpportunity.isPublishReady}
               isSaving={createOpportunity.isSaving}
+              isUploadingSplash={createOpportunity.isUploadingSplash}
               isFirstStep={createOpportunity.isFirstStep}
               isFinalStep={createOpportunity.isFinalStep}
               onBack={createOpportunity.onBack}
+              onCancel={createOpportunity.onCancel}
               onContinue={createOpportunity.onContinue}
               onPublish={createOpportunity.onPublish}
               onSaveDraft={createOpportunity.onSaveDraft}
+              onSplashUploadStateChange={createOpportunity.onSplashUploadStateChange}
               onStepChange={createOpportunity.onStepChange}
               onUpdateField={createOpportunity.onUpdateField}
               saveError={createOpportunity.saveError}
@@ -65,6 +67,8 @@ function BusinessCreateOpportunityPage() {
               clarityChecks={createOpportunity.clarityChecks}
               clarityScore={createOpportunity.clarityScore}
               isPublishReady={createOpportunity.isPublishReady}
+              isSaving={createOpportunity.isSaving}
+              isUploadingSplash={createOpportunity.isUploadingSplash}
               onPublish={createOpportunity.onPublish}
               onSaveDraft={createOpportunity.onSaveDraft}
               onStepChange={createOpportunity.onStepChange}

@@ -395,10 +395,11 @@ export function getMarketplaceRelatedItems(itemId, limit = 5) {
 }
 
 export const MARKETPLACE_DEFAULT_SELLER = {
-  name: 'Brian Mwangi',
+  username: 'aisha_mwangi',
+  name: 'Aisha Mwangi',
   avatar: '/assets/index/bee_nobg.png',
   role: 'Student',
-  campus: 'Kenyatta University',
+  campus: 'Zetech University',
   itemsSold: 23,
   rating: 4.8,
   reviews: 32,

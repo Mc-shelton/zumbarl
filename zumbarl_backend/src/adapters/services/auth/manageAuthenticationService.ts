@@ -4,14 +4,15 @@ import { hashPassword, verifyPassword, type AuthUser } from '../../../lib/securi
 import {
   createSessionRecord,
   createUserRecord,
-  createUserWithBusinessProfile,
   createUserWithStudentProfile,
   findBusinessProfileById,
   findStudentProfileById,
   findUserByEmail,
   findUserByUsername,
-  findUserById
+  findUserById,
+  listActiveCampuses
 } from '../../repositories/auth/index.js'
+import { env } from '../../../config/env.js'
 
 function removePasswordHash(user: Record<string, any>) {
   const safeUser = { ...user }
@@ -58,6 +59,7 @@ async function registerUserService(app: FastifyInstance, payload: Record<string,
   }
 
   if (String(payload.role).startsWith('STUDENT') || payload.role === 'student') {
+    if (!payload.campus) forbidden('Select an existing campus or provide the new campus details')
     const { user } = await createUserWithStudentProfile(userPayload, payload.campus)
     const token = app.jwt.sign(toTokenPayload(user))
     await createSessionRecord({ userId: user.id })
@@ -65,7 +67,7 @@ async function registerUserService(app: FastifyInstance, payload: Record<string,
   }
 
   if (String(payload.role).startsWith('COMPANY') || payload.role === 'business') {
-    const { user } = await createUserWithBusinessProfile(userPayload, payload.businessName ?? payload.name)
+    const user = await createUserRecord(userPayload)
     const token = app.jwt.sign(toTokenPayload(user))
     await createSessionRecord({ userId: user.id })
     return { user: removePasswordHash(user), token }
@@ -98,8 +100,29 @@ async function readAuthenticatedUserService(userId?: string) {
   }
 }
 
+async function listRegistrationCampusesService(query: string) {
+  return { campuses: await listActiveCampuses(query) }
+}
+
+async function searchRegistrationLocationsService(query: string) {
+  const url = new URL('/api/', env.GEOCODING_BASE_URL)
+  url.searchParams.set('q', `${query}, Kenya`)
+  url.searchParams.set('limit', '6')
+  url.searchParams.set('lang', 'en')
+  const response = await fetch(url, { headers: { 'User-Agent': 'Zumbarl/1.0 registration-location-search' }, signal: AbortSignal.timeout(5000) })
+  if (!response.ok) throw new Error(`Location search returned ${response.status}`)
+  const data = await response.json() as { features?: Array<Record<string, any>> }
+  return { results: (data.features || []).filter((feature) => feature.properties?.countrycode === 'KE').map((feature) => {
+    const properties = feature.properties || {}
+    const parts = [properties.name, properties.street, properties.locality, properties.city, properties.county, properties.state, properties.country].filter(Boolean)
+    return { id: `${properties.osm_type || 'place'}-${properties.osm_id || feature.geometry?.coordinates?.join('-')}`, label: [...new Set(parts)].join(', '), city: properties.city || properties.locality || properties.county || '', latitude: Number(feature.geometry?.coordinates?.[1]), longitude: Number(feature.geometry?.coordinates?.[0]) }
+  }).filter((result) => result.label && Number.isFinite(result.latitude) && Number.isFinite(result.longitude)) }
+}
+
 export {
   registerUserService,
   loginUserService,
-  readAuthenticatedUserService
+  readAuthenticatedUserService,
+  listRegistrationCampusesService,
+  searchRegistrationLocationsService
 }

@@ -160,14 +160,21 @@ function OpportunityDetailRailPanel({
       </section>
 
       {canPlaceBid ? (
-        <button
-          type="button"
-          className="opportunities-detail-bid-btn"
-          onClick={() => onOpenPlaceBid(selectedOpportunity.opportunityUuid)}
-        >
-          Place Bid
-          <FiArrowRight aria-hidden="true" />
-        </button>
+        selectedOpportunity.applicationsClosed ? (
+          <div className="opportunities-detail-closed-note" role="status">
+            <strong>Applications closed</strong>
+            <span>This business has selected its talent and is no longer accepting applications.</span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="opportunities-detail-bid-btn"
+            onClick={() => onOpenPlaceBid(selectedOpportunity.opportunityUuid)}
+          >
+            Place Bid
+            <FiArrowRight aria-hidden="true" />
+          </button>
+        )
       ) : null}
     </section>
   )

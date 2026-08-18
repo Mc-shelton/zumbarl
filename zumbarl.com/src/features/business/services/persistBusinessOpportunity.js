@@ -1,18 +1,21 @@
 import { sendZumbarlApiRequest } from '../../../lib/sendZumbarlApiRequest'
+import { normalizeZumbarlFileMetadata } from '../../../lib/normalizeZumbarlFileUrl'
 
 function sanitizeOpportunitySplash(splash) {
   if (!splash) return splash
 
-  const previewUrl = String(splash.previewUrl || '')
-  const url = String(splash.url || '')
-  const type = String(splash.type || splash.mimeType || '')
-  const hasImageCrop = type.startsWith('image/') || Boolean(splash.crop)
+  const normalizedSplash = normalizeZumbarlFileMetadata(splash)
+
+  const previewUrl = String(normalizedSplash.previewUrl || '')
+  const url = String(normalizedSplash.url || '')
+  const type = String(normalizedSplash.type || normalizedSplash.mimeType || '')
+  const hasImageCrop = type.startsWith('image/') || Boolean(normalizedSplash.crop)
 
   return {
-    ...splash,
+    ...normalizedSplash,
     previewUrl: previewUrl.startsWith('data:') || previewUrl.startsWith('blob:') ? url : previewUrl,
     url: url.startsWith('data:') || url.startsWith('blob:') ? '' : url,
-    cropConfirmed: hasImageCrop ? true : splash.cropConfirmed,
+    cropConfirmed: hasImageCrop ? true : normalizedSplash.cropConfirmed,
   }
 }
 
@@ -62,6 +65,12 @@ async function updateBackendBusinessOpportunity(opportunityId, opportunity) {
   })
 }
 
+async function deleteBackendBusinessOpportunity(opportunityId) {
+  return sendZumbarlApiRequest(`/business/opportunities/${opportunityId}`, {
+    method: 'DELETE',
+  })
+}
+
 async function listBackendBusinessOpportunities() {
   return sendZumbarlApiRequest('/business/opportunities')
 }
@@ -73,6 +82,20 @@ async function listBackendBusinessActivity() {
 async function publishBackendBusinessOpportunity(opportunityId) {
   return sendZumbarlApiRequest(`/business/opportunities/${opportunityId}/publish`, {
     method: 'POST',
+  })
+}
+
+async function setBackendOpportunityApplicationsClosed(opportunityId, closed) {
+  return sendZumbarlApiRequest(`/business/opportunities/${opportunityId}/applications-closed`, {
+    method: 'POST',
+    body: JSON.stringify({ closed }),
+  })
+}
+
+async function fundBackendBusinessOpportunity(opportunityId, payment) {
+  return sendZumbarlApiRequest(`/business/opportunities/${opportunityId}/fund`, {
+    method: 'POST',
+    body: JSON.stringify(payment),
   })
 }
 
@@ -108,6 +131,52 @@ async function startBackendApplicantInterview(applicantBidId) {
   })
 }
 
+async function awardBackendApplicant(applicantBidId) {
+  return sendZumbarlApiRequest(`/business/applicants/${applicantBidId}/award`, {
+    method: 'POST',
+  })
+}
+
+async function counterOfferBackendApplicant(applicantBidId, { amount, autoRejectOnDecline, currency }) {
+  return sendZumbarlApiRequest(`/business/applicants/${applicantBidId}/counter-offer`, {
+    method: 'POST',
+    body: JSON.stringify({ amount, autoRejectOnDecline, currency }),
+  })
+}
+
+async function listBackendOpportunitySubmissions(opportunityId) {
+  return sendZumbarlApiRequest(`/business/opportunities/${opportunityId}/submissions`)
+}
+
+async function reviewBackendDeliverable(deliverableId, { decision, feedback }) {
+  return sendZumbarlApiRequest(`/projects/deliverables/${deliverableId}/review`, {
+    method: 'POST',
+    body: JSON.stringify({ decision, feedback }),
+  })
+}
+
+async function completeBackendScopeTarget(projectId, { scopeItemId, milestoneId }) {
+  return sendZumbarlApiRequest(`/projects/${projectId}/complete-target`, {
+    method: 'POST',
+    body: JSON.stringify({ scopeItemId, milestoneId }),
+  })
+}
+
+async function proposeBackendProjectPrice(projectId, { amount, currency }) {
+  return sendZumbarlApiRequest(`/projects/${projectId}/price-proposals`, {
+    method: 'POST',
+    body: JSON.stringify({ amount, currency }),
+  })
+}
+
+async function startBackendProject(projectId) {
+  return sendZumbarlApiRequest(`/projects/${projectId}/start`, { method: 'POST' })
+}
+
+async function endBackendProject(projectId) {
+  return sendZumbarlApiRequest(`/projects/${projectId}/end`, { method: 'POST' })
+}
+
 async function sendBackendOpportunityInvites(opportunityId, { note, studentIds }) {
   return sendZumbarlApiRequest(`/business/opportunities/${opportunityId}/invites`, {
     method: 'POST',
@@ -117,13 +186,24 @@ async function sendBackendOpportunityInvites(opportunityId, { note, studentIds }
 
 export {
   createBackendBusinessOpportunity,
+  deleteBackendBusinessOpportunity,
   updateBackendBusinessOpportunity,
   publishBackendBusinessOpportunity,
+  setBackendOpportunityApplicationsClosed,
+  fundBackendBusinessOpportunity,
   createBackendOpportunityDeliverables,
   listBackendOpportunityInviteCandidates,
   listBackendOpportunityApplicants,
   scheduleBackendApplicantInterview,
   startBackendApplicantInterview,
+  awardBackendApplicant,
+  counterOfferBackendApplicant,
+  listBackendOpportunitySubmissions,
+  reviewBackendDeliverable,
+  completeBackendScopeTarget,
+  proposeBackendProjectPrice,
+  startBackendProject,
+  endBackendProject,
   sendBackendOpportunityInvites,
   listBackendBusinessActivity,
   listBackendBusinessOpportunities,

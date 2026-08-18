@@ -99,6 +99,19 @@ export function refreshEarnFlowFromBackend() {
   return hydrateEarnFlowFromBackend()
 }
 
+export function readOpportunityBidDraft(opportunityId) {
+  return sendZumbarlApiRequest(`/earn/opportunities/${opportunityId}/bid-draft`)
+}
+
+export async function saveOpportunityBidDraft(opportunityId, draft) {
+  const savedDraft = await sendZumbarlApiRequest(`/earn/opportunities/${opportunityId}/bid-draft`, {
+    method: 'PUT',
+    body: JSON.stringify(draft),
+  })
+  await refreshEarnFlowFromBackend()
+  return savedDraft
+}
+
 export async function acceptEarnOpportunityInvite(inviteId) {
   await sendZumbarlApiRequest(`/earn/invites/${inviteId}/accept`, { method: 'POST' })
 
@@ -134,6 +147,15 @@ export async function declineEarnOpportunityInvite(inviteId) {
   }))
 }
 
+export async function respondToEarnBidCounterOffer(bidId, decision) {
+  const result = await sendZumbarlApiRequest(`/earn/bids/${bidId}/counter-offer/respond`, {
+    method: 'POST',
+    body: JSON.stringify({ decision }),
+  })
+  await refreshEarnFlowFromBackend()
+  return result
+}
+
 export function markEarnInvitesSeen() {
   const seenIds = readSeenInviteIds()
   currentState.invites.forEach((invite) => seenIds.add(invite.id))
@@ -151,7 +173,9 @@ export async function submitOpportunityBid({ gig, intent, proposal }) {
     body: JSON.stringify({
       amount: Number(String(proposal.price || '').replace(/[^\d.]/g, '')) || 0,
       attachments: proposal.attachments || [],
+      currency: proposal.currency || 'KES',
       deliveryTime: proposal.deliveryTime || undefined,
+      estimatedUnits: proposal.estimatedUnits ? Number(proposal.estimatedUnits) : undefined,
       intent: intent.id === 'career' ? 'build-career' : intent.id,
       message: proposal.message || undefined,
       pricingType: proposal.pricingType || undefined,

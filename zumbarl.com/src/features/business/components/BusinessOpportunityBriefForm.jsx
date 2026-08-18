@@ -1,4 +1,4 @@
-import { FiArrowLeft, FiArrowRight } from 'react-icons/fi'
+import { FiArrowLeft, FiArrowRight, FiX } from 'react-icons/fi'
 import { BusinessOpportunityBriefDetailsStep } from './BusinessOpportunityBriefDetailsStep'
 import { BusinessOpportunityBriefRequirementsStep } from './BusinessOpportunityBriefRequirementsStep'
 import { BusinessOpportunityBriefReviewStep } from './BusinessOpportunityBriefReviewStep'
@@ -19,10 +19,13 @@ export function BusinessOpportunityBriefForm({
   isFirstStep,
   isPublishReady,
   isSaving,
+  isUploadingSplash,
   onBack,
+  onCancel,
   onContinue,
   onPublish,
   onSaveDraft,
+  onSplashUploadStateChange,
   onStepChange,
   onUpdateField,
   saveError,
@@ -37,8 +40,10 @@ export function BusinessOpportunityBriefForm({
           form={form}
           isPublishReady={isPublishReady}
           onBack={onBack}
+          onCancel={onCancel}
           onPublish={onPublish}
           onSaveDraft={onSaveDraft}
+          onSplashUploadStateChange={onSplashUploadStateChange}
           onStepChange={onStepChange}
           onUpdateField={onUpdateField}
         />
@@ -47,16 +52,22 @@ export function BusinessOpportunityBriefForm({
         ) : null}
         {!isFinalStep ? (
           <footer>
-            {!isFirstStep ? (
-              <button type="button" className="business-profile-ghost-btn" onClick={onBack}>
-                <FiArrowLeft aria-hidden="true" />
-                Back
-              </button>
-            ) : <span />}
-            <button type="button" className="business-profile-primary-btn" onClick={onContinue} disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save & Continue'}
-              <FiArrowRight aria-hidden="true" />
+            <button type="button" className="business-profile-ghost-btn" onClick={onCancel}>
+              <FiX aria-hidden="true" />
+              Cancel
             </button>
+            <div className="business-create-footer-actions">
+              {!isFirstStep ? (
+                <button type="button" className="business-profile-ghost-btn" onClick={onBack}>
+                  <FiArrowLeft aria-hidden="true" />
+                  Back
+                </button>
+              ) : null}
+              <button type="button" className="business-profile-primary-btn" onClick={onContinue} disabled={isSaving || isUploadingSplash}>
+                {isUploadingSplash ? 'Uploading splash...' : isSaving ? 'Saving...' : 'Save & Continue'}
+                <FiArrowRight aria-hidden="true" />
+              </button>
+            </div>
           </footer>
         ) : null}
       </form>

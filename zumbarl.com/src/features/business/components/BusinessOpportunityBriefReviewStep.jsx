@@ -1,4 +1,4 @@
-import { FiAlertCircle, FiArrowLeft, FiCheckCircle, FiEdit2, FiSave, FiSend } from 'react-icons/fi'
+import { FiAlertCircle, FiArrowLeft, FiCheckCircle, FiEdit2, FiSave, FiSend, FiX } from 'react-icons/fi'
 
 function numberValue(value) {
   return Number(String(value || '').replace(/[^\d.]/g, '')) || 0
@@ -50,7 +50,7 @@ function formatFileSize(size = 0) {
 
 function formatSampleWork(sampleWork = []) {
   const visibleSamples = Array.isArray(sampleWork)
-    ? sampleWork.filter((sample) => sample.label || sample.fileType || sample.files?.length)
+    ? sampleWork.filter((sample) => sample.label || sample.files?.length)
     : []
 
   if (!visibleSamples.length) return 'No sample work attached'
@@ -59,7 +59,7 @@ function formatSampleWork(sampleWork = []) {
     const fileList = sample.files?.length
       ? ` · ${sample.files.map((file) => `${file.name} (${formatFileSize(file.size)})`).join(', ')}`
       : ''
-    return `${sample.label || 'Sample work'} (${sample.fileType || 'Any accepted file'})${fileList}`
+    return `${sample.label || 'Sample work'}${fileList}`
   }).join('; ')
 }
 
@@ -68,6 +68,7 @@ export function BusinessOpportunityBriefReviewStep({
   form,
   isPublishReady = false,
   onBack,
+  onCancel,
   onPublish,
   onSaveDraft,
   onStepChange,
@@ -84,7 +85,6 @@ export function BusinessOpportunityBriefReviewStep({
           <div><dt>Category</dt><dd>{form.category}</dd></div>
           <div><dt>Type</dt><dd>{form.opportunityType}</dd></div>
           <div><dt>Description</dt><dd>{form.summary}</dd></div>
-          <div><dt>Company</dt><dd>{form.companyName}</dd></div>
           <div>
             <dt>Opportunity Splash</dt>
             <dd>
@@ -174,12 +174,16 @@ export function BusinessOpportunityBriefReviewStep({
         </ul>
         {!isPublishReady ? (
           <p className="business-create-readiness-note">
-            Complete the missing details before creating and publishing. You can still save this opportunity as a draft.
+            Complete the missing details before continuing to payment. You can still save this opportunity as a draft.
           </p>
         ) : null}
       </ReviewCard>
 
       <div className="business-create-review-actions">
+        <button type="button" className="business-profile-ghost-btn" onClick={onCancel}>
+          <FiX aria-hidden="true" />
+          Cancel
+        </button>
         <button type="button" className="business-profile-ghost-btn" onClick={onBack}>
           <FiArrowLeft aria-hidden="true" />
           Back
@@ -194,7 +198,7 @@ export function BusinessOpportunityBriefReviewStep({
           disabled={!isPublishReady}
           onClick={onPublish}
         >
-          Create & Publish Opportunity
+          Continue to Payment
           <FiSend aria-hidden="true" />
         </button>
       </div>

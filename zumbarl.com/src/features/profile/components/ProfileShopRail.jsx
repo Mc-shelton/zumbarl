@@ -6,16 +6,16 @@ import {
   SHOP_TOP_PRODUCTS,
 } from '../constants'
 
-function ProfileShopRail() {
+function ProfileShopRail({ shop }) {
   return (
     <>
       <article className="campus-rail-card campus-profile-side-card campus-shop-rail-card">
         <header className="campus-shop-rail-head">
-          <h2>About My Shop</h2>
+          <h2>About {shop?.name || 'My Shop'}</h2>
           <button type="button" className="campus-link-btn">Edit</button>
         </header>
         <p className="campus-shop-about-copy">
-          Curated products that blend style, quality and everyday practicality. Thank you for supporting my small business!
+          {shop?.description || 'Curated products that blend style, quality and everyday practicality. Thank you for supporting my small business!'}
         </p>
 
         <div className="campus-shop-about-stats">

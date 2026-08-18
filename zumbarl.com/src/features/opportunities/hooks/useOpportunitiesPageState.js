@@ -1,9 +1,10 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 import {
   acceptEarnOpportunityInvite,
   declineEarnOpportunityInvite,
+  respondToEarnBidCounterOffer,
   markEarnInvitesSeen,
   refreshEarnFlowFromBackend,
 } from '../../earn/services/earnFlowService'
@@ -39,6 +40,10 @@ import {
 import useOpportunityBidSelection from './useOpportunityBidSelection'
 import useOpportunityDashboardStats from './useOpportunityDashboardStats'
 import useOpportunitySearchShortcut from './useOpportunitySearchShortcut'
+import {
+  listMyProjectTeamInvites,
+  respondToProjectTeamInvite,
+} from '../../projects/services/projectTeamInviteService'
 
 function splitSkills(skills) {
   return String(skills || '')
@@ -106,7 +111,7 @@ function getBusinessOpportunityImage(opportunity) {
   )
 }
 
-function toStudentBusinessOpportunity(opportunity, bidCount = 0) {
+function toStudentBusinessOpportunity(opportunity, bidCount = 0, invite = null) {
   const skills = splitSkills(opportunity.skills)
   const visibleSkills = skills.length ? skills : ['Campus Work']
   const shareKey = `business-${opportunity.id}`
@@ -115,6 +120,7 @@ function toStudentBusinessOpportunity(opportunity, bidCount = 0) {
   return {
     id: opportunity.id,
     submissionOpportunityId: opportunity.backendId || opportunity.id,
+    applicationsClosed: Boolean(opportunity.applicationsClosed),
     shareKey,
     opportunityUuid: createDeterministicUuid(shareKey),
     ownerSlug: slugifyOwner(opportunity.company || 'zumbarl-business'),
@@ -128,7 +134,9 @@ function toStudentBusinessOpportunity(opportunity, bidCount = 0) {
     pay: pay.pay,
     unit: pay.unit,
     posted: formatPublishedLabel(opportunity.publishedAt),
-    badge: 'Business invite-ready',
+    badge: invite ? 'Invited' : 'Business invite-ready',
+    isInvited: Boolean(invite),
+    inviteId: invite?.id || null,
     location: opportunity.engagementMode || 'Flexible',
     commitment: opportunity.duration || 'Timeline pending',
     proposals: `${bidCount || opportunity.applicants || 0} proposals`,
@@ -170,6 +178,8 @@ function useOpportunitiesPageState() {
   const [isFilterExpanded, setIsFilterExpanded] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [activeLocation, setActiveLocation] = useState('all')
+  const [projectTeamInvites, setProjectTeamInvites] = useState([])
+  const [projectTeamInviteState, setProjectTeamInviteState] = useState({ error: '', pendingId: '' })
   const [railFilters, setRailFilters] = useState(INITIAL_OPPORTUNITY_RAIL_FILTERS)
   const bidSelection = useOpportunityBidSelection({
     bids: earnFlow.bids,
@@ -177,6 +187,18 @@ function useOpportunitiesPageState() {
     setSearchParams,
   })
   useOpportunitySearchShortcut(opportunitySearchRef)
+
+  useEffect(() => {
+    let active = true
+    listMyProjectTeamInvites()
+      .then((response) => {
+        if (active) setProjectTeamInvites((response?.invites || []).filter((invite) => invite.status === 'pending'))
+      })
+      .catch((error) => {
+        if (active) setProjectTeamInviteState({ error: error?.message || 'Project invitations could not be loaded.', pendingId: '' })
+      })
+    return () => { active = false }
+  }, [])
 
   const tabQueryParam = searchParams.get('tab')
   const intentQueryParam = searchParams.get('intent')
@@ -187,27 +209,60 @@ function useOpportunitiesPageState() {
   const activeOpportunityTab = resolveOpportunityTab(tabQueryParam)
   const activeOpportunityIntent = resolveOpportunityIntent(intentQueryParam || getPreferredOpportunityIntentId())
   const activeOpportunityTypeId = resolveOpportunityTypeId(typeQueryParam)
+  const rawInvites = useMemo(() => earnFlow.invites || [], [earnFlow.invites])
+  // Cross-reference the student's own bids so an invite reflects their real
+  // progress: applied once a non-draft bid exists, accepted once it is awarded
+  // to a project.
+  const inviteApplicationByOpportunityId = useMemo(() => {
+    const map = new Map()
+    ;(earnFlow.bids || []).forEach((bid) => {
+      if (!bid.opportunityId) return
+      const existing = map.get(bid.opportunityId) || { hasApplied: false, projectId: null }
+      map.set(bid.opportunityId, {
+        hasApplied: existing.hasApplied || !bid.isDraft,
+        projectId: existing.projectId || bid.projectId || null,
+      })
+    })
+    return map
+  }, [earnFlow.bids])
+  const visibleInvites = useMemo(() => rawInvites.map((invite) => {
+    const application = inviteApplicationByOpportunityId.get(invite.opportunityId) || { hasApplied: false, projectId: null }
+    return { ...invite, hasApplied: application.hasApplied, projectId: application.projectId }
+  }), [rawInvites, inviteApplicationByOpportunityId])
+  const activeInviteByOpportunityId = useMemo(() => new Map(
+    visibleInvites
+      .filter((invite) => invite.stage !== 'Declined')
+      .map((invite) => [invite.opportunityId, invite]),
+  ), [visibleInvites])
   const allOpportunityListings = useMemo(() => (
     (earnFlow.opportunities || [])
       .filter((opportunity) => {
         const status = getBusinessOpportunityStatus(opportunity.status)
-        return status === 'published' || status === 'open' || status === 'public'
+        // in_progress briefs stay listed: a team project keeps recruiting after
+        // its first award, and the apply guard still rejects closed ones.
+        return status === 'published' || status === 'open' || status === 'public' || status === 'in_progress'
       })
       .map((opportunity) => toStudentBusinessOpportunity(
         opportunity,
         opportunity.applicants || 0,
+        activeInviteByOpportunityId.get(opportunity.id) || null,
       ))
-  ), [earnFlow.opportunities])
+  ), [activeInviteByOpportunityId, earnFlow.opportunities])
   const opportunityUuidSet = useMemo(() => (
     new Set(allOpportunityListings.map((item) => item.opportunityUuid))
   ), [allOpportunityListings])
   const opportunityUuidToListing = useMemo(() => (
     new Map(allOpportunityListings.map((item) => [item.opportunityUuid, item]))
   ), [allOpportunityListings])
-  const visibleInvites = earnFlow.invites || []
+  // Once an opportunity has been awarded its applications are closed, so it must
+  // drop out of the public browse feed. It stays in the maps above so a student's
+  // own bid can still resolve and open the opportunity it was placed against.
+  const discoverableOpportunities = useMemo(() => (
+    allOpportunityListings.filter((opportunity) => !opportunity.applicationsClosed)
+  ), [allOpportunityListings])
   const interviews = earnFlow.interviews || []
   const dashboardStats = useOpportunityDashboardStats({ invites: visibleInvites, interviews })
-  const intentOpportunities = filterOpportunitiesByIntent(allOpportunityListings, activeOpportunityIntent.id)
+  const intentOpportunities = filterOpportunitiesByIntent(discoverableOpportunities, activeOpportunityIntent.id)
   const opportunityTypeCounts = useMemo(
     () => getOpportunityTypeCounts(intentOpportunities),
     [intentOpportunities],
@@ -390,8 +445,22 @@ function useOpportunitiesPageState() {
     })
   }
 
+  const handleProjectTeamInviteResponse = async (invite, action) => {
+    setProjectTeamInviteState({ error: '', pendingId: invite.id })
+    try {
+      await respondToProjectTeamInvite(invite.id, action)
+      setProjectTeamInvites((current) => current.filter((item) => item.id !== invite.id))
+      setProjectTeamInviteState({ error: '', pendingId: '' })
+      if (action === 'accept') navigate(`/campus/projects/${invite.projectId}?tab=team`)
+    } catch (error) {
+      setProjectTeamInviteState({ error: error?.message || 'Your response could not be saved.', pendingId: '' })
+    }
+  }
+
+  const projectInviteClientCount = new Set(projectTeamInvites.map((invite) => invite.inviterName)).size
+
   return {
-    activeInviteClientsCount: dashboardStats.activeInviteClientsCount,
+    activeInviteClientsCount: dashboardStats.activeInviteClientsCount + projectInviteClientCount,
     activeLocation,
     activeOpportunityTab,
     activeOpportunityTypeId,
@@ -403,6 +472,8 @@ function useOpportunitiesPageState() {
     hasRightRail,
     interviews,
     invites: visibleInvites,
+    projectTeamInvites,
+    projectTeamInviteState,
     isBidsTab,
     isDetailOpen,
     isDetailPanelVisible,
@@ -411,12 +482,13 @@ function useOpportunitiesPageState() {
     isFilterExpanded,
     isFilterPanelVisible,
     locationOptions,
-    newInvitesCount: dashboardStats.newInvitesCount,
+    newInvitesCount: dashboardStats.newInvitesCount + projectTeamInvites.length,
     onBackToDetail: () => setIsFilterExpanded(false),
     onBidSelect: bidSelection.onBidSelect,
     onClearFilters: handleClearFilters,
     onCloseDetails: handleCloseDetails,
     onDeclineInvite: (invite) => declineEarnOpportunityInvite(invite.id).catch(() => {}),
+    onRespondCounterOffer: (bidId, decision) => respondToEarnBidCounterOffer(bidId, decision).catch(() => {}),
     onMarkInvitesSeen: markEarnInvitesSeen,
     onRefreshEarnFlow: () => refreshEarnFlowFromBackend().catch(() => {}),
     onEditFilters: () => setIsFilterExpanded(true),
@@ -425,14 +497,21 @@ function useOpportunitiesPageState() {
     onRailFilterChange: handleRailFilterChange,
     onRailFilterToggle: handleRailFilterToggle,
     onSearchQueryChange: setSearchQuery,
-    onOpenMarketingCampaign: (campaignId = 'level-up-skills') => navigate(`/campus/opportunities/marketing/${campaignId}`, {
-      state: { accepted: true },
-    }),
+    onOpenMarketingCampaign: (campaignId = 'level-up-skills') => navigate(`/campus/opportunities/marketing/${campaignId}`),
     onCreateBooking: () => navigate('/campus/opportunities/buy-sell'),
     onOpenMessages: () => navigate('/messages'),
     onOpenPlaceBid: handleOpenPlaceBid,
+    onResumeBidDraft: (bid) => navigate(
+      `/campus/opportunities/${bid.opportunityId}/place-bid${
+        bid.intentId && bid.intentId !== DEFAULT_OPPORTUNITY_INTENT_ID
+          ? `?intent=${encodeURIComponent(bid.intentId)}`
+          : ''
+      }`,
+    ),
     onViewBidOpportunity: handleViewBidOpportunity,
     onOpenProject: (project) => navigate(getOpportunityProjectHref(project)),
+    onOpenInviteProject: (projectId) => navigate(`/campus/projects/${projectId}`),
+    onRespondProjectTeamInvite: handleProjectTeamInviteResponse,
     onOpportunitySelect: handleOpportunitySelect,
     onOpportunityTypeChange: handleOpportunityTypeChange,
     onTabChange: handleOpportunityTabChange,

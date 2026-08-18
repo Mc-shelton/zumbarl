@@ -90,8 +90,13 @@ function createPrismaRecordRepositoryWithClient(prismaClient: PrismaRecordClient
   return new PrismaRecordRepository(prismaClient, collection)
 }
 
-function runPrismaRecordTransaction<T>(callback: (createRepository: CreatePrismaRecordRepository) => Promise<T>) {
-  return prisma.$transaction((transactionClient) => callback((collection) => createPrismaRecordRepositoryWithClient(transactionClient, collection)))
+function runPrismaRecordTransaction<T>(
+  callback: (createRepository: CreatePrismaRecordRepository, tx: Prisma.TransactionClient) => Promise<T>
+) {
+  return prisma.$transaction((transactionClient) => callback(
+    (collection) => createPrismaRecordRepositoryWithClient(transactionClient, collection),
+    transactionClient
+  ))
 }
 
 export {

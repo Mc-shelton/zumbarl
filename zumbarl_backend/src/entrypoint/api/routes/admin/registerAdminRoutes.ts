@@ -15,6 +15,7 @@ import {
   readScoreControlController,
   readSuperAdminDashboardController,
   readSystemConfigurationController,
+  readNavigationFeatureTagsController,
   recordFinancialActionController,
   reviewUserKycController,
   revokeUserSessionsController,
@@ -26,11 +27,13 @@ import {
 } from '../../controllers/admin/index.js'
 
 async function registerAdminRoutes(app: FastifyInstance) {
+  const anyActor = requireRoles(...roleGroups.student, ...roleGroups.business, ...roleGroups.admin)
   const adminOnly = requireRoles(...roleGroups.admin)
   const superAdminOnly = requireRoles('SUPER_ADMIN')
   const moderators = requireRoles(...roleGroups.admin, ...roleGroups.moderator)
 
   app.get('/metrics', { preHandler: adminOnly }, readAdminMetricsController)
+  app.get('/navigation-feature-tags', { preHandler: anyActor }, readNavigationFeatureTagsController)
   app.get('/users', { preHandler: adminOnly }, listUsersController)
   app.patch('/users/:id', { preHandler: adminOnly }, updateUserController)
   app.get('/moderation-cases', { preHandler: moderators }, listModerationCasesController)

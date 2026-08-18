@@ -298,6 +298,7 @@ export function BusinessOpportunityBriefRequirementsStep({ form, onUpdateField }
             label="Portfolio Requirement"
             name="portfolioRequired"
             options={BUSINESS_OPPORTUNITY_BRIEF_SELECTS.portfolioRequired}
+            placeholder="Select a portfolio requirement"
             value={form.portfolioRequired}
             onUpdateField={onUpdateField}
           />
@@ -309,6 +310,7 @@ export function BusinessOpportunityBriefRequirementsStep({ form, onUpdateField }
             isWide
             label="Preferred Qualifications"
             name="preferredQualifications"
+            placeholder="Describe useful experience, qualifications, or examples of relevant work."
             value={form.preferredQualifications}
             onUpdateField={onUpdateField}
           />
@@ -316,6 +318,7 @@ export function BusinessOpportunityBriefRequirementsStep({ form, onUpdateField }
             isWide
             label="Screening Focus"
             name="screeningFocus"
+            placeholder="Describe what reviewers should prioritize when comparing applicants."
             value={form.screeningFocus}
             onUpdateField={onUpdateField}
           />

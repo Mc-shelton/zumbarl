@@ -7,7 +7,7 @@ export function CartShell({ children, checkout = false, rail, railLabel = 'Order
     <main className={mainClassName}>
       <div className="campus-stage">
         <div className="campus-shell campus-cart-shell">
-          <CampusSidebar activeItemId="opportunities" />
+          <CampusSidebar activeItemId="marketplace" />
 
           <section className="campus-main campus-cart-main">
             {children}

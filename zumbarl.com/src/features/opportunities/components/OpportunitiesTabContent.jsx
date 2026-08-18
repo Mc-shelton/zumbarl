@@ -1,6 +1,7 @@
 import OpportunitiesBidsPanel from './OpportunitiesBidsPanel'
 import OpportunitiesDiscoverPanel from './OpportunitiesDiscoverPanel'
 import OpportunitiesInvitesPanel from './OpportunitiesInvitesPanel'
+import OpportunitiesMarketingPanel from './OpportunitiesMarketingPanel'
 import OpportunitiesOngoingPanel from './OpportunitiesOngoingPanel'
 import OpportunitiesServiceOrdersPanel from './OpportunitiesServiceOrdersPanel'
 
@@ -20,18 +21,25 @@ function OpportunitiesTabContent({
   onCreateBooking,
   onDeclineInvite,
   onMarkInvitesSeen,
+  onOpenInviteProject,
   onOpenMarketingCampaign,
   onOpenMessages,
   onOpenPlaceBid,
   onOpenProject,
+  onResumeBidDraft,
+  onRespondCounterOffer,
   onViewBidOpportunity,
   onOpportunitySelect,
   onOpportunityTypeChange,
   onViewBooking,
   opportunityTypeOptions,
   projects,
+  projectTeamInvites,
+  projectTeamInviteState,
+  onRespondProjectTeamInvite,
   selectedBidId,
   selectedOpportunityUuid,
+  searchQuery,
   visibleBids,
   visibleOpportunities,
 }) {
@@ -41,7 +49,6 @@ function OpportunitiesTabContent({
         activeOpportunityIntentId={activeOpportunityIntentId}
         activeOpportunityTypeId={activeOpportunityTypeId}
         onClearFilters={onClearFilters}
-        onOpenMarketingCampaign={onOpenMarketingCampaign}
         onOpportunitySelect={onOpportunitySelect}
         onOpportunityTypeChange={onOpportunityTypeChange}
         opportunities={visibleOpportunities}
@@ -58,8 +65,19 @@ function OpportunitiesTabContent({
         onBidSelect={onBidSelect}
         onOpenMessages={onOpenMessages}
         onOpenProject={onOpenProject}
+        onResumeBidDraft={onResumeBidDraft}
+        onRespondCounterOffer={onRespondCounterOffer}
         onViewBidOpportunity={onViewBidOpportunity}
         selectedBidId={selectedBidId}
+      />
+    )
+  }
+
+  if (activeOpportunityTab === 'Marketing') {
+    return (
+      <OpportunitiesMarketingPanel
+        onOpenMarketingCampaign={onOpenMarketingCampaign}
+        searchQuery={searchQuery}
       />
     )
   }
@@ -73,7 +91,11 @@ function OpportunitiesTabContent({
         newInvitesCount={newInvitesCount}
         onDeclineInvite={onDeclineInvite}
         onMarkInvitesSeen={onMarkInvitesSeen}
+        onOpenInviteProject={onOpenInviteProject}
         onOpenPlaceBid={onOpenPlaceBid}
+        projectTeamInvites={projectTeamInvites}
+        projectTeamInviteState={projectTeamInviteState}
+        onRespondProjectTeamInvite={onRespondProjectTeamInvite}
       />
     )
   }

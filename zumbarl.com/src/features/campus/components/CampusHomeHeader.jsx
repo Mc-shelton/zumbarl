@@ -1,11 +1,11 @@
 import { FiSearch } from 'react-icons/fi'
 import CampusTopActions from '../../../components/layout/CampusTopActions'
 
-function CampusHomeHeader({ onBackToAi, showBackToAiButton }) {
+function CampusHomeHeader({ onBackToAi, showBackToAiButton, viewer }) {
   return (
     <header className="campus-header">
       <div className="campus-header-copy">
-        <h1>Good morning, Brian</h1>
+        <h1>Good morning{viewer?.firstName ? `, ${viewer.firstName}` : ''}</h1>
         <p>What are we doing today?</p>
       </div>
       <CampusTopActions

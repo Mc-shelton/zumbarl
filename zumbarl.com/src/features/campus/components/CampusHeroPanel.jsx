@@ -1,4 +1,6 @@
 import { FiArrowRight, FiBookOpen, FiBriefcase, FiHeart } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
+import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 
 const floatingIconRegistry = {
   book: FiBookOpen,
@@ -21,7 +23,7 @@ function CampusHeroPanel({
 
   const heroChips = Array.isArray(hero?.chips) ? hero.chips : []
   const floatingIcons = Array.isArray(hero?.floatingIcons) ? hero.floatingIcons : []
-  const phoneImage = hero?.image ?? hero?.thumbnail
+  const phoneImage = normalizeZumbarlFileUrl(hero?.image ?? hero?.thumbnail)
 
   return (
     <article ref={heroCardRef} className={`campus-hero-card${chatMode ? ' is-chat-mode' : ''}`}>
@@ -77,10 +79,18 @@ function CampusHeroPanel({
             {chatMessages.map((message) => (
               <article
                 key={message.id}
-                className={`campus-chat-bubble${message.role === 'user' ? ' is-user' : ' is-assistant'}`}
+                className={`campus-chat-bubble${message.role === 'user' ? ' is-user' : ' is-assistant'}${message.pending ? ' is-pending' : ''}`}
               >
                 <span>{message.role === 'user' ? 'You' : 'Zumbarl AI'}</span>
-                <p>{message.content}</p>
+                {message.pending ? (
+                  <p className="campus-chat-typing" aria-label="Zumbarl AI is searching">
+                    <span className="campus-chat-typing-dot" />
+                    <span className="campus-chat-typing-dot" />
+                    <span className="campus-chat-typing-dot" />
+                  </p>
+                ) : (
+                  <p>{message.content}</p>
+                )}
               </article>
             ))}
           </div>
@@ -104,8 +114,10 @@ function CampusHeroPanel({
           ))}
         </div>
         <div className="campus-discovery-grid">
-          {discoverySuggestions.map((item) => (
-            <article key={item.id} className="campus-discovery-card">
+          {discoverySuggestions.map((item) => {
+            const Card = item.href ? Link : 'article'
+            return (
+            <Card key={item.id} className="campus-discovery-card" {...(item.href ? { to: item.href } : {})}>
               <p className="campus-discovery-type">{item.type}</p>
               <h4>{item.title}</h4>
               <p>{item.summary}</p>
@@ -115,8 +127,8 @@ function CampusHeroPanel({
                   <FiArrowRight aria-hidden="true" />
                 </span>
               ) : null}
-            </article>
-          ))}
+            </Card>
+          )})}
         </div>
       </aside>
     </article>

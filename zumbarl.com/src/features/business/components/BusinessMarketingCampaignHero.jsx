@@ -1,26 +1,39 @@
-import { FiMoreHorizontal, FiPause, FiPlay } from 'react-icons/fi'
-import { BusinessMarketingThumbnail } from './BusinessMarketingThumbnail'
+import { FiMoreHorizontal, FiPlay } from "react-icons/fi";
+import { Link } from "react-router-dom";
+import { BusinessMarketingThumbnail } from "./BusinessMarketingThumbnail";
 
 function statusTone(status) {
-  if (status === 'Paused') return 'orange'
-  if (status === 'Active') return 'green'
-  if (status === 'Scheduled') return 'blue'
-  if (status === 'Completed') return 'neutral'
+  if (status === "Paused") return "orange";
+  if (status === "Active") return "green";
+  if (status === "Scheduled") return "blue";
+  if (status === "Completed") return "neutral";
 
-  return 'purple'
+  return "purple";
 }
 
-export function BusinessMarketingCampaignHero({ campaign, isPaused, onTogglePause }) {
+export function BusinessMarketingCampaignHero({ campaign, onTogglePause }) {
   return (
     <section className="business-profile-card business-marketing-detail-hero">
       <BusinessMarketingThumbnail campaign={campaign} className="is-large" />
 
       <div className="business-marketing-detail-hero-main">
-        <strong className={`business-marketing-status tone-${statusTone(campaign.status)}`}>{campaign.status}</strong>
+        <strong
+          className={`business-marketing-status tone-${statusTone(campaign.status)}`}
+        >
+          {campaign.status}
+        </strong>
         <h1>{campaign.title}</h1>
-        <p className="business-marketing-detail-type">{campaign.type} <span aria-hidden="true">•</span> {campaign.detail.category}</p>
-        <p className="business-marketing-detail-description">{campaign.description}</p>
-        <ul className="business-marketing-tags" aria-label={`${campaign.title} platforms`}>
+        <p className="business-marketing-detail-type">
+          {campaign.type} <span aria-hidden="true">•</span>{" "}
+          {campaign.detail.category}
+        </p>
+        <p className="business-marketing-detail-description">
+          {campaign.description}
+        </p>
+        <ul
+          className="business-marketing-tags"
+          aria-label={`${campaign.title} platforms`}
+        >
           {campaign.platforms.map((platform) => (
             <li key={platform}>{platform}</li>
           ))}
@@ -47,15 +60,30 @@ export function BusinessMarketingCampaignHero({ campaign, isPaused, onTogglePaus
       </div>
 
       <div className="business-marketing-detail-actions">
-        <button type="button" className="business-profile-ghost-btn">Edit Campaign</button>
-        <button type="button" className="business-profile-primary-btn" onClick={onTogglePause}>
-          {isPaused ? <FiPlay aria-hidden="true" /> : <FiPause aria-hidden="true" />}
-          {isPaused ? 'Resume Campaign' : 'Pause Campaign'}
-        </button>
-        <button type="button" className="business-profile-icon-btn" aria-label="More campaign actions">
+        <Link
+          className="business-profile-ghost-btn"
+          to={`/business/marketing/${campaign.id}/edit`}
+        >
+          Edit Campaign
+        </Link>
+        {campaign.status === "Draft" ? (
+          <button
+            type="button"
+            className="business-profile-primary-btn"
+            onClick={onTogglePause}
+          >
+            <FiPlay aria-hidden="true" />
+            Publish Campaign
+          </button>
+        ) : null}
+        <button
+          type="button"
+          className="business-profile-icon-btn"
+          aria-label="More campaign actions"
+        >
           <FiMoreHorizontal aria-hidden="true" />
         </button>
       </div>
     </section>
-  )
+  );
 }

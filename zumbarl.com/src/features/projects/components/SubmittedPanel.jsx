@@ -1,12 +1,21 @@
-import { FiBell, FiCheck, FiCheckCircle, FiClock, FiDownload, FiEdit3, FiFolder, FiStar } from 'react-icons/fi'
+import { FiBell, FiCheck, FiCheckCircle, FiClock, FiDownload, FiEdit3, FiFolder, FiRefreshCw, FiStar } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess, hasAnyAccess } from '../../auth/roleConfig'
-import { project, submittedFiles } from '../data/mockWorkspace'
+import { project, submittedFiles as mockSubmittedFiles } from '../data/mockWorkspace'
+import ProjectDeliverablesStatus from './ProjectDeliverablesStatus'
+
+function formatSubmittedAt(value) {
+  if (!value) return 'Recently'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return String(value)
+  return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+}
 
 function SubmittedPanel({
   activeProject = project,
   onApproveSubmission,
   onOverview,
   onRequestRevision,
+  onResubmit,
   payment,
   reviewDecision,
   reviewLocked = false,
@@ -14,12 +23,33 @@ function SubmittedPanel({
   const canOpenMessages = hasAccess(ACCESS_KEYS.projects.messages)
   const canReviewSubmission = hasAccess(ACCESS_KEYS.business.submissionReview)
   const canEndorse = hasAnyAccess([ACCESS_KEYS.business.endorsements, ACCESS_KEYS.business.rateStudents])
-  const isApproved = reviewDecision?.decision === 'approved'
-  const isRevisionRequested = reviewDecision?.decision === 'revision_requested'
+
+  // Real awarded projects drive the panel from the actual latest deliverable;
+  // demo/mock routes keep the canned review-decision flow.
+  const isBackedProject = activeProject.source === 'database'
+  const deliverable = isBackedProject ? activeProject.latestDeliverable : null
+  const opportunityDetails = Array.isArray(activeProject.details) ? activeProject.details : []
+  const hasOpportunityDetails = isBackedProject && (activeProject.overview || opportunityDetails.length)
+  const isApproved = deliverable ? deliverable.status === 'approved' : reviewDecision?.decision === 'approved'
+  const isChangesRequested = deliverable
+    ? deliverable.status === 'changes_requested'
+    : reviewDecision?.decision === 'revision_requested'
+
+  const submittedFilesList = deliverable
+    ? deliverable.files
+    : mockSubmittedFiles
+  const workTitle = deliverable?.title || 'Social Media Content - May 1st to May 7th'
+  const workDescription = deliverable?.notes
+    || 'Please find attached the content for May 1st to May 7th across Instagram, LinkedIn and Facebook.'
+  const feedbackRequest = deliverable?.feedbackRequest
+    || 'Kindly review and share feedback. Let me know if any adjustments are needed.'
+  const submittedAt = deliverable ? formatSubmittedAt(deliverable.submittedAt) : 'May 12, 2024 at 4:32 PM'
+  const decisionFeedback = deliverable?.feedback || reviewDecision?.feedback
+
   const statusCopy = isApproved
     ? 'Work approved and endorsement recorded.'
-    : isRevisionRequested
-      ? 'Revision requested from the student.'
+    : isChangesRequested
+      ? 'The client requested changes to this submission.'
       : 'Your work has been submitted and is now pending review.'
 
   return (
@@ -28,7 +58,7 @@ function SubmittedPanel({
         <div className="project-success-mark">
           <FiCheck aria-hidden="true" />
         </div>
-        <h2>{isApproved ? 'Work Approved' : isRevisionRequested ? 'Revision Requested' : 'Work Submitted Successfully!'}</h2>
+        <h2>{isApproved ? 'Work Approved' : isChangesRequested ? 'Changes Requested' : 'Work Submitted Successfully!'}</h2>
         <p>{statusCopy} Client: <strong>{activeProject.client}</strong>.</p>
 
         <div className="project-success-summary">
@@ -36,32 +66,47 @@ function SubmittedPanel({
             <FiClock aria-hidden="true" />
             <span>
               <strong>Submitted on</strong>
-              May 12, 2024 at 4:32 PM
+              {submittedAt}
             </span>
           </article>
           <article>
             <FiClock aria-hidden="true" />
             <span>
               <strong>Next step</strong>
-              {isApproved ? 'Payment and endorsement' : isRevisionRequested ? 'Student revision' : 'Client Review'}
+              {isApproved ? 'Payment and endorsement' : isChangesRequested ? 'Revise and resubmit' : 'Client Review'}
             </span>
           </article>
           <article>
             <FiBell aria-hidden="true" />
             <span>
               <strong>You'll be notified</strong>
-              {reviewDecision ? reviewDecision.createdAt : 'Once the client reviews your work'}
+              {isApproved || isChangesRequested ? 'The client has reviewed your work' : 'Once the client reviews your work'}
             </span>
           </article>
         </div>
 
-        {reviewDecision ? (
+        {(isApproved || isChangesRequested) && decisionFeedback ? (
           <div className="project-review-outcome" role="status">
             <FiStar aria-hidden="true" />
             <div>
-              <strong>{isApproved ? `${reviewDecision.rating}/5 approved review` : 'Revision feedback'}</strong>
-              <p>{reviewDecision.feedback}</p>
+              <strong>{isApproved ? 'Approved — client feedback' : 'Requested changes'}</strong>
+              <p>{decisionFeedback}</p>
             </div>
+          </div>
+        ) : null}
+
+        {isChangesRequested && onResubmit ? (
+          <div className="project-review-decision-card">
+            <div>
+              <strong>Revise your submission</strong>
+              <p>Address the client&apos;s feedback and submit an updated version of your work.</p>
+            </div>
+            <footer>
+              <button type="button" className="project-primary-btn" onClick={onResubmit}>
+                <FiRefreshCw aria-hidden="true" />
+                Resubmit Work
+              </button>
+            </footer>
           </div>
         ) : null}
 
@@ -87,7 +132,7 @@ function SubmittedPanel({
           </div>
         ) : null}
 
-        {!reviewDecision && canReviewSubmission ? (
+        {!deliverable && !reviewDecision && canReviewSubmission ? (
           <div className="project-review-decision-card">
             <div>
               <strong>Business review</strong>
@@ -110,15 +155,17 @@ function SubmittedPanel({
           </div>
         ) : null}
 
-        {!reviewDecision ? <div className="project-next-list">
-          <strong>What happens next?</strong>
-          {['The client will review your submission.', 'They may approve it, request changes, or ask for revisions.', "You'll be notified of their feedback.", 'The activity log will capture approval and next steps.'].map((item) => (
-            <p key={item}>
-              <FiCheckCircle aria-hidden="true" />
-              {item}
-            </p>
-          ))}
-        </div> : null}
+        {!isApproved && !isChangesRequested ? (
+          <div className="project-next-list">
+            <strong>What happens next?</strong>
+            {['The client will review your submission.', 'They may approve it, request changes, or ask for revisions.', "You'll be notified of their feedback.", 'The activity log will capture approval and next steps.'].map((item) => (
+              <p key={item}>
+                <FiCheckCircle aria-hidden="true" />
+                {item}
+              </p>
+            ))}
+          </div>
+        ) : null}
 
         <footer>
           {canOpenMessages ? <button type="button" className="project-soft-btn">Go to Messages</button> : null}
@@ -132,19 +179,25 @@ function SubmittedPanel({
           <dl>
             <div>
               <dt>Work Title</dt>
-              <dd>Social Media Content - May 1st to May 7th</dd>
+              <dd>{workTitle}</dd>
             </div>
+            {deliverable?.scopeItemLabel ? (
+              <div>
+                <dt>Deliverable</dt>
+                <dd>{deliverable.scopeItemLabel}</dd>
+              </div>
+            ) : null}
             <div>
               <dt>Submitted Files</dt>
-              <dd>3 files (68.5 MB)</dd>
+              <dd>{submittedFilesList.length} file{submittedFilesList.length === 1 ? '' : 's'}</dd>
             </div>
             <div>
               <dt>Description</dt>
-              <dd>Please find attached the content for May 1st to May 7th across Instagram, LinkedIn and Facebook.</dd>
+              <dd>{workDescription}</dd>
             </div>
             <div>
               <dt>Feedback Request</dt>
-              <dd>Kindly review and share feedback. Let me know if any adjustments are needed.</dd>
+              <dd>{feedbackRequest}</dd>
             </div>
           </dl>
         </article>
@@ -157,16 +210,50 @@ function SubmittedPanel({
               <FiDownload aria-hidden="true" />
             </button>
           </header>
-          {submittedFiles.map((file) => (
+          {submittedFilesList.length ? submittedFilesList.map((file) => (
             <p key={file.name}>
               <FiFolder aria-hidden="true" />
               <strong>{file.name}</strong>
               <span>{file.size}</span>
-              <FiDownload aria-hidden="true" />
+              {file.url ? (
+                <a href={file.url} target="_blank" rel="noreferrer" aria-label={`Download ${file.name}`}>
+                  <FiDownload aria-hidden="true" />
+                </a>
+              ) : <FiDownload aria-hidden="true" />}
             </p>
-          ))}
+          )) : <p className="project-empty-note">No files were attached to this submission.</p>}
         </article>
       </section>
+
+      <ProjectDeliverablesStatus project={activeProject} onSubmit={onResubmit} />
+
+      {hasOpportunityDetails ? (
+        <section className="project-card project-opportunity-details">
+          <h2>Opportunity Details</h2>
+          {activeProject.overview ? <p>{activeProject.overview}</p> : null}
+          {opportunityDetails.length ? (
+            <div className="project-detail-list">
+              {opportunityDetails.map((detail) => (
+                <article key={detail.label}>
+                  <FiCheckCircle aria-hidden="true" />
+                  <div>
+                    <span>{detail.label}</span>
+                    <strong>{detail.value}</strong>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : null}
+          <dl>
+            <div><dt>Category</dt><dd>{activeProject.category || 'Not specified'}</dd></div>
+            <div><dt>Skills</dt><dd>{activeProject.skills || 'Not specified'}</dd></div>
+            <div><dt>Budget</dt><dd>{activeProject.budget}</dd></div>
+            <div><dt>Deadline</dt><dd>{activeProject.deadline}</dd></div>
+            {activeProject.paymentTerms ? <div><dt>Payment Terms</dt><dd>{activeProject.paymentTerms}</dd></div> : null}
+            {activeProject.acceptanceCriteria ? <div><dt>Acceptance Criteria</dt><dd>{activeProject.acceptanceCriteria}</dd></div> : null}
+          </dl>
+        </section>
+      ) : null}
     </>
   )
 }

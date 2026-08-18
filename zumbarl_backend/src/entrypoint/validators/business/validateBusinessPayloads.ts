@@ -200,6 +200,16 @@ const scheduleApplicantInterviewSchema = z.object({
   }
 })
 
+const setOpportunityApplicationsClosedSchema = z.object({
+  closed: z.coerce.boolean()
+})
+
+const counterOfferApplicantSchema = z.object({
+  amount: z.coerce.number().positive(),
+  autoRejectOnDecline: z.boolean().default(false),
+  currency: z.string().min(1).max(8).optional()
+})
+
 export {
   createOpportunitySchema,
   updateOpportunitySchema,
@@ -210,5 +220,7 @@ export {
   inviteOpportunityBiddersSchema,
   fundOpportunitySchema,
   reviewApplicantSchema,
-  scheduleApplicantInterviewSchema
+  scheduleApplicantInterviewSchema,
+  counterOfferApplicantSchema,
+  setOpportunityApplicationsClosedSchema
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiArrowLeft,
   FiArrowRight,
@@ -8,7 +8,9 @@ import {
   FiFileText,
   FiHelpCircle,
   FiPaperclip,
+  FiSave,
   FiUploadCloud,
+  FiX,
 } from 'react-icons/fi'
 
 const APPLICATION_STEP_DEFINITIONS = {
@@ -41,16 +43,29 @@ function getEstimatedBidTotal(proposal) {
 }
 
 function OpportunityBidForm({
+  draftError,
+  draftNotice,
+  initialDraft,
+  isSavingDraft,
   isSubmitting,
+  onApplicationStateChange,
+  onCancel,
+  onMarkDirty,
+  onSaveDraft,
   onSubmitProposal,
   selectedGig,
   submitError,
 }) {
+  // Team (project) opportunities pay from one shared budget split by how much
+  // work each student submits, so students do not name a price. Only single-hire
+  // tasks let the student bid an amount.
+  const isTeamOpportunity = String(selectedGig?.type || '').toLowerCase() !== 'task'
   const [activeStepIndex, setActiveStepIndex] = useState(0)
   const [proposal, setProposal] = useState(INITIAL_PROPOSAL)
   const [questionAnswers, setQuestionAnswers] = useState({})
   const [attachments, setAttachments] = useState({})
   const [stepError, setStepError] = useState('')
+  const hydratedDraftIdRef = useRef(null)
   const questions = useMemo(
     () => (Array.isArray(selectedGig.qualificationQuestions) ? selectedGig.qualificationQuestions : []),
     [selectedGig.qualificationQuestions],
@@ -67,19 +82,86 @@ function OpportunityBidForm({
   ], [attachmentRequirements.length, questions.length])
   const activeStep = applicationSteps[activeStepIndex] || applicationSteps[applicationSteps.length - 1]
 
+  useEffect(() => {
+    if (!initialDraft?.id || hydratedDraftIdRef.current === initialDraft.id) return
+    const metadata = initialDraft.metadata && typeof initialDraft.metadata === 'object'
+      ? initialDraft.metadata
+      : {}
+    setProposal({
+      ...INITIAL_PROPOSAL,
+      currency: initialDraft.currency || 'KES',
+      deliveryTime: initialDraft.deliveryTime || '',
+      estimatedUnits: metadata.estimatedUnits ? String(metadata.estimatedUnits) : '',
+      message: initialDraft.coverNote || '',
+      price: initialDraft.bidAmount == null ? '' : String(initialDraft.bidAmount),
+      pricingType: metadata.pricingType || 'fixed',
+      proposal: initialDraft.proposal || '',
+    })
+    setQuestionAnswers(Object.fromEntries(
+      (Array.isArray(initialDraft.questionAnswers) ? initialDraft.questionAnswers : [])
+        .map((answer) => [answer.question, answer.answer]),
+    ))
+    setAttachments(Object.fromEntries(
+      (Array.isArray(initialDraft.attachments) ? initialDraft.attachments : [])
+        // Keep any already-uploaded attachment on resume: it is identified by
+        // uploadId, so a missing/relative url must not drop it.
+        .filter((attachment) => attachment.requirementId && (attachment.url || attachment.uploadId))
+        .map((attachment) => [attachment.requirementId, attachment]),
+    ))
+    setActiveStepIndex(Math.min(
+      applicationSteps.length - 1,
+      Math.max(0, Number(metadata.applicationStepIndex) || 0),
+    ))
+    hydratedDraftIdRef.current = initialDraft.id
+  }, [applicationSteps.length, initialDraft])
+
+  const buildApplicationState = useCallback((stepIndex = activeStepIndex) => {
+    return {
+      ...proposal,
+      applicationStepIndex: stepIndex,
+      attachments: attachmentRequirements
+        .map((requirement) => {
+          const value = attachments[requirement.id]
+          if (!value) return null
+          return {
+            requirementId: requirement.id,
+            label: requirement.label,
+            fileType: requirement.fileType,
+            ...(value instanceof File
+              ? { file: value }
+              : typeof value === 'string'
+                ? { url: value.trim() }
+                : value),
+          }
+        })
+        .filter(Boolean),
+      questionAnswers: questions.map((question) => ({
+        question,
+        answer: String(questionAnswers[question] || '').trim(),
+      })),
+    }
+  }, [activeStepIndex, attachmentRequirements, attachments, proposal, questionAnswers, questions])
+
+  useEffect(() => {
+    onApplicationStateChange?.(buildApplicationState())
+  }, [buildApplicationState, onApplicationStateChange])
+
   function updateProposal(field, value) {
     setProposal((current) => ({ ...current, [field]: value }))
     setStepError('')
+    onMarkDirty?.()
   }
 
   function getStepValidationError(stepId) {
     if (stepId === 'proposal') {
       if (proposal.proposal.trim().length < 10) return 'Write a proposal of at least 10 characters.'
-      if (!proposal.price.trim()) return 'Enter your proposed price.'
-      if (proposal.pricingType !== 'fixed' && !(Number(proposal.estimatedUnits) > 0)) {
-        return `Estimate how many ${PRICING_UNIT_LABELS[proposal.pricingType]?.unit || 'units'} the work will take.`
+      if (!isTeamOpportunity) {
+        if (!proposal.price.trim()) return 'Enter your proposed price.'
+        if (proposal.pricingType !== 'fixed' && !(Number(proposal.estimatedUnits) > 0)) {
+          return `Estimate how many ${PRICING_UNIT_LABELS[proposal.pricingType]?.unit || 'units'} the work will take.`
+        }
+        if (!proposal.deliveryTime) return 'Select a delivery time.'
       }
-      if (!proposal.deliveryTime) return 'Select a delivery time.'
     }
 
     if (stepId === 'questions') {
@@ -97,7 +179,7 @@ function OpportunityBidForm({
     return ''
   }
 
-  function goToNextStep() {
+  async function goToNextStep() {
     const validationError = getStepValidationError(activeStep.id)
     if (validationError) {
       setStepError(validationError)
@@ -105,7 +187,10 @@ function OpportunityBidForm({
     }
 
     setStepError('')
-    setActiveStepIndex((current) => Math.min(applicationSteps.length - 1, current + 1))
+    const nextStepIndex = Math.min(applicationSteps.length - 1, activeStepIndex + 1)
+    const savedDraft = await onSaveDraft?.(buildApplicationState(nextStepIndex), { silent: true })
+    if (onSaveDraft && !savedDraft) return
+    setActiveStepIndex(nextStepIndex)
   }
 
   function goToPreviousStep() {
@@ -201,33 +286,44 @@ function OpportunityBidForm({
             <p className="opportunities-bid-counter">{proposal.proposal.length} / 1500</p>
           </div>
 
-          <div className="opportunities-bid-field">
-            <label htmlFor="bid-price">Your price <b>*</b></label>
-            <div className="opportunities-bid-price-row">
-              <select value={proposal.currency} aria-label="Currency" onChange={(event) => updateProposal('currency', event.target.value)}>
-                <option value="KES">KES</option>
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-              </select>
-              <input
-                id="bid-price"
-                value={proposal.price}
-                type="number"
-                min="0"
-                placeholder="Enter your price"
-                required
-                onChange={(event) => updateProposal('price', event.target.value)}
-              />
-              <select value={proposal.pricingType} aria-label="Pricing type" onChange={(event) => updateProposal('pricingType', event.target.value)}>
-                <option value="fixed">Fixed Price</option>
-                <option value="per hour">Per Hour</option>
-                <option value="per day">Per Day</option>
-                <option value="per month">Per Month</option>
-              </select>
+          {isTeamOpportunity ? (
+            <div className="opportunities-bid-field">
+              <label>Payment</label>
+              <p className="opportunities-bid-team-pay-note">
+                This is a team project paid from one shared budget. You don&apos;t set a price — each deliverable&apos;s
+                budget is split equally among the students who work on it, and your share is released as the business
+                approves each deliverable.
+              </p>
             </div>
-          </div>
+          ) : (
+            <div className="opportunities-bid-field">
+              <label htmlFor="bid-price">Your price <b>*</b></label>
+              <div className="opportunities-bid-price-row">
+                <select value={proposal.currency} aria-label="Currency" onChange={(event) => updateProposal('currency', event.target.value)}>
+                  <option value="KES">KES</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                </select>
+                <input
+                  id="bid-price"
+                  value={proposal.price}
+                  type="number"
+                  min="0"
+                  placeholder="Enter your price"
+                  required
+                  onChange={(event) => updateProposal('price', event.target.value)}
+                />
+                <select value={proposal.pricingType} aria-label="Pricing type" onChange={(event) => updateProposal('pricingType', event.target.value)}>
+                  <option value="fixed">Fixed Price</option>
+                  <option value="per hour">Per Hour</option>
+                  <option value="per day">Per Day</option>
+                  <option value="per month">Per Month</option>
+                </select>
+              </div>
+            </div>
+          )}
 
-          {proposal.pricingType !== 'fixed' ? (
+          {!isTeamOpportunity && proposal.pricingType !== 'fixed' ? (
             <div className="opportunities-bid-field">
               <label htmlFor="bid-estimated-units">
                 Estimated {PRICING_UNIT_LABELS[proposal.pricingType]?.unit || 'units'} <b>*</b>
@@ -255,24 +351,26 @@ function OpportunityBidForm({
             </div>
           ) : null}
 
-          <div className="opportunities-bid-field opportunities-bid-delivery-field">
-            <label htmlFor="bid-delivery-time">Delivery time <b>*</b></label>
-            <div className="opportunities-bid-delivery-row">
-              <FiCalendar aria-hidden="true" />
-              <select
-                id="bid-delivery-time"
-                value={proposal.deliveryTime}
-                required
-                onChange={(event) => updateProposal('deliveryTime', event.target.value)}
-              >
-                <option value="">Select delivery time</option>
-                <option value="1 day">1 day</option>
-                <option value="2-3 days">2-3 days</option>
-                <option value="4-7 days">4-7 days</option>
-                <option value="1-2 weeks">1-2 weeks</option>
-              </select>
+          {!isTeamOpportunity ? (
+            <div className="opportunities-bid-field opportunities-bid-delivery-field">
+              <label htmlFor="bid-delivery-time">Delivery time <b>*</b></label>
+              <div className="opportunities-bid-delivery-row">
+                <FiCalendar aria-hidden="true" />
+                <select
+                  id="bid-delivery-time"
+                  value={proposal.deliveryTime}
+                  required
+                  onChange={(event) => updateProposal('deliveryTime', event.target.value)}
+                >
+                  <option value="">Select delivery time</option>
+                  <option value="1 day">1 day</option>
+                  <option value="2-3 days">2-3 days</option>
+                  <option value="4-7 days">4-7 days</option>
+                  <option value="1-2 weeks">1-2 weeks</option>
+                </select>
+              </div>
             </div>
-          </div>
+          ) : null}
         </section>
       ) : null}
 
@@ -299,6 +397,7 @@ function OpportunityBidForm({
                 onChange={(event) => {
                   setQuestionAnswers((current) => ({ ...current, [question]: event.target.value }))
                   setStepError('')
+                  onMarkDirty?.()
                 }}
               />
               <p className="opportunities-bid-counter">{String(questionAnswers[question] || '').length} / 1000</p>
@@ -335,18 +434,23 @@ function OpportunityBidForm({
                   <input
                     id={`application-attachment-${requirement.id}`}
                     type="url"
-                    value={typeof selectedValue === 'string' ? selectedValue : ''}
+                    value={typeof selectedValue === 'string' ? selectedValue : selectedValue?.url || ''}
                     required={requirement.required !== false}
                     placeholder="https://..."
                     onChange={(event) => {
                       setAttachments((current) => ({ ...current, [requirement.id]: event.target.value }))
                       setStepError('')
+                      onMarkDirty?.()
                     }}
                   />
                 ) : (
                   <label className="opportunities-bid-dropzone" htmlFor={`application-attachment-${requirement.id}`}>
                     <FiUploadCloud aria-hidden="true" />
-                    <strong>{selectedValue instanceof File ? selectedValue.name : 'Choose a file to upload'}</strong>
+                    <strong>
+                      {selectedValue instanceof File
+                        ? selectedValue.name
+                        : selectedValue?.fileName || 'Choose a file to upload'}
+                    </strong>
                     <span>{requirement.fileType} · Maximum 10MB</span>
                     <input
                       id={`application-attachment-${requirement.id}`}
@@ -356,6 +460,7 @@ function OpportunityBidForm({
                         const file = event.target.files?.[0]
                         setAttachments((current) => ({ ...current, [requirement.id]: file || null }))
                         setStepError('')
+                        onMarkDirty?.()
                       }}
                     />
                   </label>
@@ -387,11 +492,17 @@ function OpportunityBidForm({
               <div>
                 <small>Proposal</small>
                 <strong>
-                  {proposal.currency} {proposal.price}
-                  {proposal.pricingType !== 'fixed'
-                    ? ` ${proposal.pricingType} · ~${proposal.estimatedUnits} ${PRICING_UNIT_LABELS[proposal.pricingType]?.unit || 'units'} (est. ${proposal.currency} ${getEstimatedBidTotal(proposal).toLocaleString('en-US')})`
-                    : ''}
-                  {' · '}{proposal.deliveryTime}
+                  {isTeamOpportunity ? (
+                    'Shared team budget (pay by work submitted)'
+                  ) : (
+                    <>
+                      {proposal.currency} {proposal.price}
+                      {proposal.pricingType !== 'fixed'
+                        ? ` ${proposal.pricingType} · ~${proposal.estimatedUnits} ${PRICING_UNIT_LABELS[proposal.pricingType]?.unit || 'units'} (est. ${proposal.currency} ${getEstimatedBidTotal(proposal).toLocaleString('en-US')})`
+                        : ''}
+                    </>
+                  )}
+                  {!isTeamOpportunity && proposal.deliveryTime ? <>{' · '}{proposal.deliveryTime}</> : null}
                 </strong>
                 <p>{proposal.proposal}</p>
               </div>
@@ -427,28 +538,46 @@ function OpportunityBidForm({
         </section>
       ) : null}
 
-      {stepError || submitError ? (
-        <p className="opportunities-application-error" role="alert">{stepError || submitError}</p>
+      {draftNotice ? <p className="opportunities-application-saved" role="status">{draftNotice}</p> : null}
+      {stepError || submitError || draftError ? (
+        <p className="opportunities-application-error" role="alert">{stepError || submitError || draftError}</p>
       ) : null}
 
       <footer className="opportunities-bid-form-foot opportunities-application-actions">
-        {activeStepIndex > 0 ? (
-          <button type="button" className="opportunities-application-back-btn" disabled={isSubmitting} onClick={goToPreviousStep}>
-            <FiArrowLeft aria-hidden="true" />
-            Back
+        <div className="opportunities-application-secondary-actions">
+          <button type="button" className="opportunities-application-cancel-btn" disabled={isSubmitting || isSavingDraft} onClick={onCancel}>
+            <FiX aria-hidden="true" />
+            Cancel
           </button>
-        ) : <span />}
-        {activeStep.id === 'review' ? (
-          <button type="submit" className="opportunities-detail-bid-btn" disabled={isSubmitting}>
-            {isSubmitting ? 'Uploading and submitting...' : 'Submit application'}
-            <FiArrowRight aria-hidden="true" />
+          {activeStepIndex > 0 ? (
+            <button type="button" className="opportunities-application-back-btn" disabled={isSubmitting || isSavingDraft} onClick={goToPreviousStep}>
+              <FiArrowLeft aria-hidden="true" />
+              Back
+            </button>
+          ) : null}
+        </div>
+        <div className="opportunities-application-primary-actions">
+          <button
+            type="button"
+            className="opportunities-application-save-btn"
+            disabled={isSubmitting || isSavingDraft}
+            onClick={() => onSaveDraft?.(buildApplicationState())}
+          >
+            <FiSave aria-hidden="true" />
+            {isSavingDraft ? 'Saving...' : 'Save draft'}
           </button>
-        ) : (
-          <button type="button" className="opportunities-detail-bid-btn" onClick={goToNextStep}>
-            Save &amp; continue
-            <FiArrowRight aria-hidden="true" />
-          </button>
-        )}
+          {activeStep.id === 'review' ? (
+            <button type="submit" className="opportunities-detail-bid-btn" disabled={isSubmitting || isSavingDraft}>
+              {isSubmitting ? 'Uploading and submitting...' : 'Submit application'}
+              <FiArrowRight aria-hidden="true" />
+            </button>
+          ) : (
+            <button type="button" className="opportunities-detail-bid-btn" disabled={isSavingDraft} onClick={goToNextStep}>
+              {isSavingDraft ? 'Saving...' : 'Save & continue'}
+              <FiArrowRight aria-hidden="true" />
+            </button>
+          )}
+        </div>
       </footer>
     </form>
   )

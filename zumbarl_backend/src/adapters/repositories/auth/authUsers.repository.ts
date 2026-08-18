@@ -86,6 +86,10 @@ function toStudentProfile(student: Record<string, any> | null) {
   return {
     id: student.id,
     userId: student.userId,
+    firstName: student.firstName,
+    lastName: student.lastName,
+    name: [student.firstName, student.lastName].filter(Boolean).join(' '),
+    avatarUrl: student.avatarUrl,
     campus: student.campus?.name ?? student.campus ?? 'Unassigned campus',
     headline: student.careerPath ?? student.headline ?? 'New Zumbarl student',
     score: 0,
@@ -140,20 +144,27 @@ class AuthUsersRepository {
     return toAuthUser(user) as AnyRecord
   }
 
-  async createUserWithStudentProfile(payload: Record<string, any>, campus?: string) {
+  async createUserWithStudentProfile(payload: Record<string, any>, campus?: Record<string, any>) {
     const split = splitName(payload.name)
     const firstName = payload.firstName || split.firstName
     const lastName = payload.lastName || split.lastName
+    const campusIdentity = [campus?.name || 'unassigned', campus?.branch].filter(Boolean).join('-').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
     const result = await prisma.$transaction(async (transaction) => {
-      const campusRecord = await transaction.campus.upsert({
-        where: { id: `campus-${String(campus || 'unassigned').toLowerCase().replace(/[^a-z0-9]+/g, '-')}` },
-        update: {},
-        create: {
-          id: `campus-${String(campus || 'unassigned').toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
-          name: campus ?? 'Unassigned campus',
-          city: 'Nairobi'
-        }
-      })
+      const campusRecord = campus?.id
+        ? await transaction.campus.findFirstOrThrow({ where: { id: campus.id, isActive: true } })
+        : await transaction.campus.upsert({
+            where: { id: `campus-${campusIdentity}` },
+            update: {},
+            create: {
+              id: `campus-${campusIdentity}`,
+              name: campus?.name ?? 'Unassigned campus',
+              branch: campus?.branch || null,
+              city: campus?.city ?? 'Nairobi',
+              locationLabel: campus?.locationLabel || null,
+              latitude: campus?.latitude == null ? null : Number(campus.latitude),
+              longitude: campus?.longitude == null ? null : Number(campus.longitude)
+            }
+          })
       const course = await transaction.course.upsert({
         where: { id: 'course-unassigned' },
         update: {},
@@ -242,6 +253,16 @@ class AuthUsersRepository {
     return { user: toAuthUser(result.user, { businessId: result.business.id }), business: toBusinessProfile(result.business) }
   }
 
+  async listActiveCampuses(query = '') {
+    const term = query.trim()
+    return prisma.campus.findMany({
+      where: { isActive: true, ...(term ? { OR: [{ name: { contains: term, mode: 'insensitive' } }, { branch: { contains: term, mode: 'insensitive' } }, { city: { contains: term, mode: 'insensitive' } }] } : {}) },
+      orderBy: [{ name: 'asc' }, { branch: 'asc' }],
+      take: 20,
+      select: { id: true, name: true, branch: true, city: true, locationLabel: true, latitude: true, longitude: true }
+    })
+  }
+
   async findStudentProfileById(id?: string) {
     if (!id) return null
     const student = await prisma.studentProfile.findUnique({ where: { id }, include: { campus: true } })
@@ -278,6 +299,7 @@ const createUserWithBusinessProfile = authUsersRepository.createUserWithBusiness
 const findStudentProfileById = authUsersRepository.findStudentProfileById.bind(authUsersRepository)
 const findBusinessProfileById = authUsersRepository.findBusinessProfileById.bind(authUsersRepository)
 const createSessionRecord = authUsersRepository.createSessionRecord.bind(authUsersRepository)
+const listActiveCampuses = authUsersRepository.listActiveCampuses.bind(authUsersRepository)
 
 export {
   AuthUsersRepository,
@@ -290,5 +312,6 @@ export {
   createUserWithBusinessProfile,
   findStudentProfileById,
   findBusinessProfileById,
-  createSessionRecord
+  createSessionRecord,
+  listActiveCampuses
 }

@@ -2,6 +2,7 @@ import { ApiError, notFound } from '../../../lib/http.js'
 import { deleteCacheByPattern, readCache, writeCache } from '../../cache/index.js'
 import { sendTransactionalEmail } from '../../notification/index.js'
 import { businessWorkflowsRepository } from '../../repositories/business/index.js'
+import { ensureProjectDeliverableReference } from '../../../shared/projects/ensureDefaultProjectDeliverable.js'
 
 const DEFAULT_BUSINESS_INDUSTRIES = [
   'Accounting and bookkeeping',
@@ -229,7 +230,11 @@ async function createBusinessOpportunityService(businessId: string | undefined, 
     ...payload,
     budgetAmount,
     businessId,
-    status: payload.visibility === 'draft' ? 'draft' : payload.status ?? 'open',
+    // Creation never publishes an opportunity. Funding and publication are a
+    // separate, ordered transition so students cannot discover or apply to an
+    // unpaid brief.
+    status: 'draft',
+    visibility: 'draft',
     applicants: 0,
     escrowStatus: 'unfunded'
   }, actorId)
@@ -248,21 +253,90 @@ async function updateBusinessOpportunityService(id: string, businessId: string |
     ...payload,
     budgetAmount,
     businessId: existingOpportunity.businessId ?? businessId,
-    status: payload.visibility === 'draft' ? 'draft' : payload.status ?? existingOpportunity.status
+    // Do not allow PATCH to bypass the fund -> publish endpoint sequence.
+    status: existingOpportunity.publishedAt
+      ? payload.status ?? existingOpportunity.status
+      : 'draft',
+    visibility: existingOpportunity.publishedAt
+      ? payload.visibility ?? existingOpportunity.visibility
+      : 'draft',
+    publishedAt: existingOpportunity.publishedAt
   }
   const opportunity = await businessWorkflowsRepository.updateOpportunityWithEvent(id, patch, actorId) ?? notFound('Opportunity')
   await deleteCacheByPattern(`business-dashboard:${businessId ?? '*'}*`)
   return opportunity
 }
 
-async function publishBusinessOpportunityService(id: string, actorId: string | undefined) {
+async function setOpportunityApplicationsClosedService(id: string, businessId: string | undefined, closed: boolean) {
+  const opportunity = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
+  if (businessId && opportunity.businessId && opportunity.businessId !== businessId) notFound('Opportunity')
+  const updated = await businessWorkflowsRepository.setOpportunityApplicationsClosed(id, closed) ?? notFound('Opportunity')
+  await deleteCacheByPattern(`business-dashboard:${businessId ?? '*'}*`)
+  return updated
+}
+
+async function deleteBusinessOpportunityService(id: string, businessId: string | undefined) {
+  const opportunity = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
+  if (businessId && opportunity.businessId && opportunity.businessId !== businessId) notFound('Opportunity')
+
+  const status = String(opportunity.status ?? '').trim().toLowerCase()
+  const visibility = String(opportunity.visibility ?? '').trim().toLowerCase()
+  const isDraft = ['draft', 'draft ready', 'ready'].includes(status)
+    && visibility === 'draft'
+    && !opportunity.publishedAt
+  if (!isDraft) {
+    throw new ApiError(409, 'Only draft opportunities can be deleted.', 'OPPORTUNITY_NOT_DRAFT')
+  }
+
+  const deleted = await businessWorkflowsRepository.deleteOpportunity(id)
+  if (!deleted) notFound('Opportunity')
+  await deleteCacheByPattern(`business-dashboard:${businessId ?? '*'}*`)
+}
+
+async function publishBusinessOpportunityService(
+  id: string,
+  businessId: string | undefined,
+  actorId: string | undefined
+) {
+  const existing = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
+  if (businessId && existing.businessId !== businessId) notFound('Opportunity')
+  if (existing.publishedAt && existing.visibility === 'public') return existing
+
+  const budgetAmount = Number(existing.budgetAmount || 0)
+  if (budgetAmount <= 0) {
+    throw new ApiError(409, 'Set a valid opportunity budget before publishing.', 'OPPORTUNITY_BUDGET_REQUIRED')
+  }
+  const escrowCoverage = await businessWorkflowsRepository.getOpportunityEscrowCoverage(id)
+  if (existing.escrowStatus !== 'funded' || escrowCoverage < budgetAmount) {
+    throw new ApiError(
+      409,
+      `Fund the full ${existing.currency || 'KES'} ${budgetAmount.toLocaleString()} opportunity budget before publishing.`,
+      'OPPORTUNITY_FUNDING_REQUIRED',
+      { budgetAmount, escrowCoverage, currency: existing.currency || 'KES' }
+    )
+  }
+
   const opportunity = await businessWorkflowsRepository.publishOpportunityWithEvent(id, { status: 'published', visibility: 'public', publishedAt: new Date().toISOString() }, actorId) ?? notFound('Opportunity')
   await deleteCacheByPattern('business-dashboard:*')
   return opportunity
 }
 
-async function fundBusinessOpportunityService(id: string, payload: Record<string, any>) {
-  const funded = await businessWorkflowsRepository.fundOpportunity(id, payload) ?? notFound('Opportunity')
+async function fundBusinessOpportunityService(
+  id: string,
+  businessId: string | undefined,
+  payload: Record<string, any>,
+  actorId?: string
+) {
+  const existing = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
+  if (businessId && existing.businessId !== businessId) notFound('Opportunity')
+  if (payload.currency && payload.currency !== existing.currency) {
+    throw new ApiError(
+      400,
+      `Funding for this opportunity must use ${existing.currency || 'KES'}.`,
+      'OPPORTUNITY_FUNDING_CURRENCY_MISMATCH'
+    )
+  }
+  const funded = await businessWorkflowsRepository.fundOpportunity(id, payload, actorId) ?? notFound('Opportunity')
   const { opportunity, escrow } = funded as { opportunity: Record<string, any>, escrow: Record<string, any> }
   await deleteCacheByPattern(`business-dashboard:${opportunity.businessId ?? '*'}*`)
   return escrow
@@ -280,21 +354,51 @@ async function readOpportunityDeliverableService(id: string, deliverableId: stri
   return deliverable
 }
 
-async function createOpportunityDeliverablesService(id: string, payload: Record<string, any>, actorId: string | undefined) {
+async function createOpportunityDeliverablesService(
+  id: string,
+  businessId: string | undefined,
+  payload: Record<string, any>,
+  actorId: string | undefined
+) {
+  const existing = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
+  if (businessId && existing.businessId !== businessId) notFound('Opportunity')
+  const lockedProject = await businessWorkflowsRepository.findScopeLockedOpportunityProject(id)
+  if (lockedProject) {
+    throw new ApiError(
+      409,
+      'Deliverables cannot be added after the project has started.',
+      'OPPORTUNITY_SCOPE_LOCKED_AFTER_PROJECT_START',
+      { projectId: lockedProject.id }
+    )
+  }
   const result = await businessWorkflowsRepository.createOpportunityDeliverablesWithEvent(id, payload, actorId) ?? notFound('Opportunity')
   if (!result.opportunity) notFound('Opportunity')
   await deleteCacheByPattern(`business-dashboard:${result.opportunity.businessId ?? '*'}*`)
   return result
 }
 
-async function inviteOpportunityBiddersService(id: string, payload: Record<string, any>, actorId: string | undefined) {
+async function inviteOpportunityBiddersService(
+  id: string,
+  businessId: string | undefined,
+  payload: Record<string, any>,
+  actorId: string | undefined
+) {
+  const opportunity = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
+  if (businessId && opportunity.businessId !== businessId) notFound('Opportunity')
+  if (!opportunity.publishedAt || opportunity.visibility !== 'public') {
+    throw new ApiError(
+      409,
+      'Fund and publish this opportunity before inviting students.',
+      'OPPORTUNITY_NOT_PUBLISHED'
+    )
+  }
   const result = await businessWorkflowsRepository.createOpportunityInvitesWithEvent(id, payload, actorId) ?? notFound('Opportunity')
   const { invites, recipients = [] } = result
   const emailResults = await Promise.all(recipients.map((recipient: Record<string, any>) => (
     sendTransactionalEmail(
       recipient.email,
       `You're invited to apply: ${result.opportunity.title}`,
-      `<p>Hi ${recipient.name},</p><p>${payload.note || `You have been invited to apply for ${result.opportunity.title}.`}</p><p><a href="/campus/opportunities/${id}/place-bid">View opportunity</a></p>`
+      `<p>Hi ${recipient.name},</p><p>${payload.note || `You have been invited to apply for ${result.opportunity.title}.`}</p><p><a href="/campus/opportunities?opportunity=${encodeURIComponent(id)}">Review opportunity</a></p>`
     )
   )))
   return { invites, notifications: recipients.length, emails: emailResults }
@@ -309,6 +413,12 @@ async function listOpportunityApplicantsService(id: string, businessId: string |
   const opportunity = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
   if (businessId && opportunity.businessId !== businessId) notFound('Opportunity')
   return { data: await businessWorkflowsRepository.listOpportunityBids(id) }
+}
+
+async function listOpportunitySubmissionsService(id: string, businessId: string | undefined) {
+  const opportunity = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
+  if (businessId && opportunity.businessId !== businessId) notFound('Opportunity')
+  return { data: await businessWorkflowsRepository.listOpportunitySubmissions(id) }
 }
 
 async function createApplicantReviewEventService(id: string, payload: Record<string, any>, actorId: string | undefined) {
@@ -358,10 +468,93 @@ async function startApplicantInterviewService(
   return result
 }
 
+async function counterOfferApplicantBidService(
+  id: string,
+  businessId: string | undefined,
+  payload: Record<string, any>
+) {
+  const bid = await businessWorkflowsRepository.findBid(id) ?? notFound('Applicant bid')
+  const opportunity = await businessWorkflowsRepository.findOpportunity(bid.opportunityId) ?? notFound('Opportunity')
+  if (businessId && opportunity.businessId !== businessId) notFound('Applicant bid')
+
+  const amount = Number(payload.amount)
+  const budgetAmount = Number(opportunity.budgetAmount || 0)
+  const studentBidAmount = Number(bid.bidAmount || 0)
+  const bidStatus = String(bid.status || '').toLowerCase()
+  const bidMetadata = bid.metadata && typeof bid.metadata === 'object' && !Array.isArray(bid.metadata)
+    ? bid.metadata as Record<string, any>
+    : {}
+  const previousCounterOffer = bidMetadata.counterOffer as Record<string, any> | undefined
+  const previousOfferWasRetryable = previousCounterOffer?.status === 'rejected'
+    && previousCounterOffer.autoRejectOnDecline !== true
+
+  if (['accepted', 'awarded', 'rejected'].includes(bidStatus)) {
+    throw new ApiError(
+      409,
+      'This application is no longer open for price negotiation.',
+      'APPLICATION_NOT_NEGOTIABLE'
+    )
+  }
+  if (previousCounterOffer && !previousOfferWasRetryable) {
+    const reason = previousCounterOffer.status === 'pending'
+      ? 'Wait for the student to respond to the current offer before taking another negotiation action.'
+      : previousCounterOffer.status === 'accepted'
+        ? 'The student already accepted the price offer, so negotiation is complete.'
+        : 'A new offer is only available after the student declines an offer that did not have auto-reject enabled.'
+    throw new ApiError(409, reason, 'COUNTER_OFFER_RETRY_NOT_ALLOWED')
+  }
+  if (payload.currency && payload.currency !== opportunity.currency) {
+    throw new ApiError(
+      400,
+      `Counter-offers for this opportunity must use ${opportunity.currency || 'KES'}.`,
+      'COUNTER_OFFER_CURRENCY_MISMATCH'
+    )
+  }
+  if (budgetAmount <= 0) {
+    throw new ApiError(
+      409,
+      'Set an opportunity budget before negotiating an applicant price.',
+      'NEGOTIATION_BUDGET_REQUIRED'
+    )
+  }
+  if (studentBidAmount <= budgetAmount) {
+    throw new ApiError(
+      409,
+      'This application is not above the opportunity budget, so a price pushback is not available.',
+      'BID_NOT_ABOVE_BUDGET'
+    )
+  }
+  if (amount <= budgetAmount || amount >= studentBidAmount) {
+    throw new ApiError(
+      400,
+      `Propose an amount above the ${opportunity.currency || 'KES'} ${budgetAmount.toLocaleString()} budget and below the student's ${opportunity.currency || 'KES'} ${studentBidAmount.toLocaleString()} bid.`,
+      'COUNTER_OFFER_OUTSIDE_NEGOTIATION_RANGE',
+      { budgetAmount, studentBidAmount }
+    )
+  }
+
+  return await businessWorkflowsRepository.counterOfferApplicantBid(
+    id,
+    amount,
+    opportunity.currency,
+    payload.autoRejectOnDecline
+  ) ?? notFound('Applicant bid')
+}
+
 async function awardApplicantProjectService(id: string, actorId: string | undefined) {
   const awarded = await businessWorkflowsRepository.awardApplicantProjectWithEvent(id, actorId) ?? notFound('Applicant bid')
-  const { bid: updatedBid, project } = awarded
-  return { bid: updatedBid, project }
+  if (awarded.awarded === false) {
+    const currency = awarded.currency ?? 'KES'
+    throw new ApiError(
+      409,
+      `This applicant's agreed price (${currency} ${Number(awarded.agreedAmount ?? 0).toLocaleString()}) is more than the ${currency} ${Number(awarded.escrowCoverage ?? 0).toLocaleString()} funded in escrow. Add funds to cover it before awarding.`,
+      'ESCROW_BELOW_AGREED_AMOUNT',
+      { agreedAmount: awarded.agreedAmount, escrowCoverage: awarded.escrowCoverage, currency }
+    )
+  }
+  if (!awarded.project) notFound('Project')
+  await ensureProjectDeliverableReference(awarded.project)
+  return { bid: awarded.bid, project: awarded.project }
 }
 
 export {
@@ -376,6 +569,8 @@ export {
   listBusinessOpportunitiesService,
   createBusinessOpportunityService,
   updateBusinessOpportunityService,
+  deleteBusinessOpportunityService,
+  setOpportunityApplicationsClosedService,
   publishBusinessOpportunityService,
   fundBusinessOpportunityService,
   listOpportunityDeliverablesService,
@@ -384,8 +579,10 @@ export {
   listOpportunityInviteCandidatesService,
   inviteOpportunityBiddersService,
   listOpportunityApplicantsService,
+  listOpportunitySubmissionsService,
   createApplicantReviewEventService,
   scheduleApplicantInterviewService,
   startApplicantInterviewService,
-  awardApplicantProjectService
+  awardApplicantProjectService,
+  counterOfferApplicantBidService
 }

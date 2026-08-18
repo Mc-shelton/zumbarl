@@ -1,0 +1,234 @@
+/* Project team table. Shared by the student workspace and the business review
+   workspace so both read the same membership, task counts and approved share. */
+
+.team-sprint-card header em,
+.team-sprint-row em,
+.team-milestone-row > span:nth-child(2),
+.team-member-row > span:nth-child(2) {
+  width: fit-content;
+  border-radius: 999px;
+  background: #dff7e8;
+  color: #128a48;
+  padding: 6px 12px;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.team-sprint-card i,
+.team-board-footer i,
+.team-sprint-row i,
+.team-milestone-row i,
+.team-member-row i {
+  display: block;
+  height: 7px;
+  border-radius: 999px;
+  background: #e2e1f0;
+  overflow: hidden;
+}
+
+.team-sprint-card i b,
+.team-board-footer i b,
+.team-sprint-row i b,
+.team-milestone-row i b,
+.team-member-row i b {
+  display: block;
+  width: var(--progress, 60%);
+  height: 100%;
+  border-radius: inherit;
+  background: var(--project-primary);
+}
+
+.team-tab-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.team-tab-tools label {
+  min-width: 260px;
+  min-height: 42px;
+  border: 1px solid var(--project-border);
+  border-radius: 8px;
+  padding: 0 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.team-tab-tools input {
+  border: 0;
+  outline: 0;
+  font: inherit;
+  font-weight: 700;
+}
+
+.team-tab-tools .project-primary-btn {
+  margin-left: auto;
+}
+
+.team-milestone-row,
+.team-member-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.4fr) 150px 78px 96px 90px 150px 104px;
+  gap: 16px;
+  align-items: center;
+  padding: 18px;
+  border-top: 1px solid #edf0f7;
+}
+
+.team-member-row > span.is-blocked {
+  color: #a33b38;
+  font-weight: 600;
+}
+
+.team-members-empty {
+  margin: 0;
+  padding: 34px 18px;
+  border-top: 1px solid #edf0f7;
+  color: var(--project-muted, #707590);
+  font-size: 13px;
+  text-align: center;
+}
+
+.team-milestone-row.is-head,
+.team-member-row.is-head {
+  border-top: 0;
+  color: #53608d;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.team-milestone-row strong,
+.team-milestone-row em,
+.team-member-row strong,
+.team-member-row em {
+  display: block;
+  color: var(--project-ink);
+  font-style: normal;
+  font-weight: 900;
+}
+
+.team-milestone-row em,
+.team-member-row em {
+  margin-top: 5px;
+  color: #59658f;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.team-member-status {
+  width: fit-content;
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: #e4f8eb;
+  color: #128a48;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.team-member-status.is-invited {
+  background: #fff1dc;
+  color: #a96500;
+}
+
+
+/* The member cell has three children (avatar, name, campus) - the old rule gave
+   it two columns, so the campus text wrapped down the 32px avatar column and
+   stretched every row. Named areas keep the avatar beside a stacked label. */
+.team-member-row > span:first-child {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  grid-template-areas:
+    "avatar name"
+    "avatar school";
+  align-items: center;
+  gap: 0 12px;
+  min-width: 0;
+}
+
+.team-member-row > span:first-child img {
+  grid-area: avatar;
+  align-self: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  object-fit: cover;
+}
+
+.team-member-row > span:first-child strong {
+  grid-area: name;
+  overflow: hidden;
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-member-row > span:first-child em {
+  grid-area: school;
+  overflow: hidden;
+  color: var(--color-text-muted, #707590);
+  font-size: 12px;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.team-member-row.is-viewer {
+  background: var(--color-surface-brand-soft, #f4f2ff);
+}
+
+.team-member-you {
+  grid-area: name;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--color-action, #6c4cf0);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 980px) {
+  .team-member-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Baselines so the table stands alone on pages that do not load the student
+   workspace stylesheet. Zero specificity, so the richer rules there still win. */
+:where(.team-members-panel) :where(.project-card) {
+  border: 1px solid var(--color-border, #e7e8f1);
+  border-radius: 14px;
+  background: var(--color-surface, #fff);
+  overflow: hidden;
+}
+
+:where(.team-members-panel) :where(.project-primary-btn) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--color-action, #6c4cf0);
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+:where(.team-members-panel) :where(.project-soft-btn) {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--color-border, #e7e8f1);
+  border-radius: 10px;
+  background: var(--color-surface, #fff);
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+}

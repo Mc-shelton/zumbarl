@@ -25,6 +25,8 @@ export function BusinessOpportunityBriefRail({
   clarityChecks = [],
   clarityScore = 0,
   isPublishReady = false,
+  isSaving = false,
+  isUploadingSplash = false,
   onPublish,
   onSaveDraft,
   onStepChange,
@@ -38,16 +40,16 @@ export function BusinessOpportunityBriefRail({
         <article>
           <span aria-hidden="true"><FiRadio /></span>
           <div>
-            <h3>{summary.title}</h3>
-            <p>{summary.company}</p>
-            <em>{summary.type}</em>
+            <h3>{summary.title || 'Opportunity title'}</h3>
+            <p>{summary.company || 'Your company'}</p>
+            <em>{summary.type || 'Opportunity type'}</em>
           </div>
         </article>
-        <p className="business-create-summary-copy">{summary.summary}</p>
+        <p className="business-create-summary-copy">{summary.summary || 'Your short opportunity description will appear here.'}</p>
         <dl>
-          <div><dt><FiDollarSign aria-hidden="true" /> Budget</dt><dd>{summary.budget}</dd></div>
-          <div><dt><FiClock aria-hidden="true" /> Duration</dt><dd>{summary.duration}</dd></div>
-          <div><dt><FiBriefcase aria-hidden="true" /> Engagement</dt><dd>{summary.engagement}</dd></div>
+          <div><dt><FiDollarSign aria-hidden="true" /> Budget</dt><dd>{summary.budget || 'Not set'}</dd></div>
+          <div><dt><FiClock aria-hidden="true" /> Duration</dt><dd>{summary.duration || 'Not set'}</dd></div>
+          <div><dt><FiBriefcase aria-hidden="true" /> Engagement</dt><dd>{summary.engagement || 'Not set'}</dd></div>
           <div><dt><FiCalendar aria-hidden="true" /> Deadline</dt><dd>{summary.deadline}</dd></div>
           <div><dt><FiUsers aria-hidden="true" /> Applicants</dt><dd>{summary.applicants}</dd></div>
         </dl>
@@ -98,21 +100,26 @@ export function BusinessOpportunityBriefRail({
         </div>
         <p>
           <FiInfo aria-hidden="true" />
-          Once published, you can start receiving applications immediately.
+          Your opportunity stays private until its budget is paid into escrow and publication completes.
         </p>
         <footer>
-          <button type="button" className="business-profile-ghost-btn" onClick={onSaveDraft}>
+          <button
+            type="button"
+            className="business-profile-ghost-btn"
+            disabled={isSaving || isUploadingSplash}
+            onClick={onSaveDraft}
+          >
             <FiSave aria-hidden="true" />
-            Save as Draft
+            {isUploadingSplash ? 'Uploading splash...' : isSaving ? 'Saving...' : 'Save as Draft'}
           </button>
           <button
             type="button"
             className="business-profile-primary-btn"
-            disabled={!isPublishReady}
+            disabled={!isPublishReady || isSaving || isUploadingSplash}
             onClick={onPublish}
           >
             <FiSend aria-hidden="true" />
-            Create & Publish Opportunity
+            Continue to Payment
           </button>
         </footer>
       </section>

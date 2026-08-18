@@ -1,5 +1,6 @@
 import { FiCreditCard, FiPlus, FiShield } from 'react-icons/fi'
 import Seo from '../components/Seo'
+import { BusinessCompanyProfileCard } from '../features/business/components/BusinessCompanyProfileCard'
 import { BusinessWorkspaceHeader } from '../features/business/components/BusinessWorkspaceHeader'
 import { BusinessWorkspaceSidebar } from '../features/business/components/BusinessApplicantSidebar'
 import '../styles/campus.css'
@@ -26,10 +27,12 @@ function BusinessSettingsPage() {
           <section className="campus-main business-workspace-main business-settings-main">
             <BusinessWorkspaceHeader
               title="Settings"
-              description="Manage account preferences, payment methods and business workspace controls."
+              description="Manage your company profile, payment methods and business workspace controls."
               primaryActionHref="/business/opportunities/create"
               primaryActionLabel="Create Opportunity"
             />
+
+            <BusinessCompanyProfileCard />
 
             <section id="payment-methods" className="business-profile-card business-settings-payment-card">
               <header>

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   CONNECT_GROUPS,
   CONNECT_POST_TEMPLATE,
@@ -7,9 +7,12 @@ import {
   createInitialConnectWorkflowState,
   getConnectActiveStepId,
 } from '../../workflows/workflowData'
+import { readConnectProfile, saveConnectProfile } from '../services/connectProfileService'
 
-function useExploreConnectWorkflow() {
+function useExploreConnectWorkflow({ onPrepareProfile } = {}) {
   const [state, setState] = useState(createInitialConnectWorkflowState)
+  const [connectProfile, setConnectProfile] = useState(null)
+  const [isProfileLoading, setIsProfileLoading] = useState(true)
 
   const patchState = (patch) => setState((current) => ({ ...current, ...patch }))
 
@@ -116,7 +119,25 @@ function useExploreConnectWorkflow() {
     state.tagResolved,
   ])
 
-  const handlePrepareProfile = () => patchState({ profileReady: true })
+  useEffect(() => {
+    readConnectProfile()
+      .then((response) => {
+        const profile = response?.profile || null
+        setConnectProfile(profile)
+        patchState({ profileReady: Boolean(profile?.interests?.length) })
+      })
+      .catch(() => patchState({ profileReady: false }))
+      .finally(() => setIsProfileLoading(false))
+  }, [])
+
+  const handlePrepareProfile = () => onPrepareProfile?.(connectProfile)
+
+  async function handleSaveProfile(payload) {
+    const profile = await saveConnectProfile(payload)
+    setConnectProfile(profile)
+    patchState({ profileReady: Boolean(profile?.interests?.length) })
+    return profile
+  }
 
   const handlePublishStory = () => {
     if (!state.profileReady) {
@@ -136,10 +157,6 @@ function useExploreConnectWorkflow() {
   }
 
   const handleComposerPost = () => {
-    if (!state.profileReady) {
-      patchState({ profileReady: true })
-      return
-    }
     if (!state.storyPublished) {
       patchState({ storyPublished: true })
       return
@@ -154,8 +171,11 @@ function useExploreConnectWorkflow() {
     activeTag,
     canRecordProof,
     engagementReady,
+    connectProfile,
+    isProfileLoading,
     handleComposerPost,
     handlePrepareProfile,
+    handleSaveProfile,
     handlePublishPost,
     handlePublishStory,
     patchState,

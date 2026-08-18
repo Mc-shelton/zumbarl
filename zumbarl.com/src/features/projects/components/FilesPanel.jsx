@@ -1,8 +1,80 @@
-import { FiChevronDown, FiFileText, FiGrid, FiList, FiMessageCircle, FiMoreHorizontal, FiPlus, FiUploadCloud } from 'react-icons/fi'
+import { useState } from 'react'
+import { FiChevronDown, FiDownload, FiFileText, FiGrid, FiList, FiMessageCircle, FiMoreHorizontal, FiPlus, FiUploadCloud } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 import { workspaceFiles } from '../data/mockWorkspace'
 
-function FilesPanel() {
+function RealFilesPanel({ project }) {
+  const [query, setQuery] = useState('')
+  const files = Array.isArray(project.workFiles) ? project.workFiles : []
+  const normalized = query.trim().toLowerCase()
+  const visibleFiles = normalized
+    ? files.filter((file) => file.name.toLowerCase().includes(normalized))
+    : files
+
+  return (
+    <section className="project-files-panel">
+      <header className="project-files-head">
+        <div>
+          <h2>Project Files</h2>
+          <p>Files you have submitted for this project. Reviewers can download each one.</p>
+        </div>
+      </header>
+
+      <div className="project-files-tools">
+        <label>
+          <FiMessageCircle aria-hidden="true" />
+          <input
+            type="search"
+            value={query}
+            placeholder="Search files..."
+            onChange={(event) => setQuery(event.target.value)}
+          />
+        </label>
+      </div>
+
+      {visibleFiles.length ? (
+        <section className="project-card project-files-table" aria-label="Project files table">
+          <div className="project-files-row is-head">
+            <span>Name</span>
+            <span>Type</span>
+            <span>Source</span>
+            <span>Submitted</span>
+            <span>Size</span>
+            <span />
+          </div>
+          {visibleFiles.map((file) => (
+            <div key={file.id} className="project-files-row">
+              <span>
+                <FiFileText className={`is-${file.tone}`} aria-hidden="true" />
+                <strong>{file.name}</strong>
+              </span>
+              <span>{file.type}</span>
+              <span>{file.source}</span>
+              <span>{file.updated}</span>
+              <span>{file.size}</span>
+              {file.url ? (
+                <a href={file.url} target="_blank" rel="noreferrer" aria-label={`Download ${file.name}`}>
+                  <FiDownload aria-hidden="true" />
+                </a>
+              ) : (
+                <button type="button" aria-label={`More actions for ${file.name}`}>
+                  <FiMoreHorizontal aria-hidden="true" />
+                </button>
+              )}
+            </div>
+          ))}
+        </section>
+      ) : (
+        <section className="project-card project-files-empty">
+          <FiUploadCloud aria-hidden="true" />
+          <p>{files.length ? 'No files match your search.' : 'No files submitted yet. Files you submit with your work will appear here.'}</p>
+        </section>
+      )}
+    </section>
+  )
+}
+
+function MockFilesPanel() {
   const canManageFiles = hasAccess(ACCESS_KEYS.projects.manageFiles)
   const createCards = [
     ['Document', 'Text docs'],
@@ -96,6 +168,13 @@ function FilesPanel() {
       </section>
     </section>
   )
+}
+
+function FilesPanel({ project }) {
+  if (project?.source === 'database') {
+    return <RealFilesPanel project={project} />
+  }
+  return <MockFilesPanel />
 }
 
 export default FilesPanel

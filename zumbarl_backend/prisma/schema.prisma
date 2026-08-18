@@ -146,15 +146,22 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   // Relations
-  studentProfile   StudentProfile?
-  companyContact   CompanyContact?
-  sessions         Session[]
-  notifications    Notification[]
-  sentMessages     Message[]       @relation("SentMessages")
-  receivedMessages Message[]       @relation("ReceivedMessages")
-  outgoingCalls    CallSession[]   @relation("CallCaller")
-  incomingCalls    CallSession[]   @relation("CallRecipient")
-  uploadedFiles    UploadedFile[]
+  studentProfile             StudentProfile?
+  companyContact             CompanyContact?
+  sessions                   Session[]
+  notifications              Notification[]
+  sentMessages               Message[]                @relation("SentMessages")
+  receivedMessages           Message[]                @relation("ReceivedMessages")
+  outgoingCalls              CallSession[]            @relation("CallCaller")
+  incomingCalls              CallSession[]            @relation("CallRecipient")
+  uploadedFiles              UploadedFile[]
+  sentProjectTeamInvites     ProjectTeamInvite[]      @relation("ProjectTeamInviteSender")
+  receivedProjectTeamInvites ProjectTeamInvite[]      @relation("ProjectTeamInviteRecipient")
+  projectTeamMemberships     ProjectTeamMember[]
+  marketplaceOffersMade      MarketplaceOffer[]       @relation("MarketplaceOfferBuyer")
+  marketplaceOffersReceived  MarketplaceOffer[]       @relation("MarketplaceOfferSeller")
+  managedProfiles            ManagedProfileManager[]
+  followedManagedProfiles    ManagedProfileFollower[]
 
   @@index([email])
   @@index([phone])
@@ -219,27 +226,34 @@ model StudentProfile {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user                  User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  campus                Campus                     @relation(fields: [campusId], references: [id])
-  course                Course                     @relation(fields: [courseId], references: [id])
-  kycDocuments          KycDocument[]
-  zumbarl               ZumbarlScore?
-  skillLevels           SkillLevel_[]
-  bids                  Bid[]
-  pipelineRelationships PipelineRelationship[]
-  endorsementsReceived  Endorsement[]              @relation("EndorsementsReceived")
-  achievements          Achievement[]
-  portfolioItems        PortfolioItem[]
-  stories               StudentStory[]
-  posts                 CampusPost[]
-  marketplaceShops      MarketplaceShop[]
-  marketplaceListings   MarketplaceListing[]
-  eventRsvps            CampusEventRsvp[]
-  roadmapEnrollments    StudentRoadmapEnrollment[]
-  studentSkills         StudentSkill[]
-  wallets               Wallet[]
-  certificates          Certificate[]
-  chamaMembers          ChamaMember[]
+  user                    User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campus                  Campus                        @relation(fields: [campusId], references: [id])
+  course                  Course                        @relation(fields: [courseId], references: [id])
+  kycDocuments            KycDocument[]
+  zumbarl                 ZumbarlScore?
+  skillLevels             SkillLevel_[]
+  bids                    Bid[]
+  pipelineRelationships   PipelineRelationship[]
+  endorsementsReceived    Endorsement[]                 @relation("EndorsementsReceived")
+  achievements            Achievement[]
+  portfolioItems          PortfolioItem[]
+  stories                 StudentStory[]
+  posts                   CampusPost[]
+  marketplaceShops        MarketplaceShop[]
+  marketplaceListings     MarketplaceListing[]
+  eventRsvps              CampusEventRsvp[]
+  roadmapEnrollments      StudentRoadmapEnrollment[]
+  studentSkills           StudentSkill[]
+  wallets                 Wallet[]
+  certificates            Certificate[]
+  chamaMembers            ChamaMember[]
+  deliverableTasks        DeliverableTask[]             @relation("DeliverableTaskOwner")
+  connectStoryReactions   ConnectStoryReaction[]
+  connectStoryComments    ConnectStoryComment[]
+  connectStories          ConnectStory[]
+  connectCommentReactions ConnectStoryCommentReaction[]
+  outgoingRelationships   ConnectRelationship[]         @relation("ConnectRelationshipActor")
+  incomingRelationships   ConnectRelationship[]         @relation("ConnectRelationshipTarget")
 
   @@index([campusId])
   @@index([kycStatus])
@@ -247,14 +261,15 @@ model StudentProfile {
 }
 
 model Campus {
-  id        String   @id @default(cuid())
-  name      String
-  branch    String?
-  city      String
-  latitude  Float?
-  longitude Float?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  name          String
+  branch        String?
+  city          String
+  locationLabel String?
+  latitude      Float?
+  longitude     Float?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
 
   students            StudentProfile[]
   campusManagers      CampusManager[]
@@ -265,6 +280,7 @@ model Campus {
   marketplaceListings MarketplaceListing[]
   events              CampusEvent[]
   careerRoadmaps      CareerRoadmap[]
+  managedProfile      ManagedProfile?
 
   @@map("campuses")
 }
@@ -403,7 +419,11 @@ model MarketplaceShop {
   coverImageUrl   String?
   locationLabel   String?
   deliveryOptions String[] @default([])
+  pickupSpots     String[] @default([])
+  contactRules    String?
+  returnRules     String?
   socialLinks     Json?
+  payload         Json?
   ratingAverage   Float    @default(0)
   ratingCount     Int      @default(0)
   orderCount      Int      @default(0)
@@ -436,6 +456,8 @@ model MarketplaceListing {
   images          String[] @default([])
   locationLabel   String?
   deliveryOptions String[] @default([])
+  variants        String[] @default([])
+  payload         Json?
   status          String   @default("ACTIVE") // DRAFT | ACTIVE | RESERVED | SOLD | ARCHIVED
   stockCount      Int      @default(1)
   viewCount       Int      @default(0)
@@ -453,6 +475,495 @@ model MarketplaceListing {
   @@index([category, status])
   @@index([createdAt])
   @@map("marketplace_listings")
+}
+
+model MarketingCampaign {
+  id                  String    @id @default(cuid())
+  seedKey             String?   @unique
+  businessId          String?
+  title               String
+  description         String?
+  type                String?
+  budgetAmount        Float
+  budget              String?
+  currency            String    @default("KES")
+  platforms           String[]  @default([])
+  minimumFollowers    Int       @default(0)
+  payoutPerCampaigner Float     @default(0)
+  proofRequirements   String[]  @default([])
+  materials           Json?
+  thumbnailTitle      String?
+  thumbnailMeta       String?
+  previewImage        String?
+  objective           String?
+  hashtags            String[]  @default([])
+  targetAudience      String?
+  startsAt            DateTime?
+  endsAt              DateTime?
+  timelineLabel       String?
+  timelineValue       String?
+  creatorsLimit       Int?
+  status              String    @default("draft")
+  acceptedBudget      Float     @default(0)
+  inviteOnlyUntil     DateTime?
+  workflow            Json?
+  stats               Json?
+  payload             Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  invites     MarketingCampaignInvite[]
+  acceptances MarketingCampaignAcceptance[]
+  proofs      MarketingCampaignProof[]
+
+  @@index([businessId])
+  @@index([status, createdAt])
+  @@map("marketing_campaigns")
+}
+
+model MarketingCampaignInvite {
+  id         String   @id @default(cuid())
+  campaignId String
+  studentId  String
+  note       String?
+  status     String   @default("sent")
+  payload    Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  campaign MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId])
+  @@index([studentId, status])
+  @@map("marketing_campaign_invites")
+}
+
+model MarketingCampaignAcceptance {
+  id                     String   @id @default(cuid())
+  campaignId             String
+  studentId              String
+  status                 String   @default("accepted")
+  payoutAmount           Float    @default(0)
+  trackingToken          String?  @unique
+  trackingDestinationUrl String?
+  trackingClicks         Int      @default(0)
+  trackingVisits         Int      @default(0)
+  promoCode              String?
+  payload                Json?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  campaign    MarketingCampaign        @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  clickEvents MarketingCampaignClick[]
+
+  @@unique([campaignId, studentId])
+  @@index([studentId, status])
+  @@map("marketing_campaign_acceptances")
+}
+
+model MarketingCampaignClick {
+  id             String   @id @default(cuid())
+  acceptanceId   String
+  visitorHash    String
+  visits         Int      @default(1)
+  firstClickedAt DateTime @default(now())
+  lastClickedAt  DateTime @updatedAt
+
+  acceptance MarketingCampaignAcceptance @relation(fields: [acceptanceId], references: [id], onDelete: Cascade)
+
+  @@unique([acceptanceId, visitorHash])
+  @@index([acceptanceId, lastClickedAt])
+  @@map("marketing_campaign_clicks")
+}
+
+model MarketingCampaignProof {
+  id              String   @id @default(cuid())
+  campaignId      String
+  studentId       String?
+  links           String[] @default([])
+  screenshots     String[] @default([])
+  videos          String[] @default([])
+  platformUploads Json?
+  reach           Int?
+  engagement      Int?
+  notes           String?
+  status          String   @default("submitted")
+  payload         Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  campaign MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, status])
+  @@index([studentId])
+  @@map("marketing_campaign_proofs")
+}
+
+model ConnectProfile {
+  id                String   @id @default(cuid())
+  studentId         String?  @unique
+  interests         String[] @default([])
+  safetyPreferences Json?
+  visibility        String   @default("campus")
+  payload           Json?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("connect_profiles")
+}
+
+model ConnectRelationship {
+  id              String   @id @default(cuid())
+  actorStudentId  String
+  targetStudentId String
+  type            String
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  actor  StudentProfile @relation("ConnectRelationshipActor", fields: [actorStudentId], references: [id], onDelete: Cascade)
+  target StudentProfile @relation("ConnectRelationshipTarget", fields: [targetStudentId], references: [id], onDelete: Cascade)
+
+  @@unique([actorStudentId, targetStudentId, type])
+  @@index([actorStudentId, type])
+  @@index([targetStudentId, type])
+  @@map("connect_relationships")
+}
+
+model ConnectStory {
+  id         String   @id @default(cuid())
+  sourceId   String?  @unique
+  studentId  String?
+  text       String
+  mediaUrl   String?
+  visibility String   @default("campus")
+  context    String?
+  expiresAt  DateTime
+  status     String   @default("live")
+  payload    Json?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  reactions ConnectStoryReaction[]
+  comments  ConnectStoryComment[]
+  student   StudentProfile?        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId])
+  @@index([status, expiresAt])
+  @@map("connect_stories")
+}
+
+model ConnectStoryReaction {
+  id        String   @id @default(cuid())
+  storyId   String
+  studentId String
+  reaction  String   @default("like")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  story   ConnectStory   @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([storyId, studentId])
+  @@index([storyId])
+  @@index([studentId])
+  @@map("connect_story_reactions")
+}
+
+model ConnectStoryComment {
+  id        String   @id @default(cuid())
+  storyId   String
+  studentId String
+  body      String
+  status    String   @default("published")
+  payload   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  story     ConnectStory                  @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  student   StudentProfile                @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  reactions ConnectStoryCommentReaction[]
+
+  @@index([storyId, status, createdAt])
+  @@index([studentId])
+  @@map("connect_story_comments")
+}
+
+model ConnectStoryCommentReaction {
+  id        String   @id @default(cuid())
+  commentId String
+  studentId String
+  reaction  String   @default("like")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  comment ConnectStoryComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  student StudentProfile      @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, studentId])
+  @@index([commentId])
+  @@index([studentId])
+  @@map("connect_story_comment_reactions")
+}
+
+model ConnectPost {
+  id               String   @id @default(cuid())
+  studentId        String?
+  managedProfileId String?
+  type             String   @default("post")
+  body             String
+  tags             Json?
+  visibility       String   @default("campus")
+  status           String   @default("published")
+  reactions        Json?
+  saves            Int      @default(0)
+  reposts          Int      @default(0)
+  payload          Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  comments       ConnectComment[]
+  managedProfile ManagedProfile?  @relation(fields: [managedProfileId], references: [id], onDelete: SetNull)
+
+  @@index([studentId])
+  @@index([managedProfileId])
+  @@index([status, createdAt])
+  @@map("connect_posts")
+}
+
+model ConnectComment {
+  id        String   @id @default(cuid())
+  postId    String
+  studentId String?
+  body      String
+  status    String   @default("published")
+  payload   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post ConnectPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, status])
+  @@index([studentId])
+  @@map("connect_comments")
+}
+
+model CommunityGroup {
+  id                  String   @id @default(cuid())
+  ownerStudentId      String?
+  name                String
+  category            String
+  purpose             String
+  rules               String[] @default([])
+  campus              String?
+  contributionAmount  Float?
+  contributionCadence String?
+  status              String   @default("active")
+  walletBalance       Float    @default(0)
+  payload             Json?
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  memberships    CommunityGroupMembership[]
+  contributions  CommunityChamaContribution[]
+  managedProfile ManagedProfile?
+
+  @@index([ownerStudentId])
+  @@index([category, status])
+  @@map("community_groups")
+}
+
+model ManagedProfile {
+  id               String    @id @default(cuid())
+  type             String
+  slug             String    @unique
+  name             String
+  handle           String    @unique
+  bio              String?
+  avatarUrl        String?
+  coverImageUrl    String?
+  locationLabel    String?
+  campusId         String?   @unique
+  communityGroupId String?   @unique
+  companyId        String?   @unique
+  websiteUrl       String?
+  email            String?
+  phone            String?
+  foundedAt        DateTime?
+  details          Json?
+  isVerified       Boolean   @default(false)
+  status           String    @default("active")
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  campus         Campus?                  @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  communityGroup CommunityGroup?          @relation(fields: [communityGroupId], references: [id], onDelete: Cascade)
+  company        Company?                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  managers       ManagedProfileManager[]
+  posts          ConnectPost[]
+  followers      ManagedProfileFollower[]
+
+  @@index([type, status])
+  @@map("managed_profiles")
+}
+
+model ManagedProfileManager {
+  id               String   @id @default(cuid())
+  managedProfileId String
+  userId           String
+  role             String   @default("editor")
+  createdAt        DateTime @default(now())
+
+  managedProfile ManagedProfile @relation(fields: [managedProfileId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([managedProfileId, userId])
+  @@index([userId])
+  @@map("managed_profile_managers")
+}
+
+model ManagedProfileFollower {
+  id               String   @id @default(cuid())
+  managedProfileId String
+  userId           String
+  createdAt        DateTime @default(now())
+
+  managedProfile ManagedProfile @relation(fields: [managedProfileId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([managedProfileId, userId])
+  @@index([userId])
+  @@map("managed_profile_followers")
+}
+
+model CommunityGroupMembership {
+  id        String   @id @default(cuid())
+  groupId   String
+  studentId String?
+  status    String   @default("active")
+  role      String   @default("member")
+  payload   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, studentId])
+  @@index([studentId, status])
+  @@map("community_group_memberships")
+}
+
+model CommunityChamaContribution {
+  id        String   @id @default(cuid())
+  groupId   String
+  studentId String?
+  amount    Float
+  currency  String   @default("KES")
+  status    String   @default("recorded")
+  payload   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+  @@index([studentId])
+  @@map("community_chama_contributions")
+}
+
+model WellnessReport {
+  id        String   @id @default(cuid())
+  studentId String?
+  category  String
+  anonymous Boolean  @default(false)
+  message   String
+  urgency   String   @default("normal")
+  status    String   @default("open")
+  note      String?
+  payload   Json?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([status, urgency])
+  @@map("wellness_reports")
+}
+
+model CounselorBooking {
+  id          String   @id @default(cuid())
+  studentId   String?
+  counselorId String?
+  scheduledAt DateTime
+  reason      String?
+  status      String   @default("requested")
+  payload     Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([studentId, scheduledAt])
+  @@index([counselorId, status])
+  @@map("counselor_bookings")
+}
+
+model MarketplaceCart {
+  id        String   @id @default(cuid())
+  studentId String?
+  status    String   @default("open")
+  items     Json
+  orderId   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId, status])
+  @@map("marketplace_carts")
+}
+
+model MarketplaceOrder {
+  id                String    @id @default(cuid())
+  studentId         String?
+  cartId            String?
+  items             Json
+  totalAmount       Float
+  currency          String    @default("KES")
+  status            String    @default("paid")
+  fulfillmentStatus String    @default("seller_confirmation")
+  handoffType       String
+  handoffSpot       String
+  paymentReference  String?
+  deliveredAt       DateTime?
+  buyerConfirmedAt  DateTime?
+  autoReleaseAt     DateTime?
+  escrowReleasedAt  DateTime?
+  cancelledAt       DateTime?
+  reminderCount     Int       @default(0)
+  lastReminderAt    DateTime?
+  payload           Json?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@index([studentId, createdAt])
+  @@index([status, fulfillmentStatus])
+  @@map("marketplace_orders")
+}
+
+model MarketplaceOffer {
+  id               String   @id @default(cuid())
+  listingReference String
+  buyerId          String
+  sellerId         String
+  amount           Float
+  currency         String   @default("KES")
+  status           String   @default("pending")
+  product          Json
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  buyer  User @relation("MarketplaceOfferBuyer", fields: [buyerId], references: [id], onDelete: Cascade)
+  seller User @relation("MarketplaceOfferSeller", fields: [sellerId], references: [id], onDelete: Cascade)
+
+  @@index([listingReference, createdAt])
+  @@index([buyerId, createdAt])
+  @@index([sellerId, status, createdAt])
+  @@map("marketplace_offers")
 }
 
 model CampusEvent {
@@ -540,6 +1051,7 @@ model Company {
   endorsementsGiven     Endorsement[]          @relation("EndorsementsGiven")
   placements            Placement[]
   wallet                CompanyWallet?
+  managedProfile        ManagedProfile?
 
   @@index([kycStatus])
   @@index([sector])
@@ -787,11 +1299,210 @@ model OpportunityScopeItem {
   opportunity Opportunity             @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
   sampleWork  OpportunitySampleWork[]
   submissions OpportunitySubmission[]
+  tasks       DeliverableTask[]
 
   @@index([opportunityId])
   @@index([scopeType])
   @@index([status])
   @@map("opportunity_scope_items")
+}
+
+// A student's declared contribution to one deliverable of a team project.
+// Declaring is public: it says what someone intends to deliver, drives the
+// workload view both sides see, and is the input to the payout split.
+model DeliverableTask {
+  id                     String    @id @default(cuid())
+  projectId              String
+  scopeItemId            String?
+  // Milestone mode nests the work: milestone -> deliverable -> task. A task
+  // carries both links so the board can filter by either without a join.
+  milestoneId            String?
+  milestoneDeliverableId String?
+  // Scheduling overlay only. Moving a task between sprints must never change
+  // who is credited for it.
+  sprintId               String?
+  title                  String
+  description            String?
+  // null owner means the task sits in the shared pool for anyone to claim.
+  ownerId                String?
+  declaredById           String?
+  weight                 Int       @default(1)
+  // todo | in_progress | blocked | submitted | done | dropped
+  // `done` is granted by the business approving the submission that covers the
+  // task; a student can only take it as far as `submitted`.
+  status                 String    @default("todo")
+  // The deliverable submission this task was included in.
+  submissionId           String?
+  blockedByIds           String[]  @default([])
+  // External blockers (see DeliverableDependency) live alongside task blockers:
+  // work stalls on a missing client asset as often as on a teammate.
+  blockedByDependencyIds String[]  @default([])
+  evidence               Json?
+  droppedReason          String?
+  // Interim settlement: a task is paid once its work is approved, so a milestone
+  // running for months does not leave people unpaid until the very end.
+  paidAmount             Float?
+  paidAt                 DateTime?
+  declaredAt             DateTime  @default(now())
+  claimedAt              DateTime?
+  blockedAt              DateTime?
+  doneAt                 DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+
+  scopeItem OpportunityScopeItem? @relation(fields: [scopeItemId], references: [id], onDelete: Cascade)
+  owner     StudentProfile?       @relation("DeliverableTaskOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@index([projectId])
+  @@index([scopeItemId])
+  @@index([ownerId])
+  @@index([status])
+  @@map("deliverable_tasks")
+}
+
+// Deliverable-scoped conversation and working files. Kept apart from project
+// messages so a note about the brand book stays with the brand book, and apart
+// from submissions so drafts are not mistaken for delivered work.
+model DeliverableNote {
+  id          String   @id @default(cuid())
+  projectId   String
+  scopeItemId String?
+  authorId    String?
+  authorName  String?
+  body        String
+  // note | file
+  kind        String   @default("note")
+  files       Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([projectId])
+  @@index([scopeItemId])
+  @@map("deliverable_notes")
+}
+
+// A deliverable inside a milestone. Milestone briefs define milestones as scope
+// items; the team breaks each one into deliverables, and each deliverable into
+// declared tasks. Plotted on its own timeline track, independent of milestones.
+model MilestoneDeliverable {
+  id                 String    @id @default(cuid())
+  projectId          String
+  milestoneId        String
+  title              String
+  description        String?
+  // Mirrors how a deliverable is defined in the opportunity brief, so the team
+  // agrees the same things up front: what counts as done and how it is proven.
+  workflow           String?
+  requirement        String?
+  submissionMethod   String?
+  evidenceRequired   String?
+  acceptanceCriteria String?
+  sequence           Int       @default(1)
+  // A deliverable carries its own price. The sum of a milestone's deliverable
+  // prices is what it has committed, which can drift past the milestone budget
+  // as scope is added mid-flight.
+  budgetAmount       Float     @default(0)
+  // pending | in_progress | submitted | approved | dormant
+  // `dormant` means this deliverable pushed the milestone past its budget and is
+  // parked: no tasks can be added until the business adds funds.
+  status             String    @default("pending")
+  startsAt           DateTime?
+  dueAt              DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([projectId])
+  @@index([milestoneId])
+  @@map("milestone_deliverables")
+}
+
+// A time-boxed slice of work. Tasks are assigned into it; its span on the
+// timeline is its own window, and the board filters to it by default.
+model ProjectSprint {
+  id          String    @id @default(cuid())
+  projectId   String
+  // Deprecated compatibility column. New and returned sprints are project-global.
+  milestoneId String?
+  name        String
+  goal        String?
+  sequence    Int       @default(1)
+  // planned | active | completed
+  status      String    @default("planned")
+  startsAt    DateTime?
+  endsAt      DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([projectId])
+  @@index([milestoneId])
+  @@map("project_sprints")
+}
+
+// Per-project rules the business controls: who may join as a non-earning
+// contributor, and what share of their own contribution each such role converts
+// into. The workload record is never changed by this - only what it pays.
+model ProjectSettings {
+  id                 String   @id @default(cuid())
+  projectId          String   @unique
+  allowInterns       Boolean  @default(false)
+  allowAttachees     Boolean  @default(false)
+  // { intern: 0-100, attachee: 0-100 } - percent of their own earned share.
+  roleEarningFactors Json?
+  sprintCadence      String?
+  catchupCadence     String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  @@map("project_settings")
+}
+
+// Something outside the team that work is waiting on: a brand asset from the
+// client, a login from the business, a third-party approval. Tracked like a task
+// blocker so "we are stuck" is visible to the business instead of being buried
+// in a chat message.
+model DeliverableDependency {
+  id           String    @id @default(cuid())
+  projectId    String
+  scopeItemId  String?
+  label        String
+  note         String?
+  // business | client | external | other
+  party        String    @default("business")
+  // open | resolved
+  status       String    @default("open")
+  raisedById   String?
+  raisedByName String?
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([projectId])
+  @@index([scopeItemId])
+  @@index([status])
+  @@map("deliverable_dependencies")
+}
+
+// The workload split for one deliverable, frozen when the team submits it.
+// Payout reads this snapshot, never the live tasks, so weights edited after a
+// submission can never move money that was already agreed.
+model DeliverableSplitLock {
+  id           String    @id @default(cuid())
+  projectId    String
+  scopeItemId  String
+  // [{ studentId, weight, sharePercent }]
+  shares       Json
+  confirmedBy  String[]  @default([])
+  contributors String[]  @default([])
+  // pending | confirmed
+  status       String    @default("pending")
+  lockedAt     DateTime  @default(now())
+  confirmedAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([projectId, scopeItemId])
+  @@index([projectId])
+  @@map("deliverable_split_locks")
 }
 
 model OpportunitySampleWork {
@@ -1597,6 +2308,46 @@ model Notification {
   @@map("notifications")
 }
 
+model ProjectTeamInvite {
+  id            String    @id @default(cuid())
+  projectId     String
+  inviterUserId String
+  inviteeUserId String
+  role          String    @default("Contributor")
+  note          String?
+  status        String    @default("pending")
+  sentAt        DateTime  @default(now())
+  respondedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  inviter User @relation("ProjectTeamInviteSender", fields: [inviterUserId], references: [id], onDelete: Cascade)
+  invitee User @relation("ProjectTeamInviteRecipient", fields: [inviteeUserId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, inviteeUserId])
+  @@index([projectId])
+  @@index([inviteeUserId, status])
+  @@map("project_team_invites")
+}
+
+model ProjectTeamMember {
+  id        String   @id @default(cuid())
+  projectId String
+  userId    String
+  role      String   @default("Contributor")
+  status    String   @default("active")
+  joinedAt  DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, userId])
+  @@index([projectId])
+  @@index([userId])
+  @@map("project_team_members")
+}
+
 model CallSession {
   id            String    @id @default(cuid())
   callerId      String
@@ -1628,6 +2379,7 @@ model Message {
   recipientId   String
   body          String
   fileUrls      String[]
+  context       Json?
   deliveredAt   DateTime?
   isRead        Boolean   @default(false)
   readAt        DateTime?

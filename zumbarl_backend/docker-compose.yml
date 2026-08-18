@@ -21,6 +21,14 @@ services:
     command: ["redis-server", "--appendonly", "yes"]
     volumes:
       - zumbarl_redis:/data
+  osrm:
+    image: ghcr.io/project-osrm/osrm-backend:v6.0.0
+    command: ["osrm-routed", "--algorithm", "mld", "/data/kenya-latest.osrm"]
+    ports:
+      - "127.0.0.1:55000:5000"
+    volumes:
+      - ./osrm-data:/data:ro
+    restart: unless-stopped
 volumes:
   zumbarl_pg:
   zumbarl_redis:

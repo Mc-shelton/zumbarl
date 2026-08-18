@@ -1,6 +1,7 @@
 import { prisma } from '../../../lib/prisma.js'
 import { forbidden, notFound } from '../../../lib/http.js'
 import { emitRealtimeEvent, hasRealtimeSubscribers } from '../../../lib/realtimeEvents.js'
+import { projectWorkflowsRepository } from '../../repositories/projects/projectWorkflows.repository.js'
 
 const participantSelect = {
   id: true,
@@ -8,7 +9,7 @@ const participantSelect = {
   firstName: true,
   lastName: true,
   role: true,
-  studentProfile: { select: { avatarUrl: true } },
+  studentProfile: { select: { id: true, avatarUrl: true } },
   companyContact: {
     select: {
       company: { select: { name: true, logoUrl: true } }
@@ -19,13 +20,127 @@ const participantSelect = {
 function participantPayload(user: any) {
   return {
     id: user.id,
-    name: user.name
-      || user.companyContact?.company?.name
+    name: user.companyContact?.company?.name
+      || user.name
       || [user.firstName, user.lastName].filter(Boolean).join(' ')
       || 'Zumbarl user',
     role: user.role,
+    studentId: user.studentProfile?.id || null,
     avatarUrl: user.studentProfile?.avatarUrl || user.companyContact?.company?.logoUrl || null
   }
+}
+
+async function readProjectGroupContext(projectId: string, userId: string) {
+  const project = await projectWorkflowsRepository.findProject(projectId)
+  if (!project) notFound('Project')
+  const [participants, actor, businessContacts] = await Promise.all([
+    projectWorkflowsRepository.listProjectMessageParticipants(projectId),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        role: true,
+        studentProfile: { select: { id: true } },
+        companyContact: { select: { companyId: true } }
+      }
+    }),
+    project.businessId
+      ? prisma.companyContact.findMany({
+          where: { companyId: project.businessId },
+          select: { userId: true }
+        })
+      : []
+  ])
+  const canAccess = participants.some((participant) => participant.userId === userId)
+    || project.ownerId === userId
+    || actor?.studentProfile?.id === project.studentId
+    || actor?.companyContact?.companyId === project.businessId
+    || actor?.role === 'SUPER_ADMIN'
+  if (!canAccess) {
+    forbidden('You are not a participant in this project')
+  }
+  const recipientUserIds = [...new Set([
+    ...participants.map((participant) => participant.userId),
+    ...businessContacts.map((contact) => contact.userId)
+  ])]
+  return { participants, project, recipientUserIds }
+}
+
+async function listProjectGroupMessagesService(userId: string | undefined, projectId: string) {
+  if (!userId) forbidden()
+  await readProjectGroupContext(projectId, userId)
+
+  const records = await prisma.workflowRecord.findMany({
+    where: {
+      collection: 'projectGroupMessages',
+      data: { path: ['projectId'], equals: projectId }
+    },
+    orderBy: { createdAt: 'asc' },
+    take: 500
+  })
+  const data = records.map((record) => (
+    record.data && typeof record.data === 'object' && !Array.isArray(record.data)
+      ? record.data as Record<string, any>
+      : {}
+  ))
+  const senderIds = [...new Set(data.map((message) => String(message.senderId || '')).filter(Boolean))]
+  const senders = await prisma.user.findMany({
+    where: { id: { in: senderIds } },
+    select: participantSelect
+  })
+  const senderById = new Map(senders.map((sender) => [sender.id, participantPayload(sender)]))
+
+  return records.map((record, index) => ({
+    id: record.id,
+    projectGroupId: projectId,
+    opportunityId: data[index].opportunityId || null,
+    senderId: data[index].senderId,
+    sender: senderById.get(data[index].senderId) || null,
+    body: data[index].body || '',
+    fileUrls: Array.isArray(data[index].fileUrls) ? data[index].fileUrls : [],
+    createdAt: record.createdAt,
+    isMine: data[index].senderId === userId
+  }))
+}
+
+async function createProjectGroupMessageService(
+  senderId: string | undefined,
+  projectId: string,
+  input: { body: string; fileUrls: string[] }
+) {
+  if (!senderId) forbidden()
+  const { project, recipientUserIds } = await readProjectGroupContext(projectId, senderId)
+  const sender = await prisma.user.findUnique({ where: { id: senderId }, select: participantSelect })
+  if (!sender) notFound('Sender')
+
+  const record = await prisma.workflowRecord.create({
+    data: {
+      collection: 'projectGroupMessages',
+      data: {
+        projectId,
+        opportunityId: project.opportunityId || null,
+        senderId,
+        body: input.body,
+        fileUrls: input.fileUrls
+      }
+    }
+  })
+  const payload = {
+    id: record.id,
+    projectGroupId: projectId,
+    opportunityId: project.opportunityId || null,
+    senderId,
+    sender: participantPayload(sender),
+    body: input.body,
+    fileUrls: input.fileUrls,
+    createdAt: record.createdAt,
+    isMine: true
+  }
+  for (const recipientUserId of recipientUserIds) {
+    if (recipientUserId !== senderId) {
+      emitRealtimeEvent(recipientUserId, { type: 'message.created', data: { ...payload, isMine: false } })
+    }
+  }
+  return payload
 }
 
 async function listConversationsService(userId?: string) {
@@ -158,7 +273,7 @@ async function listMessagesService(
 
 async function createMessageService(
   senderId: string | undefined,
-  input: { recipientId: string; opportunityId?: string; body: string; fileUrls: string[] }
+  input: { recipientId: string; opportunityId?: string; body: string; fileUrls: string[]; context?: Record<string, any> }
 ) {
   if (!senderId) forbidden()
   if (senderId === input.recipientId) forbidden('You cannot message yourself')
@@ -178,7 +293,8 @@ async function createMessageService(
     },
     select: { id: true }
   })
-  if (!existingConversation && !input.opportunityId) {
+  const isMarketplaceMessage = ['marketplace_product', 'marketplace_offer'].includes(String(input.context?.type || ''))
+  if (!existingConversation && !input.opportunityId && !isMarketplaceMessage) {
     forbidden('A verified opportunity or existing conversation is required to start messaging')
   }
 
@@ -189,6 +305,7 @@ async function createMessageService(
       opportunityId: input.opportunityId,
       body: input.body,
       fileUrls: input.fileUrls,
+      context: input.context,
       deliveredAt: hasRealtimeSubscribers(input.recipientId) ? new Date() : null
     },
     include: {
@@ -208,5 +325,7 @@ async function createMessageService(
 export {
   listConversationsService,
   listMessagesService,
-  createMessageService
+  createMessageService,
+  listProjectGroupMessagesService,
+  createProjectGroupMessageService
 }

@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { FiBell, FiChevronDown, FiMessageCircle } from 'react-icons/fi'
 import { Link, useNavigate } from 'react-router-dom'
 import { ACCESS_KEYS, AUTH_ROLE_STORAGE_KEY, hasAccess } from '../../features/auth/roleConfig'
 import { AUTH_TOKEN_KEY } from '../../lib/sendZumbarlApiRequest'
-import { getCurrentViewerProfile } from '../../features/auth/viewerProfile'
+import { useViewerProfile } from '../../features/auth/viewerProfile'
+import { clearAuthUserCache } from '../../features/auth/services/authUserService'
+import { clearBusinessProfileCache } from '../../features/business/services/businessProfileService'
 import {
   listZumbarlNotifications,
   markAllZumbarlNotificationsRead,
@@ -48,12 +50,12 @@ function CampusTopActions({
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
   const latestNotificationIdRef = useRef(null)
   const accessKeys = ACTION_ACCESS_KEYS[scope] || ACTION_ACCESS_KEYS.campus
-  const currentViewer = getCurrentViewerProfile(viewer)
+  const currentViewer = useViewerProfile(viewer)
   const canOpenMessages = hasAccess(accessKeys.messages)
   const canOpenNotifications = hasAccess(accessKeys.notifications)
   const canViewProfile = !accessKeys.profile || hasAccess(accessKeys.profile)
 
-  function sendBrowserNotice(notification) {
+  const sendBrowserNotice = useCallback((notification) => {
     if (
       typeof window === 'undefined'
       || !('Notification' in window)
@@ -70,9 +72,9 @@ function CampusTopActions({
       const deepLink = notification.data?.deepLink
       if (deepLink) navigate(deepLink)
     }
-  }
+  }, [navigate])
 
-  async function loadNotifications({ notify = false } = {}) {
+  const loadNotifications = useCallback(async ({ notify = false } = {}) => {
     if (!canOpenNotifications) return
 
     try {
@@ -95,18 +97,26 @@ function CampusTopActions({
       setNotifications([])
       setUnreadNotificationCount(0)
     }
-  }
+  }, [canOpenNotifications, sendBrowserNotice])
 
   useEffect(() => {
     if (!canOpenNotifications) return undefined
 
     const initialLoadId = window.setTimeout(loadNotifications, 0)
-    const intervalId = window.setInterval(() => loadNotifications({ notify: true }), 30000)
+    const refreshNotifications = () => loadNotifications({ notify: true })
+    const refreshVisibleNotifications = () => {
+      if (document.visibilityState === 'visible') refreshNotifications()
+    }
+    const intervalId = window.setInterval(refreshNotifications, 10000)
+    window.addEventListener('focus', refreshNotifications)
+    document.addEventListener('visibilitychange', refreshVisibleNotifications)
     return () => {
       window.clearTimeout(initialLoadId)
       window.clearInterval(intervalId)
+      window.removeEventListener('focus', refreshNotifications)
+      document.removeEventListener('visibilitychange', refreshVisibleNotifications)
     }
-  }, [canOpenNotifications])
+  }, [canOpenNotifications, loadNotifications])
 
   useEffect(() => {
     if (!canOpenMessages) return undefined
@@ -154,6 +164,9 @@ function CampusTopActions({
   }
 
   function handleLogout() {
+    clearAuthUserCache()
+    clearBusinessProfileCache()
+
     if (onLogout) {
       onLogout()
       return

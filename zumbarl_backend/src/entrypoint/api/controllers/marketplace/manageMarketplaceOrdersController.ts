@@ -1,31 +1,71 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { z } from 'zod'
 import { idParamSchema, requireBody, requireParams } from '../../../../lib/http.js'
-import { cartItemSchema, disputeOrderSchema, listingSchema, marketplaceReviewSchema, orderSchema, orderStatusSchema, shopSchema } from '../../../validators/marketplace/index.js'
-import { addCartItemService, createMarketplaceListingService, createMarketplaceShopService, createOrderService, disputeOrderService, listMarketplaceListingsService, listMarketplaceShopsService, listOrdersService, readCartService, readMarketplaceListingService, reviewOrderService, updateOrderStatusService } from '../../../../adapters/services/marketplace/index.js'
+import { cartItemFulfilmentSchema, cartItemSchema, disputeOrderSchema, listingSchema, marketplaceContactSchema, marketplaceListingUpdateSchema, marketplaceLocationSearchSchema, marketplaceOfferDecisionSchema, marketplaceOfferSchema, marketplaceProfileViewSchema, marketplaceReviewSchema, marketplaceShopUpdateSchema, orderSchema, orderStatusSchema, shopSchema, zumbarlDeliveryQuoteSchema } from '../../../validators/marketplace/index.js'
+import { addCartItemService, cancelBuyerOrderService, clearCartService, confirmOrderReceivedService, createMarketplaceListingService, createMarketplaceOfferService, createMarketplaceShopService, createOrderService, createOwnedMarketplaceListingService, decideMarketplaceOfferService, disputeOrderService, listMarketplaceListingsService, listMarketplaceShopsService, listOrdersService, quoteZumbarlDeliveryService, readCartService, readMarketplaceListingService, readMarketplaceOfferService, readMarketplaceSellerService, readMyMarketplaceInventoryService, readMyPendingMarketplaceOffersService, readZumbarlDeliveryConfigService, recordMarketplaceSellerViewService, removeCartItemService, reviewOrderService, searchMarketplaceLocationsService, startMarketplaceChatService, updateCartItemFulfilmentService, updateMyMarketplaceShopService, updateOrderStatusService, updateOwnedMarketplaceListingService } from '../../../../adapters/services/marketplace/index.js'
+const usernameParamSchema = z.object({ username: z.string().min(1) })
 async function listMarketplaceShopsController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listMarketplaceShopsService(request.query as Record<string, unknown>)) }
 async function createMarketplaceShopController(request: FastifyRequest, reply: FastifyReply) { return reply.code(201).send(await createMarketplaceShopService(request.authUser?.studentId, requireBody(shopSchema, request))) }
 async function listMarketplaceListingsController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listMarketplaceListingsService(request.query as Record<string, unknown>)) }
-async function createMarketplaceListingController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await createMarketplaceListingService(id, requireBody(listingSchema, request))) }
-async function readMarketplaceListingController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await readMarketplaceListingService(id)) }
+async function createMarketplaceListingController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await createMarketplaceListingService(request.authUser?.studentId, id, requireBody(listingSchema, request))) }
+async function readMyMarketplaceInventoryController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await readMyMarketplaceInventoryService(request.authUser?.studentId)) }
+async function updateMyMarketplaceShopController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await updateMyMarketplaceShopService(request.authUser?.studentId, requireBody(marketplaceShopUpdateSchema, request))) }
+async function searchMarketplaceLocationsController(request: FastifyRequest, reply: FastifyReply) { const { q } = marketplaceLocationSearchSchema.parse(request.query); return reply.send(await searchMarketplaceLocationsService(q)) }
+async function readMyPendingMarketplaceOffersController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await readMyPendingMarketplaceOffersService(request.authUser?.id)) }
+async function decideMarketplaceOfferController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); const { decision } = requireBody(marketplaceOfferDecisionSchema, request); return reply.send(await decideMarketplaceOfferService(request.authUser?.id, id, decision)) }
+async function readMarketplaceOfferController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await readMarketplaceOfferService(request.authUser?.id, id)) }
+async function createOwnedMarketplaceListingController(request: FastifyRequest, reply: FastifyReply) { return reply.code(201).send(await createOwnedMarketplaceListingService(request.authUser?.studentId, requireBody(listingSchema, request))) }
+async function updateOwnedMarketplaceListingController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await updateOwnedMarketplaceListingService(request.authUser?.studentId, id, requireBody(marketplaceListingUpdateSchema, request))) }
+async function readMarketplaceListingController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await readMarketplaceListingService(id, request.authUser?.id)) }
 async function readCartController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await readCartService(request.authUser?.studentId)) }
-async function addCartItemController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await addCartItemService(request.authUser?.studentId, requireBody(cartItemSchema, request))) }
+async function addCartItemController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await addCartItemService(request.authUser?.studentId, request.authUser?.id, requireBody(cartItemSchema, request))) }
+async function removeCartItemController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await removeCartItemService(request.authUser?.studentId, id)) }
+async function clearCartController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await clearCartService(request.authUser?.studentId)) }
+async function updateCartItemFulfilmentController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await updateCartItemFulfilmentService(request.authUser?.studentId, id, requireBody(cartItemFulfilmentSchema, request))) }
+async function readZumbarlDeliveryConfigController(_request: FastifyRequest, reply: FastifyReply) { return reply.send(await readZumbarlDeliveryConfigService()) }
+async function quoteZumbarlDeliveryController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await quoteZumbarlDeliveryService(requireBody(zumbarlDeliveryQuoteSchema, request))) }
 async function createOrderController(request: FastifyRequest, reply: FastifyReply) { return reply.code(201).send(await createOrderService(request.authUser?.studentId, requireBody(orderSchema, request))) }
-async function listOrdersController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listOrdersService(request.query as Record<string, unknown>)) }
-async function updateOrderStatusController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await updateOrderStatusService(id, requireBody(orderStatusSchema, request))) }
+async function listOrdersController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listOrdersService(request.authUser?.studentId, request.query as Record<string, unknown>)) }
+async function updateOrderStatusController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await updateOrderStatusService(id, request.authUser?.studentId, requireBody(orderStatusSchema, request))) }
+async function confirmOrderReceivedController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await confirmOrderReceivedService(id, request.authUser?.studentId)) }
+async function cancelBuyerOrderController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await cancelBuyerOrderService(id, request.authUser?.studentId)) }
 async function reviewOrderController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await reviewOrderService(id, request.authUser?.id, requireBody(marketplaceReviewSchema, request))) }
 async function disputeOrderController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await disputeOrderService(id, requireBody(disputeOrderSchema, request))) }
+async function readMarketplaceSellerController(request: FastifyRequest, reply: FastifyReply) { const { username } = requireParams(usernameParamSchema, request); return reply.send(await readMarketplaceSellerService(username)) }
+async function startMarketplaceChatController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await startMarketplaceChatService(request.authUser?.id, id, requireBody(marketplaceContactSchema, request))) }
+async function createMarketplaceOfferController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await createMarketplaceOfferService(request.authUser?.id, id, requireBody(marketplaceOfferSchema, request))) }
+async function recordMarketplaceSellerViewController(request: FastifyRequest, reply: FastifyReply) { const { username } = requireParams(usernameParamSchema, request); return reply.code(201).send(await recordMarketplaceSellerViewService(request.authUser?.id, username, requireBody(marketplaceProfileViewSchema, request))) }
 
 export {
   listMarketplaceShopsController,
   createMarketplaceShopController,
   listMarketplaceListingsController,
   createMarketplaceListingController,
+  readMyMarketplaceInventoryController,
+  updateMyMarketplaceShopController,
+  searchMarketplaceLocationsController,
+  readMyPendingMarketplaceOffersController,
+  decideMarketplaceOfferController,
+  readMarketplaceOfferController,
+  createOwnedMarketplaceListingController,
+  updateOwnedMarketplaceListingController,
   readMarketplaceListingController,
   readCartController,
   addCartItemController,
+  removeCartItemController,
+  clearCartController,
+  updateCartItemFulfilmentController,
+  readZumbarlDeliveryConfigController,
+  quoteZumbarlDeliveryController,
   createOrderController,
   listOrdersController,
   updateOrderStatusController,
+  confirmOrderReceivedController,
+  cancelBuyerOrderController,
   reviewOrderController,
-  disputeOrderController
+  disputeOrderController,
+  readMarketplaceSellerController,
+  startMarketplaceChatController,
+  createMarketplaceOfferController,
+  recordMarketplaceSellerViewController
 }

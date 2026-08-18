@@ -1,7 +1,6 @@
-import { FiAward, FiBarChart2, FiCheckCircle, FiDownload, FiFileText, FiUploadCloud } from 'react-icons/fi'
-import { WorkflowStatusPanel } from '../../workflows/components/WorkflowStatusPanel'
-import { MARKETING_WORKFLOW_MOCK } from '../../workflows/workflowData'
-import { BusinessMarketingCreatorTable } from './BusinessMarketingCreatorTable'
+import { FiBarChart2, FiCheckCircle, FiDownload, FiFileText, FiMousePointer, FiRepeat } from "react-icons/fi";
+import { BusinessMarketingCreatorTable } from "./BusinessMarketingCreatorTable";
+import { BusinessMarketingOutlets } from "./BusinessMarketingOutlets";
 
 function DetailList({ rows }) {
   return (
@@ -9,11 +8,17 @@ function DetailList({ rows }) {
       {rows.map(([label, value]) => (
         <div key={label}>
           <dt>{label}</dt>
-          <dd>{String(value).split('\n').map((line) => <span key={line}>{line}</span>)}</dd>
+          <dd>
+            {String(value)
+              .split("\n")
+              .map((line) => (
+                <span key={line}>{line}</span>
+              ))}
+          </dd>
         </div>
       ))}
     </dl>
-  )
+  );
 }
 
 function Timeline({ events }) {
@@ -29,53 +34,39 @@ function Timeline({ events }) {
         </li>
       ))}
     </ol>
-  )
+  );
 }
 
-function CampaignWorkflowPanel({
-  campaign,
-  onEndorseTopCampaigners,
-  onGenerateStats,
-  onSubmitProof,
-}) {
-  const workflow = campaign.workflow || {}
+function ProofStats({ campaign }) {
+  const stats = campaign.stats || {};
   const items = [
-    { label: 'Campaign funding', status: 'done', detail: `${MARKETING_WORKFLOW_MOCK.budgetCap} budget confirmed.` },
-    { label: 'Proof collection', status: workflow.proofSubmitted ? 'done' : 'blocked', detail: workflow.proofSubmitted ? 'Latest campaigner proof submitted.' : 'Waiting for campaigner proof uploads.' },
-    { label: 'Stats generation', status: workflow.statsGenerated ? 'done' : 'blocked', detail: workflow.statsGenerated ? 'Reach, engagement, and proof quality are available.' : 'Generate stats after proof is submitted.' },
-    { label: 'Endorsement', status: workflow.endorsed ? 'done' : 'blocked', detail: workflow.endorsed ? 'Top campaigners endorsed.' : 'Endorse top campaigners after reviewing results.' },
-  ]
-
-  return (
-    <WorkflowStatusPanel
-      title="Campaign workflow controls"
-      items={items}
-      actions={(
-        <>
-          <button type="button" className="business-profile-ghost-btn" onClick={onSubmitProof}>
-            <FiUploadCloud aria-hidden="true" />
-            Mock proof submitted
-          </button>
-          <button type="button" className="business-profile-ghost-btn" onClick={onGenerateStats}>
-            <FiBarChart2 aria-hidden="true" />
-            Generate stats
-          </button>
-          <button type="button" className="business-profile-primary-btn" onClick={onEndorseTopCampaigners}>
-            <FiAward aria-hidden="true" />
-            Endorse top campaigners
-          </button>
-        </>
-      )}
-    />
-  )
-}
-
-function ProofStats() {
+    {
+      label: "Verified reach",
+      value: Number(stats.reach || 0).toLocaleString(),
+    },
+    {
+      label: "Engagement",
+      value: Number(stats.engagement || 0).toLocaleString(),
+    },
+    {
+      label: "Unique clicks",
+      value: Number(stats.trackingClicks || 0).toLocaleString(),
+    },
+    {
+      label: "Total visits",
+      value: Number(stats.trackingVisits || 0).toLocaleString(),
+    },
+    {
+      label: "Verified proofs",
+      value: Number(stats.verifiedProofs || 0).toLocaleString(),
+    },
+    { label: "Proof submissions", value: String(campaign.proofs?.length || 0) },
+  ];
   return (
     <section className="business-profile-card">
       <h2>Proof + Generated Stats</h2>
       <div className="workflow-inline-metrics">
-        {MARKETING_WORKFLOW_MOCK.proofStats.map((item) => (
+        {items.map((item) => (
           <article key={item.label}>
             <strong>{item.value}</strong>
             <span>{item.label}</span>
@@ -83,21 +74,73 @@ function ProofStats() {
         ))}
       </div>
       <p>
-        <FiCheckCircle aria-hidden="true" /> Stats are generated from submitted links, screenshots, and campaign proof.
+        <FiCheckCircle aria-hidden="true" /> Stats use OCR-verified analytics
+        screenshots and measured creator-link clicks.
       </p>
     </section>
-  )
+  );
 }
 
-function Overview({ campaign, onEndorseTopCampaigners, onGenerateStats, onSubmitProof }) {
+function LiveClickProgress({ campaign }) {
+  const acceptances = campaign.acceptances || [];
+  const totalClicks = acceptances.reduce(
+    (total, acceptance) => total + Number(acceptance.trackingClicks || 0),
+    0,
+  );
+  const totalVisits = acceptances.reduce(
+    (total, acceptance) => total + Number(acceptance.trackingVisits || 0),
+    0,
+  );
+
+  return (
+    <section className="business-profile-card business-marketing-live-progress">
+      <header>
+        <div>
+          <span className="business-marketing-live-icon" aria-hidden="true"><FiBarChart2 /></span>
+          <div>
+            <h2>Live Campaign Performance</h2>
+            <p>Tracked-link results update automatically while the campaign is active.</p>
+          </div>
+        </div>
+        <em><i /> Live</em>
+      </header>
+      <div className="business-marketing-live-summary">
+        <article aria-live="polite">
+          <FiMousePointer aria-hidden="true" />
+          <div><strong>{totalClicks.toLocaleString()}</strong><span>Unique clicks</span></div>
+        </article>
+        <article className="is-visits" aria-live="polite">
+          <FiRepeat aria-hidden="true" />
+          <div><strong>{totalVisits.toLocaleString()}</strong><span>Total visits</span></div>
+        </article>
+        <div className="business-marketing-creator-clicks">
+          {acceptances.length ? acceptances.map((acceptance, index) => {
+            const creatorName = acceptance.student
+              ? `${acceptance.student.firstName} ${acceptance.student.lastName}`.trim()
+              : `Campaigner ${index + 1}`;
+            return (
+              <article key={acceptance.id || acceptance.studentId}>
+                <span className="business-marketing-creator-avatar">{creatorName.slice(0, 1)}</span>
+                <div><strong>{creatorName}</strong><small>{acceptance.promoCode || "Tracked creator link"}</small></div>
+                <p>
+                  <strong>{Number(acceptance.trackingClicks || 0).toLocaleString()} unique</strong>
+                  <span>{Number(acceptance.trackingVisits || 0).toLocaleString()} total visits</span>
+                </p>
+              </article>
+            );
+          }) : (
+            <p className="business-marketing-no-clicks">Creator-level clicks will appear after a student picks up this campaign.</p>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Overview({ campaign }) {
   return (
     <>
-      <CampaignWorkflowPanel
-        campaign={campaign}
-        onEndorseTopCampaigners={onEndorseTopCampaigners}
-        onGenerateStats={onGenerateStats}
-        onSubmitProof={onSubmitProof}
-      />
+      <LiveClickProgress campaign={campaign} />
       <section className="business-profile-card business-marketing-overview-card">
         <div>
           <h2>About This Campaign</h2>
@@ -118,16 +161,18 @@ function Overview({ campaign, onEndorseTopCampaigners, onGenerateStats, onSubmit
           <Timeline events={campaign.detail.timeline} />
         </aside>
       </section>
-      <ProofStats />
-      <BusinessMarketingCreatorTable campaign={campaign} />
+      <ProofStats campaign={campaign} />
+      {campaign.detail.creators.length ? (
+        <BusinessMarketingCreatorTable campaign={campaign} />
+      ) : null}
     </>
-  )
+  );
 }
 
-function Applications({ applications }) {
+function MetricCards({ items }) {
   return (
     <section className="business-marketing-simple-grid">
-      {applications.map((item) => (
+      {items.map((item) => (
         <article key={item.label}>
           <strong>{item.value}</strong>
           <h2>{item.label}</h2>
@@ -135,7 +180,7 @@ function Applications({ applications }) {
         </article>
       ))}
     </section>
-  )
+  );
 }
 
 function SimpleList({ items, title }) {
@@ -148,42 +193,53 @@ function SimpleList({ items, title }) {
         ))}
       </ul>
     </section>
-  )
+  );
 }
 
 export function BusinessMarketingCampaignBody({
   activeTab,
   campaign,
-  onEndorseTopCampaigners,
-  onGenerateStats,
-  onSubmitProof,
 }) {
-  if (activeTab === 'creators') {
-    return <BusinessMarketingCreatorTable campaign={campaign} />
+  if (activeTab === "creators") {
+    return <BusinessMarketingCreatorTable campaign={campaign} />;
   }
 
-  if (activeTab === 'applications') {
-    return <Applications applications={campaign.detail.applications} />
+  if (activeTab === "outlets") {
+    return <BusinessMarketingOutlets campaign={campaign} />;
   }
 
-  if (activeTab === 'performance') {
-    return <Applications applications={campaign.detail.performance.map((item) => ({ label: item.label, value: item.value, detail: `${item.change} this week` }))} />
+  if (activeTab === "performance") {
+    return (
+      <>
+        <LiveClickProgress campaign={campaign} />
+        <MetricCards
+          items={campaign.detail.performance.map((item) => ({
+            label: item.label,
+            value: item.value,
+            detail: `${item.change} this week`,
+          }))}
+        />
+      </>
+    );
   }
 
-  if (activeTab === 'payments') {
-    return <Applications applications={campaign.detail.budget.map((item) => ({ label: item.label, value: item.amount, detail: `${item.percent}% of campaign budget` }))} />
+  if (activeTab === "payments") {
+    return (
+      <MetricCards
+        items={campaign.detail.budget.map((item) => ({
+          label: item.label,
+          value: item.amount,
+          detail: `${item.percent}% of campaign budget`,
+        }))}
+      />
+    );
   }
 
-  if (activeTab === 'activity') {
-    return <SimpleList title="Campaign Activity" items={campaign.detail.activity} />
+  if (activeTab === "activity") {
+    return (
+      <SimpleList title="Campaign Activity" items={campaign.detail.activity} />
+    );
   }
 
-  return (
-    <Overview
-      campaign={campaign}
-      onEndorseTopCampaigners={onEndorseTopCampaigners}
-      onGenerateStats={onGenerateStats}
-      onSubmitProof={onSubmitProof}
-    />
-  )
+  return <Overview campaign={campaign} />;
 }

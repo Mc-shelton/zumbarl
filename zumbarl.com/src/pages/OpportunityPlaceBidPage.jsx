@@ -2,6 +2,7 @@ import CampusSidebar from '../components/layout/CampusSidebar'
 import Seo from '../components/Seo'
 import OpportunityBidForm from '../features/opportunities/components/OpportunityBidForm'
 import OpportunityBidHeader from '../features/opportunities/components/OpportunityBidHeader'
+import OpportunityApplicationLeavePrompt from '../features/opportunities/components/OpportunityApplicationLeavePrompt'
 import OpportunityBidSuccessDialog from '../features/opportunities/components/OpportunityBidSuccessDialog'
 import OpportunityBidSummaryRail from '../features/opportunities/components/OpportunityBidSummaryRail'
 import useOpportunityPlaceBidState from '../features/opportunities/hooks/useOpportunityPlaceBidState'
@@ -12,11 +13,21 @@ import '../styles/opportunities.css'
 function OpportunityPlaceBidPage() {
   const {
     activeBidIntent,
+    applicationDraft,
+    draftError,
+    draftNotice,
     isBidSuccessOpen,
+    isLoadingDraft,
+    isSavingDraft,
     isSubmitting,
+    leavePrompt,
+    onApplicationStateChange,
     onBackToGig,
+    onCancel,
     onContinueDiscovery,
     onOpenMyBids,
+    onMarkDirty,
+    onSaveDraft,
     onSubmitProposal,
     selectedGig,
     submittedBid,
@@ -41,12 +52,26 @@ function OpportunityPlaceBidPage() {
             {selectedGig ? (
               <>
                 <OpportunityBidHeader onBackToGig={onBackToGig} selectedGig={selectedGig} />
-                <OpportunityBidForm
-                  isSubmitting={isSubmitting}
-                  onSubmitProposal={onSubmitProposal}
-                  selectedGig={selectedGig}
-                  submitError={submitError}
-                />
+                {isLoadingDraft ? (
+                  <div className="opportunities-bid-form-card opportunities-application-loading" role="status">
+                    Loading your application draft...
+                  </div>
+                ) : (
+                  <OpportunityBidForm
+                    draftError={draftError}
+                    draftNotice={draftNotice}
+                    initialDraft={applicationDraft}
+                    isSavingDraft={isSavingDraft}
+                    isSubmitting={isSubmitting}
+                    onApplicationStateChange={onApplicationStateChange}
+                    onCancel={onCancel}
+                    onMarkDirty={onMarkDirty}
+                    onSaveDraft={onSaveDraft}
+                    onSubmitProposal={onSubmitProposal}
+                    selectedGig={selectedGig}
+                    submitError={submitError}
+                  />
+                )}
               </>
             ) : (
               <div className="opportunities-list-section">
@@ -72,6 +97,7 @@ function OpportunityPlaceBidPage() {
         selectedGig={selectedGig}
         submittedBid={submittedBid}
       />
+      <OpportunityApplicationLeavePrompt {...leavePrompt} />
     </main>
   )
 }

@@ -3,9 +3,12 @@ import { idParamSchema, requireBody, requireParams } from '../../../../lib/http.
 import {
   createApplicantReviewEventService,
   createBusinessOpportunityService,
+  deleteBusinessOpportunityService,
+  setOpportunityApplicationsClosedService,
   createBusinessIndustryService,
   createOpportunityDeliverablesService,
   awardApplicantProjectService,
+  counterOfferApplicantBidService,
   fundBusinessOpportunityService,
   inviteOpportunityBiddersService,
   listOpportunityInviteCandidatesService,
@@ -14,6 +17,7 @@ import {
   listBusinessIndustriesService,
   listOpportunityDeliverablesService,
   listOpportunityApplicantsService,
+  listOpportunitySubmissionsService,
   publishBusinessOpportunityService,
   readOpportunityDeliverableService,
   readBusinessDashboardService,
@@ -30,10 +34,12 @@ import {
   createOpportunityDeliverablesSchema,
   createBusinessIndustrySchema,
   createOpportunitySchema,
+  counterOfferApplicantSchema,
   fundOpportunitySchema,
   inviteOpportunityBiddersSchema,
   reviewApplicantSchema,
   scheduleApplicantInterviewSchema,
+  setOpportunityApplicationsClosedSchema,
   submitBusinessKycSchema,
   updateOpportunitySchema,
   updateBusinessProfileSchema
@@ -89,14 +95,31 @@ async function updateBusinessOpportunityController(request: FastifyRequest, repl
   return reply.send(await updateBusinessOpportunityService(id, request.authUser?.businessId, request.authUser?.id, requireBody(updateOpportunitySchema, request)))
 }
 
+async function deleteBusinessOpportunityController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  await deleteBusinessOpportunityService(id, request.authUser?.businessId)
+  return reply.code(204).send()
+}
+
+async function setOpportunityApplicationsClosedController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  const { closed } = requireBody(setOpportunityApplicationsClosedSchema, request)
+  return reply.send(await setOpportunityApplicationsClosedService(id, request.authUser?.businessId, closed))
+}
+
 async function publishBusinessOpportunityController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.send(await publishBusinessOpportunityService(id, request.authUser?.id))
+  return reply.send(await publishBusinessOpportunityService(id, request.authUser?.businessId, request.authUser?.id))
 }
 
 async function fundBusinessOpportunityController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.code(201).send(await fundBusinessOpportunityService(id, requireBody(fundOpportunitySchema, request)))
+  return reply.code(201).send(await fundBusinessOpportunityService(
+    id,
+    request.authUser?.businessId,
+    requireBody(fundOpportunitySchema, request),
+    request.authUser?.id
+  ))
 }
 
 async function listOpportunityDeliverablesController(request: FastifyRequest, reply: FastifyReply) {
@@ -111,12 +134,22 @@ async function readOpportunityDeliverableController(request: FastifyRequest, rep
 
 async function createOpportunityDeliverablesController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.code(201).send(await createOpportunityDeliverablesService(id, requireBody(createOpportunityDeliverablesSchema, request), request.authUser?.id))
+  return reply.code(201).send(await createOpportunityDeliverablesService(
+    id,
+    request.authUser?.businessId,
+    requireBody(createOpportunityDeliverablesSchema, request),
+    request.authUser?.id
+  ))
 }
 
 async function inviteOpportunityBiddersController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.code(201).send(await inviteOpportunityBiddersService(id, requireBody(inviteOpportunityBiddersSchema, request), request.authUser?.id))
+  return reply.code(201).send(await inviteOpportunityBiddersService(
+    id,
+    request.authUser?.businessId,
+    requireBody(inviteOpportunityBiddersSchema, request),
+    request.authUser?.id
+  ))
 }
 
 async function listOpportunityInviteCandidatesController(request: FastifyRequest, reply: FastifyReply) {
@@ -127,6 +160,11 @@ async function listOpportunityInviteCandidatesController(request: FastifyRequest
 async function listOpportunityApplicantsController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
   return reply.send(await listOpportunityApplicantsService(id, request.authUser?.businessId))
+}
+
+async function listOpportunitySubmissionsController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await listOpportunitySubmissionsService(id, request.authUser?.businessId))
 }
 
 async function createApplicantReviewEventController(request: FastifyRequest, reply: FastifyReply) {
@@ -158,6 +196,15 @@ async function awardApplicantProjectController(request: FastifyRequest, reply: F
   return reply.code(201).send(await awardApplicantProjectService(id, request.authUser?.id))
 }
 
+async function counterOfferApplicantBidController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await counterOfferApplicantBidService(
+    id,
+    request.authUser?.businessId,
+    requireBody(counterOfferApplicantSchema, request)
+  ))
+}
+
 export {
   readBusinessDashboardController,
   listBusinessActivityController,
@@ -170,6 +217,8 @@ export {
   listBusinessOpportunitiesController,
   createBusinessOpportunityController,
   updateBusinessOpportunityController,
+  deleteBusinessOpportunityController,
+  setOpportunityApplicationsClosedController,
   publishBusinessOpportunityController,
   fundBusinessOpportunityController,
   listOpportunityDeliverablesController,
@@ -178,8 +227,10 @@ export {
   inviteOpportunityBiddersController,
   listOpportunityInviteCandidatesController,
   listOpportunityApplicantsController,
+  listOpportunitySubmissionsController,
   createApplicantReviewEventController,
   scheduleApplicantInterviewController,
   startApplicantInterviewController,
-  awardApplicantProjectController
+  awardApplicantProjectController,
+  counterOfferApplicantBidController
 }

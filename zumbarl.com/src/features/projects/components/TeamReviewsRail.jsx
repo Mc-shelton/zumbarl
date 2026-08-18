@@ -1,56 +1,54 @@
-import { FiArrowRight } from 'react-icons/fi'
+import { FiCheckCircle, FiClock, FiRefreshCw } from 'react-icons/fi'
 
-function TeamReviewsRail() {
+function formatDate(value) {
+  if (!value) return 'Recently'
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return 'Recently'
+  return date.toLocaleDateString('en-KE', { day: 'numeric', month: 'short' })
+}
+
+function TeamReviewsRail({ submissions = [] }) {
+  const current = submissions.filter((item) => item.status !== 'superseded')
+  const awaiting = current.filter((item) => item.status === 'submitted').length
+  const approved = current.filter((item) => item.status === 'approved').length
+  const changes = current.filter((item) => item.status === 'changes_requested').length
+  const decided = approved + changes
+  const decisionProgress = current.length ? Math.round((decided / current.length) * 100) : 0
+  const recent = current
+    .filter((item) => ['approved', 'changes_requested'].includes(item.status))
+    .sort((left, right) => new Date(right.reviewedAt || 0) - new Date(left.reviewedAt || 0))
+    .slice(0, 3)
+
   return (
     <aside className="campus-rail project-workspace-rail team-project-rail" aria-label="Review details">
-      <section className="campus-rail-card team-rail-card team-review-summary-card">
-        <h3>Review Summary</h3>
-        <div className="team-review-donut">
-          <strong>4.6</strong>
-          <span>Average Rating</span>
+      <section className="campus-rail-card team-rail-card project-review-rail-summary">
+        <h3>Review summary</h3>
+        <div className="project-review-rail-progress"><i style={{ width: `${decisionProgress}%` }} /></div>
+        <strong>{decisionProgress}% reviewed</strong>
+        <div>
+          <span><FiClock aria-hidden="true" /><b>{awaiting}</b><small>Awaiting</small></span>
+          <span><FiCheckCircle aria-hidden="true" /><b>{approved}</b><small>Approved</small></span>
+          <span><FiRefreshCw aria-hidden="true" /><b>{changes}</b><small>Changes</small></span>
         </div>
-        <div className="team-review-breakdown">
-          {[
-            ['5 Stars', '66.7% (4)', 'gold'],
-            ['4 Stars', '16.7% (1)', 'blue'],
-            ['3 Stars', '0% (0)', 'purple'],
-            ['2 Stars', '0% (0)', 'orange'],
-            ['1 Star', '16.7% (1)', 'red'],
-          ].map(([label, value, tone]) => (
-            <p key={label}>
-              <i className={`is-${tone}`} />
-              <span>{label}</span>
-              <strong>{value}</strong>
-            </p>
-          ))}
-        </div>
-        <dl className="team-review-stats">
-          <div><dt>Total Reviews</dt><dd>6</dd></div>
-          <div><dt>Approved</dt><dd>4</dd></div>
-          <div><dt>Changes Requested</dt><dd>2</dd></div>
-          <div><dt>Pending</dt><dd>1</dd></div>
-        </dl>
       </section>
-      <section className="campus-rail-card team-rail-card team-recent-reviews-card">
-        <header>
-          <h3>Recent Reviews</h3>
-          <button type="button">View all</button>
-        </header>
-        {[
-          ['Content Review - Milestone 1', 'May 20, 2024', 'Approved'],
-          ['Design Review - Milestone 2', 'May 12, 2024', 'Approved'],
-          ['Content Draft Review', 'May 8, 2024', 'Changes Requested'],
-        ].map(([title, date, status]) => (
-          <article key={title}>
-            <span />
-            <div>
-              <strong>{title}</strong>
-              <em>{date}</em>
-            </div>
-            <b className={status === 'Approved' ? 'is-approved' : 'is-changes'}>{status}</b>
+
+      <section className="campus-rail-card team-rail-card project-review-rail-recent">
+        <h3>Recent decisions</h3>
+        {recent.length ? recent.map((submission) => (
+          <article key={submission.id}>
+            <span className={submission.status === 'approved' ? 'is-approved' : 'is-changes'} />
+            <div><strong>{submission.title}</strong><small>{formatDate(submission.reviewedAt)}</small></div>
           </article>
-        ))}
-        <button type="button" className="team-review-link">See all reviews <FiArrowRight aria-hidden="true" /></button>
+        )) : <p>No review decisions yet.</p>}
+      </section>
+
+      <section className="campus-rail-card team-rail-card project-review-rail-guide">
+        <h3>How reviews work</h3>
+        <ol>
+          <li><span>1</span>Students submit evidence for one or more tasks.</li>
+          <li><span>2</span>The business approves it or requests clear changes.</li>
+          <li><span>3</span>Approved tasks move to Done and count toward earnings.</li>
+        </ol>
       </section>
     </aside>
   )

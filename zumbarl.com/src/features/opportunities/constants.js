@@ -143,6 +143,7 @@ export const INITIAL_OPPORTUNITY_RAIL_FILTERS = {
 
 export const OPPORTUNITY_TAB_ITEMS = [
   { label: 'Discover', requiredAccess: ACCESS_KEYS.opportunities.discover },
+  { label: 'Marketing', requiredAccess: ACCESS_KEYS.opportunities.discover },
   { label: 'My Bids', requiredAccess: ACCESS_KEYS.opportunities.bids },
   { label: 'Invites', requiredAccess: ACCESS_KEYS.opportunities.invites },
   { label: 'Ongoing', requiredAccess: ACCESS_KEYS.opportunities.ongoing },
@@ -151,6 +152,7 @@ export const OPPORTUNITY_TAB_ITEMS = [
 export const OPPORTUNITY_TABS = filterByAccess(OPPORTUNITY_TAB_ITEMS).map((tab) => tab.label)
 export const OPPORTUNITY_TAB_TO_QUERY = {
   Discover: 'discover',
+  Marketing: 'marketing',
   'My Bids': 'bids',
   Invites: 'invites',
   Ongoing: 'ongoing',
@@ -158,6 +160,7 @@ export const OPPORTUNITY_TAB_TO_QUERY = {
 }
 export const OPPORTUNITY_QUERY_TO_TAB = {
   discover: 'Discover',
+  marketing: 'Marketing',
   bids: 'My Bids',
   invites: 'Invites',
   ongoing: 'Ongoing',

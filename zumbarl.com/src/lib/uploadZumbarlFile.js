@@ -1,4 +1,5 @@
 import { API_BASE_URL, readZumbarlAuthToken } from './sendZumbarlApiRequest'
+import { normalizeZumbarlFileMetadata } from './normalizeZumbarlFileUrl'
 
 async function uploadZumbarlFile(file, { metadata, scope = 'general' } = {}) {
   const token = readZumbarlAuthToken()
@@ -21,7 +22,7 @@ async function uploadZumbarlFile(file, { metadata, scope = 'general' } = {}) {
     throw new Error(payload?.message || `File upload failed with ${response.status}`)
   }
 
-  return payload
+  return normalizeZumbarlFileMetadata(payload)
 }
 
 export {
