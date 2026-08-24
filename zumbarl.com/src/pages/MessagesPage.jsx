@@ -12,12 +12,20 @@ import { openCallOverlay } from '../features/calls/getCallMeetingUrl'
 import { playCallRingtone, playMessageSentSound } from '../features/communications/services/communicationSounds'
 import { decideMarketplaceOffer, readMarketplaceOffer } from '../features/opportunities/services/marketplaceInteractionService'
 import { getAuthUserSnapshot } from '../features/auth/services/authUserService'
+import { useViewerProfile } from '../features/auth/viewerProfile'
+import { normalizeZumbarlFileUrl } from '../lib/normalizeZumbarlFileUrl'
 import '../styles/campus.css'
 import '../styles/business.css'
 import '../styles/messages.css'
 
 function formatTime(value) {
   return new Date(value).toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit' })
+}
+
+function participantAvatar(participant) {
+  return normalizeZumbarlFileUrl(
+    participant?.avatarUrl || participant?.avatar || participant?.student?.avatarUrl,
+  )
 }
 
 function MessagesPage() {
@@ -28,6 +36,7 @@ function MessagesPage() {
   const requestedParticipantStudentId = searchParams.get('participantStudentId') || ''
   const requestedCallType = ['audio', 'video'].includes(searchParams.get('call')) ? searchParams.get('call') : ''
   const isBusiness = getCurrentLoginRole().side === 'company'
+  const viewerProfile = useViewerProfile()
   const [conversations, setConversations] = useState([])
   const [activeConversationId, setActiveConversationId] = useState('')
   const [messages, setMessages] = useState([])
@@ -315,8 +324,8 @@ function MessagesPage() {
                     onClick={() => setActiveConversationId(conversation.id)}
                   >
                     <span className="messages-avatar">
-                      {conversation.participant.avatarUrl
-                        ? <img src={conversation.participant.avatarUrl} alt="" />
+                      {participantAvatar(conversation.participant)
+                        ? <img src={participantAvatar(conversation.participant)} alt="" />
                         : conversation.participant.name.slice(0, 1)}
                     </span>
                     <span>
@@ -344,8 +353,8 @@ function MessagesPage() {
                           aria-label={`View ${activeConversation.participant.name}'s profile`}
                         >
                           <span className="messages-avatar">
-                            {activeConversation.participant.avatarUrl
-                              ? <img src={activeConversation.participant.avatarUrl} alt="" />
+                            {participantAvatar(activeConversation.participant)
+                              ? <img src={participantAvatar(activeConversation.participant)} alt="" />
                               : activeConversation.participant.name.slice(0, 1)}
                           </span>
                           <span>
@@ -356,8 +365,8 @@ function MessagesPage() {
                       ) : (
                         <div className="messages-participant-link is-static">
                           <span className="messages-avatar">
-                            {activeConversation.participant.avatarUrl
-                              ? <img src={activeConversation.participant.avatarUrl} alt="" />
+                            {participantAvatar(activeConversation.participant)
+                              ? <img src={participantAvatar(activeConversation.participant)} alt="" />
                               : activeConversation.participant.name.slice(0, 1)}
                           </span>
                           <span>
@@ -387,6 +396,13 @@ function MessagesPage() {
                         const isActiveOfferCard = latestOfferMessageIds.has(message.id)
                         return (
                           <article key={message.id} className={isMine ? 'is-mine' : ''}>
+                            {!isMine ? (
+                              <span className="messages-message-avatar">
+                                {participantAvatar(activeConversation.participant)
+                                  ? <img src={participantAvatar(activeConversation.participant)} alt="" />
+                                  : activeConversation.participant.name.slice(0, 1)}
+                              </span>
+                            ) : null}
                             <div>
                               {message.context?.product ? (
                                 <div className="messages-product-offer-wrap">
@@ -425,6 +441,13 @@ function MessagesPage() {
                                 {isMine ? ` · ${message.isRead ? 'Read' : message.deliveredAt ? 'Delivered' : 'Sent'}` : ''}
                               </time>
                             </div>
+                            {isMine ? (
+                              <span className="messages-message-avatar">
+                                {viewerProfile.avatar
+                                  ? <img src={viewerProfile.avatar} alt="" />
+                                  : viewerProfile.initials}
+                              </span>
+                            ) : null}
                           </article>
                         )
                       })}

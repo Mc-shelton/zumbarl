@@ -247,23 +247,63 @@
 
 .messages-thread-body article {
   display: flex;
+  align-items: flex-end;
+  gap: 8px;
 }
 
 .messages-thread-body article.is-mine {
   justify-content: flex-end;
 }
 
+.messages-message-avatar {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  border-radius: 50%;
+  background: #ded5ff;
+  color: #4f2cb8;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font-size: var(--text-caption);
+  font-weight: 800;
+}
+
+.messages-message-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .messages-thread-body article > div {
   max-width: min(72%, 620px);
-  border-radius: 14px 14px 14px 3px;
-  background: #f0f1f5;
-  padding: 10px 12px 7px;
+  border: 1px solid #e1e4ef;
+  border-radius: 4px 12px 12px;
+  background: #fff;
+  padding: 9px 11px;
 }
 
 .messages-thread-body article.is-mine > div {
-  border-radius: 14px 14px 3px 14px;
-  background: #5b35dc;
-  color: #fff;
+  border-color: #d8cadb;
+  border-radius: 12px 4px 12px 12px;
+  background: #f3edf4;
+  color: #444b62;
+}
+
+.messages-thread-body article.is-mine p,
+.messages-thread-body article.is-mine time {
+  text-align: right;
+}
+
+.messages-thread-body article time {
+  display: block;
+  margin-top: 6px;
+  color: #8990a3;
+  font-size: var(--text-micro);
+}
+
+.messages-thread-body article.is-mine time {
+  color: #76506f;
 }
 
 .messages-product-preview {
@@ -278,6 +318,7 @@
   color: #242943;
   background: rgba(255, 255, 255, 0.94);
   text-decoration: none;
+  text-align: left;
 }
 
 .messages-product-offer-wrap {

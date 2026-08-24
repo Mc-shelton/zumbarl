@@ -838,7 +838,7 @@
 .explore-campus-feed-author {
   margin-top: 8px;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
+  grid-template-columns: 46px minmax(0, 1fr);
   gap: 10px;
   align-items: center;
 }
@@ -853,13 +853,13 @@
   margin: 0;
   color: #212b53;
   font-size: var(--text-title-sm);
-  font-weight: 800;
+  font-weight: 500;
 }
 
 .explore-campus-feed-author h3 span {
   color: #677297;
   font-size: var(--text-body);
-  font-weight: 600;
+  font-weight: 400;
   margin-left: 4px;
 }
 
