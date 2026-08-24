@@ -7,6 +7,7 @@ import {
   respondToEarnBidCounterOffer,
   markEarnInvitesSeen,
   refreshEarnFlowFromBackend,
+  hydrateEarnOpportunityById,
 } from '../../earn/services/earnFlowService'
 import useEarnFlowState from '../../earn/hooks/useEarnFlowState'
 import {
@@ -204,6 +205,7 @@ function useOpportunitiesPageState() {
   const intentQueryParam = searchParams.get('intent')
   const typeQueryParam = searchParams.get('type')
   const opportunityQueryParam = searchParams.get('opportunity')
+  const activityViewQueryParam = searchParams.get('view')
   const ownerQueryParam = searchParams.get('owner')
   const gigQueryParam = searchParams.get('gig')
   const activeOpportunityTab = resolveOpportunityTab(tabQueryParam)
@@ -251,6 +253,11 @@ function useOpportunitiesPageState() {
   const opportunityUuidSet = useMemo(() => (
     new Set(allOpportunityListings.map((item) => item.opportunityUuid))
   ), [allOpportunityListings])
+
+  useEffect(() => {
+    if (!opportunityQueryParam || findOpportunityListingBySelector(allOpportunityListings, opportunityQueryParam)) return
+    hydrateEarnOpportunityById(opportunityQueryParam).catch(() => {})
+  }, [allOpportunityListings, opportunityQueryParam])
   const opportunityUuidToListing = useMemo(() => (
     new Map(allOpportunityListings.map((item) => [item.opportunityUuid, item]))
   ), [allOpportunityListings])
@@ -292,6 +299,12 @@ function useOpportunitiesPageState() {
     : null
 
   const selectedOpportunity = opportunityUuidToListing.get(selectedOpportunityUuid) || null
+  const selectedOpportunityBid = selectedOpportunity
+    ? earnFlow.bids.find((bid) => bid.opportunityId === selectedOpportunity.id) || null
+    : null
+  const selectedOpportunityProject = selectedOpportunity
+    ? earnFlow.projects.find((project) => project.opportunityId === selectedOpportunity.id && project.status !== 'Completed') || null
+    : null
   const selectedOpportunityThumbnail = selectedOpportunity?.image
   const isDetailOpen = Boolean(selectedOpportunity)
   const isFilterCollapsed = isDetailOpen && !isFilterExpanded
@@ -303,6 +316,23 @@ function useOpportunitiesPageState() {
   const selectedBidInterview = bidSelection.selectedBid
     ? interviews.find((item) => item.bidId === bidSelection.selectedBid.id) || null
     : null
+
+  useEffect(() => {
+    if (activityViewQueryParam !== 'activity' || !opportunityQueryParam || activeOpportunityTab !== 'Discover') return
+    const existingBid = earnFlow.bids.find((bid) => bid.opportunityId === opportunityQueryParam)
+    if (existingBid?.status === 'Awarded' && existingBid.projectId) {
+      navigate(`/campus/opportunities?tab=ongoing&project=${encodeURIComponent(existingBid.projectId)}`, { replace: true })
+      return
+    }
+    if (existingBid) {
+      navigate(`/campus/opportunities?tab=bids&bid=${encodeURIComponent(existingBid.id)}`, { replace: true })
+      return
+    }
+    const existingProject = earnFlow.projects.find((project) => project.opportunityId === opportunityQueryParam && project.status !== 'Completed')
+    if (existingProject) {
+      navigate(`/campus/opportunities?tab=ongoing&project=${encodeURIComponent(existingProject.id)}`, { replace: true })
+    }
+  }, [activeOpportunityTab, activityViewQueryParam, earnFlow.bids, earnFlow.projects, navigate, opportunityQueryParam])
   const syncRouteSelection = (tab, opportunityUuid = null, intentId = activeOpportunityIntent.id) => {
     const nextParams = new URLSearchParams(searchParams)
     const tabQueryValue = OPPORTUNITY_TAB_TO_QUERY[tab] || OPPORTUNITY_TAB_TO_QUERY[OPPORTUNITY_TABS[0]]
@@ -427,6 +457,20 @@ function useOpportunitiesPageState() {
     if (!targetOpportunityId) {
       return
     }
+    const existingBid = earnFlow.bids.find((bid) => bid.opportunityId === targetOpportunityId)
+    if (existingBid?.status === 'Awarded' && existingBid.projectId) {
+      navigate(`/campus/opportunities?tab=ongoing&project=${encodeURIComponent(existingBid.projectId)}`)
+      return
+    }
+    if (existingBid && !existingBid.isDraft) {
+      navigate(`/campus/opportunities?tab=bids&bid=${encodeURIComponent(existingBid.id)}`)
+      return
+    }
+    const existingProject = earnFlow.projects.find((project) => project.opportunityId === targetOpportunityId && project.status !== 'Completed')
+    if (existingProject) {
+      navigate(`/campus/opportunities?tab=ongoing&project=${encodeURIComponent(existingProject.id)}`)
+      return
+    }
     let acceptedInvite = invite
     if (invite && !invite.isAccepted) {
       acceptEarnOpportunityInvite(invite.id).catch(() => {})
@@ -525,8 +569,12 @@ function useOpportunitiesPageState() {
     selectedBid: bidSelection.selectedBid,
     skillOptions,
     selectedBidId: bidSelection.selectedBidId,
+    shouldFocusSelectedBid: Boolean(searchParams.get('bid')),
     selectedBidInterview,
     selectedOpportunity,
+    selectedOpportunityBid,
+    selectedOpportunityProject,
+    selectedProjectId: searchParams.get('project'),
     selectedOpportunityThumbnail,
     selectedOpportunityUuid,
     upcomingInterviewsCount: dashboardStats.upcomingInterviewsCount,

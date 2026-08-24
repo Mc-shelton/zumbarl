@@ -11,7 +11,7 @@
   color: #128a48;
   padding: 6px 12px;
   font-style: normal;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -88,7 +88,7 @@
   padding: 34px 18px;
   border-top: 1px solid #edf0f7;
   color: var(--project-muted, #707590);
-  font-size: 13px;
+  font-size: var(--text-small);
   text-align: center;
 }
 
@@ -96,7 +96,7 @@
 .team-member-row.is-head {
   border-top: 0;
   color: #53608d;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -114,7 +114,7 @@
 .team-member-row em {
   margin-top: 5px;
   color: #59658f;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -124,7 +124,7 @@
   padding: 5px 10px;
   background: #e4f8eb;
   color: #128a48;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -160,7 +160,7 @@
 .team-member-row > span:first-child strong {
   grid-area: name;
   overflow: hidden;
-  font-size: 14px;
+  font-size: var(--text-small);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -169,7 +169,7 @@
   grid-area: school;
   overflow: hidden;
   color: var(--color-text-muted, #707590);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-style: normal;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -186,7 +186,7 @@
   border-radius: 999px;
   background: var(--color-action, #6c4cf0);
   color: #fff;
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -218,7 +218,7 @@
   background: var(--color-action, #6c4cf0);
   color: #fff;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   cursor: pointer;
 }
 
@@ -230,5 +230,5 @@
   background: var(--color-surface, #fff);
   color: inherit;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
 }

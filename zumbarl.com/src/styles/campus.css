@@ -105,7 +105,7 @@
 .campus-logo {
   margin: 0 8px 20px;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 47px;
+  font-size: var(--text-metric);
   line-height: 1;
   font-weight: 800;
   letter-spacing: -0.05em;
@@ -139,7 +139,7 @@
   align-items: center;
   align-self: center;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 1.95rem;
+  font-size: var(--text-title-lg);
   line-height: 1;
   font-weight: 800;
   letter-spacing: -0.04em;
@@ -164,7 +164,7 @@
   padding: 12px 13px;
   background: transparent;
   color: #373d62;
-  font-size: 16px;
+  font-size: var(--text-body);
   /* font-weight: 700; */
   text-align: left;
   text-decoration: none;
@@ -193,7 +193,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 800;
 }
@@ -241,7 +241,7 @@
   place-items: center;
   /* background: linear-gradient(145deg, var(--campus-dark), var(--campus-green)); */
   color: #ffffff;
-  font-size: 13px;
+  font-size: var(--text-small);
   border: 1px solid var(--theme-dark);
   font-weight: 800;
 }
@@ -249,14 +249,14 @@
 .campus-profile-name {
   margin: 0;
   color: var(--campus-dark);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .campus-profile-meta {
   margin: 2px 0 0;
   color: var(--campus-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -282,7 +282,7 @@
 .campus-sidebar-card h3 {
   margin: 0;
   color: var(--campus-dark);
-  font-size: 24px;
+  font-size: var(--text-title-md);
   line-height: 1.2;
   font-weight: 800;
 }
@@ -290,7 +290,7 @@
 .campus-sidebar-card p {
   margin: 8px 0 14px;
   color: #555d7b;
-  font-size: 13px;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 600;
 }
@@ -304,7 +304,7 @@
   padding: 9px 14px;
   background: var(--theme-orange);
   color: #ffffff;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
   cursor: pointer;
 }
@@ -379,7 +379,7 @@
   /* color: #5d6483; */
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
   font-size: clamp(10px, 0.88vw, 14px);
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   font-weight: 400;
   opacity: calc(1 - var(--campus-header-progress));
   transform: translateY(calc(-8px * var(--campus-header-progress)));
@@ -430,7 +430,7 @@
 
 .app-notification-menu strong {
   color: var(--campus-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -439,7 +439,7 @@
   background: transparent;
   color: var(--theme-purple);
   font: inherit;
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   font-weight: 800;
   cursor: pointer;
 }
@@ -454,7 +454,7 @@
   padding: 20px 12px;
   color: #69708f;
   text-align: center;
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -478,13 +478,13 @@
 }
 
 .app-notification-item span {
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .app-notification-item small {
   color: #69708f;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 700;
   line-height: 1.35;
 }
@@ -495,7 +495,7 @@
   padding: 12px 18px;
   background: var(--theme-dark);
   color: #ffffff;
-  font-size: 15px;
+  font-size: var(--text-body);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -547,7 +547,7 @@
   display: grid;
   place-items: center;
   cursor: pointer;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 
 .campus-icon-btn.plain {
@@ -569,7 +569,7 @@
   padding: 0 5px;
   display: grid;
   place-items: center;
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1;
   font-weight: 800;
   background: var(--campus-orange);
@@ -600,7 +600,7 @@
   border: 0;
   outline: none;
   color: var(--theme-dark);
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   font-weight: 400;
   font-family: inherit;
   background: transparent;
@@ -617,7 +617,7 @@
   padding: 4px 9px;
   background: #f3f5fc;
   color: #7a81a2;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -684,7 +684,7 @@
 .campus-kicker {
   margin: 0;
   /* color: #825d14; */
-  font-size: 25px;
+  font-size: var(--text-title-md);
   font-weight: 700;
   margin-bottom: 20px;
 }
@@ -716,7 +716,7 @@
   margin: 10px 0 0;
   max-width: 540px;
   color: #576081;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   line-height: 1.35;
   font-weight: 400;
 }
@@ -731,7 +731,7 @@
 .campus-chip {
   padding: 8px 14px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -799,7 +799,7 @@
   margin: 0;
   color: #ffffff;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   letter-spacing: -0.02em;
   font-weight: 800;
 }
@@ -821,7 +821,7 @@
   display: grid;
   place-items: center;
   color: #ffffff;
-  font-size: 24px;
+  font-size: var(--text-title-md);
   box-shadow: 0 14px 20px rgba(31, 26, 53, 0.18);
 }
 
@@ -864,7 +864,7 @@
 .campus-discovery-head h3 {
   margin: 0;
   color: var(--campus-dark);
-  font-size: 21px;
+  font-size: var(--text-title-sm);
   line-height: 1.2;
   font-weight: 800;
 }
@@ -872,7 +872,7 @@
 .campus-discovery-head p {
   margin: 5px 0 0;
   color: var(--theme-dark);
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.35;
   font-weight: 600;
 }
@@ -890,7 +890,7 @@
   background: #eef0ff;
   color: #434c76;
   padding: 5px 10px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -911,14 +911,14 @@
 .campus-discovery-type {
   margin: 0;
   color: var(--theme-purple);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
 .campus-discovery-card h4 {
   margin: 3px 0 0;
   color: #1c2243;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.35;
   font-weight: 800;
 }
@@ -926,7 +926,7 @@
 .campus-discovery-card p {
   margin: 4px 0 0;
   color: #667090;
-  font-size: 13px;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 600;
 }
@@ -934,14 +934,14 @@
 .campus-discovery-card p.campus-discovery-type {
   margin: 0;
   color: var(--theme-purple);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
 .campus-discovery-card span {
   margin-top: 6px;
   color: #2f3a71;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
   display: inline-flex;
   align-items: center;
@@ -969,7 +969,7 @@
 
 .campus-chat-head p {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   color: var(--theme-dark);
   font-weight: 800;
 }
@@ -978,7 +978,7 @@
   display: block;
   margin-top: 5px;
   color: #667090;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.4;
   font-weight: 600;
 }
@@ -999,13 +999,13 @@
 
 .campus-chat-bubble span {
   display: block;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .campus-chat-bubble p {
   margin: 5px 0 0;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.45;
   font-weight: 600;
 }
@@ -1065,7 +1065,7 @@
   margin: 0;
   color: var(--campus-dark);
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   line-height: 1.12;
   letter-spacing: -0.01em;
 }
@@ -1104,7 +1104,7 @@ a.campus-action-card {
   color: #8f5208;
   display: grid;
   place-items: center;
-  font-size: 25px;
+  font-size: var(--text-title-md);
 }
 
 .campus-action-card:nth-child(2) .campus-action-icon {
@@ -1135,7 +1135,7 @@ a.campus-action-card {
 .campus-action-card h4 {
   margin: 10px 0 0;
   color: var(--campus-dark);
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.25;
   font-weight: 800;
   /* border: 2px solid red; */
@@ -1147,7 +1147,7 @@ a.campus-action-card {
 .campus-action-card p {
   margin: 5px 0 0;
   color: #75809f;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.3;
   font-weight: 600;
   overflow: hidden;
@@ -1170,7 +1170,7 @@ a.campus-action-card {
 .campus-section-head p {
   margin: 7px 0 0;
   color: #77809f;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -1185,7 +1185,7 @@ a.campus-action-card {
 .campus-reco-strip p {
   margin: 0;
   color: #77809f;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -1193,7 +1193,7 @@ a.campus-action-card {
   border: 0;
   background: transparent;
   color: var(--theme-purple);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
   cursor: pointer;
 }
@@ -1241,7 +1241,7 @@ a.campus-action-card {
 .campus-gig-card h4 {
   margin: 0;
   color: #161a37;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.3;
   font-weight: 800;
   overflow: hidden;
@@ -1269,7 +1269,7 @@ a.campus-action-card {
 .campus-gig-detail p {
   margin: 0;
   color: #5a6280;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1280,7 +1280,7 @@ a.campus-action-card {
   display: block;
   margin-top: 7px;
   color: #7a82a0;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
@@ -1288,7 +1288,7 @@ a.campus-action-card {
   display: block;
   margin-top: 10px;
   color: var(--theme-purple);
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.2;
   font-weight: 800;
 }
@@ -1306,7 +1306,7 @@ a.campus-action-card {
 .campus-reco-card h4 {
   margin: 0;
   color: #161a37;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.3;
   font-weight: 800;
   overflow: hidden;
@@ -1317,7 +1317,7 @@ a.campus-action-card {
 .campus-reco-card p {
   margin: 4px 0 0;
   color: #5a6280;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1326,13 +1326,13 @@ a.campus-action-card {
 
 .campus-reco-card span {
   color: #7a82a0;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
 .campus-reco-card strong {
   color: var(--theme-purple);
-  font-size: 15px;
+  font-size: var(--text-body);
   line-height: 1.2;
   font-weight: 800;
 }
@@ -1479,14 +1479,14 @@ a.campus-action-card {
 .campus-trust-card h4 {
   margin: 0;
   color: #1c2040;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .campus-trust-card p {
   margin: 4px 0 0;
   color: #606988;
-  font-size: 12px;
+  font-size: var(--text-caption);
   line-height: 1.4;
   font-weight: 600;
 }
@@ -1517,7 +1517,7 @@ a.campus-action-card {
   margin: 0;
   color: var(--campus-dark);
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 22px;
+  font-size: var(--text-title-sm);
   line-height: 1.2;
 }
 
@@ -1535,13 +1535,13 @@ a.campus-action-card {
 .campus-wallet span {
   margin: 0;
   opacity: 0.84;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
 .campus-wallet h4 {
   margin: 7px 0 5px;
-  font-size: 40px;
+  font-size: var(--text-page-title);
   line-height: 1;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
   font-weight: 800;
@@ -1565,7 +1565,7 @@ a.campus-action-card {
   display: grid;
   place-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   cursor: pointer;
   color: var(--theme-dark) ;
@@ -1607,14 +1607,14 @@ a.campus-action-card {
 
 .campus-project-invites h2 {
   color: var(--color-text-strong);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .campus-project-invites > header p,
 .campus-project-invite-list article p,
 .campus-project-invite-list article > div:first-child > span {
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
 }
 
 .campus-project-invites > header > strong {
@@ -1623,7 +1623,7 @@ a.campus-action-card {
   border-radius: 999px;
   background: var(--color-surface);
   color: var(--color-action);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
 }
 
 .campus-project-invite-list {
@@ -1645,7 +1645,7 @@ a.campus-action-card {
 .campus-project-invite-list article h3 {
   margin: 3px 0 5px;
   color: var(--color-text-strong);
-  font-size: 0.95rem;
+  font-size: var(--text-body);
 }
 
 .campus-project-invite-list article > div:last-child {
@@ -1665,7 +1665,7 @@ a.campus-action-card {
   background: var(--color-surface);
   color: var(--color-text-strong);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 800;
   cursor: pointer;
 }
@@ -1683,7 +1683,7 @@ a.campus-action-card {
 
 .campus-project-invites-error {
   color: var(--color-danger, #c2414b);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -1708,7 +1708,7 @@ a.campus-action-card {
 .campus-rail-empty {
   margin: 4px 0;
   color: #697292;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
@@ -1731,7 +1731,7 @@ a.campus-action-card {
 .campus-portfolio-meta {
   margin: 0;
   color: #6e7594;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.3;
   font-weight: 600;
   overflow: hidden;
@@ -1756,14 +1756,14 @@ a.campus-action-card {
 
 .campus-portfolio-stat-label {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.25;
   font-weight: 700;
 }
 
 .campus-portfolio-stat-value {
   margin: 8px 0 0;
-  font-size: 46px;
+  font-size: var(--text-metric);
   line-height: 0.95;
   font-weight: 700;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
@@ -1771,7 +1771,7 @@ a.campus-action-card {
 
 .campus-portfolio-stat-detail {
   margin: 8px 0 0;
-  font-size: 12px;
+  font-size: var(--text-caption);
   line-height: 1.25;
   font-weight: 600;
 }
@@ -1779,7 +1779,7 @@ a.campus-action-card {
 .campus-portfolio-stat-trend {
   margin: 6px 0 0;
   color: var(--theme-green);
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.2;
 }
 
@@ -1800,14 +1800,14 @@ a.campus-action-card {
 .campus-list-head h4 {
   margin: 0;
   color: #151a3a;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .campus-list-head p {
   margin: 4px 0 0;
   color: #596282;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -1849,7 +1849,7 @@ a.campus-action-card {
 .campus-event-item h4 {
   margin: 0;
   color: #1a1f3f;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1859,7 +1859,7 @@ a.campus-action-card {
 .campus-event-item p {
   margin: 4px 0 0;
   color: #67708f;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1870,7 +1870,7 @@ a.campus-action-card {
   display: block;
   margin-top: 4px;
   color: var(--theme-purple);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1883,7 +1883,7 @@ a.campus-action-card {
   padding: 8px 10px;
   background: #f0ebff;
   color: var(--theme-purple);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
   cursor: pointer;
 }
@@ -1908,14 +1908,14 @@ a.campus-action-card {
 .campus-papers h4 {
   margin: 0;
   color: #202648;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .campus-papers p {
   margin: 3px 0 0;
   color: #697292;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
@@ -2048,23 +2048,23 @@ a.campus-action-card {
 
 @media (max-width: 680px) {
   .campus-header h1 {
-    font-size: 28px;
+    font-size: var(--text-title-lg);
   }
 
   .campus-header p {
-    font-size: 17px;
+    font-size: var(--text-body-lg);
   }
 
   .campus-kicker {
-    font-size: 24px;
+    font-size: var(--text-title-md);
   }
 
   .campus-hero-copy h2 {
-    font-size: 34px;
+    font-size: var(--text-title-lg);
   }
 
   .campus-hero-copy > p:not(.campus-kicker) {
-    font-size: 17px;
+    font-size: var(--text-body-lg);
   }
 
   .campus-nav {

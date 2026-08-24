@@ -22,6 +22,22 @@ const campaignMaterialsSchema = z.array(campaignMaterialSchema)
     'A campaign image or video is required'
   )
 
+const zumbarlAdsSchema = z.object({
+  requested: z.boolean().default(false),
+  headline: z.string().min(3).optional(),
+  description: z.string().min(3).optional(),
+  callToAction: z.string().optional(),
+  destinationUrl: z.string().url().optional()
+}).superRefine((request, context) => {
+  if (!request.requested) return
+  if (!request.headline) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['headline'], message: 'Add an ad headline' })
+  }
+  if (!request.description) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['description'], message: 'Add ad copy' })
+  }
+})
+
 const createMarketingCampaignSchema = z.object({
   title: z.string().min(3),
   description: z.string().optional(),
@@ -48,6 +64,7 @@ const createMarketingCampaignSchema = z.object({
   timelineLabel: z.string().optional(),
   timelineValue: z.string().optional(),
   creatorsLimit: z.coerce.number().int().positive().optional(),
+  zumbarlAds: zumbarlAdsSchema.optional(),
   status: z.enum(['draft', 'funding', 'published']).default('draft')
 }).passthrough()
 

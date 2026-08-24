@@ -20,10 +20,10 @@ export async function respondToProjectPriceProposal(proposalId, decision) {
   })
 }
 
-export async function reviewProjectDeliverable(deliverableId, { decision, feedback = '' }) {
+export async function reviewProjectDeliverable(deliverableId, { decision, feedback = '', review }) {
   return sendZumbarlApiRequest(`/projects/deliverables/${deliverableId}/review`, {
     method: 'POST',
-    body: JSON.stringify({ decision, feedback }),
+    body: JSON.stringify({ decision, feedback, ...(review ? { review } : {}) }),
   })
 }
 

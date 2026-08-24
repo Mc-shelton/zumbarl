@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { FiUsers } from 'react-icons/fi'
 import { Breadcrumb } from '../../../components/ui'
 
@@ -11,7 +12,8 @@ function ExploreFeedHero({
   onPublishStory,
   stories,
 }) {
-  const orderedStories = [...stories].sort((first, second) => {
+  const [storyFilter, setStoryFilter] = useState('all')
+  const orderedStories = [...stories].filter((story) => storyFilter === 'all' || story.storyCategory === storyFilter).sort((first, second) => {
     if (first.own !== second.own) return first.own ? -1 : 1
     const firstHasUnseen = first.items?.some((item) => !item.isViewed)
     const secondHasUnseen = second.items?.some((item) => !item.isViewed)
@@ -59,7 +61,7 @@ function ExploreFeedHero({
       </nav>
 
       <section className={`explore-campus-stories${areStoriesVisible ? '' : ' is-hidden'}`} aria-label="Stories">
-        <h2>Stories</h2>
+        <header className="explore-story-directory-head"><h2>Stories</h2><nav aria-label="Story categories">{[['all', 'All'], ['people', 'People'], ['groups', 'Groups'], ['libraries', 'Libraries']].map(([id, label]) => <button type="button" key={id} className={storyFilter === id ? 'is-active' : ''} onClick={() => setStoryFilter(id)}>{label}</button>)}</nav></header>
         <div className="explore-campus-stories-row">
           <button type="button" className="explore-campus-story-item explore-campus-story-add" onClick={onPublishStory} aria-label="Add another story">
             <div className="explore-campus-story-avatar is-own"><span className="explore-campus-story-add-icon">+</span><span className="explore-campus-story-plus">+</span></div>

@@ -60,3 +60,8 @@ export function hydrateAuthUserFromBackend() {
 
   return hydratePromise
 }
+
+export function refreshAuthUserFromBackend() {
+  hydratePromise = null
+  return hydrateAuthUserFromBackend()
+}

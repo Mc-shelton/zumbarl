@@ -9,6 +9,12 @@ function MarketplaceItemCard({
   variant = 'featured',
 }) {
   const isRecent = variant === 'recent'
+  const isService = String(item.kind || item.listingType || '').toLowerCase() === 'service'
+  const modeLabel = item.serviceMode === 'order_ahead'
+    ? 'Order ahead'
+    : item.serviceMode === 'request_quote'
+      ? 'Request a quote'
+      : 'Book a time'
 
   return (
     <article
@@ -31,13 +37,16 @@ function MarketplaceItemCard({
       </div>
 
       <div className="opportunities-marketplace-card-body">
+        {isService ? <span className={`marketplace-service-mode is-${item.serviceMode || 'appointment'}`}>{modeLabel}</span> : null}
         <h3>{item.title}</h3>
-        <p className="opportunities-marketplace-card-category">{item.category}</p>
+        <p className="opportunities-marketplace-card-category">
+          {item.category}{isService && item.duration ? ` · ${item.duration}` : ''}
+        </p>
         <p className="opportunities-marketplace-card-price">{item.price}</p>
         <footer>
           <p>
             <FiMapPin aria-hidden="true" />
-            {item.location}
+            {isService && item.availabilityText ? item.availabilityText : item.location}
           </p>
           {isRecent ? (
             <span>
@@ -67,13 +76,14 @@ function MarketplaceItemSections({
 }) {
   return (
     <>
-      <section className="opportunities-marketplace-block" aria-label="Featured items">
+      <section className="opportunities-marketplace-block" aria-label="Featured marketplace listings">
         <div className="opportunities-section-head">
           <div>
-            <h2>Featured Items</h2>
+            <h2>{activeCategory === 'Everything' ? 'Featured on campus' : activeCategory}</h2>
+            <p>{activeCategory === 'Products' ? 'Items ready to buy' : activeCategory === 'Everything' ? 'Products and services students are choosing now' : 'Providers available around your campus'}</p>
           </div>
-          {activeCategory !== 'All Items' ? (
-            <button type="button" className="campus-link-btn" onClick={() => onCategoryChange('All Items')}>View all</button>
+          {activeCategory !== 'Everything' ? (
+            <button type="button" className="campus-link-btn" onClick={() => onCategoryChange('Everything')}>View all</button>
           ) : null}
         </div>
 
@@ -89,7 +99,8 @@ function MarketplaceItemSections({
 
           {filteredFeaturedItems.length === 0 ? (
             <article className="opportunities-marketplace-empty-state" aria-live="polite">
-              <p>No featured items in {activeCategory} right now.</p>
+              <strong>Nothing listed here yet</strong>
+              <p>Be the first provider to offer {activeCategory.toLowerCase()} on your campus.</p>
             </article>
           ) : null}
         </div>
@@ -98,14 +109,15 @@ function MarketplaceItemSections({
       <section className="opportunities-marketplace-block" aria-label="Recently added items">
         <div className="opportunities-section-head">
           <div>
-            <h2>Recently Added</h2>
+            <h2>Recently added</h2>
+            <p>New products and services from verified campus accounts</p>
           </div>
-          {activeCategory !== 'All Items' || activeRecentFilter !== 'All' ? (
+          {activeCategory !== 'Everything' || activeRecentFilter !== 'All' ? (
             <button
               type="button"
               className="campus-link-btn"
               onClick={() => {
-                onCategoryChange('All Items')
+                onCategoryChange('Everything')
                 onRecentFilterChange('All')
               }}
             >

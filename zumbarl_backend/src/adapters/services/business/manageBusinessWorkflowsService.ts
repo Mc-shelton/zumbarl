@@ -138,7 +138,7 @@ function getUpcomingActions(opportunities: Record<string, any>[], kycSummary: Re
 }
 
 async function readBusinessDashboardService(businessId: string | undefined) {
-  const cacheKey = `business-dashboard:v2:${businessId ?? 'all'}`
+  const cacheKey = `business-dashboard:v3:${businessId ?? 'all'}`
   const cachedDashboard = await readCache<Record<string, any>>(cacheKey)
   if (cachedDashboard) return cachedDashboard
 

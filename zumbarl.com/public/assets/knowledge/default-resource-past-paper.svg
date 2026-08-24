@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title">
+  <title id="title">Default past paper cover</title>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#315d75"/><stop offset="1" stop-color="#253247"/></linearGradient></defs>
+  <rect width="640" height="360" rx="28" fill="url(#bg)"/><path d="M0 292L176 116l121 121L469 65l171 171v124H0z" fill="#fff" opacity=".06"/>
+  <path d="M235 62h134l58 58v158H235z" fill="#fff"/><path d="M369 62v58h58" fill="#dce9ef"/><text x="331" y="157" fill="#315d75" font-family="Arial, sans-serif" font-size="36" font-weight="800" text-anchor="middle">A+</text><path d="M273 188h116M273 222h116M273 256h75" stroke="#91adba" stroke-width="10" stroke-linecap="round"/>
+  <text x="320" y="325" fill="#fff" font-family="Arial, sans-serif" font-size="24" font-weight="700" text-anchor="middle">PAST PAPER</text>
+</svg>

@@ -216,7 +216,7 @@ export function BusinessMarketingCampaignBody({
           items={campaign.detail.performance.map((item) => ({
             label: item.label,
             value: item.value,
-            detail: `${item.change} this week`,
+            detail: item.change,
           }))}
         />
       </>

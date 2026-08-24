@@ -1,8 +1,18 @@
+import { useEffect, useRef } from 'react'
 import { FiCalendar, FiCreditCard, FiUsers } from 'react-icons/fi'
 
-function OpportunitiesOngoingPanel({ onOpenMessages = () => {}, onOpenProject, projects = [] }) {
+function OpportunitiesOngoingPanel({ onOpenMessages = () => {}, onOpenProject, projects = [], selectedProjectId = null }) {
+  const selectedProjectRef = useRef(null)
   const dueSoonCount = projects.filter((project) => project.statusTone === 'is-scheduled').length
   const pendingInputCount = projects.filter((project) => project.statusTone === 'is-awaiting').length
+
+  useEffect(() => {
+    if (!selectedProjectId || !selectedProjectRef.current) return
+    const frame = window.requestAnimationFrame(() => {
+      selectedProjectRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [projects.length, selectedProjectId])
 
   return (
     <section className="opportunities-list-section opportunities-service-orders-section" aria-label="Ongoing jobs, gigs and projects">
@@ -38,7 +48,7 @@ function OpportunitiesOngoingPanel({ onOpenMessages = () => {}, onOpenProject, p
           </p>
         ) : null}
         {projects.map((project) => (
-          <article key={project.id} className="opportunities-service-order-card">
+          <article key={project.id} ref={selectedProjectId === project.id ? selectedProjectRef : null} className={`opportunities-service-order-card${selectedProjectId === project.id ? ' is-selected' : ''}`}>
             <header className="opportunities-service-order-head">
               <div>
                 <p className="opportunities-service-order-id">{project.category}</p>

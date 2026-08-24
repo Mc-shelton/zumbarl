@@ -35,9 +35,11 @@ function useProjectWorkspace() {
   const [backendProject, setBackendProject] = useState({ id: null, view: null })
 
   useEffect(() => {
-    // Demo/mock routes keep their canned data; real awarded projects are
-    // fetched from the backend so every value reflects the actual record.
-    if (!projectId || mockProject) return undefined
+    // Always ask the backend first. A real awarded project can legitimately use
+    // an ID that an old demo fixture also used; skipping the request in that
+    // case rendered the canned project and hid its real tasks. Mock data is now
+    // only a fallback when no backend project exists.
+    if (!projectId) return undefined
 
     let active = true
     fetchBackendProjectWorkspace(projectId)
@@ -51,12 +53,12 @@ function useProjectWorkspace() {
     return () => {
       active = false
     }
-  }, [projectId, mockProject])
+  }, [projectId])
 
   const backendView = backendProject.id === projectId ? backendProject.view : null
   const activeProject = useMemo(() => (
-    mockProject
-    || backendView
+    backendView
+    || mockProject
     || resolveEarnWorkspaceProject(earnFlow.projects, projectId)
     || resolveProjectById(projectId)
   ), [backendView, earnFlow.projects, mockProject, projectId])
@@ -69,7 +71,7 @@ function useProjectWorkspace() {
   const initialTab = useMemo(() => {
     const tab = normalizeProjectTab(searchParams.get('tab'))
     return resolveAllowedProjectTab(tab, activeProject, { isBusinessViewer })
-  }, [activeProject, searchParams])
+  }, [activeProject, isBusinessViewer, searchParams])
   const [activeTab, setActiveTab] = useState(initialTab)
   // The project arrives a render or two after the URL does, and the tab list is
   // derived from it - a project that has not loaded yet has no Milestones tab,
@@ -161,7 +163,7 @@ function useProjectWorkspace() {
   }, [projectId])
 
   async function refreshWorkspace() {
-    if (!projectId || mockProject) return
+    if (!projectId) return
     const workspace = await fetchBackendProjectWorkspace(projectId)
     setBackendProject({ id: projectId, view: toProjectWorkspaceView(workspace) })
   }

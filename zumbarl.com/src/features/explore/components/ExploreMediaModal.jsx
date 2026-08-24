@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
-import { FiChevronLeft, FiChevronRight, FiX } from 'react-icons/fi'
+import { FiChevronLeft, FiChevronRight, FiShare2, FiX } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
 import { useDialog } from '../../../components/ui'
+import { postCreatorProfilePath } from '../utils/creatorProfilePath'
 
 function ExploreMediaModal({
   activeMediaComments,
@@ -9,6 +11,7 @@ function ExploreMediaModal({
   activeMediaPost,
   onClose,
   onComment,
+  onSharePost,
   onStep,
 }) {
   const [comment, setComment] = useState('')
@@ -17,6 +20,8 @@ function ExploreMediaModal({
   const isOpen = Boolean(activeMediaPost && activeMediaImage)
   const dialogRef = useDialog({ isOpen, onClose })
 
+  // Each selected post owns a separate comment draft.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { setComment(''); setError('') }, [activeMediaPost?.id])
 
   async function submitComment(event) {
@@ -38,6 +43,7 @@ function ExploreMediaModal({
   if (!isOpen) {
     return null
   }
+  const profilePath = postCreatorProfilePath(activeMediaPost)
 
   return (
     <section ref={dialogRef} className="explore-campus-media-modal" role="dialog" aria-modal="true" aria-label="Post media viewer" onClick={onClose}>
@@ -66,21 +72,28 @@ function ExploreMediaModal({
 
         <aside className="explore-campus-media-comments" aria-label="Post comments">
           <header>
-            <h3>Comments</h3>
-            <span>{activeMediaComments.length} {activeMediaComments.length === 1 ? 'comment' : 'comments'}</span>
+            <div>
+              <h3>Comments</h3>
+              <span>{activeMediaComments.length} {activeMediaComments.length === 1 ? 'comment' : 'comments'}</span>
+            </div>
+            <button type="button" className="explore-campus-media-share" onClick={() => onSharePost(activeMediaPost)}>
+              <FiShare2 aria-hidden="true" /> Share
+            </button>
           </header>
 
           <section className="explore-campus-media-post-context">
             <div className="explore-campus-media-post-head">
-              <img
-                src={activeMediaPost.avatar || '/assets/index/bee_nobg.png'}
-                alt={activeMediaPost.author}
-                loading="lazy"
-              />
-              <div>
-                <h4>{activeMediaPost.author}</h4>
-                <span>{activeMediaPost.handle}</span>
-              </div>
+              {profilePath ? (
+                <Link className="explore-campus-media-owner-avatar" to={profilePath} aria-label={`View ${activeMediaPost.author}'s profile`}>
+                  <img src={activeMediaPost.avatar || '/assets/index/bee_nobg.png'} alt={activeMediaPost.author} loading="lazy" />
+                </Link>
+              ) : <img src={activeMediaPost.avatar || '/assets/index/bee_nobg.png'} alt={activeMediaPost.author} loading="lazy" />}
+              {profilePath ? (
+                <Link className="explore-campus-media-owner-copy" to={profilePath}>
+                  <h4>{activeMediaPost.author}</h4>
+                  <span>{activeMediaPost.handle}</span>
+                </Link>
+              ) : <div><h4>{activeMediaPost.author}</h4><span>{activeMediaPost.handle}</span></div>}
             </div>
             <p>{activeMediaPost.copy}</p>
           </section>

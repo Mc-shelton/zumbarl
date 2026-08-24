@@ -4,6 +4,7 @@ import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 
 function MarketplaceProductHead({ isOwner = false, item }) {
   const canSaveItem = hasAccess(ACCESS_KEYS.marketplace.buy)
+  const isService = String(item.kind || item.listingType || '').toLowerCase() === 'service'
 
   return (
     <section className="opportunities-marketplace-product-head" aria-label="Product overview">
@@ -12,13 +13,13 @@ function MarketplaceProductHead({ isOwner = false, item }) {
           className="opportunities-breadcrumb opportunities-marketplace-product-breadcrumb"
           items={[
             { label: 'Opportunities', href: '/campus/opportunities' },
-            { label: 'Buy & Sell', href: '/campus/opportunities/buy-sell' },
+            { label: 'Marketplace', href: '/campus/opportunities/buy-sell' },
             { label: item.title },
           ]}
         />
         <h2>{item.title}</h2>
         <p>
-          <span>{item.subtitle || 'Quality item posted by a verified campus seller.'}</span>
+          <span>{item.subtitle || (isService ? 'A campus service from a verified provider.' : 'A product from a verified campus seller.')}</span>
           {item.badge ? <em>{item.badge}</em> : null}
         </p>
       </div>

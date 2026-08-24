@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import CampusSidebar from '../components/layout/CampusSidebar'
 import Seo from '../components/Seo'
 import { ConfirmDialog } from '../components/ui'
 import MarketplaceCategories from '../features/opportunities/components/MarketplaceCategories'
+import MarketplaceCommerceGuide from '../features/opportunities/components/MarketplaceCommerceGuide'
 import MarketplaceHeader from '../features/opportunities/components/MarketplaceHeader'
 import MarketplaceBuyerOrders from '../features/opportunities/components/MarketplaceBuyerOrders'
 import MarketplaceItemSections from '../features/opportunities/components/MarketplaceItemSections'
@@ -24,6 +25,11 @@ function OpportunitiesBuySellPage() {
   const [ordersError, setOrdersError] = useState('')
   const [updatingOrderId, setUpdatingOrderId] = useState('')
   const [orderToCancel, setOrderToCancel] = useState(null)
+  const marketplaceMainRef = useRef(null)
+
+  useLayoutEffect(() => {
+    marketplaceMainRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+  }, [isOrdersOpen])
 
   const updateBuyerOrder = async (order, action) => {
     if (updatingOrderId) return
@@ -70,9 +76,10 @@ function OpportunitiesBuySellPage() {
         <div className={`campus-shell opportunities-marketplace-shell${isOrdersOpen ? ' is-buyer-orders' : ''}`}>
           <CampusSidebar activeItemId="marketplace" />
 
-          <section className="campus-main opportunities-main opportunities-marketplace-main">
+          <section ref={marketplaceMainRef} className="campus-main opportunities-main opportunities-marketplace-main">
             <MarketplaceHeader isOrdersOpen={isOrdersOpen} onOpenOrders={() => { if (!isOrdersOpen) setOrdersLoading(true); setSearchParams(isOrdersOpen ? {} : { view: 'orders' }) }} onPostItem={() => navigate('/campus/marketplace/listings/new')} showSearch={!isOrdersOpen} />
             {isOrdersOpen ? <MarketplaceBuyerOrders error={ordersError} isLoading={ordersLoading} onCancel={setOrderToCancel} onConfirmReceived={(order) => updateBuyerOrder(order, 'received')} onContinueShopping={() => setSearchParams({})} onMessageSeller={() => navigate('/messages')} onRefresh={loadOrders} orders={orders} updatingOrderId={updatingOrderId} /> : <>
+            <MarketplaceCommerceGuide onSelect={marketplaceState.onCategoryChange} />
             <MarketplaceCategories
               activeCategory={marketplaceState.activeCategory}
               onCategoryChange={marketplaceState.onCategoryChange}

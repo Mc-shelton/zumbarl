@@ -63,16 +63,17 @@ function CartItemRow({ item, onFulfilmentChange, onQuantityChange, onRemoveItem,
           <em className={item.badgeTone}>{item.badge}</em>
           <h3>{item.title}</h3>
           <p>{item.description}</p>
+          {item.serviceRequest ? <p className="campus-cart-service-request"><strong>{item.serviceMode === 'order_ahead' ? 'Pickup requested' : 'Booking requested'}:</strong> {item.serviceRequest.date ? `${item.serviceRequest.date} at ` : ''}{item.serviceRequest.time}{item.serviceRequest.notes ? ` · ${item.serviceRequest.notes}` : ''}</p> : null}
           <div className="campus-cart-item-actions">
             <button type="button">Save for later</button>
             <button type="button" onClick={() => onRemoveItem(item.id)}>Remove</button>
           </div>
-          <label className="campus-cart-fulfilment-select">Fulfilment for this item
+          <label className="campus-cart-fulfilment-select">{item.kind === 'service' ? 'Where it will be fulfilled' : 'Fulfilment for this item'}
             <select value={deliveryMode} onChange={(event) => { setDeliveryMode(event.target.value); if (event.target.value !== 'zumbarl_delivery') onFulfilmentChange(item.id, event.target.value) }}>
               {(item.deliveryOptions || []).includes('Campus pickup') ? <option value="pickup">Campus pickup — Free</option> : null}
               {(item.deliveryOptions || []).includes('Digital delivery') ? <option value="digital">Digital delivery — Free</option> : null}
               {(item.deliveryZones || []).map((zone) => <option key={zone.location} value={`delivery:${zone.location}`}>{zone.location} — {formatKes(Number(zone.fee) || 0)}</option>)}
-              <option value="zumbarl_delivery">Zumbarl Delivery — Get courier quote</option>
+              {item.kind !== 'service' ? <option value="zumbarl_delivery">Zumbarl Delivery — Get courier quote</option> : null}
               {(!item.deliveryZones?.length && (item.deliveryOptions || []).includes('Seller delivery')) || fulfilmentValue === 'unquoted' ? <option value="unquoted">Seller delivery — Price not yet quoted</option> : null}
             </select>
           </label>

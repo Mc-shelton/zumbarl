@@ -69,7 +69,7 @@ function relativeTime(value) {
   return `${Math.floor(elapsed / 86_400_000)}d`
 }
 
-function ExploreStoryViewer({ activeStoryId, onClose, onStoryViewed, stories = [] }) {
+function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, onShareStory, onStoryViewed, stories = [] }) {
   const navigate = useNavigate()
   const isOpen = Boolean(activeStoryId)
   const dialogRef = useDialog({ isOpen, onClose })
@@ -83,7 +83,12 @@ function ExploreStoryViewer({ activeStoryId, onClose, onStoryViewed, stories = [
     const initialIndex = stories.findIndex((story) => story.id === activeStoryId)
     return initialIndex >= 0 ? initialIndex : 0
   })
-  const [itemIndex, setItemIndex] = useState(0)
+  const [itemIndex, setItemIndex] = useState(() => {
+    if (!activeStoryItemId) return 0
+    const initialCreator = stories.find((story) => story.id === activeStoryId)
+    const initialIndex = initialCreator?.items?.findIndex((item) => item.id === activeStoryItemId) ?? -1
+    return initialIndex >= 0 ? initialIndex : 0
+  })
   const [isPaused, setIsPaused] = useState(false)
   const [isMuted, setIsMuted] = useState(true)
   const [engagementByItem, setEngagementByItem] = useState({})
@@ -92,7 +97,6 @@ function ExploreStoryViewer({ activeStoryId, onClose, onStoryViewed, stories = [
   const [isCommentsOpen, setIsCommentsOpen] = useState(false)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [savedProducts, setSavedProducts] = useState({})
-  const [sharedItemId, setSharedItemId] = useState('')
   const [isOfferOpen, setIsOfferOpen] = useState(false)
   const [activeOffer, setActiveOffer] = useState(null)
   const [productActionStatus, setProductActionStatus] = useState('')
@@ -135,7 +139,6 @@ function ExploreStoryViewer({ activeStoryId, onClose, onStoryViewed, stories = [
     setIsCommentsOpen(false)
     setIsDetailsOpen(false)
     setComment('')
-    setSharedItemId('')
   }, [activeItems.length, creatorIndex, itemIndex, onClose, stories])
 
   useEffect(() => {
@@ -283,10 +286,8 @@ function ExploreStoryViewer({ activeStoryId, onClose, onStoryViewed, stories = [
   }
 
   function shareStory() {
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href).catch(() => {})
-    }
-    setSharedItemId(activeItem.id)
+    setIsPaused(true)
+    onShareStory?.(activeItem, activeCreator)
   }
 
   function openDetails() {
@@ -513,7 +514,7 @@ function ExploreStoryViewer({ activeStoryId, onClose, onStoryViewed, stories = [
               <FiMessageCircle aria-hidden="true" /><span>{comments}</span>
             </button>
             <button type="button" onClick={shareStory} aria-label="Share story">
-              <FiSend aria-hidden="true" /><span>{sharedItemId === activeItem.id ? 'Copied' : 'Share'}</span>
+              <FiSend aria-hidden="true" /><span>Share</span>
             </button>
             <button type="button" onClick={openDetails} aria-label={activeItem.storyKind === 'product' ? 'View product details' : 'View creator details'}>
               {activeItem.storyKind === 'product' ? <FiShoppingBag aria-hidden="true" /> : <FiUser aria-hidden="true" />}

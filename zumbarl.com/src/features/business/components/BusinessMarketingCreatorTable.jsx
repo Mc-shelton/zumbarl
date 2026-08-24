@@ -1,4 +1,5 @@
 import { FiFileText, FiMoreVertical, FiRadio } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
 
 const PLATFORM_LABELS = {
   Instagram: 'IG',
@@ -7,6 +8,13 @@ const PLATFORM_LABELS = {
 }
 
 export function BusinessMarketingCreatorTable({ campaign, compact = false }) {
+  const creatorDiscoveryParams = new URLSearchParams({
+    campaignId: campaign.id,
+    campaignTitle: campaign.title,
+    category: 'marketing',
+    quick: 'Social media',
+  })
+
   return (
     <section className="business-profile-card business-marketing-creator-table">
       <header>
@@ -67,7 +75,12 @@ export function BusinessMarketingCreatorTable({ campaign, compact = false }) {
           <strong>Want to reach more students?</strong>
           <p>Boost your campaign by collaborating with more top creators.</p>
         </div>
-        <button type="button" className="business-profile-primary-btn">Find More Creators</button>
+        <Link
+          className="business-profile-primary-btn"
+          to={`/business/applicants?${creatorDiscoveryParams.toString()}`}
+        >
+          Find More Creators
+        </Link>
       </footer>
     </section>
   )

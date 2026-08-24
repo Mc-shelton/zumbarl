@@ -1,0 +1,12 @@
+.knowledge-generated-thumbnail { display: grid; gap: 6px; }
+.knowledge-generated-thumbnail > label { position: relative; display: grid; grid-template-columns: 84px minmax(0, 1fr) auto; align-items: center; gap: 11px; min-height: 72px; padding: 9px; border: 1px dashed #bcb2c1; border-radius: 11px; background: #faf8fb; color: #76506f; cursor: pointer; }
+.knowledge-generated-thumbnail > label > img { display: block; width: 84px; height: 54px; border-radius: 7px; background: #e9e5ec; object-fit: cover; }
+.knowledge-generated-thumbnail > label > svg { justify-self: center; font-size: 26px; }
+.knowledge-generated-thumbnail.is-loading > label > svg { animation: knowledge-thumbnail-spin 1s linear infinite; }
+.knowledge-generated-thumbnail > label > span { display: grid; gap: 3px; min-width: 0; }
+.knowledge-generated-thumbnail > label strong { color: #34394f; font-size: var(--text-small); }
+.knowledge-generated-thumbnail > label small { color: #737b91; font-size: var(--text-caption); font-weight: 650; line-height: 1.35; }
+.knowledge-generated-thumbnail > label em { display: inline-flex; align-items: center; gap: 5px; padding: 6px 8px; border-radius: 7px; background: #eee7f0; color: #76506f; font-size: var(--text-caption); font-style: normal; font-weight: 800; }
+.knowledge-generated-thumbnail > label input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.knowledge-generated-thumbnail > button { justify-self: end; display: inline-flex; align-items: center; gap: 5px; padding: 4px 7px; border: 0; background: transparent; color: #76506f; font: inherit; font-size: var(--text-caption); font-weight: 750; cursor: pointer; }
+@keyframes knowledge-thumbnail-spin { to { transform: rotate(360deg); } }

@@ -50,6 +50,8 @@ function renderSkillRows(skills, groupName, canManageSkills) {
 }
 
 function ProfileSkillsPanel({
+  canManage = false,
+  embedded = false,
   filteredCoreSkills,
   filteredOtherSkills,
   hasSkillsResults,
@@ -60,14 +62,14 @@ function ProfileSkillsPanel({
   skillsLevelFilter,
   skillsSearchQuery,
 }) {
-  const canManageSkills = hasAccess(ACCESS_KEYS.profile.manageSkills)
+  const canManageSkills = canManage && hasAccess(ACCESS_KEYS.profile.manageSkills)
 
   return (
-    <section className="campus-profile-surface campus-skills-panel">
+    <section className={`campus-profile-surface campus-skills-panel${embedded ? ' is-embedded' : ''}`}>
       <div className="campus-skills-sticky-head">
         <header className="campus-skills-head">
           <div>
-            <h2>My Skills</h2>
+            <h2>{embedded ? 'Skills' : 'My Skills'}</h2>
             <p>Your skills, their proficiency level, and how you&apos;re growing.</p>
           </div>
           {canManageSkills ? (

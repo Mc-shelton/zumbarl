@@ -1,6 +1,7 @@
 import { notFound } from '../../../lib/http.js'
 import { campusExperienceRepository } from '../../repositories/campus/index.js'
 import { generateAssistantReply, isAssistantAiEnabled } from '../ai/index.js'
+import { readStudentScoreSnapshot } from '../scores/index.js'
 
 const KIND_LABEL: Record<string, string> = {
   gig: 'gig',
@@ -42,6 +43,10 @@ const markAllUserNotificationsReadService = (userId: string | undefined) => camp
 async function readStudentProfileExperienceService(studentId: string | undefined) {
   return await campusExperienceRepository.readProfileExperience(studentId) ?? notFound('Student profile')
 }
+async function readStudentProfileScoreService(studentId: string | undefined) {
+  if (!studentId) return notFound('Student profile')
+  return readStudentScoreSnapshot(studentId)
+}
 async function updateStudentProfileService(studentId: string | undefined, payload: Record<string, any>) {
   return await campusExperienceRepository.updateProfile(studentId, payload) ?? notFound('Student profile')
 }
@@ -51,6 +56,7 @@ export {
   markAllUserNotificationsReadService,
   markUserNotificationReadService,
   readCampusHomeExperienceService,
+  readStudentProfileScoreService,
   readStudentProfileExperienceService,
   runCampusAssistantQueryService
   ,updateStudentProfileService

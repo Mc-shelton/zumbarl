@@ -671,6 +671,8 @@ class MarketplaceOrdersRepository {
             image: item.image || listing.images[0] || null,
             deliveryOptions: item.deliveryOptions || listing.deliveryOptions,
             deliveryZones: item.deliveryZones || payloadObject(listing.payload).deliveryZones || [],
+            kind: item.kind || (String(listing.listingType).toLowerCase() === 'service' ? 'service' : 'product'),
+            serviceMode: item.serviceMode || payloadObject(listing.payload).serviceMode,
             lockedQuantity: item.lockedQuantity ?? Boolean(item.offerId)
           } : item
         })
@@ -713,6 +715,8 @@ class MarketplaceOrdersRepository {
           image: listing.images[0] || null,
           deliveryOptions: listing.deliveryOptions,
           deliveryZones,
+          kind: String(listing.listingType).toLowerCase() === 'service' ? 'service' : 'product',
+          serviceMode: payloadObject(listing.payload).serviceMode,
           latitude: payloadObject(listing.payload).latitude,
           longitude: payloadObject(listing.payload).longitude,
           locationLabel: listing.locationLabel,

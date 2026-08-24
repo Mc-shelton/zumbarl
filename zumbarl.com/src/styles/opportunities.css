@@ -63,7 +63,7 @@
   gap: 8px;
   color: #8a90ad;
   font-family: 'Manrope', 'Inter', sans-serif;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.2;
   font-weight: 600;
   max-height: none;
@@ -91,7 +91,7 @@
   margin: 5px 0 0;
   color: var(--color-text-muted);
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 17px;
+  font-size: var(--text-body-lg);
   max-height: none;
   opacity: 1;
   transform: none;
@@ -155,7 +155,7 @@
   background: transparent;
   width: 100%;
   color: #252c52;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 500;
   font-family: inherit;
 }
@@ -185,7 +185,7 @@
   appearance: none;
   max-width: 180px;
   color: #30375c;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 600;
   cursor: pointer;
 }
@@ -196,7 +196,7 @@
   padding: 12px 22px;
   background: var(--theme-dark);
   color: #ffffff;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   font-weight: 700;
   cursor: pointer;
 }
@@ -232,7 +232,7 @@
   border-bottom: 3px solid transparent;
   color: #5f6789;
   padding: 8px 12px 10px;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 500;
   display: inline-flex;
   align-items: center;
@@ -250,7 +250,7 @@
   min-width: 20px;
   background: var(--theme-dark);
   color: #ffffff;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 700;
   line-height: 1.3;
@@ -308,7 +308,7 @@
   border-radius: 9px;
   display: grid;
   color: var(--theme-purple);
-  font-size: 30px;
+  font-size: var(--text-title-lg);
   transition: transform 220ms cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
@@ -319,7 +319,7 @@
 .opportunities-type-card h3 {
   margin: 0;
   color: #1f2550;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.3;
   font-weight: 700;
 }
@@ -327,7 +327,7 @@
 .opportunities-type-card p {
   margin: 0;
   color: #677092;
-  font-size: 15px;
+  font-size: var(--text-body);
   font-weight: 600;
 }
 
@@ -342,7 +342,7 @@
   border-radius: 14px;
   background: #fbfbfe;
   color: #677092;
-  font-size: 14px;
+  font-size: var(--text-small);
   text-align: center;
 }
 
@@ -357,14 +357,14 @@
 .opportunities-section-head h2 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   /* font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif; */
 }
 
 .opportunities-section-head p {
   margin: 4px 0 0;
   color: #6b7496;
-  font-size: 15px;
+  font-size: var(--text-body);
   font-weight: 500;
 }
 
@@ -427,7 +427,7 @@
   border-radius: 999px;
   padding: 4px 9px;
   color: #ffffff;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
   background: var(--theme-dark);
 }
@@ -465,7 +465,7 @@
   display: grid;
   place-items: center;
   cursor: pointer;
-  font-size:20px;
+  font-size:var(--text-title-sm);
 }
 
 .opportunities-bid-menu {
@@ -498,7 +498,7 @@
   text-align: left;
   padding: 8px 10px;
   border-radius: 8px;
-  font-size: 12.5px;
+  font-size: var(--text-caption);
   font-weight: 600;
   color: #333a5e;
   cursor: pointer;
@@ -526,7 +526,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   color: #59618a;
   cursor: pointer;
@@ -535,7 +535,7 @@
 
 .opportunities-bid-status-filter em {
   font-style: normal;
-  font-size: 10.5px;
+  font-size: var(--text-micro);
   font-weight: 700;
   border-radius: 999px;
   padding: 1px 7px;
@@ -551,7 +551,7 @@
 
 .opportunities-invite-declined-note {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   color: #8b91b3;
 }
@@ -569,7 +569,7 @@
   padding: 3px 8px;
   background: #ece9ff;
   color: var(--theme-dark);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -580,14 +580,14 @@
 
 .opportunities-bid-body h3 {
   color: var(--theme-dark);
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   margin-top: 2px;
   line-height: 1.2;
 }
 
 .opportunities-bid-description {
   color: #5e688f;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.4;
 }
 
@@ -613,13 +613,13 @@
 
 .opportunities-bid-meta-grid p {
   color: #6f789a;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
 .opportunities-bid-meta-grid strong {
   color: #1f2950;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.25;
 }
 
@@ -638,13 +638,13 @@
 
 .opportunities-bid-progress-head span {
   color: #3c456b;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
 .opportunities-bid-progress-head strong {
   color: #27335c;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -701,7 +701,7 @@
 .opportunities-bid-progress p {
   margin: 0;
   color: #616c8f;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.35;
 }
 
@@ -742,12 +742,12 @@
 
 .opportunities-bid-client strong {
   color: #202a4e;
-  font-size: 14px;
+  font-size: var(--text-small);
 }
 
 .opportunities-bid-client p {
   /* color: #6a7396; */
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .opportunities-bid-presence {
@@ -763,7 +763,7 @@
 
 .opportunities-bid-presence p {
   color: #4f5b82;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -777,7 +777,7 @@
 
 .opportunities-bid-presence span {
   color: #6f789a;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .opportunities-invite-card {
@@ -821,20 +821,20 @@
 
 .opportunities-invites-summary p {
   color: var(--theme-dark);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
 .opportunities-invites-summary strong {
   color: var(--theme-dark);
-  font-size: 40px;
+  font-size: var(--text-page-title);
   line-height: 1.1;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
 }
 
 .opportunities-invites-summary span {
   color: var(--theme-dark);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .opportunities-invite-page-list {
@@ -875,7 +875,7 @@
 
 .opportunities-team-invite-card > div:nth-child(2) > span {
   color: var(--color-action);
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -884,12 +884,12 @@
 .opportunities-team-invite-card h3 {
   margin: 3px 0 5px;
   color: var(--color-text-strong);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .opportunities-team-invite-card p {
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   line-height: 1.45;
 }
 
@@ -918,7 +918,7 @@
   border: 1px solid color-mix(in srgb, var(--color-danger, #c2414b) 30%, var(--color-border));
   border-radius: 10px;
   color: var(--color-danger, #c2414b);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -963,7 +963,7 @@
   border-radius: 999px;
   padding: 4px 9px;
   color: #ffffff;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
   background: var(--theme-dark);
 }
@@ -1004,13 +1004,13 @@
 
 .opportunities-invite-page-title-row h3 {
   color: #1f254a;
-  font-size: 24px;
+  font-size: var(--text-title-md);
   line-height: 1.15;
 }
 
 .opportunities-invite-page-title-row strong {
   color: var(--theme-green);
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   line-height: 1.2;
   text-align: right;
 }
@@ -1025,7 +1025,7 @@
 .opportunities-invite-meta-row p {
   margin: 0;
   color: #616b8d;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -1054,7 +1054,7 @@
 .opportunities-invite-page-actions .opportunities-search-btn {
   width: 100%;
   padding: 10px 12px;
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .opportunities-invite-page-actions .campus-link-btn {
@@ -1073,7 +1073,7 @@
 
 .opportunities-invite-accepted-note {
   text-align: center;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
   color: #1f7a4d;
 }
@@ -1088,7 +1088,7 @@
 
 .opportunities-bid-counter-offer p {
   margin: 0 0 10px;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
   color: #2a2f45;
 }
@@ -1100,7 +1100,7 @@
   border-radius: 6px;
   background: #fff4ec;
   color: #8a3f1e;
-  font-size: 12px;
+  font-size: var(--text-caption);
   line-height: 1.45;
 }
 
@@ -1116,7 +1116,7 @@
 .opportunities-bid-counter-actions .opportunities-search-btn {
   flex: 1;
   padding: 8px 12px;
-  font-size: 14px;
+  font-size: var(--text-small);
 }
 
 .opportunities-bid-counter-actions .campus-link-btn {
@@ -1129,7 +1129,7 @@
 
 .opportunities-bid-counter-note {
   margin: 10px 0 4px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -1146,7 +1146,7 @@
   border-radius: 8px;
   background: rgba(31, 122, 77, 0.07);
   color: #1f7a4d;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -1191,20 +1191,20 @@
 
 .opportunities-service-orders-summary p {
   color: var(--theme-dark);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
 .opportunities-service-orders-summary strong {
   color: var(--theme-dark);
-  font-size: 40px;
+  font-size: var(--text-page-title);
   line-height: 1.1;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
 }
 
 .opportunities-service-orders-summary span {
   color: var(--theme-dark);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .opportunities-service-orders-list {
@@ -1231,7 +1231,7 @@
 .opportunities-service-order-id {
   margin: 0;
   color: #7a83a4;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
   letter-spacing: 0.08em;
 }
@@ -1239,7 +1239,7 @@
 .opportunities-service-order-head h3 {
   margin: 4px 0 0;
   color: #1f254a;
-  font-size: 22px;
+  font-size: var(--text-title-sm);
   line-height: 1.15;
 }
 
@@ -1247,7 +1247,7 @@
   border-radius: 999px;
   padding: 4px 10px;
   color: #ffffff;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   line-height: 1.35;
   white-space: nowrap;
@@ -1279,7 +1279,7 @@
 .opportunities-service-order-meta p {
   margin: 0;
   color: #616b8d;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -1289,7 +1289,7 @@
 .opportunities-service-order-note {
   margin: 0;
   color: #5a6485;
-  font-size: 15px;
+  font-size: var(--text-body);
   line-height: 1.4;
 }
 
@@ -1306,7 +1306,7 @@
 .opportunities-service-order-amount {
   margin: 0;
   color: var(--theme-green);
-  font-size: 22px;
+  font-size: var(--text-title-sm);
   line-height: 1.2;
   font-weight: 700;
 }
@@ -1326,7 +1326,7 @@
 .opportunities-service-order-actions .opportunities-search-btn {
   width: auto;
   padding: 10px 14px;
-  font-size: 15px;
+  font-size: var(--text-body);
 }
 
 .opportunities-bid-page .opportunities-main {
@@ -1367,7 +1367,7 @@
   flex-wrap: wrap;
   color: #8a90ad;
   font-family: 'Manrope', 'Inter', sans-serif;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.2;
   font-weight: 600;
 }
@@ -1383,19 +1383,19 @@
 
 .opportunities-bid-breadcrumb strong {
   color: #1e2345;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 700;
 }
 
 .opportunities-bid-header h1 {
   color: #1c2248;
-  font-size: 40px;
+  font-size: var(--text-page-title);
 }
 
 .opportunities-bid-header p {
   margin-top: 8px;
   color: #4f597f;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 700;
 }
 
@@ -1403,7 +1403,7 @@
   display: block;
   margin-top: 8px;
   color: #677194;
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .opportunities-bid-top-actions {
@@ -1419,7 +1419,7 @@
   background: var(--theme-dark);
   color: white;
   padding: 10px 12px;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -1448,13 +1448,13 @@
 
 .opportunities-bid-form-card header h2 {
   color: var(--theme-dark);
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 
 .opportunities-bid-form-card header p {
   margin-top: 5px;
   color: #677193;
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .opportunities-application-steps {
@@ -1503,7 +1503,7 @@
 }
 
 .opportunities-application-steps small {
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -1512,7 +1512,7 @@
 .opportunities-application-steps strong {
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .opportunities-application-steps li.is-active {
@@ -1562,13 +1562,13 @@
 
 .opportunities-application-phase-heading h3 {
   color: var(--theme-dark);
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 
 .opportunities-application-phase-heading p {
   margin-top: 3px;
   color: #717b9c;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .opportunities-bid-field {
@@ -1578,20 +1578,20 @@
 
 .opportunities-bid-field label {
   color: #212950;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 700;
 }
 
 .opportunities-bid-field-label {
   color: #212950;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 700;
 }
 
 .opportunities-bid-field-hint {
   margin: -2px 0 0;
   color: #6a7497;
-  font-size: 14px;
+  font-size: var(--text-small);
 }
 
 .opportunities-bid-team-pay-note {
@@ -1601,7 +1601,7 @@
   border-radius: 12px;
   background: #f7f3ff;
   color: #4a4270;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
   line-height: 1.5;
 }
@@ -1627,11 +1627,11 @@
 
 .opportunities-bid-intent-option strong {
   color: var(--theme-dark);
-  font-size: 15px;
+  font-size: var(--text-body);
 }
 
 .opportunities-bid-intent-option span {
-  font-size: 13px;
+  font-size: var(--text-small);
   line-height: 1.35;
 }
 
@@ -1653,7 +1653,7 @@
   background: #f0eefe;
   color: var(--theme-purple);
   padding: 8px 11px;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -1681,7 +1681,7 @@
   border-radius: 8px;
   background: #ffffff;
   color: #4d587d;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
   display: grid;
   place-items: center;
@@ -1695,7 +1695,7 @@
   outline: none;
   padding: 12px;
   color: #26315a;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
   min-height: 156px;
 }
@@ -1711,7 +1711,7 @@
   padding: 0 12px 10px;
   text-align: right;
   color: #7a83a4;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
@@ -1730,7 +1730,7 @@
   background: #ffffff;
   color: #49557e;
   padding: 10px 12px;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-family: inherit;
   outline: none;
 }
@@ -1766,17 +1766,17 @@
 }
 
 .opportunities-bid-dropzone svg {
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   color: var(--theme-purple);
 }
 
 .opportunities-bid-dropzone strong {
   color: #364171;
-  font-size: 14px;
+  font-size: var(--text-small);
 }
 
 .opportunities-bid-dropzone span {
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .opportunities-bid-dropzone input {
@@ -1796,7 +1796,7 @@
 }
 
 .opportunities-application-empty svg {
-  font-size: 24px;
+  font-size: var(--text-title-md);
   color: var(--theme-purple);
 }
 
@@ -1806,7 +1806,7 @@
 
 .opportunities-application-empty p {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .opportunities-application-review-grid {
@@ -1827,7 +1827,7 @@
 
 .opportunities-application-review-grid article > svg {
   margin-top: 2px;
-  font-size: 19px;
+  font-size: var(--text-title-sm);
 }
 
 .opportunities-application-review-grid article div {
@@ -1837,20 +1837,20 @@
 
 .opportunities-application-review-grid small {
   color: #727c9d;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-transform: uppercase;
 }
 
 .opportunities-application-review-grid strong {
   color: var(--theme-dark);
-  font-size: 14px;
+  font-size: var(--text-small);
 }
 
 .opportunities-application-review-grid p {
   margin: 0;
   color: #657092;
-  font-size: 13px;
+  font-size: var(--text-small);
   line-height: 1.45;
 }
 
@@ -1861,7 +1861,7 @@
   padding: 10px 12px;
   color: #9d2525;
   background: #fff3f3;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -1872,7 +1872,7 @@
   padding: 10px 12px;
   color: #176f3d;
   background: #effaf3;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -1975,7 +1975,7 @@
   border-radius: 10px;
   background: #fff3dc;
   color: #955300;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 
 .opportunities-application-leave-dialog header > button {
@@ -1998,7 +1998,7 @@
 .opportunities-application-leave-dialog h2 {
   margin-top: 10px;
   color: #1f254a;
-  font-size: 24px;
+  font-size: var(--text-title-md);
 }
 
 .opportunities-application-leave-dialog div > p:last-child {
@@ -2010,7 +2010,7 @@
 .opportunities-application-leave-eyebrow {
   margin-top: 18px !important;
   color: var(--theme-purple) !important;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -2026,7 +2026,7 @@
   color: #8f3747;
   cursor: pointer;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -2063,7 +2063,7 @@
   place-items: center;
   color: #ffffff;
   background: var(--theme-purple);
-  font-size: 22px;
+  font-size: var(--text-title-sm);
 }
 
 .student-interview-hero p,
@@ -2073,7 +2073,7 @@
 
 .student-interview-hero p {
   color: var(--theme-purple);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -2081,7 +2081,7 @@
 .student-interview-hero h1 {
   margin: 3px 0;
   color: var(--theme-dark);
-  font-size: 24px;
+  font-size: var(--text-title-md);
 }
 
 .student-interview-hero strong {
@@ -2107,13 +2107,13 @@
 
 .student-interview-card h2 {
   color: var(--theme-dark);
-  font-size: 19px;
+  font-size: var(--text-title-sm);
 }
 
 .student-interview-card header p {
   margin-top: 4px;
   color: #6d7697;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .student-interview-status {
@@ -2122,7 +2122,7 @@
   padding: 6px 10px;
   color: #965414;
   background: #fff1da;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-transform: capitalize;
 }
@@ -2155,7 +2155,7 @@
   align-items: center;
   gap: 6px;
   color: #737c9b;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -2174,7 +2174,7 @@
   gap: 4px;
   color: #566082;
   background: #f8f6ff;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .student-interview-meeting-link {
@@ -2186,7 +2186,7 @@
   gap: 7px;
   color: #ffffff;
   background: var(--theme-dark);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 850;
   text-decoration: none;
 }
@@ -2221,7 +2221,7 @@
 }
 
 .student-interview-action-grid span {
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .student-interview-proposed-time {
@@ -2235,7 +2235,7 @@
   display: grid;
   gap: 7px;
   color: #3b456c;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -2261,7 +2261,7 @@
   padding: 10px 12px;
   color: #a32626;
   background: #fde9e9;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -2282,7 +2282,7 @@
 .opportunities-bid-form-foot p {
   margin: 0;
   color: #6f7998;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -2313,7 +2313,7 @@
   border-radius: 14px;
   display: grid;
   place-items: center;
-  font-size: 30px;
+  font-size: var(--text-title-lg);
   color: #1f8b5a;
   background: #eaf8f0;
 }
@@ -2325,13 +2325,13 @@
 
 .opportunities-bid-success-dialog h2 {
   color: #1f254a;
-  font-size: 26px;
+  font-size: var(--text-title-md);
   line-height: 1.2;
 }
 
 .opportunities-bid-success-dialog p {
   color: #5b6689;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.45;
 }
 
@@ -2355,7 +2355,7 @@
   justify-content: center;
   padding: 11px 12px;
   font-weight: 400;
-  font-size: 14px;
+  font-size: var(--text-small);
 }
 .opportunities-bid-success-actions .campus-link-btn {
   border: 1px solid #d9deef;
@@ -2410,21 +2410,21 @@
 
 .opportunities-bid-summary-head h4 {
   color: #1f254b;
-  font-size: 21px;
+  font-size: var(--text-title-sm);
   line-height: 1.18;
 }
 
 .opportunities-bid-summary-head p {
   margin-top: 3px;
   color: #596487;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
 .opportunities-bid-summary-head span {
   margin-top: 4px;
   color: #6c7696;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -2444,19 +2444,19 @@
 .opportunities-bid-summary-block h4,
 .opportunities-bid-summary-skills h4 {
   color: #242c53;
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .opportunities-bid-summary-block p {
   color: #5a6588;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.45;
 }
 
 .opportunities-bid-summary-block span,
 .opportunities-fit-block span {
   color: var(--theme-purple);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
   line-height: 1.4;
 }
@@ -2482,7 +2482,7 @@
 
 .opportunities-bid-summary-meta article p {
   color: #5f698d;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -2493,7 +2493,7 @@
   margin-top: 2px;
   display: block;
   color: #222b53;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.2;
   margin-bottom: 20px;
 }
@@ -2519,7 +2519,7 @@
   padding: 4px 10px;
   background: #f5f7ff;
   color: #566289;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -2539,7 +2539,7 @@
   color: var(--theme-purple);
   display: grid;
   place-items: center;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 
 .opportunities-bid-info-card h4,
@@ -2549,13 +2549,13 @@
 
 .opportunities-bid-info-card h4 {
   color: #25305a;
-  font-size: 19px;
+  font-size: var(--text-title-sm);
 }
 
 .opportunities-bid-info-card p {
   margin-top: 4px;
   color: #616c8f;
-  font-size: 13px;
+  font-size: var(--text-small);
   line-height: 1.45;
 }
 
@@ -2565,7 +2565,7 @@
   align-items: center;
   gap: 8px;
   color: var(--theme-orange);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
   text-decoration: none;
 }
@@ -2581,12 +2581,12 @@
   gap: 10px;
 }
 .opportunities-bids-rail-card h3{
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 .opportunities-bids-rail-subtitle {
   margin: -3px 0 0;
   color: #606b8f;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -2615,19 +2615,19 @@
 
 .opportunities-bids-week-cell span {
   color: #6f789a;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
 .opportunities-bids-week-cell strong {
   color: #27335c;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.1;
 }
 
 .opportunities-bids-week-cell em {
   color: #697496;
-  font-size: 10px;
+  font-size: var(--text-micro);
   line-height: 1.25;
 }
 
@@ -2653,7 +2653,7 @@
 .opportunities-bids-focus-label {
   margin: 0;
   color: var(--theme-purple);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .opportunities-bids-focus-card h4,
@@ -2663,12 +2663,12 @@
 
 .opportunities-bids-focus-card h4 {
   color: #202a4e;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 
 .opportunities-bids-focus-card > p {
   color: var(--theme-dark);
-  font-size: 14px;
+  font-size: var(--text-small);
 }
 
 .opportunities-bids-focus-interview {
@@ -2678,7 +2678,7 @@
 
 .opportunities-bids-focus-interview p {
   color: #576286;
-  font-size: 14px;
+  font-size: var(--text-small);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2686,7 +2686,7 @@
 
 .opportunities-bids-no-interview {
   color: #7a83a3;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -2716,13 +2716,13 @@
 
 .opportunities-bids-interview-item h4 {
   color: #1f254a;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.25;
 }
 
 .opportunities-bids-interview-item p {
   color: #5f6a8d;
-  font-size: 14px;
+  font-size: var(--text-small);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -2730,7 +2730,7 @@
 
 .opportunities-bids-interview-item span {
   color: var(--theme-dark);
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.35;
 }
 
@@ -2756,19 +2756,19 @@
 
 .opportunities-bids-reminder-item h4 {
   color: #1f2549;
-  font-size: 14px;
+  font-size: var(--text-small);
 }
 
 .opportunities-bids-reminder-item p {
   color: #65708f;
-  font-size: 12px;
+  font-size: var(--text-caption);
   line-height: 1.35;
   margin-top: 3px;
 }
 
 .opportunities-bids-reminder-item strong {
   color: #4f5a80;
-  font-size: 11px;
+  font-size: var(--text-caption);
   white-space: nowrap;
 }
 
@@ -2844,7 +2844,7 @@
 .opportunities-job-head h3 {
   margin: 0;
   color: #1f254a;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   line-height: 1.2;
   font-weight: 800;
 }
@@ -2854,7 +2854,7 @@
   padding: 4px 8px;
   /* background: #ede8ff; */
   color: var(--theme-purple);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   border: 1px solid var(--theme-purple);
 }
@@ -2872,7 +2872,7 @@
   gap: 6px;
   align-items: center;
   color: #667090;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -2889,7 +2889,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -2907,7 +2907,7 @@
 .opportunities-bid-estimate-total {
   margin: 0;
   color: #5a6588;
-  font-size: 14px;
+  font-size: var(--text-small);
 }
 
 .opportunities-bid-estimate-total strong {
@@ -2917,14 +2917,14 @@
 .opportunities-job-meta {
   margin: 5px 0 0;
   color: #657090;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
 .opportunities-job-description {
   margin: 6px 0 0;
   color: #5a6485;
-  font-size: 15px;
+  font-size: var(--text-body);
   line-height: 1.4;
   font-weight: 500;
 }
@@ -2932,7 +2932,7 @@
 .opportunities-job-outcome {
   margin: 6px 0 0;
   color: #3f4a70;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.4;
   font-weight: 700;
 }
@@ -2949,7 +2949,7 @@
   padding: 4px 9px;
   background: #fffbee;
   color: var(--theme-purple);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -2968,21 +2968,21 @@
 
 .opportunities-job-pay strong {
   color: var(--theme-green);
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   font-weight: 700;
   line-height: 1.1;
 }
 
 .opportunities-job-pay span {
   color: #616b8d;
-  font-size: 15px;
+  font-size: var(--text-body);
   font-weight: 600;
 }
 
 .opportunities-job-posted {
   margin: 0;
   color: #7d85a4;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -3034,7 +3034,7 @@
 }
 
 .opportunities-filter-card h3 {
-  font-size: 17px;
+  font-size: var(--text-body-lg);
 }
 
 .opportunities-filter-toggle {
@@ -3058,7 +3058,7 @@
 .opportunities-filter-collapsed-note {
   margin: 8px 0 0;
   color: #646d8e;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.4;
   font-weight: 500;
 }
@@ -3070,7 +3070,7 @@
 .opportunities-filter-group h4 {
   margin: 0 0 8px;
   color: #23294e;
-  font-size: 15px;
+  font-size: var(--text-body);
   font-weight: 700;
 }
 
@@ -3084,7 +3084,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 16px;
+  font-size: var(--text-body);
   appearance: auto;
   cursor: pointer;
   font-weight: 400;
@@ -3101,7 +3101,7 @@
   align-items: center;
   gap: 8px;
   color: #4f577c;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 600;
 }
 
@@ -3122,7 +3122,7 @@
   border-radius: 11px;
   padding: 10px 12px;
   color: #4e5679;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 400;
   outline: none;
 }
@@ -3156,14 +3156,14 @@
   padding: 7px 10px;
   background: #ffffff;
   color: #44517a;
-  font-size: 13px;
+  font-size: var(--text-small);
 
   font-weight: 600;
 }
 
 .opportunities-detail-kicker {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   color: var(--theme-dark);
 }
@@ -3171,14 +3171,14 @@
 .opportunities-detail-header h3 {
   margin: 5px 0 0;
   color: #1f2548;
-  font-size: 24px;
+  font-size: var(--text-title-md);
   line-height: 1.15;
 }
 
 .opportunities-detail-header p {
   margin: 6px 0 0;
   color: #657094;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -3192,7 +3192,7 @@
   display: grid;
   place-items: center;
   cursor: pointer;
-  font-size: 25px;
+  font-size: var(--text-title-md);
 }
 
 .opportunities-detail-stat-row {
@@ -3214,13 +3214,13 @@
 .opportunities-detail-stat-row p {
   margin: 0;
   color: #7a82a3;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
 .opportunities-detail-stat-row strong {
   color: #222a4f;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -3229,7 +3229,7 @@
 
 .opportunities-detail-stat-row span {
   color: var(--theme-green);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
@@ -3244,14 +3244,50 @@
 
 .opportunities-detail-closed-note strong {
   color: #c0354f;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .opportunities-detail-closed-note span {
   color: #7a4048;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
+}
+
+.opportunities-detail-application-note {
+  align-items: flex-start;
+  background: #eaf7ef;
+  border: 1px solid #c5e7d1;
+  border-radius: 12px;
+  color: #17683c;
+  display: flex;
+  gap: 9px;
+  padding: 12px 14px;
+}
+
+.opportunities-detail-application-note > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.opportunities-detail-application-note > div {
+  display: grid;
+  gap: 3px;
+}
+
+.opportunities-detail-application-note strong {
+  font-size: var(--text-small);
+  font-weight: 900;
+}
+
+.opportunities-detail-application-note span {
+  font-size: var(--text-caption);
+  line-height: 1.4;
+}
+
+.opportunities-service-order-card.is-selected {
+  border-color: var(--theme-purple);
+  box-shadow: 0 0 0 3px rgba(116, 81, 111, 0.12);
 }
 
 .opportunities-detail-bid-btn {
@@ -3265,7 +3301,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  font-size: 15px;
+  font-size: var(--text-body);
   font-weight: 700;
   cursor: pointer;
   transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
@@ -3326,14 +3362,14 @@
 .opportunities-owner-head h4 {
   margin: 0;
   color: #20264c;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   line-height: 1.2;
 }
 
 .opportunities-owner-head p {
   margin: 4px 0 0;
   color: #687295;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
 
 }
@@ -3343,7 +3379,7 @@
   padding: 4px 8px;
   background: #e8f6ef;
   color: #24734f;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -3353,7 +3389,7 @@
 .opportunities-owner-background {
   margin: 0;
   color: #535d80;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.45;
 }
 
@@ -3382,14 +3418,14 @@
 .opportunities-owner-metrics p {
   margin: 0;
   color: #6f7898;
-  font-size: 14px;
+  font-size: var(--text-small);
   /* font-weight: 700; */
 }
 
 .opportunities-owner-metrics strong {
   display: block;
   color: #243058;
-  font-size: 17px;
+  font-size: var(--text-body-lg);
 }
 
 .opportunities-owner-metric-icon {
@@ -3398,7 +3434,7 @@
   border-radius: 11px;
   display: grid;
   place-items: center;
-  font-size: 25px;
+  font-size: var(--text-title-md);
   background: rgba(251, 177, 48, 0.2);
   color: #8f5208;
 }
@@ -3421,7 +3457,7 @@
 .opportunities-detail-block h4 {
   margin: 0;
   color: #232b52;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.2;
   margin-top: 20px;
 }
@@ -3429,7 +3465,7 @@
 .opportunities-detail-block p {
   margin: 0;
   color: #525e82;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.5;
 }
 
@@ -3442,7 +3478,7 @@
 
 .opportunities-detail-block li {
   color: #515d82;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1.45;
 }
 
@@ -3456,7 +3492,7 @@
 .opportunities-detail-foot p {
   margin: 0;
   color: #5f6a8c;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -3565,7 +3601,7 @@
   }
 
   .opportunities-bid-summary-meta article strong {
-    font-size: 18px;
+    font-size: var(--text-body-lg);
   }
 
   .opportunities-invites-summary {
@@ -3620,7 +3656,7 @@
   .opportunities-job-avatar {
     width: 64px;
     height: 64px;
-    font-size: 20px;
+    font-size: var(--text-title-sm);
   }
 
   .opportunities-job-side {
@@ -3700,7 +3736,7 @@
   }
 
   .opportunities-bid-header h1 {
-    font-size: 30px;
+    font-size: var(--text-title-lg);
   }
 
   .opportunities-bid-price-row {
@@ -3754,7 +3790,7 @@
   }
 
   .opportunities-job-head h3 {
-    font-size: 20px;
+    font-size: var(--text-title-sm);
   }
 
   .opportunities-owner-head {
@@ -3769,20 +3805,59 @@
 
 /* Opportunities: Buy & Sell */
 .opportunities-marketplace-page .campus-shell {
-  grid-template-columns: 262px minmax(0, 1fr) clamp(300px, 24vw, 360px);
+  grid-template-columns: minmax(220px, 250px) minmax(0, 1fr) minmax(280px, 328px);
+  gap: 18px;
 }
 
 .opportunities-marketplace-main {
   padding-top: 0;
   display: grid;
   align-content: start;
-  gap: 12px;
+  grid-auto-rows: max-content;
+  gap: 16px;
+  min-width: 0;
 }
 
 .opportunities-marketplace-header {
   position: static;
   min-height: 0;
-  padding: 18px 0 8px;
+  padding: 16px 0 4px;
+  align-items: flex-end;
+  gap: 24px;
+  overflow: visible;
+  border: 0;
+}
+
+.opportunities-marketplace-header .opportunities-head-copy {
+  gap: 3px;
+}
+
+.opportunities-marketplace-header .opportunities-breadcrumb {
+  display: none;
+}
+
+/* Marketplace follows the product type scale, not the expressive campus hero. */
+.opportunities-marketplace-page .opportunities-marketplace-header .opportunities-title {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-heading);
+  font-size: var(--text-page-title);
+  font-weight: 800;
+  line-height: var(--leading-title);
+  letter-spacing: -0.025em;
+}
+
+.opportunities-marketplace-page .opportunities-marketplace-header .opportunities-subtitle {
+  margin: 5px 0 0;
+  color: var(--color-text-muted);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  font-weight: 500;
+  line-height: var(--leading-body);
+  max-height: none;
+  opacity: 1;
+  overflow: visible;
+  transform: none;
 }
 
 .opportunities-marketplace-actions {
@@ -3795,7 +3870,7 @@
   padding: 12px 16px;
   background: var(--theme-dark);
   color: #ffffff;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -3806,18 +3881,18 @@
   background:var(--theme-purple)
 }
 .opportunities-marketplace-primary-actions { display: flex; align-items: center; gap: 8px; }
-.opportunities-marketplace-orders-btn { border: 1px solid #d9deed; border-radius: 12px; padding: 11px 14px; background: #fff; color: #535d7a; font-size: 14px; font-weight: 800; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
+.opportunities-marketplace-orders-btn { border: 1px solid #d9deed; border-radius: 12px; padding: 11px 14px; background: #fff; color: #535d7a; font-size: var(--text-small); font-weight: 800; display: inline-flex; align-items: center; gap: 7px; cursor: pointer; }
 .opportunities-marketplace-orders-btn:hover, .opportunities-marketplace-orders-btn.is-active { border-color: #6946d8; color: #fff; background: #6946d8; }
 .opportunities-marketplace-page .campus-shell.is-buyer-orders { grid-template-columns: 262px minmax(0, 1fr); }
 
 .marketplace-buyer-orders { display: grid; gap: 14px; padding: 17px; border: 1px solid #e2e6f1; border-radius: 16px; background: #fff; }
 .marketplace-buyer-orders > header { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding-bottom: 13px; border-bottom: 1px solid #e9ecf4; }
-.marketplace-buyer-orders > header span { color: #7150db; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-.marketplace-buyer-orders > header h2 { margin: 3px 0; color: #252b48; font-size: 23px; }
-.marketplace-buyer-orders > header p { margin: 0; color: #7a849f; font-size: 12px; }
+.marketplace-buyer-orders > header span { color: #7150db; font-size: var(--text-micro); font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.marketplace-buyer-orders > header h2 { margin: 3px 0; color: #252b48; font-size: var(--text-title-md); }
+.marketplace-buyer-orders > header p { margin: 0; color: #7a849f; font-size: var(--text-caption); }
 .marketplace-buyer-orders > header button { border: 1px solid #dce1ed; border-radius: 9px; padding: 8px 10px; background: #fff; color: #59637f; font-weight: 750; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
 .marketplace-buyer-orders > nav { display: flex; gap: 7px; overflow-x: auto; }
-.marketplace-buyer-orders > nav button { border: 1px solid #e0e4ef; border-radius: 999px; padding: 7px 11px; background: #fff; color: #626c88; font-size: 11px; font-weight: 800; white-space: nowrap; cursor: pointer; }
+.marketplace-buyer-orders > nav button { border: 1px solid #e0e4ef; border-radius: 999px; padding: 7px 11px; background: #fff; color: #626c88; font-size: var(--text-caption); font-weight: 800; white-space: nowrap; cursor: pointer; }
 .marketplace-buyer-orders > nav button span { margin-left: 6px; padding: 1px 5px; border-radius: 99px; background: #eef0f6; }
 .marketplace-buyer-orders > nav button.is-active { border-color: #6745d2; color: #fff; background: #6745d2; }
 .marketplace-buyer-orders > nav button.is-active span { background: rgb(255 255 255 / 18%); }
@@ -3827,41 +3902,41 @@
 .marketplace-buyer-order-list > button.is-selected { border-color: #8064df; background: #faf8ff; box-shadow: 0 4px 13px rgb(78 52 163 / 8%); }
 .marketplace-buyer-order-list img { width: 52px; height: 52px; border-radius: 9px; object-fit: cover; }
 .marketplace-buyer-order-list button > span { display: grid; min-width: 0; }
-.marketplace-buyer-order-list small, .marketplace-buyer-order-list em { color: #8b93aa; font-size: 9px; font-style: normal; }
-.marketplace-buyer-order-list strong { overflow: hidden; color: #2a304d; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.marketplace-buyer-order-list > button > i { border-radius: 999px; padding: 4px 7px; background: #eeeafb; color: #6748c9; font-size: 8px; font-style: normal; font-weight: 850; white-space: nowrap; }
+.marketplace-buyer-order-list small, .marketplace-buyer-order-list em { color: #8b93aa; font-size: var(--text-micro); font-style: normal; }
+.marketplace-buyer-order-list strong { overflow: hidden; color: #2a304d; font-size: var(--text-caption); text-overflow: ellipsis; white-space: nowrap; }
+.marketplace-buyer-order-list > button > i { border-radius: 999px; padding: 4px 7px; background: #eeeafb; color: #6748c9; font-size: var(--text-micro); font-style: normal; font-weight: 850; white-space: nowrap; }
 .marketplace-buyer-order-list > button > i.is-completed { background: #e5f6ed; color: #16824d; }
 .marketplace-buyer-order-list > button > i.is-cannot_fulfil { background: #fff0f0; color: #c54545; }
 .marketplace-buyer-order-detail { overflow: hidden; border: 1px solid #e1e5ef; border-radius: 14px; background: #fff; }
 .marketplace-buyer-order-detail > header { display: flex; justify-content: space-between; gap: 12px; padding: 15px; background: #f8f7fc; }
-.marketplace-buyer-order-detail header small { color: #7967b1; font-size: 9px; font-weight: 850; letter-spacing: .06em; }
-.marketplace-buyer-order-detail h3 { margin: 3px 0; color: #272d49; font-size: 19px; }
-.marketplace-buyer-order-detail header p { max-width: 430px; margin: 0; color: #7c859e; font-size: 10px; }
-.marketplace-buyer-order-detail header > strong { color: #168a4d; font-size: 17px; white-space: nowrap; }
+.marketplace-buyer-order-detail header small { color: #7967b1; font-size: var(--text-micro); font-weight: 850; letter-spacing: .06em; }
+.marketplace-buyer-order-detail h3 { margin: 3px 0; color: #272d49; font-size: var(--text-title-sm); }
+.marketplace-buyer-order-detail header p { max-width: 430px; margin: 0; color: #7c859e; font-size: var(--text-micro); }
+.marketplace-buyer-order-detail header > strong { color: #168a4d; font-size: var(--text-body-lg); white-space: nowrap; }
 .marketplace-buyer-order-progress { display: flex; justify-content: space-between; padding: 16px 18px; border-bottom: 1px solid #edf0f6; }
 .marketplace-buyer-order-progress span { position: relative; flex: 1; display: grid; justify-items: center; gap: 5px; color: #a0a7b9; }
 .marketplace-buyer-order-progress span:not(:last-child)::after { content: ''; position: absolute; top: 11px; left: 60%; width: 80%; height: 2px; background: #e1e4ed; }
-.marketplace-buyer-order-progress i { z-index: 1; display: grid; width: 23px; height: 23px; place-items: center; border: 2px solid #dfe3ed; border-radius: 50%; background: #fff; font-size: 9px; font-style: normal; font-weight: 850; }
-.marketplace-buyer-order-progress small { font-size: 8px; text-align: center; }
+.marketplace-buyer-order-progress i { z-index: 1; display: grid; width: 23px; height: 23px; place-items: center; border: 2px solid #dfe3ed; border-radius: 50%; background: #fff; font-size: var(--text-micro); font-style: normal; font-weight: 850; }
+.marketplace-buyer-order-progress small { font-size: var(--text-micro); text-align: center; }
 .marketplace-buyer-order-progress .is-done i, .marketplace-buyer-order-progress .is-current i { border-color: #6746d2; background: #6746d2; color: #fff; }
 .marketplace-buyer-order-progress .is-done:not(:last-child)::after { background: #6746d2; }
 .marketplace-buyer-order-detail > section { padding: 13px 15px; border-bottom: 1px solid #edf0f6; }
-.marketplace-buyer-order-detail h4 { margin: 0 0 9px; color: #333952; font-size: 11px; }
+.marketplace-buyer-order-detail h4 { margin: 0 0 9px; color: #333952; font-size: var(--text-caption); }
 .marketplace-buyer-order-item { display: grid; grid-template-columns: 42px 1fr auto; gap: 9px; align-items: center; }
 .marketplace-buyer-order-item img { width: 42px; height: 42px; border-radius: 8px; object-fit: cover; }
 .marketplace-buyer-order-item span { display: grid; }
-.marketplace-buyer-order-item strong, .marketplace-buyer-order-item b { color: #2d334d; font-size: 11px; }
-.marketplace-buyer-order-item small { color: #8991a8; font-size: 9px; }
+.marketplace-buyer-order-item strong, .marketplace-buyer-order-item b { color: #2d334d; font-size: var(--text-caption); }
+.marketplace-buyer-order-item small { color: #8991a8; font-size: var(--text-micro); }
 .marketplace-buyer-order-handoff div { display: flex; gap: 9px; color: #6846d0; }
 .marketplace-buyer-order-handoff span { color: #303650; }
-.marketplace-buyer-order-handoff p { margin: 2px 0 0; color: #81899f; font-size: 10px; }
+.marketplace-buyer-order-handoff p { margin: 2px 0 0; color: #81899f; font-size: var(--text-micro); }
 .marketplace-buyer-order-detail > footer { display: flex; align-items: center; gap: 12px; padding: 12px 15px; }
-.marketplace-buyer-order-detail footer button { border: 0; border-radius: 8px; padding: 8px 11px; background: #6746d2; color: #fff; font-size: 10px; font-weight: 800; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
-.marketplace-buyer-order-detail footer span { margin-left: auto; color: #8a92a8; font-size: 9px; display: inline-flex; align-items: center; gap: 5px; }
+.marketplace-buyer-order-detail footer button { border: 0; border-radius: 8px; padding: 8px 11px; background: #6746d2; color: #fff; font-size: var(--text-micro); font-weight: 800; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.marketplace-buyer-order-detail footer span { margin-left: auto; color: #8a92a8; font-size: var(--text-micro); display: inline-flex; align-items: center; gap: 5px; }
 .marketplace-buyer-orders-empty { display: grid; justify-items: center; padding: 60px 20px; border: 1px dashed #dbe0ec; border-radius: 14px; color: #8992a9; text-align: center; }
 .marketplace-buyer-orders-empty > svg { width: 31px; height: 31px; }
 .marketplace-buyer-orders-empty h3 { margin: 9px 0 2px; color: #39405b; }
-.marketplace-buyer-orders-empty p { margin: 0; font-size: 12px; }
+.marketplace-buyer-orders-empty p { margin: 0; font-size: var(--text-caption); }
 .marketplace-buyer-orders-empty button { margin-top: 11px; border: 0; border-radius: 8px; padding: 8px 12px; background: #6543d0; color: #fff; font-weight: 750; cursor: pointer; }
 .marketplace-buyer-orders-empty.is-error { border-color: #efcaca; background: #fff8f8; color: #a13e3e; }
 
@@ -3869,9 +3944,10 @@
 @media (max-width: 720px) { .opportunities-marketplace-primary-actions { flex-wrap: wrap; } .marketplace-buyer-order-progress small { display: none; } }
 .opportunities-marketplace-search-row {
   border: 1px solid #e4e8f5;
-  border-radius: 16px;
+  border-radius: 14px;
   background: #ffffff;
-  padding: 8px;
+  padding: 7px;
+  min-height: 58px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 8px;
@@ -3893,7 +3969,7 @@
   background: transparent;
   width: 100%;
   color: #252c52;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-family: inherit;
 }
 
@@ -3908,15 +3984,15 @@
 .opportunities-marketplace-search-btn {
   padding: 12px 18px;
   min-width: 96px;
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .opportunities-marketplace-categories {
   border: 1px solid #ebeefd;
-  border-radius: 18px;
+  border-radius: 16px;
   padding: 8px;
   display: grid;
-  grid-template-columns: repeat(8, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(138px, 1fr));
   gap: 8px;
 }
 
@@ -3956,7 +4032,7 @@
   color: #4e5a86;
   display: grid;
   place-items: center;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 
 .opportunities-marketplace-category.is-active .opportunities-marketplace-category-icon {
@@ -3969,16 +4045,106 @@
   margin: 0;
 }
 
+.marketplace-commerce-guide {
+  overflow: hidden;
+  border: 1px solid #e7e9f3;
+  border-radius: 18px;
+  background: linear-gradient(115deg, #272735 0 31%, #353342 31% 100%);
+  color: #fff;
+}
+
+.marketplace-commerce-guide > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px 20px 12px;
+}
+
+.marketplace-commerce-guide > header span,
+.marketplace-commerce-guide button small {
+  color: #ffbc45;
+  font-size: var(--text-micro);
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.marketplace-commerce-guide h2 {
+  margin: 3px 0 0;
+  font-size: var(--text-title-md);
+}
+
+.marketplace-commerce-guide > header p {
+  max-width: 440px;
+  margin: 0;
+  color: #d9d7e2;
+  font-size: var(--text-caption);
+  text-align: right;
+}
+
+.marketplace-commerce-guide > div {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1px;
+  background: rgb(255 255 255 / 12%);
+}
+
+.marketplace-commerce-guide button {
+  min-width: 0;
+  border: 0;
+  padding: 15px 16px;
+  background: #fff;
+  color: #242942;
+  text-align: left;
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr);
+  gap: 10px;
+  cursor: pointer;
+}
+
+.marketplace-commerce-guide button:hover { background: #fbf9ff; }
+.marketplace-commerce-guide button > i { display: grid; width: 40px; height: 40px; place-items: center; border-radius: 12px; background: #eee9ff; color: #6541d7; font-size: var(--text-body-lg); }
+.marketplace-commerce-guide button.is-food > i { background: #fff0d5; color: #c67100; }
+.marketplace-commerce-guide button.is-appointment > i { background: #e4f5ee; color: #16824d; }
+.marketplace-commerce-guide button.is-quote > i { background: #e5f2f4; color: #287f87; }
+.marketplace-commerce-guide button > span { min-width: 0; display: grid; gap: 2px; }
+.marketplace-commerce-guide button small { color: #7b5977; letter-spacing: .05em; }
+.marketplace-commerce-guide button strong { font-size: var(--text-small); }
+.marketplace-commerce-guide button em { overflow: hidden; color: #747d96; font-size: var(--text-micro); font-style: normal; line-height: 1.35; }
+
+.opportunities-section-head p { margin: 2px 0 0; color: #7a839d; font-size: var(--text-caption); }
+.marketplace-service-mode { width: fit-content; border-radius: 999px; padding: 3px 7px; background: #e7f6ee; color: #16784a; font-size: var(--text-micro); font-weight: 850; }
+.marketplace-service-mode.is-order_ahead { background: #fff1d8; color: #a86205; }
+.marketplace-service-mode.is-request_quote { background: #e7f2f5; color: #27757d; }
+
+.marketplace-service-guide-card { overflow: hidden; display: grid; gap: 12px; padding: 0; }
+.marketplace-service-guide-card > header { padding: 17px 17px 14px; background: #292834; color: #fff; display: flex; align-items: start; justify-content: space-between; }
+.marketplace-service-guide-card > header span { color: #ffbc45; font-size: var(--text-micro); font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+.marketplace-service-guide-card > header h3 { margin: 3px 0 0; color: #fff; font-size: var(--text-title-sm); }
+.marketplace-service-guide-card > header > svg { color: #65c89c; font-size: var(--text-title-sm); }
+.marketplace-service-guide-card > p { margin: 0; padding: 0 17px; color: #737c96; font-size: var(--text-caption); line-height: 1.5; }
+.marketplace-service-guide-card > div { padding: 0 10px; display: grid; gap: 5px; }
+.marketplace-service-guide-card article { display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 9px; align-items: center; padding: 9px; border-radius: 11px; background: #f8f7fc; }
+.marketplace-service-guide-card article i { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 10px; background: #eee9ff; color: #6541d7; }
+.marketplace-service-guide-card article.is-food i { background: #fff0d5; color: #c67100; }
+.marketplace-service-guide-card article.is-appointment i { background: #e4f5ee; color: #16824d; }
+.marketplace-service-guide-card article.is-quote i { background: #e5f2f4; color: #287f87; }
+.marketplace-service-guide-card article span { display: grid; }
+.marketplace-service-guide-card article strong { color: #2b304a; font-size: var(--text-caption); }
+.marketplace-service-guide-card article small { color: #7a839c; font-size: var(--text-micro); }
+.marketplace-service-guide-card > footer { padding: 11px 15px; background: #f0f8f4; color: #197349; font-size: var(--text-micro); font-weight: 750; display: flex; gap: 7px; align-items: center; }
+
 .opportunities-marketplace-category h3 {
   color: #1f254a;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.2;
   font-weight: 700;
 }
 
 .opportunities-marketplace-category p {
   color: #657090;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
@@ -3989,13 +4155,13 @@
 
 .opportunities-marketplace-featured-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 10px;
 }
 
 .opportunities-marketplace-recent-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(205px, 1fr));
   gap: 10px;
 }
 
@@ -4028,7 +4194,7 @@
   padding: 4px 8px;
   background: #ece9ff;
   color: var(--theme-purple);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -4061,19 +4227,19 @@
 
 .opportunities-marketplace-card-body h3 {
   color: #1f254a;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   line-height: 1.25;
 }
 
 .opportunities-marketplace-card-category {
   color: #657090;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
 .opportunities-marketplace-card-price {
   color: #16824d;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   line-height: 1.2;
   font-weight: 700;
 }
@@ -4092,7 +4258,7 @@
 .opportunities-marketplace-card-body footer span {
   margin: 0;
   color: #687295;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -4103,7 +4269,7 @@
   border: 0;
   background: transparent;
   color: #737c9f;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -4115,11 +4281,11 @@
 }
 
 .opportunities-marketplace-card.is-recent .opportunities-marketplace-card-body h3 {
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .opportunities-marketplace-card.is-recent .opportunities-marketplace-card-price {
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 
 .opportunities-marketplace-filters {
@@ -4134,7 +4300,7 @@
   padding: 7px 14px;
   background: #f6f7fc;
   color: #5e678a;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 500;
   cursor: pointer;
 }
@@ -4150,6 +4316,7 @@
   display: grid;
   align-content: start;
   gap: 12px;
+  min-width: 0;
 }
 
 .opportunities-marketplace-filter-card {
@@ -4165,7 +4332,7 @@
 .opportunities-marketplace-filter-group h4 {
   margin: 0;
   color: #23294e;
-  font-size: 15px;
+  font-size: var(--text-body);
   font-weight: 700;
 }
 
@@ -4179,7 +4346,7 @@
   gap: 12px;
 }
 .opportunities-marketplace-trending-card h3{
-  font-size:20px;
+  font-size:var(--text-title-sm);
 }
 .opportunities-marketplace-trending-list {
   display: grid;
@@ -4210,13 +4377,13 @@
 
 .opportunities-marketplace-trending-item h4 {
   color: #212850;
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .opportunities-marketplace-trending-item p {
   margin-top: 2px;
   color: #16824d;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   font-weight: 700;
 }
 
@@ -4225,7 +4392,7 @@
   padding: 4px 8px;
   background: #fff1f5;
   color: #d83566;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -4238,7 +4405,7 @@
   padding: 10px 12px;
   background: #f7f8fd;
   color: var(--theme-purple);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
   cursor: pointer;
 }
@@ -4247,28 +4414,24 @@
 }
 
 @media (max-width: 1580px) {
-  .opportunities-marketplace-categories {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
-  .opportunities-marketplace-recent-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .opportunities-marketplace-page .campus-shell {
+    grid-template-columns: 230px minmax(0, 1fr) 286px;
+    gap: 14px;
   }
 }
 
 @media (max-width: 1260px) {
-  .opportunities-marketplace-search-row {
-    grid-template-columns: minmax(0, 1fr);
+  .opportunities-marketplace-page .campus-shell {
+    grid-template-columns: 220px minmax(0, 1fr);
   }
 
-  .opportunities-marketplace-location-btn {
-    border-left: 0;
-    border-top: 1px solid #eceffc;
-    justify-content: flex-start;
-  }
-
-  .opportunities-marketplace-featured-grid {
+  .opportunities-marketplace-rail {
+    grid-column: 2;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .opportunities-marketplace-rail > * {
+    min-width: 0;
   }
 }
 
@@ -4285,9 +4448,41 @@
     flex-direction: column;
     align-items: flex-start;
   }
+
+  .opportunities-marketplace-rail {
+    grid-column: auto;
+  }
 }
 
 @media (max-width: 760px) {
+  .opportunities-marketplace-header {
+    padding-top: 10px;
+  }
+
+  .opportunities-marketplace-page .opportunities-marketplace-header .opportunities-title {
+    font-size: 1.875rem;
+  }
+
+  .opportunities-marketplace-primary-actions,
+  .opportunities-marketplace-actions {
+    width: 100%;
+  }
+
+  .opportunities-marketplace-primary-actions > button {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .opportunities-marketplace-search-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .opportunities-marketplace-location-btn {
+    border-left: 0;
+    border-top: 1px solid #eceffc;
+    justify-content: flex-start;
+  }
+
   .opportunities-marketplace-categories {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -4298,12 +4493,47 @@
   }
 
   .opportunities-marketplace-card-price {
-    font-size: 24px;
+    font-size: var(--text-title-md);
   }
 
   .opportunities-marketplace-card.is-recent .opportunities-marketplace-card-price {
-    font-size: 24px;
+    font-size: var(--text-title-md);
   }
+
+  .opportunities-marketplace-rail {
+    grid-template-columns: 1fr;
+  }
+}
+
+.marketplace-service-request-backdrop { position: fixed; z-index: 1400; inset: 0; padding: 20px; background: rgb(24 24 34 / 62%); display: grid; place-items: center; }
+.marketplace-service-request-modal { width: min(580px, 100%); border-radius: 18px; padding: 20px; background: #fff; box-shadow: 0 24px 70px rgb(15 16 29 / 28%); display: grid; gap: 15px; }
+.marketplace-service-request-modal > header { display: flex; align-items: start; justify-content: space-between; gap: 12px; }
+.marketplace-service-request-modal > header span { color: #785171; font-size: var(--text-micro); font-weight: 850; letter-spacing: .07em; text-transform: uppercase; }
+.marketplace-service-request-modal h2 { margin: 3px 0 0; color: #20263f; font-size: var(--text-title-md); }
+.marketplace-service-request-modal > header button { display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid #e0e4ef; border-radius: 9px; background: #fff; cursor: pointer; }
+.marketplace-service-request-modal > p { margin: 0; color: #747d95; font-size: var(--text-caption); line-height: 1.5; }
+.marketplace-service-request-modal > div { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.marketplace-service-request-modal label { display: grid; gap: 6px; color: #30364f; font-size: var(--text-caption); font-weight: 750; }
+.marketplace-service-request-modal label > span { display: flex; align-items: center; gap: 6px; }
+.marketplace-service-request-modal label.is-wide { grid-column: 1 / -1; }
+.marketplace-service-request-modal input, .marketplace-service-request-modal textarea { width: 100%; border: 1px solid #dfe3ee; border-radius: 10px; padding: 10px 11px; background: #fff; color: #282e47; font: inherit; }
+.marketplace-service-request-modal footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 12px; border-top: 1px solid #ebedf4; }
+.marketplace-service-request-modal footer button { border: 1px solid #dfe3ee; border-radius: 9px; padding: 10px 14px; background: #fff; color: #555e78; font-weight: 800; cursor: pointer; }
+.marketplace-service-request-modal footer button.is-primary { border-color: #292834; background: #292834; color: #fff; }
+.marketplace-service-request-modal footer button:disabled { opacity: .5; cursor: not-allowed; }
+
+@media (max-width: 900px) {
+  .marketplace-commerce-guide > header { align-items: flex-start; flex-direction: column; }
+  .marketplace-commerce-guide > header p { text-align: left; }
+  .marketplace-commerce-guide > div { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .opportunities-marketplace-categories { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 560px) {
+  .marketplace-commerce-guide > div, .marketplace-service-request-modal > div { grid-template-columns: 1fr; }
+  .opportunities-marketplace-categories { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .marketplace-service-request-modal label.is-wide { grid-column: auto; }
+  .marketplace-service-request-modal footer { align-items: stretch; flex-direction: column-reverse; }
 }
 
 .opportunities-marketplace-card.is-clickable,
@@ -4324,7 +4554,7 @@
 .opportunities-marketplace-empty-state p {
   margin: 0;
   color: #616b90;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -4373,14 +4603,14 @@
 
 .marketplace-workflow-card > span {
   color: var(--color-accent-purple);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-transform: uppercase;
 }
 
 .marketplace-workflow-card h2 {
   color: var(--color-text);
-  font-size: 1.08rem;
+  font-size: var(--text-body-lg);
   letter-spacing: 0;
   margin: 0;
 }
@@ -4413,7 +4643,7 @@
 
 .marketplace-workflow-card dt {
   color: var(--color-text-muted);
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -4480,7 +4710,7 @@
 
 .marketplace-handoff-select label {
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -4514,7 +4744,7 @@
   counter-increment: marketplace-progress;
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   height: 24px;
   justify-content: center;
   width: 24px;
@@ -4569,7 +4799,7 @@
 .opportunities-marketplace-product-head > div > p:last-child {
   margin: 8px 0 0;
   color: #5f678d;
-  font-size: 17px;
+  font-size: var(--text-body-lg);
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -4581,7 +4811,7 @@
   padding: 4px 10px;
   background: #ece9ff;
   color: #4f2be3;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
   font-style: normal;
 }
@@ -4599,7 +4829,7 @@
   padding: 0 14px;
   background: #ffffff;
   color: #313a63;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
   display: inline-flex;
   align-items: center;
@@ -4638,7 +4868,7 @@
   padding: 4px 9px;
   background: rgba(55, 60, 85, 0.65);
   color: #ffffff;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   z-index: 2;
 }
@@ -4707,19 +4937,19 @@
   align-content: center;
   gap: 2px;
   color: #384168;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   font-weight: 700;
 }
 
 .opportunities-marketplace-product-thumbs-more small {
-  font-size: 11px;
+  font-size: var(--text-caption);
   color: #727ca1;
 }
 
 .opportunities-marketplace-product-detail-card h3 {
   margin: 0;
   color: #1f2750;
-  font-size: 28px;
+  font-size: var(--text-title-lg);
 }
 
 .opportunities-marketplace-product-detail-card dl {
@@ -4746,7 +4976,7 @@
 .opportunities-marketplace-product-detail-card dd {
   margin: 0;
   color: #2f3966;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.4;
 }
 
@@ -4776,13 +5006,13 @@
 
 .opportunities-marketplace-product-description h4 {
   color: #222b56;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 
 .opportunities-marketplace-product-description p {
   margin-top: 6px;
   color: #5f688f;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.55;
 }
 
@@ -4802,7 +5032,7 @@
 .opportunities-marketplace-product-related .opportunities-section-head h3 {
   margin: 0;
   color: #1f2750;
-  font-size: 30px;
+  font-size: var(--text-title-lg);
 }
 
 .opportunities-marketplace-product-related-grid {
@@ -4836,18 +5066,18 @@
 
 .opportunities-marketplace-product-mini-card h4 {
   color: #212850;
-  font-size: 15px;
+  font-size: var(--text-body);
   line-height: 1.3;
 }
 
 .opportunities-marketplace-product-mini-card p {
   color: #6b7599;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .opportunities-marketplace-product-mini-card strong {
   color: #16824d;
-  font-size: 26px;
+  font-size: var(--text-title-md);
   line-height: 1.2;
   font-weight: 800;
 }
@@ -4876,14 +5106,29 @@
 .opportunities-marketplace-product-price-card {
   display: grid;
   gap: 10px;
+  overflow: hidden;
+  border-color: color-mix(in srgb, var(--theme-purple) 20%, #e7e8f1);
+  box-shadow: inset 0 4px 0 var(--theme-orange);
+}
+
+.opportunities-marketplace-product-price-label {
+  width: fit-content;
+  margin-top: 4px;
+  color: var(--theme-purple);
+  font-size: var(--text-caption);
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
 
 .opportunities-marketplace-product-price-card > p {
   margin: 0;
-  color: #16824d;
-  font-size: 56px;
-  line-height: 1;
+  color: var(--theme-dark);
+  font-size: clamp(34px, 2.5vw, 46px);
+  line-height: 1.05;
   font-weight: 800;
+  letter-spacing: -.035em;
+  white-space: nowrap;
 }
 
 .opportunities-marketplace-product-primary-btn,
@@ -4891,7 +5136,7 @@
   border-radius: 11px;
   height: 46px;
   width: 100%;
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 700;
   cursor: pointer;
 }
@@ -4906,9 +5151,9 @@
   margin: 0;
   border-radius: 9px;
   padding: 8px 10px;
-  color: #4f2be3 !important;
-  background: #f2efff;
-  font-size: 12px !important;
+  color: var(--theme-purple) !important;
+  background: #f7f1f6;
+  font-size: var(--text-caption) !important;
   font-weight: 750;
   line-height: 1.4 !important;
 }
@@ -4916,20 +5161,20 @@
 .opportunities-marketplace-offer-pending {
   display: grid;
   gap: 3px;
-  border: 1px solid #d9cffd;
+  border: 1px solid #d8c9d5;
   border-radius: 11px;
   padding: 11px 12px;
-  color: #3f2a91;
-  background: #f5f2ff;
+  color: var(--theme-purple);
+  background: #f8f3f7;
 }
 
 .opportunities-marketplace-offer-pending strong {
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
 .opportunities-marketplace-offer-pending span {
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.45;
 }
 
@@ -4944,12 +5189,12 @@
 }
 
 .opportunities-marketplace-offer-accepted strong {
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
 .opportunities-marketplace-offer-accepted span {
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.45;
 }
 
@@ -4959,7 +5204,7 @@
   border-radius: 9px;
   color: #fff;
   background: #16824d;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
   cursor: pointer;
 }
@@ -4975,12 +5220,12 @@
 }
 
 .opportunities-marketplace-offer-declined strong {
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
 .opportunities-marketplace-offer-declined span {
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.45;
 }
 
@@ -4990,7 +5235,7 @@
   border-radius: 9px;
   color: #5a38d0;
   background: #fff;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
   cursor: pointer;
 }
@@ -4999,9 +5244,9 @@
   width: fit-content;
   border-radius: 999px;
   padding: 5px 10px;
-  color: #126b43;
-  background: #e9f8f0;
-  font-size: 11px;
+  color: #276f75;
+  background: #eaf5f6;
+  font-size: var(--text-caption);
   font-weight: 850;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -5071,7 +5316,7 @@
 
 .marketplace-offer-modal header small {
   color: #7a6ab5;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 850;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -5080,7 +5325,7 @@
 .marketplace-offer-modal h2 {
   margin-top: 2px;
   color: #202540;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 
 .marketplace-offer-product {
@@ -5107,20 +5352,20 @@
 
 .marketplace-offer-product strong {
   color: #16824d;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 
 .marketplace-offer-product span {
   margin-top: 3px;
   color: #737992;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .marketplace-offer-modal > label {
   display: grid;
   gap: 7px;
   color: #343951;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -5149,12 +5394,12 @@
   padding: 0 13px;
   outline: 0;
   font: inherit;
-  font-size: 17px;
+  font-size: var(--text-body-lg);
 }
 
 .marketplace-offer-modal > p {
   color: #70768e;
-  font-size: 12px;
+  font-size: var(--text-caption);
   line-height: 1.5;
 }
 
@@ -5232,8 +5477,8 @@
 
 .marketplace-listing-modal > header > span { color: #fff; background: #5b35dc; }
 .marketplace-listing-modal > header > button { width: 36px; height: 36px; color: #51566d; background: #f1f2f6; cursor: pointer; }
-.marketplace-listing-modal > header small { color: #7a6ab5; font-size: 10px; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
-.marketplace-listing-modal > header h2 { margin: 2px 0 0; color: #202540; font-size: 22px; }
+.marketplace-listing-modal > header small { color: #7a6ab5; font-size: var(--text-micro); font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.marketplace-listing-modal > header h2 { margin: 2px 0 0; color: #202540; font-size: var(--text-title-sm); }
 
 .marketplace-listing-form-grid {
   display: grid;
@@ -5246,7 +5491,7 @@
   display: grid;
   gap: 6px;
   color: #353a52;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -5279,7 +5524,7 @@
   cursor: pointer;
 }
 .marketplace-listing-file input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
-.marketplace-listing-error { margin: 0; border-radius: 9px; padding: 9px 11px; color: #ae293c; background: #fff1f3; font-size: 12px; font-weight: 750; }
+.marketplace-listing-error { margin: 0; border-radius: 9px; padding: 9px 11px; color: #ae293c; background: #fff1f3; font-size: var(--text-caption); font-weight: 750; }
 .marketplace-listing-modal > footer { display: flex; justify-content: flex-end; gap: 10px; }
 .marketplace-listing-modal > footer button { min-height: 44px; border: 1px solid #d9ddea; border-radius: 10px; padding: 0 18px; color: #454b65; background: #fff; font: inherit; font-weight: 800; cursor: pointer; }
 .marketplace-listing-modal > footer button:last-child { border-color: #5b35dc; display: inline-flex; align-items: center; gap: 7px; color: #fff; background: #5b35dc; }
@@ -5293,30 +5538,63 @@
 }
 
 .opportunities-marketplace-product-primary-btn {
-  border: 0;
-  background: linear-gradient(120deg, #6d4eff, #4f2be3);
+  border: 1px solid var(--theme-dark);
+  background: var(--theme-dark);
   color: #ffffff;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  transition: transform 160ms ease, box-shadow 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.opportunities-marketplace-product-primary-btn.is-cart {
+  border-color: var(--theme-orange);
+  background: var(--theme-orange);
+  color: var(--theme-dark);
+}
+
+.opportunities-marketplace-product-primary-btn.is-chat {
+  border-color: var(--theme-dark);
+  background: var(--theme-dark);
+}
+
+.opportunities-marketplace-product-primary-btn:not(:disabled):hover {
+  border-color: var(--theme-purple);
+  background: var(--theme-purple);
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(55, 54, 67, .14);
 }
 
 .opportunities-marketplace-product-secondary-btn {
-  border: 1px solid #cfd6ef;
+  border: 1px solid color-mix(in srgb, var(--theme-purple) 42%, #ffffff);
   background: #ffffff;
-  color: #4f2be3;
+  color: var(--theme-purple);
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.opportunities-marketplace-product-secondary-btn:not(:disabled):hover {
+  border-color: var(--theme-purple);
+  background: #f8f3f7;
 }
 
 .opportunities-marketplace-product-price-card article {
   margin-top: 2px;
   border-radius: 12px;
-  background: #f4f5fb;
+  border: 1px solid #d8e8e9;
+  border-left: 4px solid var(--theme-green);
+  background: #f2f8f8;
   padding: 10px;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
   gap: 9px;
   align-items: start;
+}
+
+.opportunities-marketplace-product-price-card article > svg {
+  color: var(--theme-green);
+  font-size: 20px;
 }
 
 .opportunities-marketplace-product-price-card article h4,
@@ -5326,25 +5604,26 @@
 
 .opportunities-marketplace-product-price-card article h4 {
   color: #1f2750;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 
 .opportunities-marketplace-product-price-card article p {
   margin-top: 2px;
   color: #5c668c;
-  font-size: 13px;
+  font-size: var(--text-small);
   line-height: 1.45;
 }
 
 .opportunities-marketplace-product-seller-card {
   display: grid;
   gap: 11px;
+  box-shadow: inset 0 4px 0 color-mix(in srgb, var(--theme-purple) 78%, #ffffff);
 }
 
 .opportunities-marketplace-product-seller-card h3 {
   margin: 0;
   color: #1f2750;
-  font-size: 32px;
+  font-size: var(--text-title-lg);
 }
 
 .opportunities-marketplace-product-seller-head {
@@ -5358,7 +5637,7 @@
   width: 50px;
   height: 50px;
   border-radius: 999px;
-  border: 1px solid #dee2f1;
+  border: 2px solid var(--theme-orange);
   object-fit: cover;
 }
 
@@ -5370,20 +5649,20 @@
 
 .opportunities-marketplace-product-seller-head h4 {
   color: #1e254c;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 
 .opportunities-marketplace-product-seller-head p {
   margin-top: 1px;
-  color: #4f2be3;
-  font-size: 12px;
+  color: var(--theme-purple);
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
 .opportunities-marketplace-product-seller-head span {
   margin-top: 2px;
   color: #667194;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .opportunities-marketplace-product-seller-metrics {
@@ -5393,10 +5672,11 @@
 }
 
 .opportunities-marketplace-product-seller-metrics article {
-  border: 1px solid #e7ebf9;
+  border: 1px solid #e2dbe3;
   border-radius: 10px;
   padding: 8px;
   text-align: center;
+  background: #fbf8fa;
 }
 
 .opportunities-marketplace-product-seller-metrics strong,
@@ -5406,18 +5686,19 @@
 
 .opportunities-marketplace-product-seller-metrics strong {
   color: #1f2750;
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .opportunities-marketplace-product-seller-metrics span {
   color: #6b7498;
-  font-size: 12px;
+  font-size: var(--text-caption);
   margin-top: 2px;
 }
 
 .opportunities-marketplace-product-suggested-card {
   display: grid;
   gap: 10px;
+  box-shadow: inset 0 4px 0 var(--theme-green);
 }
 
 .opportunities-marketplace-product-suggested-list {
@@ -5426,13 +5707,20 @@
 }
 
 .opportunities-marketplace-product-suggested-item {
-  border: 1px solid #e5e9f8;
+  border: 1px solid #e5e3eb;
   border-radius: 11px;
   padding: 8px;
   display: grid;
   grid-template-columns: 58px minmax(0, 1fr) auto;
   gap: 9px;
   align-items: center;
+  transition: border-color 160ms ease, background-color 160ms ease, transform 160ms ease;
+}
+
+.opportunities-marketplace-product-suggested-item:hover {
+  border-color: color-mix(in srgb, var(--theme-purple) 48%, #ffffff);
+  background: #fbf8fa;
+  transform: translateY(-1px);
 }
 
 .opportunities-marketplace-product-suggested-item img {
@@ -5449,20 +5737,20 @@
 
 .opportunities-marketplace-product-suggested-item h4 {
   color: #1f2750;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.3;
 }
 
 .opportunities-marketplace-product-suggested-item p {
   margin-top: 3px;
-  color: #16824d;
-  font-size: 22px;
+  color: var(--theme-green);
+  font-size: var(--text-title-sm);
   font-weight: 800;
   line-height: 1.2;
 }
 
 .opportunities-marketplace-product-suggested-item > svg {
-  color: #747ea2;
+  color: var(--theme-purple);
 }
 
 @media (max-width: 1580px) {
@@ -5499,7 +5787,7 @@
 
 @media (max-width: 760px) {
   .opportunities-marketplace-product-head h2 {
-    font-size: 34px;
+    font-size: var(--text-title-lg);
   }
 
   .opportunities-marketplace-product-thumbs {
@@ -5652,7 +5940,7 @@
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
   flex: 0 0 auto;
 }
@@ -5661,7 +5949,7 @@
   gap: 34px;
   margin-top: 26px;
   color: var(--project-muted);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
   flex-wrap: wrap;
 }
@@ -5716,7 +6004,7 @@
   margin: 0;
   color: var(--project-ink);
   font-family: var(--project-heading-font);
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   line-height: 1.25;
   letter-spacing: 0;
 }
@@ -5731,7 +6019,7 @@
 .project-overview-card > div:first-child > p {
   margin: 14px 0 22px;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.75;
   font-weight: 700;
 }
@@ -5757,7 +6045,7 @@
 .project-overview-card dt,
 .project-details-card dt {
   color: #747ca6;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -5765,7 +6053,7 @@
 .project-overview-card dd,
 .project-details-card dd {
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -5799,7 +6087,7 @@
 }
 
 .project-price-proposal-amount {
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   font-weight: 900;
   color: var(--project-primary);
 }
@@ -5807,7 +6095,7 @@
 .project-price-proposal-card p {
   margin: 10px 0 0;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -5837,7 +6125,7 @@
 .project-submitted-work-preview > header p {
   margin: 6px 0 0;
   color: #747ca6;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -5847,7 +6135,7 @@
   background: #e8f7f4;
   color: #238b82;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -5863,7 +6151,7 @@
   color: var(--project-primary);
   padding: 6px 2px;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 850;
   cursor: pointer;
 }
@@ -5884,7 +6172,7 @@
   margin-top: 22px;
   padding: 0 16px 9px;
   color: #747ca6;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 850;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -5927,7 +6215,7 @@
 
 .project-submitted-work-preview-summary strong {
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -5936,7 +6224,7 @@
 .project-submitted-work-preview-target small {
   margin-top: 3px;
   color: #747ca6;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 750;
 }
 
@@ -5949,7 +6237,7 @@
 .project-submitted-work-preview-summary p {
   margin: 8px 0 0;
   color: #596286;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 650;
   line-height: 1.45;
 }
@@ -5962,7 +6250,7 @@
 .project-submitted-work-preview-target strong {
   margin-top: 4px;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -5979,7 +6267,7 @@
   gap: 7px;
   min-width: 0;
   color: var(--project-primary);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-decoration: none;
 }
@@ -5997,7 +6285,7 @@
 .project-submitted-work-preview-files em {
   flex: 0 0 auto;
   color: #747ca6;
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-style: normal;
 }
 
@@ -6009,7 +6297,7 @@
   justify-self: end;
   border-radius: 999px;
   padding: 6px 10px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -6085,7 +6373,7 @@
 .project-submitted-work-business-owner strong,
 .project-submitted-work-business-info strong {
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -6093,7 +6381,7 @@
 .project-submitted-work-business-info span {
   margin-top: 3px;
   color: #747ca6;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 750;
 }
 
@@ -6109,7 +6397,7 @@
   border-radius: 999px;
   background: #eef2ff;
   color: #4338ca;
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-style: normal;
   font-weight: 850;
 }
@@ -6127,7 +6415,7 @@
   background: #ffffff;
   color: var(--project-primary);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
   cursor: pointer;
 }
@@ -6178,13 +6466,13 @@
 
 .project-submission-preview-modal h2 {
   color: var(--project-ink);
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 
 .project-submission-preview-modal > header p {
   margin-top: 4px;
   color: #747ca6;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -6215,7 +6503,7 @@
 
 .project-submission-preview-body dt {
   color: #747ca6;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 850;
   text-transform: uppercase;
 }
@@ -6223,14 +6511,14 @@
 .project-submission-preview-body dd {
   margin: 5px 0 0;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 750;
   line-height: 1.5;
 }
 
 .project-submission-preview-body h3 {
   color: var(--project-ink);
-  font-size: 15px;
+  font-size: var(--text-body);
 }
 
 .project-submission-preview-body h3 span {
@@ -6265,13 +6553,13 @@
 
 .project-submission-preview-files strong {
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-submission-preview-files span {
   margin-top: 3px;
   color: #747ca6;
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 700;
 }
 
@@ -6280,7 +6568,7 @@
   align-items: center;
   gap: 5px;
   color: var(--project-primary);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 850;
   text-decoration: none;
 }
@@ -6311,13 +6599,13 @@
 .project-work-deliverables-card > header h2 {
   color: var(--project-ink);
   font-family: var(--project-heading-font);
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 
 .project-work-deliverables-card > header p {
   margin-top: 5px;
   color: #747ca6;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -6343,7 +6631,7 @@
   background: transparent;
   color: #4d5374;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
   white-space: nowrap;
   cursor: pointer;
@@ -6365,7 +6653,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .project-work-deliverable-toolbar {
@@ -6386,7 +6674,7 @@
   align-items: center;
   gap: 8px;
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -6424,7 +6712,7 @@
   padding: 10px 12px;
   border-top: 1px solid var(--project-border);
   color: var(--project-ink);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -6433,7 +6721,7 @@
   border-top: 0;
   background: #f7f8fc;
   color: #4d5374;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -6445,7 +6733,7 @@
   color: var(--project-primary);
   display: grid;
   place-items: center;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .project-work-deliverable-title {
@@ -6481,7 +6769,7 @@
   border-radius: 999px;
   background: var(--project-primary-soft);
   color: var(--project-primary);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-style: normal;
   font-weight: 900;
 }
@@ -6507,7 +6795,7 @@
 
 .project-work-deliverable-row time em {
   color: #4d5374;
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-style: normal;
 }
 
@@ -6519,7 +6807,7 @@
   width: fit-content;
   border-radius: 999px;
   padding: 5px 8px;
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -6552,14 +6840,14 @@
   background: #ffffff;
   color: var(--project-primary);
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
   cursor: pointer;
 }
 
 .project-work-deliverable-footer {
   color: #4d5374;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -6573,7 +6861,7 @@
   gap: 12px;
   align-items: center;
   color: var(--project-ink);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -6582,7 +6870,7 @@
   border-top: 0;
   background: #f7f8fc;
   color: #4d5374;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -6625,7 +6913,7 @@
 .project-work-deliverables-empty p {
   margin: 0;
   color: #747ca6;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -6644,7 +6932,7 @@
 .project-scope-deliverables-card > header p {
   margin: 6px 0 0;
   color: #747ca6;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -6654,7 +6942,7 @@
   background: var(--project-primary-soft);
   color: var(--project-primary);
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -6682,14 +6970,14 @@
   place-items: center;
   background: var(--project-primary-soft);
   color: var(--project-primary);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .project-scope-deliverable-content > header span,
 .project-scope-deliverable-content dt {
   color: #747ca6;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -6699,20 +6987,20 @@
   margin: 3px 0 0;
   color: var(--project-ink);
   font-family: var(--project-heading-font);
-  font-size: 15px;
+  font-size: var(--text-body);
 }
 
 .project-scope-deliverable-content > header strong {
   flex: 0 0 auto;
   color: var(--project-primary);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .project-scope-deliverable-content > p {
   margin: 10px 0 0;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 650;
   line-height: 1.6;
 }
@@ -6727,7 +7015,7 @@
 .project-scope-deliverable-content dd {
   margin: 4px 0 0;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 750;
   line-height: 1.45;
 }
@@ -6735,7 +7023,7 @@
 .project-sample-work-card > p {
   margin: 6px 0 0;
   color: #747ca6;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -6760,13 +7048,13 @@
 
 .project-sample-work-list article strong {
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .project-sample-work-list article > div > span {
   color: #747ca6;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -6787,7 +7075,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -6809,7 +7097,7 @@
 
 .project-sample-work-list li em {
   color: #747ca6;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 700;
 }
@@ -6916,7 +7204,7 @@
 .project-recent-messages span {
   margin: 0;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
 }
 
 .project-recent-messages p {
@@ -6927,7 +7215,7 @@
 
 .project-recent-messages span {
   color: #596086;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -6953,14 +7241,14 @@
 .project-storage-card p {
   margin: 15px 0 8px;
   color: #596086;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
 .project-progress-card strong,
 .project-storage-card strong {
   color: var(--project-ink);
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .project-progress-track {
@@ -7027,7 +7315,7 @@
 .project-mini-file span {
   margin: 0;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -7060,7 +7348,7 @@
 .project-support-card p {
   margin-top: 6px;
   color: #62698f;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -7077,7 +7365,7 @@
 
 .project-about-card dt {
   color: #747ca6;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -7101,7 +7389,7 @@
   align-items: center;
   gap: 10px;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
   text-align: left;
   cursor: pointer;
@@ -7112,7 +7400,7 @@
   background: #ece9fb;
   color: #7a68b7;
   padding: 3px 8px;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-messages-grid {
@@ -7148,7 +7436,7 @@
   outline: 0;
   width: 100%;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
   color: var(--project-ink);
 }
@@ -7175,7 +7463,7 @@
 .project-message-list small {
   display: block;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-style: normal;
   font-weight: 800;
 }
@@ -7184,7 +7472,7 @@
 .project-message-list small {
   margin-top: 4px;
   color: #4e5682;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -7210,7 +7498,7 @@
 
 .project-chat header p {
   color: var(--project-green);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -7241,7 +7529,7 @@
   color: #4d568a;
   padding: 14px;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -7261,7 +7549,7 @@
   gap: 8px;
   align-items: center;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   margin-bottom: 6px;
 }
@@ -7275,9 +7563,17 @@
   background: #f4f5fb;
   color: var(--project-ink);
   padding: 14px 16px;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.6;
   font-weight: 700;
+}
+
+.project-chat-message-text {
+  display: block;
+}
+
+.project-chat-body article.is-mine .project-chat-message-text {
+  text-align: right;
 }
 
 .project-chat-body article.is-mine .project-chat-bubble {
@@ -7308,7 +7604,7 @@
 .project-chat-files em {
   display: block;
   font-style: normal;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-chat footer {
@@ -7333,7 +7629,7 @@
 .project-files-head p {
   margin-top: 7px;
   color: #5e668f;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -7389,13 +7685,13 @@
 }
 
 .project-create-row strong {
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .project-create-row span {
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
   text-align: center;
 }
@@ -7412,14 +7708,14 @@
   padding: 17px 18px;
   border-bottom: 1px solid #eef0f7;
   color: #313960;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
 .project-files-row.is-head {
   background: #fbfcff;
   color: #62698f;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -7493,7 +7789,7 @@
   border: 0;
   background: transparent;
   color: var(--project-ink);
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   cursor: pointer;
 }
 
@@ -7511,7 +7807,7 @@
   color: var(--project-primary);
   display: grid;
   place-items: center;
-  font-size: 26px;
+  font-size: var(--text-title-md);
 }
 
 .project-submit-modal h2,
@@ -7522,7 +7818,7 @@
 .project-submit-modal p {
   margin-top: 6px;
   color: #4e5682;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -7531,7 +7827,7 @@
   gap: 8px;
   margin-top: 16px;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -7544,7 +7840,7 @@
   background: #ffffff;
   color: var(--project-ink);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
   padding: 12px 14px;
 }
@@ -7572,7 +7868,7 @@
 .project-upload-box span,
 .project-upload-box small {
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-upload-box span,
@@ -7601,7 +7897,7 @@
 
 .project-submitted-file-list em {
   color: #6b739b;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 
@@ -7622,7 +7918,7 @@
 
 .project-submit-modal footer p {
   color: #6c7398;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-success-card {
@@ -7640,7 +7936,7 @@
   color: #ffffff;
   display: grid;
   place-items: center;
-  font-size: 30px;
+  font-size: var(--text-title-lg);
 }
 
 .project-success-card > p {
@@ -7678,7 +7974,7 @@
 .project-success-summary span {
   display: block;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -7730,7 +8026,7 @@
 .project-review-outcome strong,
 .project-review-decision-card strong {
   color: var(--theme-dark);
-  font-size: 0.95rem;
+  font-size: var(--text-body);
   font-weight: 900;
 }
 
@@ -7738,7 +8034,7 @@
 .project-review-decision-card p {
   margin: 6px 0 0;
   color: #64708a;
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 700;
 }
@@ -7770,7 +8066,7 @@
 
 .project-payment-readiness > strong {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: 900;
 }
 
@@ -7795,7 +8091,7 @@
 
 .project-payment-readiness dt {
   color: #526079;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -7803,14 +8099,14 @@
 .project-payment-readiness dd {
   margin-top: 5px;
   color: var(--theme-dark);
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .project-payment-readiness p {
   margin-top: 12px;
   color: #526079;
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 750;
 }
@@ -7867,7 +8163,7 @@
 
 .project-submit-summary article:last-child p span {
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 @media (max-width: 1280px) {
@@ -8068,7 +8364,7 @@
 .project-milestones-head p {
   margin: 12px 0 0;
   color: #53608d;
-  font-size: 15px;
+  font-size: var(--text-body);
   font-weight: 700;
 }
 
@@ -8108,14 +8404,14 @@
 .project-milestones-summary strong {
   display: block;
   color: #687098;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
 .project-milestones-summary strong {
   margin-top: 7px;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -8143,7 +8439,7 @@
 
 .project-milestones-summary b {
   color: var(--project-ink);
-  font-size: 15px;
+  font-size: var(--text-body);
   align-self: start;
 }
 
@@ -8161,7 +8457,7 @@
   color: #53608d;
   padding: 5px 0 16px;
   font: inherit;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 900;
   cursor: pointer;
   white-space: nowrap;
@@ -8206,7 +8502,7 @@
   border: 2px solid #c9cede;
   background: #ffffff;
   color: #515a82;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -8243,7 +8539,7 @@
   place-items: center;
   background: var(--project-primary-soft);
   color: var(--project-primary);
-  font-size: 24px;
+  font-size: var(--text-title-md);
 }
 
 .project-milestone-item.is-complete .project-milestone-icon {
@@ -8261,14 +8557,14 @@
 }
 
 .project-milestone-copy h2 {
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   font-weight: 900;
 }
 
 .project-milestone-copy p {
   margin-top: 8px;
   color: #384779;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -8276,7 +8572,7 @@
   display: block;
   margin-top: 8px;
   color: #4e5b8b;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -8288,12 +8584,12 @@
 
 .project-milestone-meta p {
   color: #53608d;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .project-milestone-meta strong {
-  font-size: 17px;
+  font-size: var(--text-body-lg);
   font-weight: 900;
 }
 
@@ -8302,7 +8598,7 @@
   background: #ebedf6;
   color: #586086;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -8319,7 +8615,7 @@
 .project-milestones-count {
   margin: 0;
   color: #52608d;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -8343,7 +8639,7 @@
 .project-milestone-help-card p {
   margin: 22px 0 0;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.75;
   font-weight: 700;
 }
@@ -8383,14 +8679,14 @@
 .project-milestone-status-card p {
   margin: 0;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .project-milestone-status-card p {
   margin-top: 5px;
   color: #59658f;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -8408,7 +8704,7 @@
   align-items: center;
   gap: 12px;
   color: #4d5987;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -8522,13 +8818,13 @@
 .team-sprint-card div strong {
   margin: 0;
   color: #53608d;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .team-sprint-card header strong {
   color: var(--project-ink);
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 
 .team-sprint-card div {
@@ -8541,7 +8837,7 @@
 .team-sprint-card div strong {
   display: block;
   color: var(--project-ink);
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 
 .team-sprint-card > i {
@@ -8591,7 +8887,7 @@
 .team-board-column h3 {
   margin: 0 0 4px;
   color: var(--project-ink);
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .team-board-column h2 span {
@@ -8600,7 +8896,7 @@
   padding: 2px 8px;
   margin-left: 6px;
   color: #5e668f;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .team-board-column article {
@@ -8618,7 +8914,7 @@
   display: block;
   margin: 0;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -8636,7 +8932,7 @@
   background: #e9f8ee;
   color: #128a48;
   padding: 4px 8px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -8783,7 +9079,7 @@
 .team-sprint-row h2 {
   margin: 6px 0;
   color: var(--project-ink);
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 
 .team-sprint-row dl {
@@ -8795,7 +9091,7 @@
 .team-sprint-row dd {
   margin-top: 8px;
   color: var(--project-ink);
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 
 .team-milestone-row > span:first-child,
@@ -8815,7 +9111,7 @@
   color: #ffffff;
   display: grid;
   place-items: center;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .team-milestone-analytics {
@@ -8838,7 +9134,7 @@
   place-items: center;
   background: conic-gradient(var(--project-primary) 0 28%, var(--project-green) 28% 50%, #e1dff0 50% 100%);
   color: var(--project-ink);
-  font-size: 28px;
+  font-size: var(--text-title-lg);
 }
 
 .team-line-chart {
@@ -8914,13 +9210,13 @@
   color: #ffffff;
   display: grid;
   place-items: center;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .team-rail-card p em {
   color: #657099;
   font-style: normal;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .team-rail-card button {
@@ -8941,7 +9237,7 @@
   place-items: center;
   background: conic-gradient(var(--project-primary) 0 60%, #e2dff1 60% 100%);
   color: var(--project-ink);
-  font-size: 26px;
+  font-size: var(--text-title-md);
 }
 
 .team-rail-metrics {
@@ -8960,14 +9256,14 @@
 .team-rail-metrics span {
   display: block;
   color: var(--project-ink);
-  font-size: 22px;
+  font-size: var(--text-title-sm);
   font-weight: 900;
 }
 
 .team-rail-metrics span {
   margin-top: 4px;
   color: #5d6791;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .team-message-rail-card article {
@@ -8994,7 +9290,7 @@
 .team-message-rail-card article strong {
   overflow: hidden;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -9002,14 +9298,14 @@
 .team-message-rail-card article small {
   margin-top: 3px;
   color: #657099;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .team-message-rail-card .team-message-rail-empty,
 .team-message-rail-note p {
   display: block;
   color: #657099;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
   line-height: 1.5;
 }
@@ -9036,7 +9332,7 @@
 .timeline-rail-next > strong,
 .timeline-rail-health > strong {
   color: var(--project-ink);
-  font-size: 15px;
+  font-size: var(--text-body);
 }
 
 .timeline-rail-next > p,
@@ -9044,7 +9340,7 @@
   display: flex;
   grid-template-columns: none;
   color: #657099;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -9054,7 +9350,7 @@
   border-radius: 999px;
   background: #f1effa;
   color: var(--project-primary);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 900;
   text-transform: capitalize;
 }
@@ -9085,7 +9381,7 @@
   border-radius: 8px;
   background: #f7f7fa;
   color: #657099;
-  font-size: 9px;
+  font-size: var(--text-micro);
   font-weight: 800;
   text-align: center;
 }
@@ -9094,7 +9390,7 @@
   display: block;
   margin-bottom: 3px;
   color: var(--project-ink);
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .timeline-rail-legend > p {
@@ -9150,7 +9446,7 @@
 
 .team-timeline-month {
   color: var(--project-ink);
-  font-size: 16px;
+  font-size: var(--text-body);
   font-weight: 900;
 }
 
@@ -9176,7 +9472,7 @@
   padding: 18px;
   border-right: 1px solid var(--project-border);
   color: #53608d;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -9205,7 +9501,7 @@
 .team-gantt article em {
   margin-top: 7px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .team-gantt-grid {
@@ -9266,7 +9562,7 @@
 .team-gantt-grid i b {
   white-space: nowrap;
   color: var(--project-primary);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .team-gantt-today {
@@ -9287,7 +9583,7 @@
   background: var(--project-primary);
   color: #ffffff;
   padding: 6px 10px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -9299,13 +9595,13 @@
   padding: 18px 22px;
   border-top: 1px solid #edf0f7;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .team-data-row.is-head {
   color: #53608d;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -9347,7 +9643,7 @@
 }
 
 .team-create-sprint-panel > header h1 {
-  font-size: 32px;
+  font-size: var(--text-title-lg);
 }
 
 .team-create-sprint-panel > header p {
@@ -9386,7 +9682,7 @@
   color: var(--project-primary);
   display: grid;
   place-items: center;
-  font-size: 14px;
+  font-size: var(--text-small);
 }
 
 .team-form-grid {
@@ -9462,7 +9758,7 @@
   display: block;
   color: var(--project-ink);
   font-style: normal;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -9502,7 +9798,7 @@
   color: var(--project-primary);
   padding: 6px 10px;
   font-style: normal;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -9562,7 +9858,7 @@
 }
 
 .team-invite-modal header h2 {
-  font-size: 26px;
+  font-size: var(--text-title-md);
 }
 
 .team-invite-search > div {
@@ -9623,14 +9919,14 @@
 .team-invite-candidate-list em {
   margin-top: 2px;
   color: #687099;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 750;
 }
 
 .team-invite-candidate-list b {
   color: var(--project-primary);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .team-invite-empty {
@@ -9657,7 +9953,7 @@
   background: #effbf3;
   color: #11733d;
   padding: 10px 14px;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -9668,7 +9964,7 @@
   background: #fff3f3;
   color: #a92f2f;
   padding: 10px 14px;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -9692,7 +9988,7 @@
   border-radius: 999px;
   background: var(--project-primary);
   color: #ffffff;
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 
 .project-team-invite-response h2,
@@ -9702,13 +9998,13 @@
 
 .project-team-invite-response h2 {
   color: var(--project-ink);
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .project-team-invite-response p {
   margin-top: 4px;
   color: #596286;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-team-invite-response small {
@@ -9733,7 +10029,7 @@
 .team-task-modal h2,
 .team-milestone-modal h2 {
   margin-bottom: 22px;
-  font-size: 28px;
+  font-size: var(--text-title-lg);
 }
 
 .team-small-chart {
@@ -9763,7 +10059,7 @@
 .team-review-table h2 {
   padding: 26px 28px;
   margin: 0;
-  font-size: 22px;
+  font-size: var(--text-title-sm);
   color: var(--project-ink);
 }
 
@@ -9786,7 +10082,7 @@
   padding-top: 16px;
   padding-bottom: 16px;
   color: #53608d;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -9843,7 +10139,7 @@
 .team-review-title strong,
 .team-reviewer-cell strong {
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 900;
   line-height: 1.25;
 }
@@ -9851,7 +10147,7 @@
 .team-review-title em,
 .team-reviewer-cell em {
   color: #68749d;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 700;
   line-height: 1.35;
@@ -9877,7 +10173,7 @@
   width: fit-content;
   border-radius: 999px;
   padding: 7px 12px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -9910,13 +10206,13 @@
 
 .team-review-date {
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
 .team-review-stars {
   color: #f5b400;
-  font-size: 16px;
+  font-size: var(--text-body);
   letter-spacing: 0;
   white-space: nowrap;
 }
@@ -9956,7 +10252,7 @@
   border-top: 1px solid #edf0f7;
   padding: 20px 24px;
   color: #53608d;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -10011,14 +10307,14 @@
 
 .team-review-donut strong {
   color: var(--project-ink);
-  font-size: 30px;
+  font-size: var(--text-title-lg);
   line-height: 1;
 }
 
 .team-review-donut span {
   max-width: 70px;
   color: #68749d;
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
   line-height: 1.15;
 }
@@ -10038,7 +10334,7 @@
   align-items: center;
   margin: 0;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -10125,14 +10421,14 @@
 
 .team-recent-reviews-card article strong {
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
   line-height: 1.25;
 }
 
 .team-recent-reviews-card article em {
   color: #68749d;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 750;
 }
@@ -10140,7 +10436,7 @@
 .team-recent-reviews-card article b {
   border-radius: 999px;
   padding: 6px 10px;
-  font-size: 11px;
+  font-size: var(--text-caption);
   white-space: nowrap;
 }
 
@@ -10191,7 +10487,7 @@
 
 .team-activity-log-table h2 {
   color: var(--project-ink);
-  font-size: 22px;
+  font-size: var(--text-title-sm);
 }
 
 .team-activity-log-table h2 span {
@@ -10204,13 +10500,13 @@
   border-radius: 999px;
   background: #f1f3f8;
   color: #68749d;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .team-activity-log-table > header p {
   margin-top: 6px;
   color: #68749d;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 800;
   line-height: 1.45;
 }
@@ -10249,7 +10545,7 @@
   background: transparent;
   color: var(--project-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .team-activity-filter-row button {
@@ -10258,7 +10554,7 @@
   background: #ffffff;
   color: #53608d;
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -10343,7 +10639,7 @@
 
 .team-activity-log-copy h3 {
   color: var(--project-ink);
-  font-size: 15px;
+  font-size: var(--text-body);
   font-weight: 850;
   line-height: 1.35;
 }
@@ -10360,14 +10656,14 @@
 
 .team-activity-log-copy p {
   color: #68749d;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 750;
   line-height: 1.45;
 }
 
 .team-activity-log-copy span {
   color: #8c95b2;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -10376,7 +10672,7 @@
   background: #f4f6fb;
   color: #53608d;
   padding: 8px 12px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 950;
   text-transform: capitalize;
 }
@@ -10397,13 +10693,13 @@
 
 .project-activity-empty strong {
   color: var(--project-ink);
-  font-size: 15px;
+  font-size: var(--text-body);
 }
 
 .project-activity-empty p {
   max-width: 420px;
   color: #68749d;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .team-activity-record-list {
@@ -10419,7 +10715,7 @@
   align-items: center;
   gap: 8px;
   color: #68749d;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -10460,14 +10756,14 @@
 
 .team-activity-summary-card dt {
   color: #53608d;
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
 .team-activity-summary-card dd {
   margin: 0;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -10485,7 +10781,7 @@
   align-content: center;
   background: conic-gradient(var(--project-primary) 0 92%, #edf0f7 92% 100%);
   color: var(--project-ink);
-  font-size: 24px;
+  font-size: var(--text-title-md);
   line-height: 1;
   position: relative;
 }
@@ -10506,7 +10802,7 @@
 .team-activity-health-ring span {
   display: block;
   color: #68749d;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-align: center;
 }
@@ -10525,7 +10821,7 @@
   gap: 10px;
   align-items: center;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -10562,13 +10858,13 @@
 
 .team-recent-activity-card article strong {
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .team-recent-activity-card article em {
   color: #53608d;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -10589,7 +10885,7 @@
   align-content: center;
   background: conic-gradient(var(--project-green) 0 40%, var(--color-accent-blue) 40% 90%, var(--color-danger) 90% 100%);
   color: var(--project-ink);
-  font-size: 24px;
+  font-size: var(--text-title-md);
   line-height: 1;
   position: relative;
 }
@@ -10615,7 +10911,7 @@
 .team-payment-ring span {
   display: block;
   color: #68749d;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -10633,7 +10929,7 @@
   gap: 10px;
   align-items: center;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -10684,13 +10980,13 @@
 
 .team-recent-payments-card article strong {
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .team-recent-payments-card article em {
   color: #53608d;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -10748,7 +11044,7 @@
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -10774,19 +11070,19 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: var(--text-title-sm);
 }
 
 .opportunities-marketing-empty h3 {
   margin: 16px 0 0;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .opportunities-marketing-empty p {
   margin: 8px 0 0;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -10806,7 +11102,7 @@
 
 .opportunities-marketing-opportunities h2 {
   color: var(--theme-dark);
-  font-size: 1.12rem;
+  font-size: var(--text-body-lg);
 }
 
 .opportunities-marketing-opportunities header p {
@@ -10907,19 +11203,19 @@
 
 .opportunities-marketing-opportunity-thumb figcaption span {
   color: rgba(255, 255, 255, 0.78);
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
 .opportunities-marketing-opportunity-thumb figcaption strong {
   max-width: none;
-  font-size: 1.25rem;
+  font-size: var(--text-title-sm);
 }
 
 .opportunities-marketing-opportunity-thumb strong,
 .student-marketing-material-preview strong {
-  font-size: 1rem;
+  font-size: var(--text-body);
   line-height: 1.16;
   max-width: 16ch;
 }
@@ -10927,7 +11223,7 @@
 .opportunities-marketing-opportunity-thumb span,
 .student-marketing-material-preview span {
   color: rgba(255, 255, 255, 0.78);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -10947,7 +11243,7 @@
 
 .opportunities-marketing-card-kicker span {
   color: var(--theme-purple);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -10959,7 +11255,7 @@
   background: #eef9f3;
   color: #168153;
   white-space: nowrap;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 900;
 }
@@ -10971,12 +11267,12 @@
 
 .opportunities-marketing-opportunity-card h3 {
   color: var(--theme-dark);
-  font-size: 1.08rem;
+  font-size: var(--text-body-lg);
 }
 
 .opportunities-marketing-opportunity-card p {
   color: var(--color-text-muted);
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 700;
   display: -webkit-box;
@@ -11002,7 +11298,7 @@
   color: #7a5573;
   display: inline-flex;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -11022,14 +11318,14 @@
 
 .opportunities-marketing-opportunity-card dt {
   color: var(--color-text-muted);
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
 .opportunities-marketing-opportunity-card dd {
   margin-top: 3px;
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -11093,7 +11389,7 @@
 .student-marketing-materials header > span,
 .student-marketing-brief header > span {
   color: var(--color-accent-purple);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -11105,7 +11401,7 @@
   background: #eef9f3;
   color: #168153;
   white-space: nowrap;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 900;
 }
@@ -11122,7 +11418,7 @@
   margin: 14px 0 0;
   max-width: 62ch;
   color: var(--color-text-muted);
-  font-size: 0.95rem;
+  font-size: var(--text-body);
   line-height: 1.6;
   font-weight: 650;
 }
@@ -11141,7 +11437,7 @@
   border-radius: 999px;
   background: #f7f0e9;
   color: #76506f;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -11163,14 +11459,14 @@
 
 .student-marketing-summary dt {
   color: var(--color-text-muted);
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
 .student-marketing-summary dd {
   margin-top: 5px;
   color: var(--color-text);
-  font-size: 0.92rem;
+  font-size: var(--text-body);
   font-weight: 900;
 }
 
@@ -11180,7 +11476,7 @@
   display: flex;
   align-items: flex-start;
   gap: 8px;
-  font-size: 0.76rem !important;
+  font-size: var(--text-caption) !important;
   line-height: 1.45 !important;
   font-weight: 800 !important;
 }
@@ -11212,12 +11508,12 @@
 
 .student-marketing-metric-comparison header strong {
   color: var(--color-text);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
 }
 
 .student-marketing-metric-comparison header span {
   color: var(--color-text-muted);
-  font-size: 0.65rem;
+  font-size: var(--text-micro);
   font-weight: 800;
 }
 
@@ -11241,7 +11537,7 @@
 
 .student-marketing-metric-comparison dt {
   color: var(--color-text-muted);
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -11251,11 +11547,11 @@
   align-items: baseline;
   gap: 5px;
   color: var(--color-text);
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
 }
 
 .student-marketing-metric-comparison dd strong {
-  font-size: 0.82rem;
+  font-size: var(--text-small);
 }
 
 .student-marketing-metric-comparison dd span {
@@ -11266,7 +11562,7 @@
 .student-marketing-metric-comparison dd em {
   justify-self: end;
   color: #a44d16;
-  font-size: 0.64rem;
+  font-size: var(--text-micro);
   font-style: normal;
   font-weight: 900;
 }
@@ -11301,7 +11597,7 @@
 
 .student-marketing-active-status > svg {
   flex: 0 0 auto;
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .student-marketing-active-status strong,
@@ -11310,13 +11606,13 @@
 }
 
 .student-marketing-active-status strong {
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
 }
 
 .student-marketing-active-status span {
   margin-top: 2px;
   color: #557465;
-  font-size: 0.65rem;
+  font-size: var(--text-micro);
   font-weight: 650;
 }
 
@@ -11354,7 +11650,7 @@
   left: 20px;
   bottom: 18px;
   color: #fff;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -11376,13 +11672,13 @@
 .student-marketing-proof-success h2 {
   margin: 7px 0 0;
   color: var(--color-text);
-  font-size: 1.08rem;
+  font-size: var(--text-body-lg);
 }
 
 .student-marketing-materials header p {
   margin: 7px 0 0;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   line-height: 1.5;
   font-weight: 700;
 }
@@ -11422,13 +11718,13 @@
 
 .student-marketing-material-list strong {
   color: var(--color-text);
-  font-size: 0.84rem;
+  font-size: var(--text-small);
 }
 
 .student-marketing-material-list small {
   margin-top: 4px;
   color: var(--color-text-muted);
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -11444,7 +11740,7 @@
   align-items: center;
   gap: 7px;
   text-decoration: none;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -11477,14 +11773,14 @@
 
 .student-marketing-brief dt {
   color: var(--color-text-muted);
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
 .student-marketing-brief dd {
   margin-top: 5px;
   color: var(--color-text);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 800;
 }
@@ -11505,7 +11801,7 @@
 
 .student-marketing-proof-header > div > span {
   color: var(--color-accent-purple);
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -11514,7 +11810,7 @@
 .student-marketing-proof-header h2 {
   margin: 7px 0 0;
   color: var(--color-text);
-  font-size: 1.42rem;
+  font-size: var(--text-title-md);
   letter-spacing: -0.02em;
 }
 
@@ -11522,7 +11818,7 @@
   max-width: 720px;
   margin: 7px 0 0 !important;
   color: var(--color-text-muted) !important;
-  font-size: 0.82rem !important;
+  font-size: var(--text-small) !important;
   line-height: 1.55;
   font-weight: 650;
 }
@@ -11532,7 +11828,7 @@
   border-radius: 999px;
   background: #f2eff8;
   color: #665270;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 900;
 }
@@ -11551,7 +11847,7 @@
 
 .student-marketing-proof .opportunities-bid-field label {
   color: var(--color-text);
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -11583,13 +11879,13 @@
 
 .student-marketing-progress-header h2 {
   color: var(--color-text);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .student-marketing-progress-header p {
   margin-top: 4px;
   color: var(--color-text-muted);
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   line-height: 1.45;
   font-weight: 650;
 }
@@ -11600,7 +11896,7 @@
   align-items: center;
   gap: 7px;
   white-space: nowrap;
-  font-size: 0.65rem;
+  font-size: var(--text-micro);
   font-style: normal;
   font-weight: 800;
 }
@@ -11640,7 +11936,7 @@
   color: #fbb130;
   display: grid;
   place-items: center;
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .student-marketing-click-total strong,
@@ -11665,14 +11961,14 @@
 }
 
 .student-marketing-click-total strong {
-  font-size: 1.7rem;
+  font-size: var(--text-title-lg);
   line-height: 1;
 }
 
 .student-marketing-click-total p {
   margin-top: 5px;
   color: #c9c6cf;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: 750;
 }
 
@@ -11705,18 +12001,18 @@
   color: #fff;
   display: grid;
   place-items: center;
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .student-marketing-tracking-intro h3 {
   color: var(--color-text);
-  font-size: 0.88rem;
+  font-size: var(--text-small);
 }
 
 .student-marketing-tracking-intro p {
   margin-top: 5px;
   color: var(--color-text-muted);
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   line-height: 1.45;
   font-weight: 650;
 }
@@ -11744,7 +12040,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.67rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -11753,7 +12049,7 @@
   overflow: hidden;
   color: #302d39;
   font-family: inherit;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -11780,7 +12076,7 @@
   justify-content: center;
   gap: 6px;
   cursor: pointer;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -11832,7 +12128,7 @@
   color: #74516f;
   display: grid;
   place-items: center;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -11843,13 +12139,13 @@
 
 .student-marketing-proof-step h3 {
   color: var(--color-text);
-  font-size: 0.84rem;
+  font-size: var(--text-small);
 }
 
 .student-marketing-proof-step h3 em {
   margin-left: 5px;
   color: var(--color-text-muted);
-  font-size: 0.62rem;
+  font-size: var(--text-micro);
   font-style: normal;
   font-weight: 750;
 }
@@ -11857,7 +12153,7 @@
 .student-marketing-proof-step p {
   margin-top: 3px;
   color: var(--color-text-muted);
-  font-size: 0.69rem;
+  font-size: var(--text-caption);
   font-weight: 650;
 }
 
@@ -11892,7 +12188,7 @@
   color: #fff;
   display: grid;
   place-items: center;
-  font-size: 0.62rem;
+  font-size: var(--text-micro);
   font-weight: 950;
   letter-spacing: -0.02em;
 }
@@ -11922,7 +12218,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 5px;
-  font-size: 0.63rem;
+  font-size: var(--text-micro);
   font-style: normal;
   font-weight: 850;
 }
@@ -11934,7 +12230,7 @@
 .student-marketing-platform-count {
   margin: 10px 0 0;
   color: #7a7480;
-  font-size: 0.64rem;
+  font-size: var(--text-micro);
   font-weight: 750;
 }
 
@@ -11991,11 +12287,11 @@
   color: #168153;
 }
 
-.student-marketing-analytics-upload svg { font-size: 21px; color: #7255d9; }
+.student-marketing-analytics-upload svg { font-size: var(--text-title-sm); color: #7255d9; }
 .student-marketing-analytics-upload.has-file svg { color: #168153; }
 .student-marketing-analytics-upload > .student-marketing-platform-badge { grid-column: 1; grid-row: 1 / span 2; }
-.student-marketing-analytics-upload strong { grid-column: 3; align-self: end; font-size: 0.78rem; }
-.student-marketing-analytics-upload > span:not(.student-marketing-upload-icon):not(.student-marketing-platform-badge) { grid-column: 3; align-self: start; color: #746e87; font-size: 0.66rem; }
+.student-marketing-analytics-upload strong { grid-column: 3; align-self: end; font-size: var(--text-caption); }
+.student-marketing-analytics-upload > span:not(.student-marketing-upload-icon):not(.student-marketing-platform-badge) { grid-column: 3; align-self: start; color: #746e87; font-size: var(--text-caption); }
 .student-marketing-analytics-upload > em {
   grid-column: 4;
   grid-row: 1 / span 2;
@@ -12004,7 +12300,7 @@
   border-radius: 9px;
   background: #fff;
   color: #514758;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -12014,7 +12310,7 @@
   min-height: 88px;
   background: #fbfbfd;
   font: inherit;
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   line-height: 1.5;
 }
 
@@ -12035,18 +12331,18 @@
   color: #fbb130;
   display: grid;
   place-items: center;
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .student-marketing-proof-review h3 {
   margin: 16px 0 0;
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .student-marketing-proof-review > p {
   margin: 7px 0 0;
   color: #c8c5d0;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   line-height: 1.55;
   font-weight: 650;
 }
@@ -12066,7 +12362,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: 750;
 }
 
@@ -12103,7 +12399,7 @@
   color: #96919f;
   display: block;
   text-align: center;
-  font-size: 0.61rem;
+  font-size: var(--text-micro);
   line-height: 1.4;
 }
 
@@ -12122,13 +12418,13 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.2rem;
+  font-size: var(--text-title-sm);
 }
 
 .student-marketing-proof-success p {
   margin: 5px 0 0;
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -12182,7 +12478,7 @@
 .project-program-hero span {
   color: var(--color-accent-purple);
   display: block;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.08em;
   margin-bottom: 6px;
@@ -12211,14 +12507,14 @@
 
 .project-program-hero dt {
   color: var(--color-text-muted);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 800;
   margin-bottom: 4px;
 }
 
 .project-program-hero dd {
   color: var(--color-text);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: 900;
   margin: 0;
 }
@@ -12251,7 +12547,7 @@
 
 .project-program-terms span {
   color: var(--color-text-muted);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   margin-top: 6px;
 }
@@ -12267,7 +12563,7 @@
   border: 1px solid var(--color-border);
   border-radius: 999px;
   color: var(--color-accent-purple);
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   padding: 6px 10px;
 }
 
@@ -12422,14 +12718,14 @@
 .project-empty-note {
   margin: 8px 0 0;
   color: #64708a;
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
 .project-submit-error {
   margin: 8px 0 0;
   color: #dc2626;
-  font-size: 0.85rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -12440,14 +12736,14 @@
 .project-activity-panel > header h2 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 1.05rem;
+  font-size: var(--text-body-lg);
   font-weight: 900;
 }
 
 .project-activity-panel > header p {
   margin: 4px 0 0;
   color: #64708a;
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -12508,14 +12804,14 @@
 
 .project-activity-item strong {
   color: var(--theme-dark);
-  font-size: 0.92rem;
+  font-size: var(--text-body);
   font-weight: 900;
 }
 
 .project-activity-item p {
   margin: 4px 0 0;
   color: #64708a;
-  font-size: 0.85rem;
+  font-size: var(--text-small);
   font-weight: 700;
   line-height: 1.45;
 }
@@ -12524,7 +12820,7 @@
   display: block;
   margin-top: 6px;
   color: #94a3b8;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -12545,7 +12841,7 @@
 .project-files-empty p {
   margin: 0;
   color: #64708a;
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -12561,7 +12857,7 @@
   border-radius: 12px;
   background: #f1f5f9;
   color: #475569;
-  font-size: 0.85rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -12585,7 +12881,7 @@
 }
 
 .project-deliverables-status.is-inline > header h2 {
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .project-deliverables-status > header h2 {
@@ -12594,7 +12890,7 @@
 
 .project-deliverables-status > header span {
   color: #64708a;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -12626,19 +12922,19 @@
 .project-deliverables-status li strong {
   display: block;
   color: var(--theme-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .project-deliverables-status li div span {
   color: #64708a;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
 .project-deliverables-status li em {
   font-style: normal;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 800;
   color: #475569;
 }
@@ -12696,13 +12992,13 @@
 .project-rail-note.is-estimate-note {
   margin-top: -2px;
   color: #64748b;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
 }
 
 .project-wallet-figures span {
   display: block;
   color: #15803d;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -12712,7 +13008,7 @@
   display: block;
   margin-top: 4px;
   color: var(--theme-dark);
-  font-size: 1.2rem;
+  font-size: var(--text-title-sm);
   font-weight: 900;
 }
 
@@ -12735,14 +13031,14 @@
 
 .project-wallet-payouts strong {
   color: var(--theme-dark);
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .project-wallet-payouts em {
   font-style: normal;
   color: #64708a;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -12755,14 +13051,14 @@
 
 .project-submit-tasks legend {
   padding: 0 6px;
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
 .project-submit-tasks > p {
   margin: 0 0 10px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-submit-task {
@@ -12770,14 +13066,14 @@
   align-items: center;
   gap: 8px;
   padding: 5px 0;
-  font-size: 13px;
+  font-size: var(--text-small);
   cursor: pointer;
 }
 
 .project-submit-task em {
   margin-left: auto;
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 
@@ -12785,7 +13081,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   color: var(--project-muted);
 }
 
@@ -12798,7 +13094,7 @@
   background: var(--color-surface);
   color: var(--project-ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-room-sprint-filter {
@@ -12809,7 +13105,7 @@
   background: none;
   color: var(--project-muted);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-room-sprint-filter + .deliverable-room-filter-mine {
@@ -12831,13 +13127,13 @@
 .project-review-header h2 {
   margin: 0;
   color: var(--project-ink);
-  font-size: 22px;
+  font-size: var(--text-title-sm);
 }
 
 .project-review-header p {
   margin: 6px 0 0;
   color: var(--project-muted);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-review-header label {
@@ -12861,7 +13157,7 @@
   background: transparent;
   color: var(--project-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-review-filters {
@@ -12882,7 +13178,7 @@
   background: #fff;
   color: var(--project-muted);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
   white-space: nowrap;
 }
@@ -12968,14 +13264,14 @@
 }
 
 .project-review-list strong {
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .project-review-list em,
 .project-review-list small {
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 
@@ -12986,7 +13282,7 @@
   border-radius: 999px;
   background: #eef1f5;
   color: #64748b;
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-style: normal;
   font-weight: 900;
 }
@@ -13011,14 +13307,14 @@
 .project-review-detail h3 {
   margin: 8px 0 3px;
   color: var(--project-ink);
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 
 .project-review-detail header p,
 .project-review-detail header time {
   margin: 0;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-review-status {
@@ -13027,7 +13323,7 @@
   border-radius: 999px;
   background: #eef1f5;
   color: #64748b;
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: .03em;
@@ -13057,7 +13353,7 @@
 .project-review-facts dt {
   margin-bottom: 4px;
   color: var(--project-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -13066,7 +13362,7 @@
   margin: 0;
   overflow: hidden;
   color: var(--project-ink);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 850;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -13081,13 +13377,73 @@
   gap: 10px;
 }
 
+.project-score-review {
+  border: 0;
+  display: grid;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+}
+
+.project-score-review legend {
+  color: var(--project-ink);
+  font-size: var(--text-small);
+  font-weight: 800;
+  padding: 0;
+}
+
+.project-score-review > p {
+  color: var(--project-muted);
+  font-size: var(--text-caption);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.project-score-review > div {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.project-score-review label {
+  display: grid;
+  gap: 5px;
+}
+
+.project-score-review label > span {
+  color: var(--project-muted);
+  font-size: var(--text-micro);
+  font-weight: 700;
+}
+
+.project-score-review select {
+  background: #fff;
+  border: 1px solid #d9deeb;
+  border-radius: 8px;
+  color: var(--project-ink);
+  font: inherit;
+  min-width: 0;
+  padding: 8px 10px;
+}
+
+.project-score-review .project-score-review-repeat {
+  align-items: center;
+  display: flex;
+  grid-column: 1 / -1;
+}
+
+.project-score-review-repeat input {
+  accent-color: #795273;
+  margin: 0;
+}
+
 .project-review-detail h4 {
   display: flex;
   align-items: center;
   gap: 7px;
   margin: 0;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-review-copy p,
@@ -13096,7 +13452,7 @@
 .project-review-existing-feedback p {
   margin: 0;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
   line-height: 1.55;
 }
 
@@ -13134,14 +13490,14 @@
   display: grid;
   gap: 2px;
   color: var(--project-ink);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
 .project-review-covered li small,
 .project-review-files li small {
   color: var(--project-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 600;
 }
 
@@ -13150,14 +13506,14 @@
   align-items: center;
   gap: 5px;
   color: var(--project-primary);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-decoration: none;
 }
 
 .project-review-files em {
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 
@@ -13178,7 +13534,7 @@
 
 .project-review-decision label {
   color: var(--project-ink);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -13191,7 +13547,7 @@
   outline: none;
   color: var(--project-ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-review-decision textarea:focus {
@@ -13239,15 +13595,15 @@
   margin: 0;
 }
 
-.project-review-empty h3 { color: var(--project-ink); font-size: 16px; }
-.project-review-empty p { max-width: 440px; color: var(--project-muted); font-size: 12px; line-height: 1.5; }
+.project-review-empty h3 { color: var(--project-ink); font-size: var(--text-body); }
+.project-review-empty p { max-width: 440px; color: var(--project-muted); font-size: var(--text-caption); line-height: 1.5; }
 
 .project-review-error,
 .project-review-notice {
   margin: 0;
   padding: 10px 12px;
   border-radius: 9px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 750;
 }
 
@@ -13270,7 +13626,7 @@
 
 .project-review-rail-summary > strong {
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-review-rail-summary > div:last-child {
@@ -13290,8 +13646,8 @@
   color: var(--project-muted);
 }
 
-.project-review-rail-summary b { color: var(--project-ink); font-size: 15px; }
-.project-review-rail-summary small { font-size: 9px; }
+.project-review-rail-summary b { color: var(--project-ink); font-size: var(--text-body); }
+.project-review-rail-summary small { font-size: var(--text-micro); }
 
 .project-review-rail-recent article {
   display: grid;
@@ -13311,20 +13667,20 @@
 
 .project-review-rail-recent article > span.is-approved { background: #16a34a; }
 .project-review-rail-recent article div { min-width: 0; display: grid; gap: 2px; }
-.project-review-rail-recent strong { overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.project-review-rail-recent strong { overflow: hidden; font-size: var(--text-caption); text-overflow: ellipsis; white-space: nowrap; }
 .project-review-rail-recent small,
 .project-review-rail-recent p {
   margin: 0;
   display: block;
   color: var(--project-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 650;
   line-height: 1.45;
 }
 
 .project-review-rail-recent small {
   color: var(--project-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
 }
 
 .project-review-rail-guide ol {
@@ -13341,7 +13697,7 @@
   gap: 9px;
   align-items: start;
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   line-height: 1.45;
 }
 

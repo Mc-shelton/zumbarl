@@ -3,9 +3,14 @@ import { sendTransactionalEmail } from '../../notification/index.js'
 import { earnWorkflowsRepository } from '../../repositories/earn/index.js'
 import { businessWorkflowsRepository } from '../../repositories/business/index.js'
 import { OPPORTUNITY_APPLICABLE_STATUSES, normalizeOpportunityStatus } from '../../../shared/opportunities/opportunityLifecycle.js'
+import { readStudentScoreSnapshot } from '../scores/index.js'
 
 function listEarnOpportunitiesService(query: Record<string, unknown>) {
   return earnWorkflowsRepository.listPublishedOpportunities(query)
+}
+
+async function readEarnOpportunityService(id: string) {
+  return await earnWorkflowsRepository.readPublishedOpportunity(id) ?? notFound('Opportunity')
 }
 
 function isOpportunityClosedToApplications(opportunity: Record<string, any>) {
@@ -156,21 +161,13 @@ async function respondToBidCounterOfferService(bidId: string, studentId: string 
 }
 
 async function readStudentTrustSnapshotService(studentId: string | undefined) {
-  const [approvedDeliverables, reviews] = await Promise.all([
-    earnWorkflowsRepository.listApprovedDeliverables(studentId),
-    earnWorkflowsRepository.listStudentReviews(studentId)
-  ])
-  const approved = approvedDeliverables.length
-  return {
-    studentId,
-    score: Math.min(100, 60 + approved * 8 + reviews.length * 4),
-    approvedProjects: approved,
-    reviews
-  }
+  if (!studentId) forbidden('A student profile is required to read this score')
+  return readStudentScoreSnapshot(studentId)
 }
 
 export {
   listEarnOpportunitiesService,
+  readEarnOpportunityService,
   listStudentBidsService,
   readOpportunityBidDraftService,
   saveOpportunityBidDraftService,

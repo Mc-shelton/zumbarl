@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title">
+  <title id="title">Default book cover</title>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#8a5947"/><stop offset="1" stop-color="#3e3442"/></linearGradient></defs>
+  <rect width="640" height="360" rx="28" fill="url(#bg)"/><circle cx="110" cy="80" r="124" fill="#fff" opacity=".06"/>
+  <path d="M320 96c-42-30-92-31-142-9v164c50-22 100-21 142 9 42-30 92-31 142-9V87c-50-22-100-21-142 9z" fill="#fff"/><path d="M320 96v164" stroke="#d6c0b6" stroke-width="7"/><path d="M213 128c34-8 62-4 83 7M213 162c34-8 62-4 83 7M427 128c-34-8-62-4-83 7M427 162c-34-8-62-4-83 7" fill="none" stroke="#b78d7d" stroke-width="9" stroke-linecap="round"/>
+  <text x="320" y="325" fill="#fff" font-family="Arial, sans-serif" font-size="24" font-weight="700" text-anchor="middle">BOOK</text>
+</svg>

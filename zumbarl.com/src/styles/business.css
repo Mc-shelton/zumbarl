@@ -108,7 +108,7 @@
   gap: 8px;
   text-decoration: none;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   line-height: 1;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -196,7 +196,7 @@
   gap: 6px;
   cursor: pointer;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   line-height: 1;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -399,7 +399,7 @@ font-size: clamp(10px, 1vw, 18px);
   gap: 10px;
   text-decoration: none;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   line-height: 1;
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -424,7 +424,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-trust-label {
   margin: 0;
   font-family: 'Caveat', cursive;
-  font-size: 2rem;
+  font-size: var(--text-title-lg);
   line-height: 1.2;
   font-weight: 800;
   text-transform: uppercase;
@@ -543,7 +543,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: center;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 13px;
+  font-size: var(--text-small);
   line-height: 1;
   font-style: italic;
   font-weight: 700;
@@ -561,7 +561,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: center;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
   line-height: 1;
   font-weight: 700;
   transform: translateY(2px);
@@ -574,7 +574,7 @@ font-size: clamp(10px, 1vw, 18px);
   gap: 4px;
   text-decoration: none;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   line-height: 1;
   font-weight: 600;
   text-transform: uppercase;
@@ -764,7 +764,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: var(--business-link-blue);
   text-decoration: none;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   line-height: 1;
   font-weight: 600;
   text-transform: uppercase;
@@ -844,7 +844,7 @@ font-size: clamp(10px, 1vw, 18px);
   }
 
   .business-opportunity-description {
-    font-size: 13px;
+    font-size: var(--text-small);
   }
 }
 
@@ -889,16 +889,16 @@ font-size: clamp(10px, 1vw, 18px);
   }
 
   .business-brand-hp {
-    font-size: 11px;
+    font-size: var(--text-caption);
   }
 
   .business-brand-facebook {
-    font-size: 16px;
+    font-size: var(--text-body);
   }
 
   .business-trust-link {
     margin-top: 10px;
-    font-size: 0.62rem;
+    font-size: var(--text-micro);
   }
 
   .business-enterprise-spotlight-grid {
@@ -914,7 +914,7 @@ font-size: clamp(10px, 1vw, 18px);
     margin-top: 16px;
     min-height: 40px;
     min-width: 148px;
-    font-size: 0.68rem;
+    font-size: var(--text-caption);
   }
 
   .business-enterprise-person {
@@ -933,7 +933,7 @@ font-size: clamp(10px, 1vw, 18px);
 
   .business-enterprise-video {
     margin-top: 14px;
-    font-size: 0.68rem;
+    font-size: var(--text-caption);
   }
 
   .business-enterprise-collage {
@@ -1034,7 +1034,7 @@ font-size: clamp(10px, 1vw, 18px);
     margin-top: 24px;
     min-height: 40px;
     min-width: 156px;
-    font-size: 0.66rem;
+    font-size: var(--text-caption);
   }
 
   .business-plans {
@@ -1067,7 +1067,7 @@ font-size: clamp(10px, 1vw, 18px);
 
   .business-opportunity-cta {
     min-height: 40px;
-    font-size: 0.66rem;
+    font-size: var(--text-caption);
   }
 }
 
@@ -1091,6 +1091,130 @@ font-size: clamp(10px, 1vw, 18px);
   gap: 18px;
 }
 
+.business-projects-shell {
+  grid-template-columns: 262px minmax(0, 1fr);
+}
+
+.business-projects-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.business-project-card {
+  min-height: 260px;
+  display: grid;
+  align-content: space-between;
+  gap: 20px;
+}
+
+.business-project-card header {
+  align-items: center;
+}
+
+.business-project-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #f1ebff;
+  color: var(--theme-purple);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.business-project-state {
+  padding: 7px 10px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff5e6;
+  color: #945a00;
+  font-size: var(--text-caption);
+  font-weight: 900;
+}
+
+.business-project-state.is-active,
+.business-project-state.is-completed {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.business-project-card h2 {
+  font-size: var(--text-body-lg);
+}
+
+.business-project-card > div > p {
+  margin: 8px 0 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-small);
+  font-weight: 750;
+}
+
+.business-project-card dl {
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.business-project-card dl div {
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--color-surface-raised);
+}
+
+.business-project-card dt {
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  font-weight: 850;
+}
+
+.business-project-card dd {
+  margin: 5px 0 0;
+  color: var(--theme-dark);
+  font-size: var(--text-small);
+  font-weight: 900;
+}
+
+.business-project-card > a,
+.business-projects-empty > a {
+  color: var(--theme-purple);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+.business-projects-empty {
+  min-height: 280px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.business-projects-empty > svg {
+  width: 36px;
+  height: 36px;
+  color: var(--theme-purple);
+}
+
+@media (max-width: 1180px) {
+  .business-projects-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .business-projects-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .business-workspace-header {
   padding: 0;
   display: grid;
@@ -1112,7 +1236,7 @@ font-size: clamp(10px, 1vw, 18px);
   margin: 8px 0 0;
   max-width: 640px;
   color: var(--color-text-muted);
-  font-size: 0.98rem;
+  font-size: var(--text-body);
   line-height: 1.5;
   font-weight: 700;
 }
@@ -1169,7 +1293,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .app-notification-menu strong {
   color: var(--theme-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -1178,7 +1302,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: transparent;
   color: var(--color-brand-primary);
   font: inherit;
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   font-weight: 850;
   cursor: pointer;
 }
@@ -1193,7 +1317,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 20px 12px;
   color: var(--color-text-muted);
   text-align: center;
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 780;
 }
 
@@ -1217,19 +1341,19 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .app-notification-item span {
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .app-notification-item small {
   color: var(--color-text-muted);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 760;
   line-height: 1.35;
 }
 
 .business-workspace-breadcrumb {
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
 }
 
 .business-applicants-browse-main {
@@ -1251,7 +1375,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-browse-categories h2 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -1322,7 +1446,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-browse-categories button em {
   margin-top: 3px;
   color: var(--color-text-muted);
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: var(--font-weight-heavy);
 }
@@ -1426,7 +1550,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-browse-student-services h4 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 0.88rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -1467,7 +1591,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   color: #4d5374;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: var(--font-weight-black);
 }
 
@@ -1492,7 +1616,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: var(--color-brand-primary);
   display: inline-flex;
   align-items: center;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: var(--font-weight-black);
 }
 
@@ -1621,7 +1745,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 4px 8px;
   border-radius: 999px;
   background: var(--color-brand-primary);
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: var(--font-weight-black);
 }
 
@@ -1629,7 +1753,7 @@ font-size: clamp(10px, 1vw, 18px);
   left: 12px;
   right: 54px;
   bottom: 16px;
-  font-size: 0.95rem;
+  font-size: var(--text-body);
   line-height: 1.25;
 }
 
@@ -1639,7 +1763,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 2px 6px;
   border-radius: var(--radius-sm);
   background: rgba(0, 0, 0, 0.58);
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: var(--font-weight-black);
 }
@@ -1683,7 +1807,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-browse-student-card dt {
   color: #626984;
-  font-size: 0.66rem;
+  font-size: var(--text-caption);
   font-weight: var(--font-weight-black);
 }
 
@@ -1769,7 +1893,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-applicants-browse-rail dd {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: var(--font-weight-max);
 }
 
@@ -1880,7 +2004,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 999px;
   background: var(--color-brand-primary);
   color: var(--theme-white);
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: var(--font-weight-black);
 }
 
@@ -1913,7 +2037,7 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-service-card h3 {
-  font-size: 0.9rem;
+  font-size: var(--text-small);
 }
 
 .business-service-card p,
@@ -1946,7 +2070,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: var(--font-weight-black);
 }
 
@@ -1998,7 +2122,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-service-detail-card h2 {
   margin-top: 8px;
-  font-size: 1.2rem;
+  font-size: var(--text-title-sm);
 }
 
 .business-service-detail-card dl {
@@ -2025,7 +2149,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: var(--font-weight-black);
 }
 
@@ -2082,7 +2206,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: var(--font-weight-black);
 }
 
@@ -2139,7 +2263,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-dashboard-metric strong {
   color: var(--theme-dark);
-  font-size: 1.75rem;
+  font-size: var(--text-title-lg);
   line-height: 1;
   font-weight: 950;
 }
@@ -2147,7 +2271,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-dashboard-metric p {
   margin-top: 8px;
   color: var(--theme-dark);
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -2155,7 +2279,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: block;
   margin-top: 7px;
   color: var(--color-success);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -2201,7 +2325,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-workspace-metrics dt {
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -2209,7 +2333,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-workspace-metrics dd {
   margin: 8px 0 0;
   color: var(--theme-dark);
-  font-size: 2rem;
+  font-size: var(--text-title-lg);
   line-height: 1;
   font-weight: 900;
 }
@@ -2286,13 +2410,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-pipeline-summary h3 {
   color: var(--theme-dark);
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .business-pipeline-summary strong {
   color: var(--theme-dark);
-  font-size: 1.65rem;
+  font-size: var(--text-title-md);
   line-height: 1;
 }
 
@@ -2302,7 +2426,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -2368,14 +2492,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-applicant-row h3 {
   color: var(--theme-dark);
-  font-size: 0.94rem;
+  font-size: var(--text-body);
 }
 
 .business-applicant-row p,
 .business-applicant-row span,
 .business-applicant-row dt {
   color: var(--color-text-muted);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -2405,7 +2529,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 900;
 }
@@ -2503,7 +2627,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-opportunity-row h3 {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-opportunity-row p {
@@ -2538,7 +2662,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: var(--theme-dark);
   display: inline-flex;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -2551,14 +2675,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-opportunity-row aside strong {
   color: var(--color-success);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
 }
 
 .business-opportunity-row aside p {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
 }
 
 .business-opportunity-row a {
@@ -2656,13 +2780,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-upcoming-list strong {
   color: var(--theme-dark);
-  font-size: 0.83rem;
+  font-size: var(--text-small);
 }
 
 .business-upcoming-list p,
 .business-upcoming-list time {
   color: var(--color-text-muted);
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -2697,7 +2821,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-insight-donut strong {
   color: var(--theme-dark);
-  font-size: 1.4rem;
+  font-size: var(--text-title-sm);
   line-height: 1;
 }
 
@@ -2705,7 +2829,7 @@ font-size: clamp(10px, 1vw, 18px);
   margin-top: 5px;
   max-width: 72px;
   color: var(--color-text-muted);
-  font-size: 0.66rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -2745,7 +2869,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-insights-card li p,
 .business-insights-card li strong {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -2763,7 +2887,7 @@ font-size: clamp(10px, 1vw, 18px);
   grid-template-columns: minmax(0, 1fr) 20px;
   gap: 10px;
   align-items: center;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   line-height: 1.45;
   font-weight: 850;
 }
@@ -2790,7 +2914,7 @@ font-size: clamp(10px, 1vw, 18px);
   text-align: center;
   text-decoration: none;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -2833,7 +2957,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: transparent;
   color: #4d5374;
   font-family: inherit;
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 900;
   white-space: nowrap;
   cursor: pointer;
@@ -2878,7 +3002,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 8px;
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -3076,21 +3200,21 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-opportunities-card h2 {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-opportunities-company {
   margin-top: 4px !important;
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
 .business-opportunities-description {
   margin-top: 7px !important;
   color: #58607c;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 720;
 }
@@ -3114,7 +3238,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: var(--theme-dark);
   display: inline-flex;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -3131,13 +3255,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-opportunities-card-stats dt {
   color: var(--color-text-muted);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
 .business-opportunities-card-stats dd {
   color: var(--theme-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -3153,7 +3277,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -3181,7 +3305,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-opportunities-card-status time {
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -3203,7 +3327,7 @@ font-size: clamp(10px, 1vw, 18px);
   justify-content: center;
   gap: 7px;
   font-family: inherit;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-decoration: none;
   cursor: pointer;
@@ -3234,7 +3358,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: var(--radius-md);
   background: color-mix(in srgb, var(--color-danger) 8%, var(--theme-white));
   color: var(--color-danger);
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -3258,7 +3382,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 8px;
   color: #4d5374;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -3277,7 +3401,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-workspace-head h1 {
   color: var(--theme-dark);
-  font-size: 1.72rem;
+  font-size: var(--text-title-lg);
   line-height: 1.1;
   font-weight: 950;
 }
@@ -3291,7 +3415,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #6b2fe8;
   display: inline-flex;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -3327,7 +3451,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: transparent;
   color: #4d5374;
   font-family: inherit;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -3347,7 +3471,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
 }
 
 .business-review-overview-card {
@@ -3385,14 +3509,14 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-overview-card dt,
 .business-review-editor-field span {
   color: var(--color-text-muted);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
 .business-review-overview-card dd {
   margin: 3px 0 0;
   color: var(--theme-dark);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -3454,14 +3578,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-overview-actions strong {
   color: var(--theme-dark);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-review-overview-actions em {
   margin-top: 3px;
   color: #4d5374;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 760;
 }
@@ -3474,7 +3598,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: var(--theme-white);
   color: #5f24e6;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   cursor: pointer;
 }
@@ -3490,14 +3614,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-team-roster > header h3 {
   margin: 0;
-  font-size: 0.95rem;
+  font-size: var(--text-body);
   font-weight: 950;
   color: var(--theme-dark);
 }
 
 .business-review-team-roster > header p {
   margin: 4px 0 0;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 760;
   color: #626984;
 }
@@ -3527,20 +3651,20 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-team-list strong {
   display: block;
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 900;
   color: var(--theme-dark);
 }
 
 .business-review-team-list em {
   font-style: normal;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 700;
   color: #626984;
 }
 
 .business-review-team-amount {
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 900;
   color: var(--theme-dark);
 }
@@ -3568,14 +3692,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-upcoming-interviews h3 {
   color: var(--theme-dark);
-  font-size: 0.94rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-review-upcoming-interviews p {
   margin-top: 4px;
   color: #4d5374;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -3587,7 +3711,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: var(--theme-white);
   color: #5f24e6;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   cursor: pointer;
 }
@@ -3628,14 +3752,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-upcoming-interviews strong {
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-review-upcoming-interviews em,
 .business-review-upcoming-interviews time {
   color: #4d5374;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 760;
 }
@@ -3670,13 +3794,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-detail-block h3 {
   color: var(--theme-dark);
-  font-size: 0.94rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-review-detail-block p {
   color: #4d5374;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 760;
 }
@@ -3693,14 +3817,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-detail-block dt {
   color: #626984;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
 .business-review-detail-block dd {
   margin: 4px 0 0;
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -3719,7 +3843,7 @@ font-size: clamp(10px, 1vw, 18px);
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -3773,7 +3897,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: var(--theme-white);
   color: var(--theme-dark);
   font: inherit;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -3816,7 +3940,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: var(--theme-dark);
   display: inline-flex;
   align-items: center;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -3834,13 +3958,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-budget-card h3 {
   color: var(--theme-dark);
-  font-size: 0.94rem;
+  font-size: var(--text-body);
 }
 
 .business-review-budget-card p {
   color: #4d5374;
   line-height: 1.45;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 750;
 }
 
@@ -3861,7 +3985,7 @@ font-size: clamp(10px, 1vw, 18px);
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 10px;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -3970,7 +4094,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: block;
   overflow: hidden;
   color: var(--theme-dark);
-  font-size: 0.92rem;
+  font-size: var(--text-body);
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3981,7 +4105,7 @@ font-size: clamp(10px, 1vw, 18px);
   margin-top: 3px;
   overflow: hidden;
   color: #64708a;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 700;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3991,7 +4115,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: block;
   overflow: hidden;
   color: var(--theme-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 800;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -4001,7 +4125,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: block;
   margin-top: 3px;
   color: #64708a;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -4012,7 +4136,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 999px;
   background: #eef2ff;
   color: #4338ca;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 800;
 }
@@ -4091,7 +4215,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-above-budget {
   margin-top: 6px;
   color: #b5561f;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -4104,7 +4228,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-capacity-control em {
   color: #626984;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 700;
 }
@@ -4115,7 +4239,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -4134,7 +4258,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-capacity-notice {
   margin: 0;
   color: #1f7a4d;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -4144,7 +4268,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: var(--radius-sm);
   background: #f7f3ff;
   color: #4a4270;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 600;
   line-height: 1.5;
 }
@@ -4164,7 +4288,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 999px;
   background: #e7f6ee;
   color: #1f7a4d;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -4172,7 +4296,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-capacity-error {
   margin: 0;
   color: #c0354f;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -4184,7 +4308,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-above-budget-tag {
   color: #b5561f;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 800;
   text-transform: uppercase;
@@ -4203,7 +4327,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-counter-status {
   margin-top: 6px;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -4214,14 +4338,14 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-counter-error {
   margin-top: 6px;
   color: #c0354f;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .business-review-counter-notice {
   margin-top: 6px;
   color: #1f7a4d;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -4250,13 +4374,13 @@ font-size: clamp(10px, 1vw, 18px);
 .business-project-controls strong {
   display: block;
   color: var(--theme-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .business-project-controls span {
   color: #626984;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -4283,14 +4407,14 @@ font-size: clamp(10px, 1vw, 18px);
 .business-project-controls-error {
   margin: 0;
   color: #c0354f;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .business-project-controls-notice {
   margin: 0;
   color: #1f7a4d;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -4309,7 +4433,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: transparent;
   color: #4d5374;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -4329,7 +4453,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
 }
 
 .business-review-application-toolbar {
@@ -4361,7 +4485,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 8px;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -4411,7 +4535,7 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-review-applications-empty svg {
-  font-size: 28px;
+  font-size: var(--text-title-lg);
   color: #6b2fe8;
 }
 
@@ -4421,7 +4545,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-applications-empty p {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
 }
 
 .business-review-applications-empty.is-error {
@@ -4442,7 +4566,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 0 12px;
   background: #f7f8fc;
   color: #4d5374;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -4451,7 +4575,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 10px 12px;
   border-top: 1px solid var(--color-border);
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -4492,14 +4616,14 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 999px;
   background: rgba(107, 47, 232, 0.12);
   color: #6b2fe8;
-  font-size: 0.66rem;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 
 .business-review-application-creator p {
   margin-top: 3px;
   color: #4d5374;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
 }
 
 .business-review-platform-badge {
@@ -4510,7 +4634,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -4539,7 +4663,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-application-row time span {
   color: #4d5374;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
 }
 
 .business-review-status-pill {
@@ -4549,7 +4673,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -4587,7 +4711,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: var(--theme-white);
   color: #4f22df;
   font-family: inherit;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -4608,7 +4732,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-application-pagination p {
   margin: 0;
   color: #4d5374;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -4654,7 +4778,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 0 12px;
   background: #f7f8fc;
   color: #4d5374;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -4663,7 +4787,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 10px 12px;
   border-top: 1px solid var(--color-border);
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -4683,7 +4807,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-shortlisted-row time span {
   color: #4d5374;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
 }
 
 .business-review-shortlisted-actions {
@@ -4704,7 +4828,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: center;
   font-family: inherit;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -4777,18 +4901,18 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  font-size: 1.1rem;
+  font-size: var(--text-body-lg);
 }
 
 .business-review-negotiation-modal h2 {
   color: var(--theme-dark);
-  font-size: 1.18rem;
+  font-size: var(--text-title-sm);
 }
 
 .business-review-negotiation-modal > header p {
   margin-top: 5px;
   color: var(--color-text-subtle);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 750;
 }
 
@@ -4833,13 +4957,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-negotiation-applicant strong {
   color: var(--theme-dark);
-  font-size: 0.92rem;
+  font-size: var(--text-body);
   font-weight: 900;
 }
 
 .business-review-negotiation-applicant span {
   color: var(--color-text-subtle);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 750;
 }
 
@@ -4860,13 +4984,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-negotiation-summary dt {
   color: var(--color-text-subtle);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
 .business-review-negotiation-summary dd {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: 900;
 }
 
@@ -4888,7 +5012,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-negotiation-form label > span {
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -4914,7 +5038,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: var(--color-text-subtle);
   display: inline-flex;
   align-items: center;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
 }
 
 .business-review-negotiation-form input[type="number"] {
@@ -4956,13 +5080,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-negotiation-auto-reject strong {
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .business-review-negotiation-auto-reject em {
   color: var(--color-text-subtle);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 700;
   line-height: 1.4;
@@ -4971,7 +5095,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-negotiation-range,
 .business-review-negotiation-notice {
   color: var(--color-text-subtle);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 700;
   line-height: 1.45;
 }
@@ -4990,7 +5114,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: var(--radius-sm);
   background: #fff9eb;
   color: #76551f;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 800;
   line-height: 1.5;
 }
@@ -5035,7 +5159,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-application-modal h2 {
   color: var(--theme-dark);
-  font-size: 1.25rem;
+  font-size: var(--text-title-sm);
 }
 
 .business-review-application-modal > header p {
@@ -5091,7 +5215,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 1.1rem;
+  font-size: var(--text-body-lg);
 }
 
 .business-review-applicant-head p {
@@ -5142,7 +5266,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-applicant-stats dt {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: var(--font-weight-max);
 }
 
@@ -5282,7 +5406,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-application-form-card > header h3 {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-review-application-form-card > header p {
@@ -5364,7 +5488,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-qualification-answers > header h3,
 .business-review-application-attachments > header h3 {
   color: var(--theme-dark);
-  font-size: 0.95rem;
+  font-size: var(--text-body);
 }
 
 .business-review-qualification-answers > header p,
@@ -5483,7 +5607,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-attachment-preview-modal > header h3 {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-review-attachment-preview-modal > header p {
@@ -5562,7 +5686,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-attachment-preview-empty svg {
   color: var(--color-brand-primary);
-  font-size: 1.8rem;
+  font-size: var(--text-title-lg);
 }
 
 .business-review-attachment-preview-empty a {
@@ -5656,7 +5780,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-submission-payment h3,
 .business-review-submission-decision h3 {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-review-submission-metrics {
@@ -5700,7 +5824,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.95rem;
+  font-size: var(--text-body);
   font-weight: var(--font-weight-max);
 }
 
@@ -5715,7 +5839,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-submission-metrics aside strong {
   color: #12a150;
-  font-size: 1.35rem;
+  font-size: var(--text-title-sm);
   font-weight: var(--font-weight-max);
 }
 
@@ -5862,7 +5986,7 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-review-submission-evidence-grid figcaption b {
-  font-size: 1.15rem;
+  font-size: var(--text-body-lg);
   font-weight: var(--font-weight-max);
 }
 
@@ -6025,7 +6149,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-payment-split dd {
   margin-top: 8px;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: var(--font-weight-max);
 }
 
@@ -6127,7 +6251,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-request-changes-dialog > header h3 {
   color: var(--theme-dark);
-  font-size: 1.15rem;
+  font-size: var(--text-body-lg);
 }
 
 .business-review-request-changes-dialog > header p {
@@ -6366,7 +6490,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 1.45rem;
+  font-size: var(--text-title-md);
 }
 
 .business-review-approve-dialog > header p {
@@ -6418,7 +6542,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-approve-method h4,
 .business-review-approve-confirm h4 {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-review-approve-summary dl {
@@ -6449,7 +6573,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: var(--theme-dark);
   display: grid;
   gap: 6px;
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: var(--font-weight-max);
 }
 
@@ -6563,7 +6687,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-approve-ratings footer > div strong {
   color: var(--theme-dark);
-  font-size: 1.35rem;
+  font-size: var(--text-title-sm);
 }
 
 .business-review-approve-ratings label {
@@ -6656,7 +6780,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-approve-payment-summary dl > div:last-child dd {
   color: #12a150;
-  font-size: 1.15rem;
+  font-size: var(--text-body-lg);
 }
 
 .business-review-approve-payment-summary dt,
@@ -6767,7 +6891,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-add-deliverable-modal > header h2 {
   color: var(--theme-dark);
-  font-size: 1.25rem;
+  font-size: var(--text-title-sm);
 }
 
 .business-review-add-deliverable-modal > header p {
@@ -6889,7 +7013,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-add-draft-card > header h3 {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-review-add-draft-card > header button {
@@ -7291,7 +7415,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-deliverable-details-inline h2 {
   margin-top: 6px;
   color: var(--theme-dark);
-  font-size: 1.25rem;
+  font-size: var(--text-title-sm);
 }
 
 .business-review-deliverable-details-inline > header p {
@@ -7331,7 +7455,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-deliverable-details-modal h2 {
   color: var(--theme-dark);
-  font-size: 1.25rem;
+  font-size: var(--text-title-sm);
 }
 
 .business-review-deliverable-details-modal > header p {
@@ -7461,7 +7585,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-publish-head h2 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 1.35rem;
+  font-size: var(--text-title-sm);
 }
 
 .business-review-publish-head p {
@@ -7582,7 +7706,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-publish-breakdown h2 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-review-publish-summary > div {
@@ -7618,7 +7742,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: flex;
   align-items: center;
   color: var(--theme-white);
-  font-size: 1.25rem;
+  font-size: var(--text-title-sm);
   font-weight: var(--font-weight-max);
   text-transform: uppercase;
 }
@@ -7755,7 +7879,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-publish-payment h2 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-review-publish-payment > p {
@@ -7886,7 +8010,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-card-selector span strong {
   color: #4d5374;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: var(--font-weight-heavy);
 }
 
@@ -7933,14 +8057,14 @@ font-size: clamp(10px, 1vw, 18px);
 .business-settings-company-card > header h2 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-settings-company-card > header p {
   margin: 6px 0 0;
   color: #626984;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 760;
 }
 
@@ -7959,7 +8083,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-settings-company-error,
 .business-settings-company-saved {
   margin: 0;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -8244,7 +8368,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-publish-next h2 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-review-publish-stk-grid {
@@ -8313,7 +8437,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-publish-amount strong {
   color: #12a150;
-  font-size: 1.45rem;
+  font-size: var(--text-title-md);
   font-weight: var(--font-weight-max);
 }
 
@@ -8484,7 +8608,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-publish-total strong {
   color: #12a150;
-  font-size: 1.45rem;
+  font-size: var(--text-title-md);
   font-weight: var(--font-weight-max);
 }
 
@@ -8792,7 +8916,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 8px;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -8842,7 +8966,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 0 12px;
   background: #f7f8fc;
   color: #4d5374;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -8851,7 +8975,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 10px 12px;
   border-top: 1px solid var(--color-border);
   color: var(--theme-dark);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -8882,7 +9006,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: center;
   flex: 0 0 auto;
-  font-size: 0.95rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
@@ -8924,7 +9048,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #4f22df;
   display: inline-flex;
   align-items: center;
-  font-size: 0.64rem;
+  font-size: var(--text-micro);
   font-style: normal;
   font-weight: 900;
 }
@@ -8950,7 +9074,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-deliverable-row time em {
   color: #4d5374;
   font-style: normal;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
 }
 
 .business-review-deliverable-row time em.is-overdue {
@@ -8992,7 +9116,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: center;
   font-family: inherit;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -9005,7 +9129,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-deliverable-footer {
   color: #4d5374;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -9028,7 +9152,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 8px;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -9069,7 +9193,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 0 12px;
   background: #f7f8fc;
   color: #4d5374;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -9078,7 +9202,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 10px 12px;
   border-top: 1px solid var(--color-border);
   color: var(--theme-dark);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -9097,7 +9221,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-submitted-row time span {
   color: #4d5374;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
 }
 
 .business-review-submitted-file {
@@ -9135,7 +9259,7 @@ font-size: clamp(10px, 1vw, 18px);
   bottom: 4px;
   display: inline-flex;
   align-items: center;
-  font-size: 0.58rem;
+  font-size: var(--text-micro);
   font-weight: 900;
 }
 
@@ -9151,7 +9275,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-submitted-file span {
   margin-top: 3px;
   color: #4d5374;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
 }
 
 .business-review-submitted-file em {
@@ -9165,7 +9289,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: center;
   font-style: normal;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -9176,7 +9300,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: transparent;
   color: #4f22df;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -9213,7 +9337,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-messages-grid h3 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-review-submission-success p {
@@ -9498,7 +9622,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: var(--color-brand-primary);
   display: grid;
   place-items: center;
-  font-size: 16px;
+  font-size: var(--text-body);
 }
 
 .business-review-chat > header .business-review-group-avatar {
@@ -9576,7 +9700,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-chat-loading {
   margin: 8px auto;
   color: #8c95b2;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -9717,7 +9841,7 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-review-chat-empty > svg {
-  font-size: 2rem;
+  font-size: var(--text-title-lg);
 }
 
 .business-message-error {
@@ -9796,21 +9920,21 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-payment-metrics p {
   color: #4d5374;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
 .business-review-payment-metrics strong {
   margin-top: 4px;
   color: var(--theme-dark);
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-review-payment-metrics em {
   margin-top: 4px;
   color: #4d5374;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -9834,7 +9958,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 8px;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -9875,7 +9999,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 0 12px;
   background: #f7f8fc;
   color: #4d5374;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -9884,7 +10008,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 10px 12px;
   border-top: 1px solid var(--color-border);
   color: var(--theme-dark);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -9897,7 +10021,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-payment-row time span {
   color: #4d5374;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
 }
 
 .business-review-payment-actions {
@@ -9917,7 +10041,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: center;
   font-family: inherit;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -9939,7 +10063,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-payment-footer p {
   margin: 0;
   color: #4d5374;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -9957,14 +10081,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-payment-footer dt {
   color: #4d5374;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
 .business-review-payment-footer dd {
   margin-top: 4px;
   color: var(--theme-dark);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -9997,7 +10121,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 6px;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -10022,14 +10146,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-summary-card dt {
   color: #4d5374;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
 .business-review-summary-card dd {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -10064,7 +10188,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: transparent;
   color: #4f22df;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -10101,14 +10225,14 @@ font-size: clamp(10px, 1vw, 18px);
   justify-items: center;
   position: relative;
   z-index: 1;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 950;
   text-align: center;
 }
 
 .business-review-payment-overview-card figure em {
   color: #4d5374;
-  font-size: 0.62rem;
+  font-size: var(--text-micro);
   font-style: normal;
 }
 
@@ -10130,7 +10254,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -10160,7 +10284,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-payment-overview-card dd {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -10234,21 +10358,21 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-performance-metrics p {
   color: #4d5374;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
 .business-review-performance-metrics strong {
   margin-top: 4px;
   color: var(--theme-dark);
-  font-size: 0.95rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-review-performance-metrics em {
   margin-top: 5px;
   color: var(--color-success);
-  font-size: 0.66rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -10279,7 +10403,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-performance-table h3 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
 }
 
 .business-review-performance-chart header div {
@@ -10293,7 +10417,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -10385,7 +10509,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #4d5374;
   align-self: end;
   justify-self: center;
-  font-size: 0.62rem;
+  font-size: var(--text-micro);
   font-weight: 800;
 }
 
@@ -10412,7 +10536,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 0 16px;
   background: #f7f8fc;
   color: #4d5374;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -10421,7 +10545,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 8px 16px;
   border-top: 1px solid var(--color-border);
   color: var(--theme-dark);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -10467,13 +10591,13 @@ font-size: clamp(10px, 1vw, 18px);
   justify-items: center;
   position: relative;
   z-index: 1;
-  font-size: 0.85rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-review-performance-breakdown-card figure em {
   color: #4d5374;
-  font-size: 0.62rem;
+  font-size: var(--text-micro);
   font-style: normal;
 }
 
@@ -10495,7 +10619,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -10527,7 +10651,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #4d5374;
   display: inline-flex;
   gap: 10px;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   white-space: nowrap;
 }
@@ -10570,7 +10694,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-activity-timeline h3 {
   margin: 0 0 0 14px;
   color: var(--theme-dark);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -10618,7 +10742,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-activity-row time {
   color: #4d5374;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 900;
 }
@@ -10674,12 +10798,12 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-activity-row strong {
   color: var(--theme-dark);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
 }
 
 .business-review-activity-row p {
   color: #1f2544;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -10704,13 +10828,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-activity-actor b {
   color: var(--theme-dark);
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
 }
 
 .business-review-activity-actor em {
   margin-top: 2px;
   color: #4d5374;
-  font-size: 0.66rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -10725,7 +10849,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #4f22df;
   justify-self: end;
   font-family: inherit;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -10749,7 +10873,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: var(--theme-white);
   color: #4f22df;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -10806,14 +10930,14 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-recent-activity-card strong {
   color: var(--theme-dark);
   line-height: 1.35;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
 .business-review-recent-activity-card em {
   margin-top: 6px;
   color: #4d5374;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -10828,7 +10952,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #4f22df;
   justify-self: center;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -10879,7 +11003,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-shortlisted-insights-card article strong {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: var(--font-weight-max);
 }
 
@@ -10899,7 +11023,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 10px;
   color: #4d5374;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -10927,7 +11051,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -10950,12 +11074,12 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-team-card strong {
   color: var(--theme-dark);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
 }
 
 .business-review-team-card p {
   color: #4d5374;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -11003,13 +11127,13 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-review-quick-actions-card strong {
-  font-size: 0.8rem;
+  font-size: var(--text-small);
 }
 
 .business-review-quick-actions-card em {
   margin-top: 3px;
   color: #4d5374;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 800;
 }
@@ -11023,7 +11147,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-help-card p {
   color: #4d5374;
   line-height: 1.45;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -11040,7 +11164,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 8px;
   font-family: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -11092,7 +11216,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-opportunity-invite-dialog h2 {
   color: var(--theme-dark);
-  font-size: 1.25rem;
+  font-size: var(--text-title-sm);
   font-weight: 950;
 }
 
@@ -11100,7 +11224,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-opportunity-invite-dialog footer p,
 .business-opportunity-invite-note span {
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -11167,7 +11291,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -11201,7 +11325,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -11233,14 +11357,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-opportunity-bidder-card strong {
   color: var(--theme-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-opportunity-bidder-card p {
   margin-top: 3px;
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 780;
 }
 
@@ -11261,7 +11385,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #4d5374;
   display: inline-flex;
   align-items: center;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -11274,14 +11398,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-opportunity-bidder-card b {
   color: #6b2fe8;
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-opportunity-bidder-card em,
 .business-opportunity-bidder-card small {
   color: var(--color-text-muted);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 820;
 }
@@ -11303,7 +11427,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -11352,7 +11476,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: var(--theme-white);
   color: var(--theme-dark);
   font-weight: 900;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
 }
 
 .business-opportunities-empty {
@@ -11423,7 +11547,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-metric strong {
   color: var(--theme-dark);
-  font-size: 1.18rem;
+  font-size: var(--text-title-sm);
   line-height: 1.05;
   font-weight: 950;
 }
@@ -11431,14 +11555,14 @@ font-size: clamp(10px, 1vw, 18px);
 .business-marketing-metric p {
   margin-top: 6px;
   color: #4d5374;
-  font-size: 0.79rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
 .business-marketing-metric em {
   margin-top: 8px;
   color: var(--color-success);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 900;
 }
@@ -11498,7 +11622,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: transparent;
   color: #4d5374;
   font-family: inherit;
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 900;
   white-space: nowrap;
   cursor: pointer;
@@ -11543,7 +11667,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 8px;
   font-family: inherit;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -11722,13 +11846,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-thumb strong {
   max-width: 78px;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   line-height: 1.05;
   font-weight: 950;
 }
 
 .business-marketing-thumb em {
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
   opacity: 0.86;
@@ -11767,21 +11891,21 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-campaign h2 {
   color: var(--theme-dark);
-  font-size: 0.98rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-marketing-type {
   margin-top: 5px !important;
   color: #4d5374;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
 .business-marketing-description {
   margin-top: 7px !important;
   color: #58607c;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 720;
 }
@@ -11803,7 +11927,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: var(--theme-dark);
   display: inline-flex;
   align-items: center;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -11845,14 +11969,14 @@ font-size: clamp(10px, 1vw, 18px);
 .business-marketing-stats dt,
 .business-marketing-campaign-meta span {
   color: var(--color-text-muted);
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
 .business-marketing-stats dd,
 .business-marketing-campaign-meta strong {
   color: var(--theme-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -11885,7 +12009,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.58rem;
+  font-size: var(--text-micro);
   font-style: normal;
   font-weight: 900;
 }
@@ -11933,7 +12057,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -11973,7 +12097,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-marketing-platform-card header p {
   margin: 4px 0 0;
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -12025,14 +12149,14 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-marketing-create-options strong {
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-marketing-create-options em {
   margin-top: 5px;
   color: #58607c;
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   line-height: 1.35;
   font-style: normal;
   font-weight: 760;
@@ -12061,7 +12185,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.58rem;
+  font-size: var(--text-micro);
   font-weight: 950;
 }
 
@@ -12071,7 +12195,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -12128,7 +12252,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-marketing-tip-card p {
   margin-top: 10px;
   color: #4d5374;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   line-height: 1.5;
   font-weight: 760;
 }
@@ -12141,7 +12265,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -12172,7 +12296,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-breadcrumb {
   color: #4d5374;
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -12201,11 +12325,11 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-thumb.is-large strong {
   max-width: 145px;
-  font-size: 1.52rem;
+  font-size: var(--text-title-md);
 }
 
 .business-marketing-thumb.is-large em {
-  font-size: 0.9rem;
+  font-size: var(--text-small);
 }
 
 .business-marketing-detail-hero-main h1,
@@ -12221,7 +12345,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -12259,7 +12383,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: flex;
   align-items: center;
   gap: 9px;
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -12267,7 +12391,7 @@ font-size: clamp(10px, 1vw, 18px);
   margin-top: 14px !important;
   max-width: 610px;
   color: #58607c;
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   line-height: 1.55;
   font-weight: 760;
 }
@@ -12294,13 +12418,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-detail-stats dt {
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
 .business-marketing-detail-stats dd {
   color: var(--theme-dark);
-  font-size: 1.06rem;
+  font-size: var(--text-body-lg);
   font-weight: 950;
 }
 
@@ -12338,7 +12462,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: transparent;
   color: #4d5374;
   font-family: inherit;
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 900;
   white-space: nowrap;
   cursor: pointer;
@@ -12375,7 +12499,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-about-list dt {
   color: #4d5374;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -12384,7 +12508,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #303550;
   display: grid;
   gap: 4px;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   line-height: 1.42;
   font-weight: 760;
 }
@@ -12449,14 +12573,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-timeline strong {
   color: var(--theme-dark);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-marketing-timeline p {
   margin-top: 4px;
   color: #58607c;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -12496,13 +12620,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-live-progress h2 {
   color: var(--theme-dark);
-  font-size: 0.98rem;
+  font-size: var(--text-body);
 }
 
 .business-marketing-live-progress header p {
   margin-top: 4px;
   color: var(--color-text-muted);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -12522,7 +12646,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 900;
 }
@@ -12580,14 +12704,14 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-marketing-live-summary > article strong {
-  font-size: 1.55rem;
+  font-size: var(--text-title-md);
   line-height: 1;
 }
 
 .business-marketing-live-summary > article span {
   margin-top: 5px;
   color: #c9c6cf;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: 750;
 }
 
@@ -12621,13 +12745,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-creator-clicks article > div strong {
   color: var(--theme-dark);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
 }
 
 .business-marketing-creator-clicks article > div small {
   margin-top: 3px;
   color: var(--color-text-muted);
-  font-size: 0.64rem;
+  font-size: var(--text-micro);
   font-weight: 700;
 }
 
@@ -12638,12 +12762,12 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-creator-clicks article > p strong {
   color: #74516f;
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-marketing-creator-clicks article > p span {
   color: var(--color-text-muted);
-  font-size: 0.6rem;
+  font-size: var(--text-micro);
   font-weight: 750;
 }
 
@@ -12653,7 +12777,7 @@ font-size: clamp(10px, 1vw, 18px);
   border: 1px dashed var(--color-border-strong);
   border-radius: 12px;
   color: var(--color-text-muted);
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -12665,7 +12789,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #74516f;
   display: inline-flex;
   justify-content: center;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
 }
 
 .business-marketing-table-wrap {
@@ -12689,13 +12813,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-creator-table th {
   color: #58607c;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
 .business-marketing-creator-table td {
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -12714,7 +12838,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-marketing-creator-table td:first-child em {
   margin-top: 3px;
   color: #58607c;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 
@@ -12738,7 +12862,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.62rem;
+  font-size: var(--text-micro);
   font-weight: 950;
 }
 
@@ -12760,7 +12884,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -12770,7 +12894,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 999px;
   display: inline-flex;
   align-items: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -12813,14 +12937,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-find-creators strong {
   color: var(--theme-dark);
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-marketing-find-creators p {
   margin-top: 4px;
   color: #58607c;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -12841,7 +12965,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-simple-grid strong {
   color: #6b2fe8;
-  font-size: 1.45rem;
+  font-size: var(--text-title-md);
   font-weight: 950;
 }
 
@@ -12854,13 +12978,13 @@ font-size: clamp(10px, 1vw, 18px);
 .business-marketing-simple-grid h2 {
   margin-top: 10px;
   color: var(--theme-dark);
-  font-size: 0.92rem;
+  font-size: var(--text-body);
 }
 
 .business-marketing-simple-grid p {
   margin-top: 7px;
   color: #58607c;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 760;
 }
 
@@ -12870,7 +12994,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #303550;
   display: grid;
   gap: 10px;
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 780;
 }
 
@@ -12896,7 +13020,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-marketing-outlets-header p {
   margin-top: 6px;
   color: #58607c;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 760;
 }
 
@@ -12909,7 +13033,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -12938,7 +13062,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -12971,13 +13095,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-outlet-title strong {
   color: var(--theme-dark);
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-marketing-outlet-title span {
   color: #6b2fe8;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -12990,7 +13114,7 @@ font-size: clamp(10px, 1vw, 18px);
   gap: 7px;
   align-items: center;
   text-decoration: none;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -13005,14 +13129,14 @@ font-size: clamp(10px, 1vw, 18px);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
 .business-marketing-outlet-details p {
   margin-top: 6px;
   color: #7b8198;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -13028,14 +13152,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-outlet-metrics dt {
   color: #7b8198;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
 .business-marketing-outlet-metrics dd {
   margin: 4px 0 0;
   color: var(--theme-dark);
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -13060,7 +13184,7 @@ font-size: clamp(10px, 1vw, 18px);
   text-decoration: none;
   white-space: nowrap;
   font-family: inherit;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   cursor: pointer;
 }
@@ -13090,20 +13214,20 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: var(--text-title-sm);
 }
 
 .business-marketing-outlets-empty h3 {
   margin-top: 16px;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-marketing-outlets-empty p {
   margin-top: 8px;
   max-width: 500px;
   color: #58607c;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   line-height: 1.55;
   font-weight: 740;
 }
@@ -13123,7 +13247,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-detail-summary dt {
   color: #58607c;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -13134,7 +13258,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 6px;
   text-align: right;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -13167,14 +13291,14 @@ font-size: clamp(10px, 1vw, 18px);
 .business-marketing-budget-ring strong {
   margin-top: -8px;
   color: var(--theme-dark);
-  font-size: 0.94rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-marketing-budget-ring span {
   margin-top: 36px;
   color: #58607c;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -13220,13 +13344,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-marketing-budget-card strong {
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
 }
 
 .business-marketing-budget-card p {
   margin-top: 5px;
   color: #58607c;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -13234,20 +13358,53 @@ font-size: clamp(10px, 1vw, 18px);
   margin-top: 18px;
 }
 
+.business-marketing-performance-card > header,
+.business-marketing-performance-card > header > div {
+  min-width: 0;
+}
+
+.business-marketing-performance-card > header > div p {
+  margin: 4px 0 0;
+  color: #707590;
+  font-size: var(--text-caption);
+  font-weight: 750;
+}
+
+.business-marketing-performance-period {
+  flex: 0 0 auto;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #f1edf4;
+  color: #74516f;
+  font-size: var(--text-caption);
+  font-weight: 900;
+}
+
 .business-marketing-performance-card li {
   display: grid;
-  grid-template-columns: 92px minmax(54px, 1fr) 54px 42px;
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 8px 12px;
   align-items: center;
+  padding: 2px 0;
+}
+
+.business-marketing-performance-card li > div {
+  min-width: 0;
+}
+
+.business-marketing-performance-card li span,
+.business-marketing-performance-card li strong {
+  display: block;
 }
 
 .business-marketing-performance-card li span {
   color: #303550;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
 .business-marketing-performance-card b {
+  width: 88px;
   height: 24px;
   border-radius: 999px;
   background: linear-gradient(135deg, transparent 30%, rgba(107, 47, 232, 0.15));
@@ -13266,16 +13423,66 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-marketing-performance-card strong {
+  margin-top: 3px;
   color: var(--theme-dark);
-  font-size: 0.84rem;
+  font-size: var(--text-body-lg);
+  line-height: 1;
   font-weight: 950;
 }
 
 .business-marketing-performance-card em {
-  color: var(--color-success);
-  font-size: 0.74rem;
+  grid-column: 1 / -1;
+  color: #3c8b93;
+  font-size: var(--text-caption);
+  line-height: 1.4;
   font-style: normal;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.business-browse-campaign-context {
+  padding: 14px 16px;
+  border-color: rgba(107, 47, 232, 0.18);
+  background: linear-gradient(135deg, rgba(124, 79, 255, 0.1), rgba(124, 79, 255, 0.04));
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.business-browse-campaign-context > span {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(124, 79, 255, 0.12);
+  color: #6b2fe8;
+  display: grid;
+  place-items: center;
+}
+
+.business-browse-campaign-context strong,
+.business-browse-campaign-context p {
+  margin: 0;
+}
+
+.business-browse-campaign-context strong {
+  color: var(--theme-dark);
+  font-size: var(--text-small);
+  font-weight: 950;
+}
+
+.business-browse-campaign-context p {
+  margin-top: 4px;
+  color: #58607c;
+  font-size: var(--text-caption);
+  font-weight: 750;
+}
+
+.business-browse-campaign-context > a {
+  color: #6b2fe8;
+  font-size: var(--text-caption);
   font-weight: 900;
+  text-decoration: none;
 }
 
 .business-opportunity-summary-card dl {
@@ -13309,13 +13516,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-opportunity-summary-card dt {
   color: var(--color-text-muted);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
 .business-opportunity-summary-card dd {
   color: var(--theme-dark);
-  font-size: 1.28rem;
+  font-size: var(--text-title-sm);
   line-height: 1;
   font-weight: 950;
 }
@@ -13382,7 +13589,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.66rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -13393,14 +13600,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-top-freelancers-card li strong {
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
 .business-top-freelancers-card li p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 760;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -13413,7 +13620,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 4px;
   color: #b76b00;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -13450,7 +13657,7 @@ font-size: clamp(10px, 1vw, 18px);
   border: 1px dashed var(--color-border, #dfe3f2);
   background: var(--color-surface-muted, #f7f8fc);
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 700;
   text-align: center;
 }
@@ -13458,7 +13665,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-rail-empty {
   margin: 14px 0 0;
   color: var(--color-text-muted);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -13474,7 +13681,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -13525,7 +13732,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.66rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -13533,7 +13740,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-opportunity-activity-card time {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   line-height: 1.35;
   font-weight: 760;
 }
@@ -13561,13 +13768,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-opportunity-help-card h2 {
   color: var(--theme-purple);
-  font-size: 1rem;
+  font-size: var(--text-body);
 }
 
 .business-opportunity-help-card p {
   margin-top: 9px;
   color: #4d5374;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 750;
 }
@@ -13622,14 +13829,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-workspace-activity strong {
   color: var(--theme-dark);
-  font-size: 0.88rem;
+  font-size: var(--text-small);
 }
 
 .business-workspace-activity p,
 .business-workspace-activity span {
   margin: 4px 0 0;
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   line-height: 1.45;
   font-weight: 700;
 }
@@ -13657,7 +13864,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-kyc-summary-panel > div span {
   color: var(--color-brand-primary);
-  font-size: 2.4rem;
+  font-size: var(--text-page-title);
   line-height: 1;
   font-weight: var(--font-weight-black);
 }
@@ -13717,7 +13924,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-kyc-form h2 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: var(--font-weight-black);
 }
 
@@ -13811,7 +14018,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: inherit;
   text-decoration: none;
   font-family: var(--font-sans);
-  font-size: 1.5rem;
+  font-size: var(--text-title-md);
   line-height: 1;
   font-weight: 800;
 }
@@ -13824,7 +14031,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-profile-logo-wrap p {
   margin: 0;
   color: rgba(255, 255, 255, 0.72);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -13879,7 +14086,7 @@ font-size: clamp(10px, 1vw, 18px);
   gap: 10px;
   align-items: center;
   text-align: left;
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -13897,7 +14104,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 800;
 }
@@ -13934,7 +14141,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-profile-account p,
 .business-profile-help p {
   margin: 0;
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -13943,7 +14150,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: block;
   margin-top: 2px;
   color: rgba(255, 255, 255, 0.68);
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
@@ -13980,7 +14187,7 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-profile-crumbs {
-  font-size: 0.9rem;
+  font-size: var(--text-small);
 }
 
 .business-profile-top-actions {
@@ -14064,7 +14271,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.65rem;
+  font-size: var(--text-micro);
 }
 
 .business-profile-icon-btn .campus-badge {
@@ -14079,7 +14286,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.65rem;
+  font-size: var(--text-micro);
   font-weight: 800;
 }
 
@@ -14106,7 +14313,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-profile-user-btn span {
   color: var(--theme-dark);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -14182,7 +14389,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-profile-card h2 {
   margin-bottom: 4px;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   line-height: 1.2;
   font-weight: 800;
 }
@@ -14191,7 +14398,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-section-kicker {
   margin: 0 0 6px;
   color: var(--theme-purple);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -14251,7 +14458,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-profile-person-copy h1 span {
   margin-left: 10px;
   color: var(--color-text-muted);
-  font-size: 0.92rem;
+  font-size: var(--text-body);
   font-weight: 700;
 }
 
@@ -14273,7 +14480,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-profile-person-meta {
   margin-top: 10px;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -14296,7 +14503,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: var(--theme-dark);
   display: inline-flex;
   align-items: center;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -14318,14 +14525,14 @@ font-size: clamp(10px, 1vw, 18px);
 .business-profile-metric span {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
 .business-profile-metric h3 {
   margin: 8px 0 6px;
   color: var(--theme-dark);
-  font-size: 1.65rem;
+  font-size: var(--text-title-md);
   line-height: 1;
 }
 
@@ -14399,13 +14606,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-score-ring strong {
   color: var(--theme-dark);
-  font-size: 2rem;
+  font-size: var(--text-title-lg);
   line-height: 1;
 }
 
 .business-score-ring span {
   color: var(--color-text-muted);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -14428,7 +14635,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-earnings-list p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -14453,7 +14660,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-score-bar-row strong,
 .business-skill-row strong {
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
 }
 
 .business-score-note {
@@ -14469,7 +14676,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-score-note h3 {
   color: var(--theme-dark);
-  font-size: 0.92rem;
+  font-size: var(--text-body);
 }
 
 .business-score-note p {
@@ -14499,7 +14706,7 @@ font-size: clamp(10px, 1vw, 18px);
   justify-content: space-between;
   gap: 12px;
   color: var(--color-text-muted);
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -14568,13 +14775,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-pipeline-account h3 {
   color: var(--theme-dark);
-  font-size: 0.95rem;
+  font-size: var(--text-body);
 }
 
 .business-pipeline-account p,
 .business-pipeline-date {
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -14587,7 +14794,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: var(--color-success);
   display: inline-flex;
   align-items: center;
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -14627,14 +14834,14 @@ font-size: clamp(10px, 1vw, 18px);
 .business-pipeline-step h4 {
   margin: 10px 0 4px;
   color: var(--theme-dark);
-  font-size: 0.84rem;
+  font-size: var(--text-small);
 }
 
 .business-pipeline-step p,
 .business-pipeline-note p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -14673,7 +14880,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-facts-panel dt {
   color: var(--color-text-muted);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -14716,7 +14923,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-review-brief dt {
   color: var(--color-text-muted);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 800;
   text-transform: uppercase;
 }
@@ -14774,14 +14981,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-guardrail-card strong {
   color: var(--theme-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
 .business-guardrail-card p {
   margin: 4px 0 0;
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 750;
 }
@@ -14793,7 +15000,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-log h3 {
   margin: 0 0 12px;
   color: var(--theme-dark);
-  font-size: 0.95rem;
+  font-size: var(--text-body);
 }
 
 .business-review-log ul {
@@ -14828,7 +15035,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-log strong,
 .business-review-log-list strong {
   color: var(--theme-dark);
-  font-size: 0.86rem;
+  font-size: var(--text-small);
 }
 
 .business-review-log p,
@@ -14837,7 +15044,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-review-log-list span {
   margin: 3px 0 0;
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -14868,7 +15075,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-rail-stage h3 {
   margin: 0 0 10px;
   color: var(--theme-dark);
-  font-size: 0.9rem;
+  font-size: var(--text-small);
 }
 
 .business-stage-btn,
@@ -14914,7 +15121,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-note-meta {
   margin: 10px 0 14px;
   color: var(--color-text-muted);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -14958,7 +15165,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding: 4px 8px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.14);
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -14969,7 +15176,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-ai-card > strong {
   color: var(--theme-orange);
-  font-size: 1.55rem;
+  font-size: var(--text-title-md);
 }
 
 .business-ai-card ul {
@@ -15013,7 +15220,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-endorsement-row h4 {
   margin: 10px 0 4px;
   color: var(--theme-dark);
-  font-size: 0.92rem;
+  font-size: var(--text-body);
 }
 
 .business-highlight-item p,
@@ -15023,7 +15230,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-endorsement-foot p {
   margin: 0;
   color: var(--color-text-muted);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 700;
 }
@@ -15076,7 +15283,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-endorsement-row strong {
   color: var(--theme-purple);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
 }
 
 .business-endorsement-foot {
@@ -15101,7 +15308,7 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-create-breadcrumb {
-  font-size: 0.86rem;
+  font-size: var(--text-small);
 }
 
 .business-create-stepper {
@@ -15164,7 +15371,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-stepper strong {
   grid-area: title;
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   line-height: 1.22;
   font-weight: 950;
 }
@@ -15172,7 +15379,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-stepper small {
   grid-area: meta;
   color: #626984;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   line-height: 1.25;
   font-weight: 760;
 }
@@ -15199,7 +15406,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-section-head h2 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
@@ -15207,7 +15414,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-section-head p {
   margin: 6px 0 0;
   color: #626984;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 760;
   letter-spacing: 0;
   text-transform: none;
@@ -15229,7 +15436,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: grid;
   gap: 8px;
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -15296,7 +15503,7 @@ font-size: clamp(10px, 1vw, 18px);
   padding-right: 12px;
   color: #626984;
   justify-self: end;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -15309,7 +15516,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: var(--radius-md);
   background: #fff4f6;
   color: #9f2438;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -15348,7 +15555,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 8px;
   background: rgba(251, 177, 48, 0.16);
   color: #9a6511;
-  font-size: 1.2rem;
+  font-size: var(--text-title-sm);
 }
 
 .business-create-leave-dialog header > button {
@@ -15371,21 +15578,21 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-leave-dialog h2 {
   margin-top: 12px;
   color: var(--business-ink);
-  font-size: 1.45rem;
+  font-size: var(--text-title-md);
   line-height: 1.15;
 }
 
 .business-create-leave-dialog div > p:last-child {
   margin-top: 10px;
   color: var(--business-muted);
-  font-size: 0.95rem;
+  font-size: var(--text-body);
   line-height: 1.55;
 }
 
 .business-create-leave-eyebrow {
   margin-top: 20px;
   color: var(--business-plum);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -15396,7 +15603,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 8px;
   background: rgba(239, 68, 68, 0.1);
   color: #b91c1c;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
   padding: 10px 12px;
 }
@@ -15421,7 +15628,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #8a4b60;
   cursor: pointer;
   font: inherit;
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -15469,7 +15676,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-type-field legend {
   margin-bottom: 9px;
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -15508,7 +15715,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-type-field span {
   color: #626984;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   line-height: 1.35;
   font-weight: 760;
 }
@@ -15534,7 +15741,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-form footer p {
   margin: 0;
   color: #626984;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -15579,14 +15786,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-deliverables h3 {
   color: var(--theme-dark);
-  font-size: 0.94rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-create-deliverables > p {
   margin-top: 6px;
   color: #626984;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 760;
 }
 
@@ -15630,7 +15837,7 @@ font-size: clamp(10px, 1vw, 18px);
   left: 13px;
   top: 13px;
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -15642,7 +15849,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-deliverable-card > svg {
   margin-top: 16px;
   color: #5f24e6;
-  font-size: 1.45rem;
+  font-size: var(--text-title-md);
 }
 
 .business-create-deliverable-card h4,
@@ -15652,13 +15859,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-deliverable-card h4 {
   color: var(--theme-dark);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-create-deliverable-card p {
   color: #626984;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -15685,7 +15892,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-deliverable-card strong {
   color: var(--theme-dark);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -15710,12 +15917,12 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-upload-card svg {
   color: #5f24e6;
-  font-size: 1.35rem;
+  font-size: var(--text-title-sm);
 }
 
 .business-create-upload-card p {
   color: #626984;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   line-height: 1.45;
   font-weight: 760;
 }
@@ -15732,7 +15939,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: var(--radius-sm);
   background: var(--theme-white);
   color: #5f24e6;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
 }
 
 .business-create-upload-card input {
@@ -15753,7 +15960,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-upload-status,
 .business-create-upload-error {
   margin: 0;
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -15789,14 +15996,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-splash-upload h3 {
   color: var(--theme-dark);
-  font-size: 0.94rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-create-splash-upload > header p {
   margin-top: 5px;
   color: #626984;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   line-height: 1.45;
   font-weight: 760;
 }
@@ -15815,7 +16022,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: var(--radius-sm);
   background: rgba(95, 36, 230, 0.08);
   color: var(--theme-dark);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -15903,12 +16110,12 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-splash-preview-empty strong {
   color: var(--theme-dark);
-  font-size: 0.95rem;
+  font-size: var(--text-body);
 }
 
 .business-create-splash-preview-empty span {
   max-width: 260px;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 750;
   line-height: 1.35;
 }
@@ -15927,7 +16134,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-splash-controls label > span {
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -15942,7 +16149,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-splash-controls > p {
   color: #626984;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   line-height: 1.45;
   font-weight: 760;
 }
@@ -15954,7 +16161,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: var(--radius-sm);
   background: rgba(244, 175, 66, 0.12);
   color: #7b5314 !important;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 850 !important;
 }
 
@@ -15986,14 +16193,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-budget-card h3 {
   color: var(--theme-dark);
-  font-size: 0.94rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-create-budget-card h4 {
   margin-top: 22px;
   color: var(--theme-dark);
-  font-size: 0.84rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -16006,7 +16213,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-schedule-date p {
   margin-top: 6px;
   color: #626984;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 760;
 }
 
@@ -16029,7 +16236,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-budget-input span,
 .business-create-schedule-date span {
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -16092,7 +16299,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-budget-info strong {
   color: var(--theme-dark);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -16130,7 +16337,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-scope-tabs strong {
   color: inherit;
-  font-size: 0.86rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -16195,7 +16402,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-deliverable-milestone-card > header span {
   color: #5f24e6;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -16263,7 +16470,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-deliverable-milestone-grid label > span,
 .business-create-deliverable-lock span {
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -16276,7 +16483,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: var(--theme-white);
   color: var(--theme-dark);
   font: inherit;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 850;
 }
 
@@ -16296,7 +16503,7 @@ font-size: clamp(10px, 1vw, 18px);
   margin: 0;
   padding: 0 2px;
   color: #626984;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   line-height: 1.4;
   font-weight: 780;
 }
@@ -16321,14 +16528,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-sample-work-field h5 {
   color: var(--theme-dark);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-create-sample-work-field p {
   margin-top: 4px;
   color: #626984;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -16353,7 +16560,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-sample-work-row label > span {
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -16389,7 +16596,7 @@ font-size: clamp(10px, 1vw, 18px);
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -16415,7 +16622,7 @@ font-size: clamp(10px, 1vw, 18px);
   grid-column: 1 / -1;
   margin: -2px 0 0;
   color: #626984;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   line-height: 1.4;
   font-weight: 760;
 }
@@ -16423,7 +16630,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-sample-work-empty {
   margin: 0;
   color: #626984;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -16463,14 +16670,14 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-deliverable-totals span,
 .business-create-deliverable-totals em {
   color: #626984;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 820;
 }
 
 .business-create-deliverable-totals strong {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
@@ -16526,7 +16733,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-allocation-card strong {
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -16591,13 +16798,13 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-budget-summary strong,
 .business-create-payment-card strong {
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
 .business-create-budget-summary span {
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
@@ -16630,7 +16837,7 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-create-payment-card span {
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   line-height: 1.45;
   font-weight: 760;
 }
@@ -16661,14 +16868,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-target-card h3 {
   color: var(--theme-dark);
-  font-size: 0.94rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-create-target-card p {
   margin-top: 6px;
   color: #626984;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 760;
 }
 
@@ -16682,7 +16889,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-field-label,
 .business-create-qualification-row > span {
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -16720,7 +16927,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 6px;
   font: inherit;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   cursor: pointer;
 }
@@ -16728,7 +16935,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-skill-empty {
   margin: 0;
   color: #626984;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -16748,7 +16955,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-field-block > span {
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -16774,7 +16981,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #626984;
   background: transparent;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -16789,7 +16996,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 7px;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
   cursor: pointer;
 }
@@ -16893,14 +17100,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-required-attachments-field h4 {
   color: var(--theme-dark);
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-create-required-attachments-field p {
   margin-top: 4px;
   color: #626984;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -16925,7 +17132,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-required-attachment-row span {
   color: var(--theme-dark);
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -16959,7 +17166,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-required-attachments-empty {
   margin: 0;
   color: #626984;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 760;
 }
 
@@ -16982,7 +17189,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: var(--theme-white);
   color: var(--theme-dark);
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   cursor: pointer;
 }
@@ -17045,7 +17252,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -17075,7 +17282,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-next-note p {
   margin: 6px 0 0;
   color: #626984;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 760;
 }
@@ -17117,7 +17324,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.94rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
@@ -17129,7 +17336,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 6px;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   cursor: pointer;
 }
@@ -17150,7 +17357,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 2rem;
+  font-size: var(--text-title-lg);
 }
 
 .business-create-review-overview h4 {
@@ -17159,7 +17366,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
@@ -17168,7 +17375,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: 999px;
   background: rgba(95, 36, 230, 0.08);
   color: #5f24e6;
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 950;
 }
@@ -17177,7 +17384,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-review-card p {
   margin-top: 10px;
   color: #4d5374;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   line-height: 1.5;
   font-weight: 800;
 }
@@ -17196,7 +17403,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-review-overview dt,
 .business-create-review-list dt {
   color: #626984;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -17204,7 +17411,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-review-list dd {
   margin: 4px 0 0;
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -17225,7 +17432,7 @@ font-size: clamp(10px, 1vw, 18px);
   grid-template-columns: 18px minmax(0, 1fr);
   gap: 9px;
   align-items: start;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -17286,7 +17493,7 @@ font-size: clamp(10px, 1vw, 18px);
   border-radius: var(--radius-sm);
   background: rgba(95, 36, 230, 0.08);
   color: var(--theme-dark);
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
 }
 
 .business-create-review-deliverables,
@@ -17312,7 +17519,7 @@ font-size: clamp(10px, 1vw, 18px);
   color: #626984;
   display: grid;
   gap: 4px;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 820;
 }
 
@@ -17322,7 +17529,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-review-milestone-summary strong {
   color: var(--theme-dark);
-  font-size: 0.94rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
@@ -17353,20 +17560,20 @@ font-size: clamp(10px, 1vw, 18px);
   color: #5f24e6;
   display: inline-flex;
   align-items: center;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
 .business-create-review-milestones header b {
   color: var(--color-success);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
 .business-create-review-milestones p {
   margin: 10px 0 0;
   color: #626984;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   line-height: 1.45;
   font-weight: 760;
 }
@@ -17389,14 +17596,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-review-milestones dt {
   color: #626984;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
 .business-create-review-milestones dd {
   margin-top: 4px;
   color: var(--theme-dark);
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   line-height: 1.4;
   font-weight: 850;
 }
@@ -17418,14 +17625,14 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-review-deliverables b,
 .business-create-review-allocation strong {
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
 .business-create-review-deliverables span,
 .business-create-review-allocation em {
   color: #626984;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -17438,7 +17645,7 @@ font-size: clamp(10px, 1vw, 18px);
   align-items: center;
   justify-content: space-between;
   color: #626984;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 900;
 }
 
@@ -17485,7 +17692,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-review-next p {
   color: #4d5374;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   line-height: 1.45;
   font-weight: 800;
 }
@@ -17504,12 +17711,12 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-review-item span {
   color: #626984;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
 .business-create-review-item strong {
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   overflow-wrap: anywhere;
 }
 
@@ -17536,7 +17743,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-audience-card h2 {
   margin: 0;
   color: var(--theme-dark);
-  font-size: 1rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
@@ -17548,7 +17755,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-audience-card > p {
   margin: 10px 0 0;
   color: #626984;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   line-height: 1.45;
   font-weight: 760;
 }
@@ -17581,14 +17788,14 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-summary-card h3 {
   color: var(--theme-dark);
-  font-size: 0.92rem;
+  font-size: var(--text-body);
   font-weight: 950;
 }
 
 .business-create-summary-card article p {
   margin-top: 4px;
   color: #626984;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -17600,7 +17807,7 @@ font-size: clamp(10px, 1vw, 18px);
   background: var(--color-success-bg);
   color: var(--color-success);
   display: inline-flex;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 950;
 }
@@ -17634,14 +17841,14 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
 .business-create-summary-card dd {
   color: var(--theme-dark);
   text-align: right;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -17673,7 +17880,7 @@ font-size: clamp(10px, 1vw, 18px);
   grid-template-columns: 18px minmax(0, 1fr);
   gap: 9px;
   color: #4d5374;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   line-height: 1.4;
   font-weight: 820;
 }
@@ -17720,13 +17927,13 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-create-audience-card > div strong {
   color: #5f24e6;
-  font-size: 1.52rem;
+  font-size: var(--text-title-md);
   font-weight: 950;
 }
 
 .business-create-audience-card > div span {
   color: #626984;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
@@ -17759,7 +17966,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-audience-card dd {
   margin: 0;
   color: #626984;
-  font-size: 0.78rem;
+  font-size: var(--text-caption);
   font-weight: 850;
 }
 
@@ -17803,7 +18010,7 @@ font-size: clamp(10px, 1vw, 18px);
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 950;
 }
 
@@ -17835,7 +18042,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-progress-card strong,
 .business-create-checklist-card strong {
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -17843,7 +18050,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-create-checklist-card em {
   color: #626984;
   text-align: right;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
 }
@@ -17889,13 +18096,13 @@ font-size: clamp(10px, 1vw, 18px);
   color: #626984;
   display: grid;
   gap: 3px;
-  font-size: 0.74rem;
+  font-size: var(--text-caption);
   font-weight: 780;
 }
 
 .business-create-settings-card button strong {
   color: var(--theme-dark);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
   font-weight: 950;
 }
 
@@ -18394,7 +18601,7 @@ font-size: clamp(10px, 1vw, 18px);
   }
 
   .business-workspace-shell .campus-brand-text {
-    font-size: 1.45rem;
+    font-size: var(--text-title-md);
   }
 
   .business-workspace-shell .campus-nav {
@@ -18422,7 +18629,7 @@ font-size: clamp(10px, 1vw, 18px);
     border: 1px solid var(--campus-border);
     border-radius: 999px;
     background: var(--theme-white);
-    font-size: 0.84rem;
+    font-size: var(--text-small);
     white-space: nowrap;
   }
 
@@ -18450,12 +18657,12 @@ font-size: clamp(10px, 1vw, 18px);
   }
 
   .business-workspace-header h1 {
-    font-size: 1.45rem;
+    font-size: var(--text-title-md);
     overflow-wrap: anywhere;
   }
 
   .business-workspace-header p {
-    font-size: 0.92rem;
+    font-size: var(--text-body);
   }
 
   .business-workspace-header > div,
@@ -18657,11 +18864,19 @@ font-size: clamp(10px, 1vw, 18px);
   }
 
   .business-marketing-performance-card li {
-    grid-template-columns: minmax(72px, 1fr) 54px 48px;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .business-marketing-performance-card b {
     display: none;
+  }
+
+  .business-browse-campaign-context {
+    grid-template-columns: 42px minmax(0, 1fr);
+  }
+
+  .business-browse-campaign-context > a {
+    grid-column: 2;
   }
 
   .business-opportunities-board.is-grid .business-opportunities-card-stats,
@@ -18962,7 +19177,7 @@ font-size: clamp(10px, 1vw, 18px);
 .super-admin-panel-header span {
   display: block;
   color: #75506f;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -18970,7 +19185,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .super-admin-hero h1 {
   margin: 8px 0;
-  font-size: 44px;
+  font-size: var(--text-metric);
   line-height: 1;
 }
 
@@ -19061,7 +19276,7 @@ font-size: clamp(10px, 1vw, 18px);
 .super-admin-metric-tile strong {
   display: block;
   margin-top: 10px;
-  font-size: 30px;
+  font-size: var(--text-title-lg);
   line-height: 1;
 }
 
@@ -19080,7 +19295,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .super-admin-panel-header h2 {
   margin: 4px 0 0;
-  font-size: 24px;
+  font-size: var(--text-title-md);
 }
 
 .super-admin-boundary-grid {
@@ -19131,7 +19346,7 @@ font-size: clamp(10px, 1vw, 18px);
 .super-admin-table th {
   background: #f5f6fb;
   color: #555a70;
-  font-size: 12px;
+  font-size: var(--text-caption);
   text-transform: uppercase;
 }
 
@@ -19145,6 +19360,64 @@ font-size: clamp(10px, 1vw, 18px);
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+.super-admin-table button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.super-admin-ads-table {
+  min-width: 980px;
+}
+
+.super-admin-ad-thumb {
+  width: 72px;
+  height: 52px;
+  border-radius: 8px;
+  background: #f1edf4;
+  display: block;
+  object-fit: cover;
+}
+
+.super-admin-ad-thumb.is-empty {
+  color: #79506f;
+  display: grid;
+  place-items: center;
+  font-size: var(--text-caption);
+  font-weight: 900;
+}
+
+.super-admin-ads-table td:nth-child(3) {
+  min-width: 260px;
+  max-width: 380px;
+}
+
+.super-admin-ads-table td:nth-child(3) small {
+  margin-top: 6px;
+  color: #5b35e6;
+  display: inline-flex;
+  font-weight: 800;
+}
+
+.super-admin-ad-status {
+  width: max-content;
+  padding: 6px 9px;
+  border-radius: 999px;
+  background: #f1f2f6;
+  color: #5f657a !important;
+  font-size: var(--text-caption);
+  text-transform: capitalize;
+}
+
+.super-admin-ad-status.is-pending_review {
+  background: #fff4da;
+  color: #8a6100 !important;
+}
+
+.super-admin-ad-status.is-published {
+  background: #e7f6ee;
+  color: #24714e !important;
 }
 
 .super-admin-action-form {
@@ -19234,7 +19507,7 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-review-complete-pay-btn em {
-  font-size: 0.68rem;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: var(--font-weight-regular, 400);
   opacity: 0.85;

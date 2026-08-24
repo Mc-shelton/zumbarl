@@ -8,7 +8,7 @@ export const PROFILE_TAB_ITEMS = [
   { label: 'Marketing', requiredAccess: ACCESS_KEYS.profile.viewOwn },
   { label: 'Portfolio', requiredAccess: ACCESS_KEYS.profile.portfolio },
   { label: 'Experience', requiredAccess: ACCESS_KEYS.profile.experience },
-  { label: 'Skills', requiredAccess: ACCESS_KEYS.profile.skills },
+  { label: 'Pages', requiredAccess: ACCESS_KEYS.profile.viewOwn },
   { label: 'Shop', requiredAccess: ACCESS_KEYS.profile.shop },
   { label: 'Education', requiredAccess: ACCESS_KEYS.profile.education },
   { label: 'Reviews', requiredAccess: ACCESS_KEYS.profile.reviews },

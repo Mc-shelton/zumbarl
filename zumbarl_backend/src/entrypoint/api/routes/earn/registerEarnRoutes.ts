@@ -4,6 +4,7 @@ import {
   acceptOpportunityInviteController,
   declineOpportunityInviteController,
   listEarnOpportunitiesController,
+  readEarnOpportunityController,
   listStudentBidsController,
   listStudentInvitesController,
   listStudentInterviewsController,
@@ -21,6 +22,7 @@ import {
 async function registerEarnRoutes(app: FastifyInstance) {
   const students = requireRoles(...roleGroups.student, ...roleGroups.admin)
   app.get('/opportunities', { preHandler: students }, listEarnOpportunitiesController)
+  app.get('/opportunities/:id', { preHandler: students }, readEarnOpportunityController)
   app.get('/bids', { preHandler: students }, listStudentBidsController)
   app.get('/opportunities/:id/bid-draft', { preHandler: students }, readOpportunityBidDraftController)
   app.put('/opportunities/:id/bid-draft', { preHandler: students }, saveOpportunityBidDraftController)
@@ -35,6 +37,8 @@ async function registerEarnRoutes(app: FastifyInstance) {
   app.get('/projects', { preHandler: students }, listStudentProjectsController)
   app.post('/projects/:id/deliverables', { preHandler: students }, submitProjectDeliverableController)
   app.get('/trust-snapshot', { preHandler: students }, readStudentTrustSnapshotController)
+  app.get('/score', { preHandler: students }, readStudentTrustSnapshotController)
+  app.get('/score/me', { preHandler: students }, readStudentTrustSnapshotController)
 }
 
 export {

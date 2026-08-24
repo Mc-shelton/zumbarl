@@ -12,6 +12,7 @@ import { resolveBudgetAmount, shareOfAgreedTotal } from '../../../shared/project
 import { creditStudentWallet, readStudentWallet } from '../../../shared/services/walletLedger.js'
 import { prisma } from '../../../lib/prisma.js'
 import type { Prisma, ProjectTeamInvite } from '@prisma/client'
+import { recordCompletedProjectOutcomes } from '../../services/scores/index.js'
 
 const projects = createPrismaRecordRepository('projects')
 const applications = createPrismaRecordRepository('projectApplications')
@@ -634,7 +635,7 @@ class ProjectWorkflowsRepository {
     }
     const contractAmount = agreedAmount > 0 ? agreedAmount : projectBudgetAmount
 
-    return runPrismaRecordTransaction(async (createRepository, tx) => {
+    const result = await runPrismaRecordTransaction(async (createRepository, tx) => {
       const transactionProjects = createRepository('projects')
       const transactionDeliverables = createRepository('deliverables')
       const transactionMilestones = createRepository('milestones')
@@ -815,6 +816,10 @@ class ProjectWorkflowsRepository {
       }
       return next
     })
+    if (payload.decision === 'approved') {
+      await recordCompletedProjectOutcomes(existing.projectId, payload.review ?? {})
+    }
+    return result
   }
 
   // Business marks a deliverable (scope item) or milestone complete. This is the
@@ -848,7 +853,7 @@ class ProjectWorkflowsRepository {
     }
     const contractAmount = agreedAmount > 0 ? agreedAmount : projectBudgetAmount
 
-    return runPrismaRecordTransaction(async (createRepository, tx) => {
+    const result = await runPrismaRecordTransaction(async (createRepository, tx) => {
       const transactionProjects = createRepository('projects')
       const transactionDeliverables = createRepository('deliverables')
       const transactionMilestones = createRepository('milestones')
@@ -964,6 +969,10 @@ class ProjectWorkflowsRepository {
 
       return { completed: true as const, amount, recipients: students.length, allDone }
     })
+    if (result.completed && result.allDone) {
+      await recordCompletedProjectOutcomes(projectId, payload.review ?? {})
+    }
+    return result
   }
 
   // Business proposes a new agreed price on an existing (awarded) project. The

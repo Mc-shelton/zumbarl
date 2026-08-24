@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" role="img" aria-labelledby="title">
+  <title id="title">Default member avatar</title>
+  <defs><linearGradient id="background" x1="20" y1="10" x2="142" y2="151" gradientUnits="userSpaceOnUse"><stop stop-color="#76506f"/><stop offset="1" stop-color="#34384c"/></linearGradient></defs>
+  <rect width="160" height="160" rx="80" fill="url(#background)"/>
+  <circle cx="80" cy="61" r="30" fill="#f6edf5"/>
+  <path d="M28 148c4-44 22-67 52-67s48 23 52 67H28Z" fill="#f6edf5"/>
+</svg>

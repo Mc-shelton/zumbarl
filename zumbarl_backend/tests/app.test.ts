@@ -7,6 +7,7 @@ const app = await buildApp()
 const createdWorkflowRecordIds: string[] = []
 const createdCounterOfferBidIds: string[] = []
 const createdMarketingCampaignIds: string[] = []
+const createdConnectPostIds: string[] = []
 const seededTeamProjectId = 'team-social-media-content-creation'
 
 async function login(email: string) {
@@ -80,6 +81,9 @@ describe('Zumbarl API', () => {
         where: { id: { in: createdMarketingCampaignIds } }
       })
     }
+    if (createdConnectPostIds.length) {
+      await prisma.connectPost.deleteMany({ where: { id: { in: createdConnectPostIds } } })
+    }
     await prisma.opportunity.deleteMany({
       where: {
         title: {
@@ -91,7 +95,8 @@ describe('Zumbarl API', () => {
             'Published deletion protection test opportunity',
             'Private until funded test opportunity',
             'Auto-created fallback deliverable test opportunity'
-          ]
+          ],
+          mode: 'insensitive'
         }
       }
     })
@@ -102,6 +107,205 @@ describe('Zumbarl API', () => {
     const response = await app.inject({ method: 'GET', url: '/health' })
     expect(response.statusCode).toBe(200)
     expect(response.json().status).toBe('ok')
+  })
+
+  it('serves the persisted Bayesian Zumbarl score', async () => {
+    const studentToken = await login('student@zumbarl.test')
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/earn/score',
+      headers: { authorization: `Bearer ${studentToken}` }
+    })
+
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      tier: 'SILVER',
+      confidence: 'ESTABLISHED',
+      conservativeLowerBound: 70,
+      effectiveEngagements: 12,
+      uniqueClients: 7,
+      subscores: {
+        quality: 76,
+        reliability: 94,
+        professionalism: 82,
+        relationship: 68
+      }
+    })
+
+    const canonicalResponse = await app.inject({
+      method: 'GET',
+      url: '/api/v1/earn/score/me',
+      headers: { authorization: `Bearer ${studentToken}` }
+    })
+    expect(canonicalResponse.statusCode).toBe(200)
+    expect(canonicalResponse.json().score).toBe(response.json().score)
+
+    const profileScoreResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/campus/profiles/${response.json().studentId}/score`,
+      headers: { authorization: `Bearer ${studentToken}` }
+    })
+    expect(profileScoreResponse.statusCode).toBe(200)
+    expect(profileScoreResponse.json()).toMatchObject({
+      studentId: response.json().studentId,
+      overallScore: 74,
+      conservativeLowerBound: 70
+    })
+  })
+
+  it('persists post engagement and handles explicit reshares with commentary', async () => {
+    const studentToken = await login('student@zumbarl.test')
+    const postId = 'integration-static-engagement-post'
+    createdConnectPostIds.push(postId)
+    await prisma.connectPost.deleteMany({ where: { id: postId } })
+    const post = {
+      body: 'Static feed post used to verify engagement.',
+      type: 'image',
+      mediaUrls: ['/assets/index/bee_nobg.png'],
+      mediaEdits: [],
+      creator: {
+        name: 'Campus Creator',
+        handle: '@campuscreator',
+        avatarUrl: '/assets/index/bee_nobg.png',
+        campus: 'Zetech University'
+      },
+      reactionCount: 5,
+      commentCount: 2,
+      repostCount: 3
+    }
+
+    const likeResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/connect/posts/${postId}/reactions`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { reaction: 'like', post }
+    })
+    expect(likeResponse.statusCode).toBe(200)
+    expect(likeResponse.json()).toMatchObject({ viewerReacted: true, reactionCount: 6 })
+
+    const unlikeResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/connect/posts/${postId}/reactions`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { reaction: 'like', post }
+    })
+    expect(unlikeResponse.statusCode).toBe(200)
+    expect(unlikeResponse.json()).toMatchObject({ viewerReacted: false, reactionCount: 5 })
+
+    const commentResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/connect/posts/${postId}/comments`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { body: 'This is a persisted campus comment.', post }
+    })
+    expect(commentResponse.statusCode).toBe(201)
+    expect(commentResponse.json().body).toBe('This is a persisted campus comment.')
+
+    const reshareResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/connect/posts/${postId}/reshares`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { post }
+    })
+    expect(reshareResponse.statusCode).toBe(200)
+    expect(reshareResponse.json()).toMatchObject({ viewerReshared: true, repostCount: 4 })
+    const resharePostId = reshareResponse.json().resharePostId as string
+    createdConnectPostIds.push(resharePostId)
+
+    const repeatReshareResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/connect/posts/${postId}/reshares`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { post }
+    })
+    expect(repeatReshareResponse.statusCode).toBe(200)
+    expect(repeatReshareResponse.json()).toMatchObject({
+      viewerReshared: true,
+      repostCount: 4,
+      resharePostId
+    })
+
+    const commentary = 'This is worth sharing with every campus creator.'
+    const commentaryReshareResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/connect/posts/${postId}/reshares`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { post, commentary }
+    })
+    expect(commentaryReshareResponse.statusCode).toBe(200)
+    expect(commentaryReshareResponse.json()).toMatchObject({
+      viewerReshared: true,
+      viewerReshareCommentary: commentary,
+      repostCount: 4,
+      resharePostId
+    })
+
+    const resharedFeedResponse = await app.inject({
+      method: 'GET',
+      url: '/api/v1/connect/feed',
+      headers: { authorization: `Bearer ${studentToken}` }
+    })
+    const publishedReshare = resharedFeedResponse.json().data.find(
+      (item: Record<string, any>) => item.id === resharePostId
+    )
+    expect(publishedReshare).toMatchObject({
+      id: resharePostId,
+      type: 'reshare',
+      reshareOfPostId: postId,
+      reshareCommentary: commentary,
+      body: commentary,
+      isMine: true,
+      resharedPost: {
+        id: postId,
+        body: post.body,
+        creator: { name: 'Campus Creator', handle: '@campuscreator' }
+      }
+    })
+
+    const undoReshareResponse = await app.inject({
+      method: 'DELETE',
+      url: `/api/v1/connect/posts/${postId}/reshares`,
+      headers: { authorization: `Bearer ${studentToken}` }
+    })
+    expect(undoReshareResponse.statusCode).toBe(200)
+    expect(undoReshareResponse.json()).toMatchObject({ viewerReshared: false, repostCount: 3 })
+
+    const feedResponse = await app.inject({
+      method: 'GET',
+      url: '/api/v1/connect/feed',
+      headers: { authorization: `Bearer ${studentToken}` }
+    })
+    expect(feedResponse.statusCode).toBe(200)
+    const savedPost = feedResponse.json().data.find((item: Record<string, any>) => item.id === postId)
+    expect(savedPost).toMatchObject({
+      reactionCount: 5,
+      viewerReacted: false,
+      commentCount: 3,
+      repostCount: 3,
+      viewerReshared: false
+    })
+    expect(savedPost.comments).toEqual(expect.arrayContaining([
+      expect.objectContaining({ body: 'This is a persisted campus comment.' })
+    ]))
+    expect(feedResponse.json().data.some((item: Record<string, any>) => item.id === resharePostId)).toBe(false)
+
+    const ownPostResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/connect/posts',
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { body: 'My own post cannot be reshared by me.', type: 'post' }
+    })
+    expect(ownPostResponse.statusCode).toBe(201)
+    const ownPostId = ownPostResponse.json().id as string
+    createdConnectPostIds.push(ownPostId)
+    const selfReshareResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/connect/posts/${ownPostId}/reshares`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { post: { ...post, body: ownPostResponse.json().body } }
+    })
+    expect(selfReshareResponse.statusCode).toBe(400)
+    expect(selfReshareResponse.json().error).toBe('SELF_RESHARE')
   })
 
   it('edits marketing campaigns and lets qualified creators claim slots without applying', async () => {
@@ -216,6 +420,74 @@ describe('Zumbarl API', () => {
     expect(detailResponse.json().acceptances).toHaveLength(1)
     expect(detailResponse.json().acceptances[0].trackingClicks).toBe(1)
     expect(detailResponse.json().acceptances[0].trackingVisits).toBe(2)
+  })
+
+  it('stores Zumbarl Ads requests for admin review and publication', async () => {
+    const businessToken = await login('business@zumbarl.test')
+    const adminToken = await login('admin@zumbarl.test')
+    const createResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/marketing/campaigns',
+      headers: { authorization: `Bearer ${businessToken}` },
+      payload: {
+        title: 'Zumbarl Ads review campaign',
+        description: 'A campaign used to verify the admin ad review lifecycle.',
+        budgetAmount: 1000,
+        currency: 'KES',
+        platforms: ['Instagram'],
+        payoutPerCampaigner: 100,
+        creatorsLimit: 2,
+        materials: [{
+          title: 'Campaign ad creative',
+          type: 'image',
+          url: 'https://example.com/campaign-ad.png'
+        }],
+        status: 'draft',
+        zumbarlAds: {
+          requested: true,
+          headline: 'Discover the campus launch',
+          description: 'Join creators bringing this campaign to life.',
+          callToAction: 'Learn more',
+          destinationUrl: 'https://example.com/campus-launch'
+        }
+      }
+    })
+    expect(createResponse.statusCode).toBe(201)
+    const campaignId = createResponse.json().id as string
+    createdMarketingCampaignIds.push(campaignId)
+
+    const draftQueue = await app.inject({
+      method: 'GET',
+      url: '/api/v1/marketing/ads?pageSize=100',
+      headers: { authorization: `Bearer ${adminToken}` }
+    })
+    expect(draftQueue.statusCode).toBe(200)
+    const draftAd = draftQueue.json().data.find((ad: Record<string, any>) => ad.campaignId === campaignId)
+    expect(draftAd.status).toBe('draft')
+
+    const publishCampaign = await app.inject({
+      method: 'POST',
+      url: `/api/v1/marketing/campaigns/${campaignId}/publish`,
+      headers: { authorization: `Bearer ${businessToken}` }
+    })
+    expect(publishCampaign.statusCode).toBe(200)
+
+    const reviewQueue = await app.inject({
+      method: 'GET',
+      url: '/api/v1/marketing/ads?pageSize=100',
+      headers: { authorization: `Bearer ${adminToken}` }
+    })
+    const pendingAd = reviewQueue.json().data.find((ad: Record<string, any>) => ad.campaignId === campaignId)
+    expect(pendingAd.status).toBe('pending_review')
+
+    const publishAd = await app.inject({
+      method: 'POST',
+      url: `/api/v1/marketing/ads/${pendingAd.id}/publish`,
+      headers: { authorization: `Bearer ${adminToken}` }
+    })
+    expect(publishAd.statusCode).toBe(200)
+    expect(publishAd.json().status).toBe('published')
+    expect(publishAd.json().publishedAt).toBeTruthy()
   })
 
   it('creates a shared fallback deliverable as soon as an unscoped project is awarded', async () => {
@@ -384,6 +656,142 @@ describe('Zumbarl API', () => {
     })
     expect(response.statusCode).toBe(201)
     expect(response.json().checkpoints.length).toBeGreaterThan(0)
+  })
+
+  it('uses typed Learn records, keeps student evidence pending, and scores assessments on the server', async () => {
+    const studentToken = await login('student@zumbarl.test')
+    const adminToken = await login('admin@zumbarl.test')
+    const legacyCountBefore = await prisma.workflowRecord.count({ where: { collection: { in: ['roadmaps', 'evidence'] } } })
+    const roadmapResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/learn/roadmaps',
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { ladderId: 'digital-marketer', intent: 'earn-while-learning' }
+    })
+    expect(roadmapResponse.statusCode).toBe(201)
+    const enrollment = roadmapResponse.json()
+    const firstCheckpoint = enrollment.checkpoints[0]
+    const secondCheckpoint = enrollment.checkpoints[1]
+
+    const evidenceResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/learn/roadmaps/${enrollment.id}/evidence`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: {
+        checkpointId: secondCheckpoint.id,
+        competencyId: secondCheckpoint.competencies[0].id,
+        source: 'OTHER',
+        sourceId: `typed-learn-integration-test-${Date.now()}`,
+        note: 'Integration test evidence awaiting a real reviewer.'
+      }
+    })
+    expect(evidenceResponse.statusCode).toBe(201)
+    expect(evidenceResponse.json()).toMatchObject({ status: 'PENDING', scoreAwarded: 0 })
+    const evidenceId = evidenceResponse.json().id as string
+
+    const verifyEvidenceResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/learn/evidence/${evidenceId}/verify`,
+      headers: { authorization: `Bearer ${adminToken}` },
+      payload: { score: 20 }
+    })
+    expect(verifyEvidenceResponse.statusCode).toBe(200)
+    expect(verifyEvidenceResponse.json()).toMatchObject({ verificationStatus: 'VERIFIED', scoreAwarded: 20 })
+    const verifiedCompetency = await prisma.studentCompetencyState.findUnique({
+      where: { studentId_competencyId: { studentId: enrollment.studentId, competencyId: secondCheckpoint.competencies[0].id } }
+    })
+    expect(verifiedCompetency).toMatchObject({ status: 'EVIDENCE_VERIFIED' })
+    expect(verifiedCompetency?.evidenceScore).toBeGreaterThanOrEqual(20)
+    expect(enrollment.evidence).toEqual(expect.arrayContaining([
+      expect.objectContaining({ source: 'PORTFOLIO', status: 'VERIFIED' })
+    ]))
+
+    const assessmentResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/learn/roadmaps/${enrollment.id}/tests`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: {
+        checkpointId: firstCheckpoint.id,
+        answers: [
+          { questionId: 'pillars-purpose', answer: 'Audience need and campaign goal' },
+          { questionId: 'pillars-measure', answer: 'A defined action and measurable result' }
+        ]
+      }
+    })
+    expect(assessmentResponse.statusCode).toBe(200)
+    expect(assessmentResponse.json()).toMatchObject({ score: 20, total: 20, correct: 2, questions: 2 })
+    const assessmentAttemptId = assessmentResponse.json().attemptId as string
+    expect(await prisma.roadmapAssessmentAttempt.findUnique({ where: { id: assessmentAttemptId } })).toMatchObject({
+      enrollmentId: enrollment.id,
+      stepId: firstCheckpoint.id,
+      correctAnswers: 2,
+      totalQuestions: 2
+    })
+
+    const readRoadmapResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/learn/roadmaps/${enrollment.id}`,
+      headers: { authorization: `Bearer ${studentToken}` }
+    })
+    expect(readRoadmapResponse.statusCode).toBe(200)
+    expect(readRoadmapResponse.json().assessmentAttempts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: assessmentAttemptId, checkpointId: firstCheckpoint.id })
+    ]))
+
+    const practiceResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/learn/roadmaps/${enrollment.id}/practice-submissions`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: {
+        checkpointId: firstCheckpoint.id,
+        resourceId: firstCheckpoint.resources[0].id,
+        competencyId: firstCheckpoint.competencies[0].id,
+        responses: { audience: 'First-year students learning to budget for their first semester.' },
+        reflection: 'I would define the audience need before choosing a post format.'
+      }
+    })
+    expect(practiceResponse.statusCode).toBe(201)
+    expect(practiceResponse.json()).toMatchObject({ status: 'SUBMITTED', evidence: { status: 'PENDING', scoreAwarded: 0 } })
+    const practiceSubmissionId = practiceResponse.json().id as string
+    const practiceEvidenceId = practiceResponse.json().evidence.id as string
+
+    const recommendationsResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/learn/roadmaps/${enrollment.id}/recommendations`,
+      headers: { authorization: `Bearer ${studentToken}` }
+    })
+    expect(recommendationsResponse.statusCode).toBe(200)
+    expect(recommendationsResponse.json().data).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        title: 'Social Media Manager',
+        reasons: expect.any(Array)
+      })
+    ]))
+    const recommendedOpportunity = recommendationsResponse.json().data.find((item: Record<string, any>) => item.title === 'Social Media Manager')
+    const opportunityDetailResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/earn/opportunities/${recommendedOpportunity.id}`,
+      headers: { authorization: `Bearer ${studentToken}` }
+    })
+    expect(opportunityDetailResponse.statusCode).toBe(200)
+    expect(opportunityDetailResponse.json()).toMatchObject({ id: recommendedOpportunity.id, title: 'Social Media Manager' })
+    expect(await prisma.workflowRecord.count({ where: { collection: { in: ['roadmaps', 'evidence'] } } })).toBe(legacyCountBefore)
+
+    await prisma.roadmapEvidence.delete({ where: { id: practiceEvidenceId } })
+    await prisma.learningPracticeSubmission.delete({ where: { id: practiceSubmissionId } })
+    await prisma.roadmapAssessmentAttempt.delete({ where: { id: assessmentAttemptId } })
+    await prisma.roadmapEvidence.delete({ where: { id: evidenceId } })
+    await prisma.studentCompetencyState.deleteMany({
+      where: { studentId: enrollment.studentId, competencyId: { in: [firstCheckpoint.competencies[0].id, secondCheckpoint.competencies[0].id] } }
+    })
+    await prisma.studentRoadmapStepProgress.update({
+      where: { enrollmentId_stepId: { enrollmentId: enrollment.id, stepId: secondCheckpoint.id } },
+      data: { evidenceScore: 0, testScore: 0, status: 'LOCKED' }
+    })
+    await prisma.studentRoadmapStepProgress.update({
+      where: { enrollmentId_stepId: { enrollmentId: enrollment.id, stepId: firstCheckpoint.id } },
+      data: { testScore: 12, status: 'ACTIVE', completedAt: null }
+    })
   })
 
   it('keeps an opportunity private and blocks applications until its full budget is funded and published', async () => {
@@ -1101,8 +1509,10 @@ describe('Zumbarl API', () => {
     expect(revisedSubmissionsResponse.statusCode).toBe(200)
     expect(revisedSubmissionsResponse.json().data[0].isRevision).toBe(true)
     expect(revisedSubmissionsResponse.json().data[0].revisionNumber).toBe(1)
-    expect(revisedSubmissionsResponse.json().data[0].projectAgreedAmount).toBe(4500)
-    expect(revisedSubmissionsResponse.json().data[0].payoutAmount).toBe(4500)
+    // This is a Project opportunity, so all awards share its funded project
+    // budget. Task opportunities use the individual bidder's agreed amount.
+    expect(revisedSubmissionsResponse.json().data[0].projectAgreedAmount).toBe(5000)
+    expect(revisedSubmissionsResponse.json().data[0].payoutAmount).toBe(5000)
     expect(revisedSubmissionsResponse.json().data[0].payoutCurrency).toBe('KES')
 
     const revisionNotification = await prisma.notification.findFirst({
@@ -1123,5 +1533,96 @@ describe('Zumbarl API', () => {
     })
     expect(lateDeliverableResponse.statusCode).toBe(409)
     expect(lateDeliverableResponse.json().error).toBe('OPPORTUNITY_SCOPE_LOCKED_AFTER_PROJECT_START')
+
+    const scoreBeforeCompletion = await prisma.zumbarlScore.findUnique({
+      where: { studentId: bid.student.id }
+    })
+    const snapshotIdsBeforeCompletion = (await prisma.scoreSnapshot.findMany({
+      where: { studentId: bid.student.id },
+      select: { id: true }
+    })).map((snapshot) => snapshot.id)
+
+    const approveRevisionResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/projects/deliverables/${revisionResponse.json().id}/review`,
+      headers: { authorization: `Bearer ${businessToken}` },
+      payload: {
+        decision: 'approved',
+        feedback: 'Strong campaign concept.',
+        review: {
+          deliveryQualityRating: 5,
+          briefAdherenceRating: 5,
+          communicationRating: 4,
+          conductRating: 5,
+          clientSatisfactionRating: 5,
+          wouldHireAgain: true,
+          deadlineOutcome: 'client_delay',
+          submissionCompleteness: 'partial',
+          publicFeedback: 'A strong, reliable delivery.'
+        }
+      }
+    })
+    expect(approveRevisionResponse.statusCode).toBe(200)
+
+    const completeTargetResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/projects/${projectId}/complete-target`,
+      headers: { authorization: `Bearer ${businessToken}` },
+      payload: {
+        scopeItemId: opportunity.deliverableMilestones[0].id,
+        review: {
+          deliveryQualityRating: 5,
+          briefAdherenceRating: 5,
+          communicationRating: 4,
+          conductRating: 5,
+          clientSatisfactionRating: 5,
+          wouldHireAgain: true,
+          deadlineOutcome: 'client_delay',
+          submissionCompleteness: 'partial',
+          publicFeedback: 'A strong, reliable delivery.'
+        }
+      }
+    })
+    expect(completeTargetResponse.statusCode).toBe(200)
+    expect(completeTargetResponse.json().allDone).toBe(true)
+
+    const scoredOutcome = await prisma.engagementOutcome.findUnique({
+      where: {
+        studentId_opportunityId: {
+          studentId: bid.student.id,
+          opportunityId: opportunity.id
+        }
+      }
+    })
+    expect(scoredOutcome).toMatchObject({
+      projectId,
+      deliveryQualityRating: 5,
+      briefAdherenceRating: 5,
+      communicationRating: 4,
+      conductRating: 5,
+      clientSatisfactionRating: 5,
+      wouldHireAgain: true,
+      isVerified: true,
+      completedWithinDeadline: false,
+      deadlineMissWasStudentFault: false,
+      submissionWasComplete: false
+    })
+
+    const scoreAfterCompletion = await prisma.zumbarlScore.findUnique({
+      where: { studentId: bid.student.id }
+    })
+    expect(scoreAfterCompletion?.totalGigsCompleted).toBe((scoreBeforeCompletion?.totalGigsCompleted ?? 0) + 1)
+    expect(scoreAfterCompletion?.lastRefreshedAt).toBeTruthy()
+
+    // Restore Aisha's seeded baseline so the integration test remains isolated.
+    await prisma.engagementOutcome.delete({ where: { id: scoredOutcome!.id } })
+    await prisma.scoreSnapshot.deleteMany({
+      where: {
+        studentId: bid.student.id,
+        id: { notIn: snapshotIdsBeforeCompletion }
+      }
+    })
+    await prisma.studentCategoryScore.deleteMany({ where: { studentId: bid.student.id } })
+    await seedDatabase()
   })
 })

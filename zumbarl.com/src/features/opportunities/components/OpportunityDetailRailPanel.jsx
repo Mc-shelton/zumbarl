@@ -15,6 +15,8 @@ function OpportunityDetailRailPanel({
   onEditFilters,
   onOpenPlaceBid,
   selectedOpportunity,
+  selectedOpportunityBid,
+  selectedOpportunityProject,
   selectedOpportunityThumbnail,
 }) {
   if (!selectedOpportunity) {
@@ -166,14 +168,24 @@ function OpportunityDetailRailPanel({
             <span>This business has selected its talent and is no longer accepting applications.</span>
           </div>
         ) : (
-          <button
-            type="button"
-            className="opportunities-detail-bid-btn"
-            onClick={() => onOpenPlaceBid(selectedOpportunity.opportunityUuid)}
-          >
-            Place Bid
-            <FiArrowRight aria-hidden="true" />
-          </button>
+          <>
+            {selectedOpportunityProject || (selectedOpportunityBid && !selectedOpportunityBid.isDraft) ? (
+              <div className="opportunities-detail-application-note" role="status">
+                <FiCheckCircle aria-hidden="true" />
+                {selectedOpportunityProject
+                  ? <div><strong>Work is ongoing</strong><span>This opportunity has moved into your active project work.</span></div>
+                  : <div><strong>Application submitted</strong><span>It is being tracked under My Bids until the business awards the work.</span></div>}
+              </div>
+            ) : null}
+            <button
+              type="button"
+              className="opportunities-detail-bid-btn"
+              onClick={() => onOpenPlaceBid(selectedOpportunity.opportunityUuid)}
+            >
+              {selectedOpportunityProject ? 'View Ongoing Work' : selectedOpportunityBid?.isDraft ? 'Continue Application' : selectedOpportunityBid ? 'View Application' : 'Place Bid'}
+              <FiArrowRight aria-hidden="true" />
+            </button>
+          </>
         )
       ) : null}
     </section>

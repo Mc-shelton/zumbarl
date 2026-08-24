@@ -48,7 +48,7 @@
 
 .connect-hero span {
   display: block;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -88,13 +88,13 @@
 
 .connect-hero dt {
   color: var(--color-text-muted, #68708e);
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
 .connect-hero dd {
   color: var(--color-text, #202641);
-  font-size: 1.25rem;
+  font-size: var(--text-title-sm);
   font-weight: 900;
   margin: 0.2rem 0 0;
 }
@@ -159,13 +159,13 @@
   border-bottom: 1px solid #e8e6f0;
 }
 
-.connect-profile-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 14px; background: #eee9ff; color: #6542dd; font-size: 1.25rem; }
-.connect-profile-modal header span { color: #7258d5; font-size: .72rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.connect-profile-icon { width: 46px; height: 46px; display: grid; place-items: center; border-radius: 14px; background: #eee9ff; color: #6542dd; font-size: var(--text-title-sm); }
+.connect-profile-modal header span { color: #7258d5; font-size: var(--text-caption); font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .connect-profile-modal h2 { margin: 3px 0 4px; color: #202641; }
 .connect-profile-modal header p, .connect-profile-modal section > p { margin: 0; color: #6d7287; line-height: 1.45; }
 .connect-profile-modal header > button { border: 0; border-radius: 10px; width: 36px; height: 36px; background: #f5f4f9; color: #62677a; cursor: pointer; }
 .connect-profile-modal > section { padding: 20px 24px; border-bottom: 1px solid #eeecf3; }
-.connect-profile-modal h3 { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; color: #252942; font-size: 1rem; }
+.connect-profile-modal h3 { display: flex; align-items: center; gap: 7px; margin: 0 0 6px; color: #252942; font-size: var(--text-body); }
 .connect-profile-interests { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 15px; }
 .connect-profile-interests button { display: inline-flex; align-items: center; gap: 5px; border: 1px solid #ded9ed; border-radius: 999px; padding: 9px 13px; background: #fff; color: #44495e; cursor: pointer; }
 .connect-profile-interests button.is-selected { border-color: #7253e6; background: #eee9ff; color: #5535c7; font-weight: 750; }
@@ -260,7 +260,7 @@
   border-radius: 999px;
   color: #ffffff;
   display: inline-flex;
-  font-size: 0.82rem;
+  font-size: var(--text-small);
   font-weight: 900;
   height: 2.3rem;
   justify-content: center;
@@ -280,7 +280,7 @@
 
 .connect-story-card > span {
   color: #5b49d6;
-  font-size: 0.75rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -305,7 +305,7 @@
 .connect-post-card header span {
   color: #5b49d6;
   display: block;
-  font-size: 0.76rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -367,7 +367,7 @@
 
 .connect-group-grid span {
   color: #5b49d6;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-transform: uppercase;
 }
@@ -446,7 +446,7 @@
 }
 
 .connect-rail-card h2 {
-  font-size: 0.95rem;
+  font-size: var(--text-body);
 }
 
 .connect-rail-card p {

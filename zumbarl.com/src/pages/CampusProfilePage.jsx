@@ -24,7 +24,7 @@ import {
 import useCampusProfileState from '../features/profile/hooks/useCampusProfileState'
 import useCampusProfileViewModel from '../features/profile/hooks/useCampusProfileViewModel'
 import { readMyStudentProfileExperience, readStudentProfileExperience, updateMyStudentProfile } from '../features/campus/services/readCampusExperience'
-import { getAuthUserSnapshot, hydrateAuthUserFromBackend } from '../features/auth/services/authUserService'
+import { getAuthUserSnapshot, hydrateAuthUserFromBackend, refreshAuthUserFromBackend } from '../features/auth/services/authUserService'
 import { readProfileRelationship, setProfileRelationship } from '../features/profile/services/profileRelationshipService'
 import { CAMPUS_PROFILE_SEO } from '../features/seo/constants'
 import { decideMarketplaceOffer, readMyMarketplaceInventory, readMyMarketplaceSales, readMyPendingMarketplaceOffers, updateMarketplaceSaleStatus, updateMyMarketplaceShop } from '../features/opportunities/services/marketplaceInteractionService'
@@ -37,11 +37,12 @@ function CampusProfilePage({ viewContext = 'campus' }) {
   const isBusinessView = viewContext === 'business'
   const isPublicStudentView = Boolean(studentId)
   const [viewerStudentId, setViewerStudentId] = useState(() => getAuthUserSnapshot()?.student?.id || '')
-  const isOwnProfile = !isBusinessView && (!studentId || Boolean(viewerStudentId && viewerStudentId === studentId))
+  const [profileExperience, setProfileExperience] = useState(null)
+  const targetStudentId = profileExperience?.header?.id || studentId || ''
+  const isOwnProfile = !isBusinessView && (!studentId || Boolean(viewerStudentId && viewerStudentId === targetStudentId))
   const profileTabs = isOwnProfile ? PROFILE_TABS : PROFILE_TABS.filter((tab) => tab !== 'Marketing')
   const [relationship, setRelationship] = useState({ isConnected: false, isFollowing: false })
   const [relationshipPending, setRelationshipPending] = useState('')
-  const [profileExperience, setProfileExperience] = useState(null)
   const [pendingShopOffers, setPendingShopOffers] = useState([])
   const [shopOfferDecisionId, setShopOfferDecisionId] = useState('')
   const [shop, setShop] = useState(null)
@@ -60,6 +61,19 @@ function CampusProfilePage({ viewContext = 'campus' }) {
     skillsLevelFilters: SKILLS_LEVEL_FILTERS,
   })
   const viewModel = useCampusProfileViewModel(profileState, profileExperience)
+  const contactUserId = profileExperience?.header?.userId || ''
+
+  function openProfileContact(mode) {
+    if (!contactUserId || isOwnProfile) return
+    const params = new URLSearchParams({
+      participantId: contactUserId,
+      participantName: profileExperience?.header?.name || 'Student',
+      participantStudentId: profileExperience?.header?.id || studentId || '',
+    })
+    if (profileExperience?.header?.avatar) params.set('participantAvatar', profileExperience.header.avatar)
+    if (mode === 'audio' || mode === 'video') params.set('call', mode)
+    navigate(`/messages?${params.toString()}`)
+  }
 
   useEffect(() => {
     let isMounted = true
@@ -70,22 +84,48 @@ function CampusProfilePage({ viewContext = 'campus' }) {
   }, [])
 
   useEffect(() => {
-    if (!studentId || isBusinessView || isOwnProfile) return undefined
+    if (!targetStudentId || isBusinessView || isOwnProfile) return undefined
     let isMounted = true
-    readProfileRelationship(studentId).then((result) => {
+    readProfileRelationship(targetStudentId).then((result) => {
       if (isMounted) setRelationship(result)
     }).catch(() => {})
     return () => { isMounted = false }
-  }, [isBusinessView, isOwnProfile, studentId])
+  }, [isBusinessView, isOwnProfile, targetStudentId])
 
   async function handleToggleRelationship(type, active) {
-    if (!studentId || relationshipPending) return
+    if (!targetStudentId || relationshipPending) return
     setRelationshipPending(type)
     try {
-      setRelationship(await setProfileRelationship(studentId, type, active))
+      const updatedRelationship = await setProfileRelationship(targetStudentId, type, active)
+      if (type === 'follow' && updatedRelationship.isFollowing !== relationship.isFollowing) {
+        setProfileExperience((current) => current ? {
+          ...current,
+          socialStats: {
+            ...(current.socialStats || {}),
+            followers: Math.max(0, Number(current.socialStats?.followers || 0) + (updatedRelationship.isFollowing ? 1 : -1)),
+          },
+        } : current)
+      }
+      setRelationship(updatedRelationship)
     } finally {
       setRelationshipPending('')
     }
+  }
+
+  async function handleSaveProfile(payload) {
+    const header = await updateMyStudentProfile(payload)
+    await refreshAuthUserFromBackend()
+    setProfileExperience((current) => ({
+      ...current,
+      header,
+      skills: (header.tags || []).map((name, index) => ({
+        id: `${header.id}-${index}`,
+        name,
+        category: 'General',
+        level: 'BEGINNER',
+        verifiedByGigs: 0,
+      })),
+    }))
   }
 
   useEffect(() => {
@@ -303,7 +343,7 @@ function CampusProfilePage({ viewContext = 'campus' }) {
             ) : (
               <ProfileTopBar activeTab={profileState.activeTab} />
             )}
-            <ProfileHero activeTab={profileState.activeTab} canRelate={!isBusinessView && Boolean(studentId) && !isOwnProfile} isOwnProfile={isOwnProfile} onEditShop={() => setIsShopEditorOpen(true)} onSaveProfile={async (payload) => { const header = await updateMyStudentProfile(payload); setProfileExperience((current) => ({ ...current, header, skills: (header.tags || []).map((name, index) => ({ id: `${header.id}-${index}`, name, category: 'General', level: 'BEGINNER', verifiedByGigs: 0 })) })) }} onToggleRelationship={handleToggleRelationship} profileHeader={profileExperience?.header} relationship={relationship} relationshipPending={relationshipPending} />
+            <ProfileHero activeTab={profileState.activeTab} canRelate={!isBusinessView && Boolean(studentId) && !isOwnProfile} isOwnProfile={isOwnProfile} onEditShop={() => setIsShopEditorOpen(true)} onSaveProfile={handleSaveProfile} onToggleRelationship={handleToggleRelationship} profileHeader={profileExperience?.header} relationship={relationship} relationshipPending={relationshipPending} />
             {!viewModel.isShopTab && !viewModel.isMarketingTab ? <ProfileMetrics metrics={profileExperience?.metrics} /> : null}
             <ProfileTabs
               activeTab={profileState.activeTab}
@@ -315,8 +355,11 @@ function CampusProfilePage({ viewContext = 'campus' }) {
               canManageMarketing={isOwnProfile}
               canManageShop={isOwnProfile}
               handlers={tabHandlers}
+              isOwnProfile={isOwnProfile}
               isShopOrdersOpen={isShopOrdersOpen}
+              onOpenKnowledgeHub={(tab = 'resources') => navigate(`/campus/learn?view=knowledge&tab=${tab}`)}
               pendingShopOffers={pendingShopOffers}
+              profileName={profileExperience?.header?.name}
               shop={shop}
               shopOfferDecisionId={shopOfferDecisionId}
               sellerOrders={sellerOrders}
@@ -324,6 +367,7 @@ function CampusProfilePage({ viewContext = 'campus' }) {
               sellerOrdersLoading={sellerOrdersLoading}
               updatingOrderId={updatingOrderId}
               profileState={profileState}
+              profileStudentId={targetStudentId}
               viewModel={viewModel}
             />
           </section>
@@ -350,25 +394,27 @@ function CampusProfilePage({ viewContext = 'campus' }) {
             <ProfileSideRail
               activeShopDetailImage={viewModel.activeShopDetailImage}
               activeShopDetailTab={profileState.activeShopDetailTab}
+              canContact={!isOwnProfile && Boolean(contactUserId)}
+              contactName={profileExperience?.header?.name}
               isExperienceTab={viewModel.isExperienceTab}
+              isFollowedByViewer={!isOwnProfile && Boolean(relationship.isFollowing)}
               isOwnProfile={isOwnProfile}
               isShopProductDetailOpen={viewModel.isShopProductDetailOpen}
               isShopTab={viewModel.isShopTab}
-              isSkillsTab={viewModel.isSkillsTab}
               normalizedShopDetailImageIndex={viewModel.normalizedShopDetailImageIndex}
               onCloseShopDetail={handleCloseShopDetail}
+              onAudioCall={() => openProfileContact('audio')}
               onDetailImageChange={profileState.setActiveShopDetailImageIndex}
               onDetailTabChange={profileState.setActiveShopDetailTab}
               onNextShopImage={handleNextShopImage}
               onEditListing={openEditListing}
+              onMessage={() => openProfileContact('message')}
               onPreviousShopImage={handlePreviousShopImage}
+              onVideoCall={() => openProfileContact('video')}
               profileExperience={profileExperience}
               shop={shop}
               selectedShopProduct={viewModel.selectedShopProduct}
               selectedShopProductDetail={viewModel.selectedShopProductDetail}
-              skillsTrendCoordinates={viewModel.skillsTrendCoordinates}
-              skillsTrendFillPoints={viewModel.skillsTrendFillPoints}
-              skillsTrendPoints={viewModel.skillsTrendPoints}
             />
           ) : null}
           {isOwnProfile && isShopEditorOpen ? <ProfileShopEditor shop={shop} onClose={() => setIsShopEditorOpen(false)} onSave={async (payload) => { const updated = await updateMyMarketplaceShop(payload); setShop(updated); setIsShopEditorOpen(false) }} /> : null}

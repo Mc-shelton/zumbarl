@@ -40,13 +40,13 @@
 .milestone-kanban-toolbar h3 {
   color: var(--color-text-strong);
   font-family: var(--font-heading);
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 
 .milestone-kanban-toolbar p {
   margin-top: 3px;
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .milestone-kanban-search {
@@ -69,7 +69,7 @@
   background: transparent;
   color: var(--color-text-strong);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .milestone-kanban-toolbar > select {
@@ -85,7 +85,7 @@
   gap: 5px;
   min-width: 90px;
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .milestone-kanban-progress strong {
@@ -160,7 +160,7 @@
 }
 
 .milestone-kanban-column > header strong {
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .milestone-kanban-column > header span {
@@ -172,14 +172,14 @@
   border-radius: 999px;
   background: var(--color-surface-muted, #eef0f5);
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 800;
 }
 
 .milestone-kanban-column > header p {
   margin: 4px 0 0 21px;
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
 }
 
 .milestone-kanban-stack {
@@ -230,14 +230,14 @@
 
 .milestone-kanban-card-open strong {
   color: var(--color-text-strong);
-  font-size: 12px;
+  font-size: var(--text-caption);
   line-height: 1.35;
 }
 
 .milestone-kanban-card-scope {
   overflow: hidden;
   color: var(--color-action);
-  font-size: 9px;
+  font-size: var(--text-micro);
   font-weight: 800;
   letter-spacing: .045em;
   text-overflow: ellipsis;
@@ -250,7 +250,7 @@
   align-items: center;
   gap: 4px;
   color: var(--color-danger, #c94d5b);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-style: normal;
 }
 
@@ -261,7 +261,7 @@
   padding: 9px 11px;
   border-top: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
   color: var(--color-text-muted);
-  font-size: 9px;
+  font-size: var(--text-micro);
 }
 
 .milestone-kanban-points,
@@ -292,7 +292,7 @@
   border-radius: 999px;
   background: var(--color-surface-brand-soft);
   color: var(--color-action);
-  font-size: 9px;
+  font-size: var(--text-micro);
 }
 
 .milestone-kanban-owner.is-empty {
@@ -308,7 +308,7 @@
   padding: 8px 11px;
   border-top: 1px solid var(--color-border);
   color: var(--color-text-muted);
-  font-size: 9px;
+  font-size: var(--text-micro);
 }
 
 .milestone-kanban-move {
@@ -319,7 +319,7 @@
   padding: 8px 11px;
   border-top: 1px solid var(--color-border);
   color: var(--color-text-muted);
-  font-size: 9px;
+  font-size: var(--text-micro);
 }
 
 .milestone-kanban-move select {
@@ -330,7 +330,7 @@
   background: var(--color-surface);
   color: var(--color-text-strong);
   font: inherit;
-  font-size: 10px;
+  font-size: var(--text-micro);
 }
 
 .milestone-kanban-notice {
@@ -340,7 +340,7 @@
   border-radius: 8px;
   background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
   color: var(--color-text-strong);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .milestone-kanban-assign select {
@@ -351,7 +351,7 @@
   background: var(--color-surface);
   color: var(--color-text-strong);
   font: inherit;
-  font-size: 10px;
+  font-size: var(--text-micro);
 }
 
 .milestone-kanban-claim {
@@ -362,7 +362,7 @@
   background: transparent;
   color: var(--color-action);
   font: inherit;
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 800;
   cursor: pointer;
 }
@@ -375,7 +375,7 @@
   border: 1px dashed var(--color-border);
   border-radius: 8px;
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
 }
 
 @media (max-width: 1200px) {
@@ -406,7 +406,7 @@
   background: var(--color-action);
   color: #fff;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   cursor: pointer;
 }
 
@@ -445,7 +445,7 @@
   border: 2px solid #c6c9dc;
   background: #ffffff;
   color: #5c638c;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -465,13 +465,13 @@
 .project-timeline-list p {
   margin: 0;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 800;
 }
 
 .project-timeline-list p {
   color: #4b527f;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-timeline-list em {
@@ -482,7 +482,7 @@
   color: var(--project-primary);
   padding: 6px 12px;
   font-style: normal;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
 }
 
@@ -502,14 +502,14 @@
   margin: 0;
   color: var(--project-ink);
   font-family: var(--project-heading-font);
-  font-size: 17px;
+  font-size: var(--text-body-lg);
 }
 
 .milestone-program-panel header p,
 .milestone-scope-card header p {
   margin: 4px 0 0;
   color: var(--project-muted);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .milestone-scope,
@@ -532,7 +532,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--project-ink) 7%, transparent);
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   text-transform: capitalize;
 }
 
@@ -557,25 +557,25 @@
 .milestone-scope-deliverables strong {
   display: block;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .milestone-scope-deliverables em {
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 
 .milestone-scope-deliverables li > span {
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
   text-transform: capitalize;
 }
 
 .milestone-scope-empty {
   margin: 14px 0 0;
   color: var(--project-muted);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .milestone-scope-add,
@@ -592,7 +592,7 @@
   background: none;
   color: var(--project-ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -609,7 +609,7 @@
   border: 1px solid var(--project-border);
   border-radius: 10px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-sprint-form {
@@ -622,7 +622,7 @@
   display: grid;
   gap: 5px;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-sprint-form input,
@@ -632,7 +632,7 @@
   border-radius: 10px;
   color: var(--project-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-sprint-form-actions {
@@ -651,13 +651,13 @@
 .project-sprint-card h4 {
   margin: 0;
   color: var(--project-ink);
-  font-size: 15px;
+  font-size: var(--text-body);
 }
 
 .project-sprint-card header p {
   margin: 3px 0 0;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-sprint-status {
@@ -665,7 +665,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--project-ink) 7%, transparent);
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   text-transform: capitalize;
 }
 
@@ -688,7 +688,7 @@
 
 .project-sprint-card dt {
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -696,7 +696,7 @@
 .project-sprint-card dd {
   margin: 3px 0 0;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
@@ -727,26 +727,26 @@
   gap: 8px;
   margin: 0;
   color: var(--project-ink);
-  font-size: 14px;
+  font-size: var(--text-small);
 }
 
 .project-timeline-track h4 span {
   padding: 1px 8px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--project-ink) 8%, transparent);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .project-timeline-track header p {
   margin: 3px 0 0;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-timeline-label {
   overflow: hidden;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -791,14 +791,14 @@
   margin: 0;
   color: var(--project-ink);
   font-family: var(--project-heading-font);
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 
 .project-timeline-overview > div:first-child p,
 .project-timeline-empty p {
   margin: 5px 0 0;
   color: var(--project-muted);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-timeline-summary {
@@ -809,7 +809,7 @@
 
 .project-timeline-summary span {
   color: var(--project-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -819,7 +819,7 @@
   display: block;
   margin-bottom: 2px;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
   text-transform: none;
   letter-spacing: normal;
 }
@@ -836,7 +836,7 @@
   border-radius: 999px;
   background: #f2f1f7;
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-style: normal;
   font-weight: 800;
 }
@@ -871,7 +871,7 @@
 
 .project-timeline-axis-row span {
   color: var(--project-ink);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -880,7 +880,7 @@
 .project-timeline-axis-row small {
   margin-top: 4px;
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .project-timeline-axis {
@@ -892,7 +892,7 @@
   position: absolute;
   top: 50%;
   color: var(--project-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 800;
   white-space: nowrap;
   transform: translate(-50%, -50%);
@@ -926,7 +926,7 @@
 
 .project-timeline-group > header strong {
   color: var(--project-ink);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-timeline-group > header span {
@@ -935,7 +935,7 @@
   border-radius: 999px;
   background: #e8e9f0;
   color: var(--project-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 900;
   text-align: center;
 }
@@ -971,7 +971,7 @@
   display: block;
   overflow: hidden;
   color: var(--project-ink);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -983,7 +983,7 @@
   gap: 7px;
   margin: 7px 0 0;
   color: var(--project-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
 }
 
 .project-timeline-item-copy p time,
@@ -1004,7 +1004,7 @@
   border-radius: 999px;
   background: #ececf1;
   color: #696d7d;
-  font-size: 9px;
+  font-size: var(--text-micro);
   font-weight: 900;
 }
 
@@ -1048,7 +1048,7 @@
   overflow: hidden;
   padding: 4px 8px;
   color: #fff;
-  font-size: 9px;
+  font-size: var(--text-micro);
   font-weight: 900;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1105,7 +1105,7 @@
   border-radius: 7px;
   padding: 5px 10px;
   color: #8a8f9f;
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 800;
   text-align: center;
   transform: translateY(-50%);
@@ -1115,7 +1115,7 @@
   margin: 0;
   padding: 14px 18px;
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .project-timeline-footnote {
@@ -1130,7 +1130,7 @@
   align-items: center;
   gap: 6px;
   color: var(--project-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 800;
 }
 
@@ -1217,7 +1217,7 @@
   background: none;
   color: var(--project-ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -1235,7 +1235,7 @@
   display: grid;
   gap: 5px;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .milestone-scope-dates input {
@@ -1243,7 +1243,7 @@
   border: 1px solid var(--project-border);
   border-radius: 9px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .milestone-scope-dates button {
@@ -1253,7 +1253,7 @@
   background: none;
   color: var(--project-ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -1267,7 +1267,7 @@
   background: var(--project-primary);
   color: #fff;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -1282,13 +1282,13 @@
   margin: 0;
   color: var(--project-ink);
   font-family: var(--project-heading-font);
-  font-size: 17px;
+  font-size: var(--text-body-lg);
 }
 
 .milestone-scope-toolbar p {
   margin: 4px 0 0;
   color: var(--project-muted);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .milestone-add-form {
@@ -1301,7 +1301,7 @@
   display: grid;
   gap: 5px;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .milestone-add-form input {
@@ -1310,7 +1310,7 @@
   border-radius: 10px;
   color: var(--project-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .milestone-add-form-actions {
@@ -1326,7 +1326,7 @@
   background: none;
   color: var(--project-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   cursor: pointer;
 }
 
@@ -1357,7 +1357,7 @@
   gap: 6px;
   margin-left: auto;
   color: var(--project-green);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
@@ -1376,7 +1376,7 @@
   border-radius: 10px;
   color: var(--project-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   resize: vertical;
 }
 
@@ -1386,20 +1386,20 @@
   gap: 8px;
   margin: 0;
   color: var(--project-ink);
-  font-size: 15px;
+  font-size: var(--text-body);
 }
 
 .project-sprint-backlog-card h4 span {
   padding: 1px 8px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--project-ink) 8%, transparent);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-sprint-backlog-card header p {
   margin: 4px 0 12px;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-sprint-backlog-preview {
@@ -1434,7 +1434,7 @@
   display: block;
   margin: -4px 0 10px;
   color: var(--project-primary);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 800;
 }
 
@@ -1446,7 +1446,7 @@
   display: block;
   margin-bottom: 4px;
   color: var(--project-primary);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 900;
   letter-spacing: .055em;
   text-transform: uppercase;
@@ -1473,7 +1473,7 @@
   border-top: 1px solid var(--project-border);
   background: var(--color-surface);
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-sprint-backlog-row:first-child {
@@ -1484,7 +1484,7 @@
   min-height: 38px;
   background: var(--color-surface-muted, #f6f7fc);
   color: var(--project-muted);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-weight: 800;
   letter-spacing: .035em;
   text-transform: uppercase;
@@ -1536,7 +1536,7 @@
   background: var(--color-surface);
   color: var(--project-ink);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .project-sprint-return-btn {
@@ -1550,7 +1550,7 @@
   background: var(--color-surface);
   color: var(--project-muted);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -1570,21 +1570,21 @@
 .project-sprint-action-note {
   align-self: center;
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .project-sprint-empty-state h4,
 .project-sprint-other-section h4 {
   margin: 0;
   color: var(--project-ink);
-  font-size: 15px;
+  font-size: var(--text-body);
 }
 
 .project-sprint-empty-state p,
 .project-sprint-other-section > header p {
   margin: 4px 0 0;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-sprint-other-section {
@@ -1603,7 +1603,7 @@
   border-radius: 999px;
   background: var(--project-primary-soft);
   color: var(--project-primary);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .project-sprint-backlog-preview strong,
@@ -1611,14 +1611,14 @@
 .project-sprint-backlog strong {
   display: block;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-sprint-backlog-preview em,
 .project-sprint-tasks em,
 .project-sprint-backlog em {
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 
@@ -1657,7 +1657,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--project-ink) 7%, transparent);
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   text-transform: capitalize;
 }
 
@@ -1679,7 +1679,7 @@
   border: 1px solid var(--project-border);
   border-radius: 10px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-sprint-backlog ul {
@@ -1710,14 +1710,14 @@
   background: none;
   color: var(--project-ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
 .project-sprint-empty {
   margin: 12px 0 0;
   color: var(--project-muted);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-sprint-card dl > div.is-blocked dd {
@@ -1727,7 +1727,7 @@
 .milestone-scope-progress-note {
   margin-left: auto;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-modal-backdrop {
@@ -1762,13 +1762,13 @@
 
 .deliverable-modal h2 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: var(--text-body-lg);
 }
 
 .deliverable-modal > header p {
   margin: 4px 0 0;
   color: var(--color-text-muted, #707590);
-  font-size: 0.8rem;
+  font-size: var(--text-small);
 }
 
 .deliverable-modal > header button {
@@ -1791,7 +1791,7 @@
   display: grid;
   gap: 5px;
   color: var(--color-text-muted, #707590);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-modal-body label.is-wide {
@@ -1807,7 +1807,7 @@
   background: var(--color-surface, #fff);
   color: var(--color-text-strong, #1f2340);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   resize: vertical;
 }
 
@@ -1826,7 +1826,7 @@
   border-radius: 10px;
   background: none;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   cursor: pointer;
 }
 
@@ -1851,7 +1851,7 @@
   display: grid;
   gap: 5px;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-sprint-backlog-form input,
@@ -1860,7 +1860,7 @@
   border: 1px solid var(--project-border);
   border-radius: 10px;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 
@@ -1883,7 +1883,7 @@
   background: none;
   color: var(--project-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   text-align: left;
   cursor: pointer;
 }
@@ -1906,14 +1906,14 @@
   border-radius: 999px;
   background: var(--project-primary-soft);
   color: var(--project-primary);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
 .milestone-program-footer-next {
   margin-left: auto;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .milestone-program-footer-gates {
@@ -1934,7 +1934,7 @@
   border-radius: 999px;
   background: var(--color-surface, #fff);
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .milestone-program-footer-gates li svg {
@@ -1958,7 +1958,7 @@
   border-radius: 12px;
   background: color-mix(in srgb, var(--color-accent, #fbb130) 12%, transparent);
   color: var(--color-text-strong, #1f2340);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-start-notice svg {
@@ -1978,7 +1978,7 @@
   background: var(--color-action, #6c4cf0);
   color: #fff;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -1988,7 +1988,7 @@
   border-radius: 10px;
   background: color-mix(in srgb, #d9534f 10%, transparent);
   color: #a33b38;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-lifecycle-actions {
@@ -2004,18 +2004,18 @@
   background: none;
   color: var(--color-text-strong, #1f2340);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
 .milestone-scope-gate-note {
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-rail-card header h3 {
   margin: 0 0 10px;
-  font-size: 0.95rem;
+  font-size: var(--text-body);
 }
 
 .project-rail-list {
@@ -2038,12 +2038,12 @@
 
 .project-rail-list strong {
   display: block;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .project-rail-list em {
   color: var(--color-text-muted, #707590);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 
@@ -2053,7 +2053,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--color-text-strong, #1f2340) 8%, transparent);
   color: var(--color-text-muted, #707590);
-  font-size: 10px;
+  font-size: var(--text-micro);
   text-transform: capitalize;
 }
 
@@ -2090,7 +2090,7 @@
 }
 
 .project-rail-meter span {
-  font-size: 13px;
+  font-size: var(--text-small);
   font-weight: 700;
 }
 
@@ -2112,12 +2112,12 @@
 
 .project-rail-stats strong {
   display: block;
-  font-size: 17px;
+  font-size: var(--text-body-lg);
 }
 
 .project-rail-stats span {
   color: var(--color-text-muted, #707590);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .project-rail-stats li.is-blocked strong {
@@ -2127,7 +2127,7 @@
 .project-rail-note {
   margin: 10px 0 0;
   color: var(--color-text-muted, #707590);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .project-rail-note.is-muted {
@@ -2145,7 +2145,7 @@
   border-radius: 12px;
   background: color-mix(in srgb, #d9534f 9%, transparent);
   color: var(--project-ink);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .milestone-scope-overcommit svg {
@@ -2161,7 +2161,7 @@
   background: var(--project-primary);
   color: #fff;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -2170,11 +2170,11 @@
   border-radius: 999px;
   background: color-mix(in srgb, #d9534f 12%, transparent);
   color: #a33b38;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-modal-hint {
   color: var(--color-text-muted, #707590);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-style: normal;
 }

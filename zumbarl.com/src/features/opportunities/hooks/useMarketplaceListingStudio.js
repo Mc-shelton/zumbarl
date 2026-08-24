@@ -16,6 +16,9 @@ const MARKETPLACE_LISTING_STEPS = [
 
 const DEFAULT_FORM = {
   kind: 'product',
+  serviceMode: 'appointment',
+  duration: '',
+  availabilityText: '',
   title: '',
   subtitle: '',
   category: 'Electronics',
@@ -73,8 +76,10 @@ function getStepErrors(step, form) {
     if (form.title.trim().length < 5) errors.push('Use a title with at least 5 characters.')
     if (form.description.trim().length < 30) errors.push('Describe the item in at least 30 characters.')
     if (!form.category) errors.push('Choose a category.')
+    if (form.kind === 'service' && !form.serviceMode) errors.push('Choose how customers receive this service.')
+    if (form.kind === 'service' && !form.availabilityText.trim()) errors.push('Explain when this service is available.')
   }
-  if (step === 2 && !form.gallery.length) errors.push('Add at least one product image.')
+  if (step === 2 && !form.gallery.length) errors.push(`Add at least one ${form.kind === 'service' ? 'service' : 'product'} image.`)
   if (step === 3) {
     if (!(Number(form.priceAmount) > 0)) errors.push('Set a price greater than zero.')
     if (!(Number(form.stock) >= 0)) errors.push('Stock cannot be negative.')
@@ -106,8 +111,11 @@ function toPayload(form, status) {
     subtitle: form.subtitle.trim(),
     description: form.description.trim(),
     kind: form.kind,
+    serviceMode: form.kind === 'service' ? form.serviceMode : undefined,
+    duration: form.kind === 'service' ? form.duration.trim() : undefined,
+    availabilityText: form.kind === 'service' ? form.availabilityText.trim() : undefined,
     category: form.category,
-    condition: form.condition,
+    condition: form.kind === 'service' ? undefined : form.condition,
     brand: form.brand.trim(),
     model: form.model.trim(),
     color: form.color.trim(),

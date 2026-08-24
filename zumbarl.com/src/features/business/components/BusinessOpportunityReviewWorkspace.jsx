@@ -292,7 +292,9 @@ function toApplicationRow(bid) {
     location: student.locationCity || 'Location not provided',
     questionAnswers: Array.isArray(bid.questionAnswers) ? bid.questionAnswers : [],
     attachments: Array.isArray(bid.attachments) ? bid.attachments : [],
-    score: Math.round(student.score || 0),
+    score: student.score == null ? null : Math.round(student.score),
+    matchingScore: Math.round(student.matchingScore || 0),
+    scoreConfidence: student.scoreConfidence || 'PROVISIONAL',
     skills: Array.isArray(student.skills) ? student.skills : [],
     status: applicationStatus.label,
     statusId: applicationStatus.id,
@@ -692,7 +694,7 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose, 
               </div>
               <p>{application.bio}</p>
               <dl className="business-review-applicant-stats">
-                <div><dt>{application.score}/100</dt><dd>Zumbarl score</dd></div>
+                <div><dt>{application.score == null ? 'Provisional' : `${application.score}/100`}</dt><dd>Zumbarl score</dd></div>
                 <div><dt>{application.completedGigs}</dt><dd>Completed gigs</dd></div>
                 <div><dt>{application.skills.length}</dt><dd>Verified skills</dd></div>
               </dl>
@@ -715,8 +717,15 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose, 
             <section className="business-profile-card business-review-applicant-score">
               <h3>Generally Competitiveness</h3>
               <div>
-                <figure><span>{application.score}/100</span></figure>
-                <p><StatusPill tone={application.score >= 70 ? 'green' : 'orange'}>{application.score >= 70 ? 'High' : 'Developing'}</StatusPill>Calculated from the student&apos;s current Zumbarl score.</p>
+                <figure><span>{application.score == null ? '—' : `${application.score}/100`}</span></figure>
+                <p>
+                  <StatusPill tone={application.score != null && application.score >= 70 ? 'green' : 'orange'}>
+                    {application.score == null ? 'Provisional' : application.score >= 70 ? 'High' : 'Developing'}
+                  </StatusPill>
+                  {application.score == null
+                    ? `Matching uses a conservative evidence score of ${application.matchingScore}/100 until confidence is established.`
+                    : `Bayesian score · ${application.scoreConfidence.toLowerCase()} confidence.`}
+                </p>
               </div>
               <button type="button">See how score is calculated</button>
             </section>
@@ -1353,6 +1362,7 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
   if (!isOpen) return null
 
   const isEscrowTopUp = mode === 'topup'
+  const isExistingEscrowFunding = mode === 'fund' || isEscrowTopUp
 
   const paymentMethods = {
     wallet: {
@@ -1419,7 +1429,7 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
     setIsCompletingPayment(true)
     setPaymentError('')
     try {
-      const completeFunding = isEscrowTopUp ? onFund : onPublish
+      const completeFunding = isExistingEscrowFunding ? onFund : onPublish
       await completeFunding?.(opportunity, {
         amount: paymentBudgetTotal,
         currency: opportunity.currency || 'KES',
@@ -1429,7 +1439,7 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
     } catch (error) {
       setPaymentError(error instanceof Error
         ? error.message
-        : isEscrowTopUp ? 'Escrow could not be updated.' : 'Payment could not be completed. The opportunity remains private.')
+        : isExistingEscrowFunding ? 'Escrow could not be funded.' : 'Payment could not be completed. The opportunity remains private.')
     } finally {
       setIsCompletingPayment(false)
     }
@@ -1438,15 +1448,17 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
   return (
     <div className="business-review-modal-backdrop" role="presentation">
       <section className="business-review-publish-modal" role="dialog" aria-modal="true" aria-labelledby="publish-opportunity-title">
-        <button type="button" className="business-review-publish-close" aria-label={isEscrowTopUp ? 'Close escrow update' : 'Close fund and publish opportunity'} onClick={onClose}>
+        <button type="button" className="business-review-publish-close" aria-label={isExistingEscrowFunding ? 'Close escrow funding' : 'Close fund and publish opportunity'} onClick={onClose}>
           <FiX aria-hidden="true" />
         </button>
 
         <header className="business-review-publish-head">
-          <h2 id="publish-opportunity-title">{isEscrowTopUp ? 'Update Escrow' : 'Fund & Publish Opportunity'}</h2>
+          <h2 id="publish-opportunity-title">{isEscrowTopUp ? 'Update Escrow' : mode === 'fund' ? 'Fund Escrow' : 'Fund & Publish Opportunity'}</h2>
           <p>{isEscrowTopUp
             ? 'Add the remaining agreed amount before starting the project.'
-            : 'Pay the opportunity budget into escrow before it becomes visible to students.'}</p>
+            : mode === 'fund'
+              ? 'Move the opportunity budget into escrow so it is ready for creator payments.'
+              : 'Pay the opportunity budget into escrow before it becomes visible to students.'}</p>
         </header>
 
         {noticeMessage ? (
@@ -1474,7 +1486,7 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
               </dl>
               <dl>
                 <div><dt>Engagement Mode</dt><dd>{opportunity.engagementMode || 'Remote'}</dd></div>
-                <div><dt>Visibility</dt><dd>{isEscrowTopUp ? 'Already published' : 'Visible to all creators'}</dd></div>
+                <div><dt>Visibility</dt><dd>{isExistingEscrowFunding ? 'Already published' : 'Visible to all creators'}</dd></div>
                 <div><dt>Deadline</dt><dd>{modalDeadline}</dd></div>
               </dl>
               <dl>
@@ -1689,7 +1701,7 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
               <div>
                 <article><FiUsers aria-hidden="true" /><span><strong>1. {selectedPaymentMethod.stepLabel} Started</strong><em>{paymentMethod === 'wallet' ? 'We will reserve the amount from your wallet.' : paymentMethod === 'mobile-money' ? 'You will receive an STK push on your phone.' : paymentMethod === 'bank' ? 'Use the bank details and reference shown above.' : 'The secure card checkout is ready.'}</em></span></article>
                 <article><FiLock aria-hidden="true" /><span><strong>2. Complete {selectedPaymentMethod.stepLabel}</strong><em>{paymentMethod === 'wallet' ? 'Confirm wallet deduction to fund escrow.' : paymentMethod === 'mobile-money' ? 'Enter your PIN to authorize the payment.' : paymentMethod === 'bank' ? 'Send the transfer and keep the reference visible.' : 'Confirm the secure card payment.'}</em></span></article>
-                <article><FiCheckCircle aria-hidden="true" /><span><strong>3. Payment Confirmed</strong><em>{isEscrowTopUp ? 'Escrow will update and project start will become available.' : 'We\'ll confirm payment and publish your opportunity.'}</em></span></article>
+                <article><FiCheckCircle aria-hidden="true" /><span><strong>3. Payment Confirmed</strong><em>{isEscrowTopUp ? 'Escrow will update and project start will become available.' : mode === 'fund' ? 'The funded balance will be available for creator payments.' : 'We\'ll confirm payment and publish your opportunity.'}</em></span></article>
               </div>
             </section>
           ) : null}
@@ -1703,7 +1715,9 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
           )}
           {publishStep === 3 ? <p><FiMessageSquare aria-hidden="true" /> {isEscrowTopUp
             ? 'Project start becomes available after escrow is updated.'
-            : paymentMethod === 'bank' ? 'We will publish after the transfer is confirmed.' : paymentMethod === 'wallet' ? 'Your opportunity will publish after wallet escrow is funded.' : 'You will be redirected after successful payment.'}</p> : null}
+            : mode === 'fund'
+              ? 'The Payments overview will update after escrow is funded.'
+              : paymentMethod === 'bank' ? 'We will publish after the transfer is confirmed.' : paymentMethod === 'wallet' ? 'Your opportunity will publish after wallet escrow is funded.' : 'You will be redirected after successful payment.'}</p> : null}
           {paymentError ? <p role="alert">{paymentError}</p> : null}
           <Button
             tone="brand"
@@ -3392,6 +3406,8 @@ export function BusinessOpportunityReviewWorkspace({
       setFundingModalMode('publish')
     } else if (acceptedProjectEscrowShortfall > 0) {
       setFundingModalMode('topup')
+    } else if (String(opportunity.escrowStatus || 'unfunded') !== 'funded') {
+      setFundingModalMode('fund')
     }
   }
 

@@ -38,7 +38,9 @@ function OpportunitiesTabContent({
   projectTeamInviteState,
   onRespondProjectTeamInvite,
   selectedBidId,
+  shouldFocusSelectedBid,
   selectedOpportunityUuid,
+  selectedProjectId,
   searchQuery,
   visibleBids,
   visibleOpportunities,
@@ -69,6 +71,7 @@ function OpportunitiesTabContent({
         onRespondCounterOffer={onRespondCounterOffer}
         onViewBidOpportunity={onViewBidOpportunity}
         selectedBidId={selectedBidId}
+        shouldFocusSelectedBid={shouldFocusSelectedBid}
       />
     )
   }
@@ -101,7 +104,7 @@ function OpportunitiesTabContent({
   }
 
   if (activeOpportunityTab === 'Ongoing') {
-    return <OpportunitiesOngoingPanel onOpenMessages={onOpenMessages} onOpenProject={onOpenProject} projects={projects} />
+    return <OpportunitiesOngoingPanel onOpenMessages={onOpenMessages} onOpenProject={onOpenProject} projects={projects} selectedProjectId={selectedProjectId} />
   }
 
   if (activeOpportunityTab === 'Service Orders') {

@@ -74,13 +74,13 @@
 }
 
 .auth-account-toggle strong {
-  font-size: 15px;
+  font-size: var(--text-body);
   font-weight: 800;
 }
 
 .auth-account-toggle span {
   color: rgba(55, 54, 67, 0.68);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
   line-height: 1.35;
 }
@@ -94,7 +94,7 @@
 
 .auth-field-label {
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 12px;
+  font-size: var(--text-caption);
   line-height: 1;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -110,7 +110,7 @@
   background: #f7f9fc;
   padding: 0 48px 0 14px;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 15px;
+  font-size: var(--text-body);
   line-height: 1;
   color: #192233;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
@@ -145,7 +145,7 @@
   background: linear-gradient(130deg, var(--theme-dark) 0%, #4e4f64 100%);
   color: var(--theme-white);
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 17px;
+  font-size: var(--text-body-lg);
   line-height: 1;
   font-weight: 700;
   cursor: pointer;
@@ -154,7 +154,7 @@
 
 .auth-error-message {
   color: #b42318;
-  font-size: 0.9rem;
+  font-size: var(--text-small);
   font-weight: 700;
   margin: 0;
 }
@@ -164,10 +164,10 @@
 .auth-campus-results button { width: 100%; display: flex; align-items: flex-start; gap: 9px; padding: 10px; border: 0; border-radius: 8px; background: transparent; color: #302b36; text-align: left; cursor: pointer; }
 .auth-campus-results button:hover, .auth-campus-results button:focus-visible { background: #f4eff8; }
 .auth-campus-results button > span { display: grid; gap: 2px; }
-.auth-campus-results small, .auth-campus-location > small, .auth-campus-create > p { color: #756d7c; font-size: 11px; }
-.auth-campus-results > p { margin: 7px 10px; color: #756d7c; font-size: 12px; }
+.auth-campus-results small, .auth-campus-location > small, .auth-campus-create > p { color: #756d7c; font-size: var(--text-caption); }
+.auth-campus-results > p { margin: 7px 10px; color: #756d7c; font-size: var(--text-caption); }
 .auth-campus-results .auth-campus-add-result { margin-top: 4px; border-top: 1px solid #eee8f2; border-radius: 0 0 8px 8px; color: #6542dd; font-weight: 800; }
-.auth-campus-switch { justify-self: start; padding: 0; border: 0; background: transparent; color: #6542dd; font-size: 12px; font-weight: 800; cursor: pointer; }
+.auth-campus-switch { justify-self: start; padding: 0; border: 0; background: transparent; color: #6542dd; font-size: var(--text-caption); font-weight: 800; cursor: pointer; }
 .auth-campus-create { display: grid; gap: 12px; margin: 0; padding: 14px; border: 1px solid rgba(112, 80, 117, .2); border-radius: 13px; background: rgba(247, 243, 250, .72); }
 .auth-campus-create legend { padding: 0 5px; color: #3d3443; font-weight: 850; }
 .auth-campus-create > p { margin: -3px 0 2px; }
@@ -190,7 +190,7 @@
   margin: 2px 0 0;
   color: rgba(55, 54, 67, 0.72);
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 14px;
+  font-size: var(--text-small);
   line-height: 1.45;
   text-align: center;
 }
@@ -211,7 +211,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 19px;
+  font-size: var(--text-title-sm);
   cursor: pointer;
   transition: transform 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
@@ -226,7 +226,7 @@
   margin: 4px 0 0;
   color: rgba(55, 54, 67, 0.62);
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 12px;
+  font-size: var(--text-caption);
   line-height: 1.4;
   text-align: center;
 }
@@ -275,7 +275,7 @@
 .auth-promo-kicker {
   margin: 0;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 12px;
+  font-size: var(--text-caption);
   line-height: 1;
   font-weight: 700;
   letter-spacing: 0.14em;
@@ -295,7 +295,7 @@
 .auth-promo-text {
   margin: 0;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 15px;
+  font-size: var(--text-body);
   line-height: 1.45;
   max-width: 28ch;
   opacity: 0.95;
@@ -313,7 +313,7 @@
   align-items: center;
   justify-content: center;
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
-  font-size: 16px;
+  font-size: var(--text-body);
   line-height: 1;
   font-weight: 700;
   transition: transform 0.2s ease, background-color 0.2s ease;
@@ -360,6 +360,6 @@
   }
 
   .auth-promo-text {
-    font-size: 14px;
+    font-size: var(--text-small);
   }
 }

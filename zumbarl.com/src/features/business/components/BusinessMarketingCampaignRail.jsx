@@ -1,6 +1,15 @@
 import { FiCalendar } from 'react-icons/fi'
 
 function SummaryCard({ campaign }) {
+  const adStatus = campaign.zumbarlAd?.status === 'pending_review'
+    ? 'Pending admin review'
+    : campaign.zumbarlAd?.status === 'published'
+      ? 'Published'
+      : campaign.zumbarlAd?.status === 'draft'
+        ? 'Saved with campaign draft'
+        : campaign.zumbarlAd?.status === 'withdrawn'
+          ? 'Withdrawn'
+          : 'Not requested'
   const summary = [
     ['Campaign ID', campaign.detail.campaignId],
     ['Created on', campaign.detail.createdAt],
@@ -8,6 +17,7 @@ function SummaryCard({ campaign }) {
     ['Campaign Type', campaign.detail.campaignType],
     ['Engagement Mode', campaign.detail.engagementMode],
     ['Pickup Access', campaign.detail.pickupAccess],
+    ['Zumbarl Ads', adStatus],
     ['Auto Close', campaign.detail.autoClose],
   ]
 
@@ -55,15 +65,20 @@ function PerformanceCard({ campaign }) {
   return (
     <section className="business-profile-card business-marketing-performance-card">
       <header>
-        <h2>Performance Overview</h2>
-        <button type="button" className="business-workspace-filter">This week</button>
+        <div>
+          <h2>Performance Overview</h2>
+          <p>Verified campaign results</p>
+        </div>
+        <span className="business-marketing-performance-period">All time</span>
       </header>
       <ul>
         {campaign.detail.performance.map((item) => (
           <li key={item.label}>
-            <span>{item.label}</span>
+            <div>
+              <span>{item.label}</span>
+              <strong>{item.value}</strong>
+            </div>
             <b aria-hidden="true"><i /></b>
-            <strong>{item.value}</strong>
             <em>{item.change}</em>
           </li>
         ))}

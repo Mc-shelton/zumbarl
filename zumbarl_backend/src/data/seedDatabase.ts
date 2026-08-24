@@ -336,7 +336,7 @@ async function seedCampusContent(campusId: string, assets: SeedAssets) {
       section: 'quick_actions',
       title: 'Campus Services',
       subtitle: 'Food, print, laundry',
-      href: '/campus/services',
+      href: '/campus/opportunities/buy-sell?mode=services',
       sortOrder: 3,
       payload: { icon: 'truck', tone: 'mint' }
     },
@@ -672,7 +672,12 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         deliveryOptions: ['Remote consultation', 'Written report'],
         campusId,
         status: 'ACTIVE',
-        stockCount: 10
+        stockCount: 10,
+        payload: {
+          serviceMode: 'appointment',
+          duration: '45 minutes',
+          availabilityText: 'Weekdays, 9:00 AM–5:00 PM',
+        },
       },
       create: {
         id: 'marketplace-aisha-social-audit',
@@ -687,7 +692,12 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
         currency: 'KES',
         images: [assets.campaign],
         deliveryOptions: ['Remote consultation', 'Written report'],
-        stockCount: 10
+        stockCount: 10,
+        payload: {
+          serviceMode: 'appointment',
+          duration: '45 minutes',
+          availabilityText: 'Weekdays, 9:00 AM–5:00 PM',
+        },
       }
     }),
     prisma.marketplaceListing.upsert({
@@ -853,10 +863,11 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
   }
 
   const roadmap = await prisma.careerRoadmap.upsert({
-    where: { slug: 'social-media-creator-roadmap' },
+    where: { id: 'roadmap-social-media-creator' },
     update: {
-      title: 'Social Media Creator Roadmap',
-      description: 'Build from content planning basics to campaign delivery, reporting and portfolio proof.',
+      title: 'Digital Marketing Operator',
+      slug: 'digital-marketer',
+      description: 'Turn social campaigns, analytics and content evidence into business-ready campaign operations skills.',
       careerFamily: 'Marketing & Design',
       level: 'BEGINNER',
       estimatedWeeks: 6,
@@ -865,21 +876,31 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
       outcomes: ['Publish a portfolio-ready campaign', 'Submit analytics proof', 'Prepare for paid creator gigs'],
       campusId,
       status: 'PUBLISHED',
-      sortOrder: 1
+      sortOrder: 1,
+      version: 1,
+      intents: ['explore', 'earn-while-learning', 'attachment-readiness', 'internship-readiness', 'job-readiness'],
+      evidenceWeight: 80,
+      testWeight: 20,
+      verificationThreshold: 90
     },
     create: {
       id: 'roadmap-social-media-creator',
       campusId,
-      title: 'Social Media Creator Roadmap',
-      slug: 'social-media-creator-roadmap',
-      description: 'Build from content planning basics to campaign delivery, reporting and portfolio proof.',
+      title: 'Digital Marketing Operator',
+      slug: 'digital-marketer',
+      description: 'Turn social campaigns, analytics and content evidence into business-ready campaign operations skills.',
       careerFamily: 'Marketing & Design',
       level: 'BEGINNER',
       estimatedWeeks: 6,
       coverImageUrl: assets.campaign,
       skills: ['Content Strategy', 'Canva', 'Analytics', 'Client Communication'],
       outcomes: ['Publish a portfolio-ready campaign', 'Submit analytics proof', 'Prepare for paid creator gigs'],
-      sortOrder: 1
+      sortOrder: 1,
+      version: 1,
+      intents: ['explore', 'earn-while-learning', 'attachment-readiness', 'internship-readiness', 'job-readiness'],
+      evidenceWeight: 80,
+      testWeight: 20,
+      verificationThreshold: 90
     }
   })
 
@@ -890,6 +911,10 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
       description: 'Choose awareness, proof and conversion pillars for a campaign.',
       stepType: 'LEARNING',
       estimatedHours: 2,
+      assessment: [
+        { id: 'pillars-purpose', prompt: 'What should a content pillar connect?', options: ['Audience need and campaign goal', 'Only the visual colour', 'Only posting frequency'], correctAnswer: 'Audience need and campaign goal' },
+        { id: 'pillars-measure', prompt: 'Which signal best validates a conversion pillar?', options: ['A defined action and measurable result', 'A trending sound', 'A longer caption'], correctAnswer: 'A defined action and measurable result' }
+      ],
       sortOrder: 1
     },
     {
@@ -899,6 +924,10 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
       stepType: 'PROJECT',
       evidenceType: 'PORTFOLIO_ASSET',
       estimatedHours: 6,
+      assessment: [
+        { id: 'assets-consistency', prompt: 'What makes an asset set campaign-ready?', options: ['Consistent message, format and CTA', 'Using every font available', 'Removing the campaign objective'], correctAnswer: 'Consistent message, format and CTA' },
+        { id: 'assets-accessibility', prompt: 'Which practice improves social asset accessibility?', options: ['Readable contrast and captions', 'Smaller body text', 'Text embedded only in video'], correctAnswer: 'Readable contrast and captions' }
+      ],
       sortOrder: 2
     },
     {
@@ -908,6 +937,10 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
       stepType: 'PORTFOLIO',
       evidenceType: 'REPORT',
       estimatedHours: 3,
+      assessment: [
+        { id: 'analytics-insight', prompt: 'A useful campaign insight should connect a metric to what?', options: ['A decision or next action', 'A decorative chart colour', 'The longest possible report'], correctAnswer: 'A decision or next action' },
+        { id: 'analytics-quality', prompt: 'Which report is most credible?', options: ['One with source, period and metric definitions', 'One with rounded numbers only', 'One without a date range'], correctAnswer: 'One with source, period and metric definitions' }
+      ],
       sortOrder: 3
     }
   ]
@@ -920,22 +953,258 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
     })
   }
 
-  await prisma.studentRoadmapEnrollment.upsert({
+  const competencySeeds = [
+    { id: 'competency-content-pillars', slug: 'define-audience-content-pillars', name: 'Define audience-led content pillars', description: 'Connect audience needs, campaign goals and measurable content themes.', level: 'FOUNDATION', skillName: 'Content Strategy', stepId: 'roadmap-step-content-pillars' },
+    { id: 'competency-campaign-assets', slug: 'build-campaign-asset-set', name: 'Build a campaign-ready asset set', description: 'Create consistent, accessible assets from a campaign brief.', level: 'PRACTITIONER', skillName: 'Canva', stepId: 'roadmap-step-campaign-assets' },
+    { id: 'competency-campaign-analytics', slug: 'interpret-campaign-analytics', name: 'Interpret campaign analytics', description: 'Turn verified reach and engagement data into a clear business recommendation.', level: 'PRACTITIONER', skillName: 'Analytics', stepId: 'roadmap-step-analytics-proof' }
+  ]
+  for (const item of competencySeeds) {
+    const skill = await ensureSeedSkill(item.skillName)
+    const competency = await prisma.competency.upsert({
+      where: { slug: item.slug },
+      update: { skillId: skill.id, name: item.name, description: item.description, level: item.level, status: 'ACTIVE' },
+      create: { id: item.id, skillId: skill.id, slug: item.slug, name: item.name, description: item.description, level: item.level }
+    })
+    await prisma.careerRoadmapStepCompetency.upsert({
+      where: { stepId_competencyId: { stepId: item.stepId, competencyId: competency.id } },
+      update: { weight: 1, requiredScore: 70 },
+      create: { stepId: item.stepId, competencyId: competency.id, weight: 1, requiredScore: 70 }
+    })
+  }
+
+  const resourceSeeds = [
+    {
+      id: 'resource-content-pillars-primer',
+      stepId: 'roadmap-step-content-pillars',
+      title: 'Audience and content pillars primer',
+      description: 'A practical worksheet for mapping audience needs to campaign themes.',
+      type: 'GUIDE',
+      content: {
+        durationMinutes: 18,
+        objectives: ['Define a specific audience', 'Connect each pillar to a campaign goal', 'Choose a measurable signal for every pillar'],
+        sections: [
+          { heading: 'Start with the audience problem', body: 'A useful pillar begins with a repeated audience need, question or behaviour—not with a preferred post format.', example: 'First-year students need simple, trustworthy answers about managing their first semester budget.' },
+          { heading: 'Give every pillar a job', body: 'Use a balanced set of pillars: awareness introduces the problem, proof builds confidence, and conversion asks for a meaningful next action.', example: 'Budget basics → student success stories → download the weekly planner.' },
+          { heading: 'Attach a signal', body: 'Decide how you will know whether the pillar worked before publishing. Use saves or qualified comments for usefulness, and completed actions for conversion.', example: 'Proof pillar: saves and profile visits. Conversion pillar: completed planner downloads.' }
+        ]
+      },
+      practice: {
+        title: 'Build a three-pillar campaign map',
+        instructions: 'Choose a real campus audience or business brief. Your answers will become reviewable checkpoint evidence.',
+        fields: [
+          { id: 'audience', label: 'Who exactly is the audience?', prompt: 'Describe one specific group and the situation they are in.', placeholder: 'First-year students living away from home for the first time…' },
+          { id: 'goal', label: 'What should change?', prompt: 'State the campaign outcome in one measurable sentence.', placeholder: 'Help 100 students start and maintain a weekly budget…' },
+          { id: 'awarenessPillar', label: 'Awareness pillar', prompt: 'Name the theme and explain the audience problem it addresses.', placeholder: 'Money basics: explain common first-semester spending traps…' },
+          { id: 'proofPillar', label: 'Proof pillar', prompt: 'Show what evidence or story will build confidence.', placeholder: 'Real student budget makeovers with before-and-after examples…' },
+          { id: 'conversionPillar', label: 'Action pillar', prompt: 'Define the action you want the audience to take.', placeholder: 'Download and complete the seven-day budget planner…' },
+          { id: 'measurement', label: 'How will you measure it?', prompt: 'Assign at least one useful signal to each pillar.', placeholder: 'Awareness: saves; proof: profile visits; action: planner downloads…' }
+        ]
+      }
+    },
+    {
+      id: 'resource-campaign-asset-lab',
+      stepId: 'roadmap-step-campaign-assets',
+      title: 'Campaign asset consistency lab',
+      description: 'Practice turning one brief into a coherent social asset set.',
+      type: 'LAB',
+      content: {
+        durationMinutes: 25,
+        objectives: ['Translate one message across formats', 'Keep hierarchy and call-to-action consistent', 'Apply basic accessibility checks'],
+        sections: [
+          { heading: 'Extract the message first', body: 'Write one audience, one promise and one action before opening a design tool.', example: 'For new students: plan your first month confidently—download the free weekly budget.' },
+          { heading: 'Design a system, not isolated posts', body: 'Reuse type hierarchy, colour roles, spacing and imagery so every asset is recognisably part of the same campaign.', example: 'One headline scale, one proof style and one CTA treatment across feed, story and WhatsApp assets.' },
+          { heading: 'Check accessibility', body: 'Use readable contrast, concise text, captions for video and meaningful alternative descriptions.', example: 'Keep essential instructions out of image-only text and provide captions for spoken content.' }
+        ]
+      },
+      practice: {
+        title: 'Plan a coherent asset set',
+        instructions: 'Turn your checkpoint campaign into a small production-ready asset plan.',
+        fields: [
+          { id: 'message', label: 'Core campaign message', prompt: 'Write the audience, promise and action in one sentence.', placeholder: 'For… we help… so that…' },
+          { id: 'formats', label: 'Three asset formats', prompt: 'List each format and the role it plays.', placeholder: 'Feed carousel—teach; story—show proof; WhatsApp card—drive action…' },
+          { id: 'visualSystem', label: 'Visual system', prompt: 'Define hierarchy, colour roles, imagery and repeated elements.', placeholder: 'Headline 32px bold; deep purple for teaching; green for proof…' },
+          { id: 'accessibility', label: 'Accessibility check', prompt: 'Explain contrast, captions and text alternatives.', placeholder: 'All text meets readable contrast; video includes open captions…' },
+          { id: 'cta', label: 'Call to action', prompt: 'Write the exact action and destination.', placeholder: 'Download the seven-day planner at…' }
+        ]
+      }
+    },
+    {
+      id: 'resource-analytics-proof-template',
+      stepId: 'roadmap-step-analytics-proof',
+      title: 'Verified analytics report template',
+      description: 'Capture source, period, definitions, insights and recommended actions.',
+      type: 'TEMPLATE',
+      content: {
+        durationMinutes: 20,
+        objectives: ['Document trustworthy metric sources', 'Separate observation from insight', 'Turn results into a decision'],
+        sections: [
+          { heading: 'Make the data auditable', body: 'Always record the platform, reporting period and metric definitions alongside screenshots or exports.', example: 'Instagram Insights, 1–14 August, reach = unique accounts shown content.' },
+          { heading: 'Move from metric to insight', body: 'An observation states what happened. An insight explains why it matters for the campaign goal.', example: 'Saves rose 40% on checklist posts, suggesting the audience values reusable planning content.' },
+          { heading: 'Recommend one next action', body: 'Use the strongest evidence to make a specific decision for the next campaign cycle.', example: 'Publish two checklist carousels weekly and test the planner CTA in the final slide.' }
+        ]
+      },
+      practice: {
+        title: 'Write an evidence-based campaign review',
+        instructions: 'Use real campaign analytics or the latest verified Zumbarl campaign data available to you.',
+        fields: [
+          { id: 'source', label: 'Data source and period', prompt: 'Name the platform, date range and evidence location.', placeholder: 'Instagram Insights, 1–14 August, screenshot saved in campaign proof…' },
+          { id: 'goal', label: 'Campaign goal', prompt: 'State the outcome the campaign was designed to influence.', placeholder: 'Increase qualified visits to the planner landing page…' },
+          { id: 'metrics', label: 'Key metrics', prompt: 'List the metrics with their definitions and values.', placeholder: 'Reach: 12,400 unique accounts; link visits: 310…' },
+          { id: 'insight', label: 'Main insight', prompt: 'Explain what the results mean—not only what happened.', placeholder: 'Checklist content produced more high-intent saves and visits…' },
+          { id: 'recommendation', label: 'Recommended action', prompt: 'Propose one specific change for the next cycle.', placeholder: 'Increase checklist frequency and test a clearer final-slide CTA…' }
+        ]
+      }
+    }
+  ]
+  for (const [index, item] of resourceSeeds.entries()) {
+    const resource = await prisma.learningResource.upsert({
+      where: { id: item.id },
+      update: { title: item.title, description: item.description, resourceType: item.type, provider: 'Zumbarl', status: 'PUBLISHED', content: item.content, practice: item.practice },
+      create: { id: item.id, title: item.title, description: item.description, resourceType: item.type, provider: 'Zumbarl', content: item.content, practice: item.practice }
+    })
+    await prisma.careerRoadmapStepResource.upsert({
+      where: { stepId_resourceId: { stepId: item.stepId, resourceId: resource.id } },
+      update: { sortOrder: index + 1 },
+      create: { stepId: item.stepId, resourceId: resource.id, sortOrder: index + 1 }
+    })
+  }
+
+  await prisma.roadmapStepPrerequisite.upsert({
+    where: { stepId_prerequisiteStepId: { stepId: 'roadmap-step-campaign-assets', prerequisiteStepId: 'roadmap-step-content-pillars' } },
+    update: {},
+    create: { stepId: 'roadmap-step-campaign-assets', prerequisiteStepId: 'roadmap-step-content-pillars' }
+  })
+  await prisma.roadmapStepPrerequisite.upsert({
+    where: { stepId_prerequisiteStepId: { stepId: 'roadmap-step-analytics-proof', prerequisiteStepId: 'roadmap-step-campaign-assets' } },
+    update: {},
+    create: { stepId: 'roadmap-step-analytics-proof', prerequisiteStepId: 'roadmap-step-campaign-assets' }
+  })
+
+  const enrollment = await prisma.studentRoadmapEnrollment.upsert({
     where: { studentId_roadmapId: { studentId, roadmapId: roadmap.id } },
     update: {
       status: 'IN_PROGRESS',
-      progressPercent: 35,
-      currentStepOrder: 2,
-      completedStepIds: ['roadmap-step-content-pillars']
+      progressPercent: 0,
+      currentStepOrder: 1,
+      completedStepIds: [],
+      intent: 'earn-while-learning',
+      lockedAt: new Date()
     },
     create: {
       studentId,
       roadmapId: roadmap.id,
       status: 'IN_PROGRESS',
-      progressPercent: 35,
-      currentStepOrder: 2,
-      completedStepIds: ['roadmap-step-content-pillars']
+      progressPercent: 0,
+      currentStepOrder: 1,
+      completedStepIds: [],
+      intent: 'earn-while-learning',
+      lockedAt: new Date()
     }
+  })
+
+  for (const [index, step] of steps.entries()) {
+    await prisma.studentRoadmapStepProgress.upsert({
+      where: { enrollmentId_stepId: { enrollmentId: enrollment.id, stepId: step.id } },
+      update: index === 0 ? { evidenceScore: 64, testScore: 12, status: 'ACTIVE' } : { status: 'LOCKED' },
+      create: { enrollmentId: enrollment.id, stepId: step.id, evidenceScore: index === 0 ? 64 : 0, testScore: index === 0 ? 12 : 0, status: index === 0 ? 'ACTIVE' : 'LOCKED' }
+    })
+  }
+  await prisma.roadmapEvidence.upsert({
+    where: { id: 'evidence-aisha-social-campaign' },
+    update: { enrollmentId: enrollment.id, stepId: 'roadmap-step-content-pillars', studentId, competencyId: 'competency-content-pillars', sourceType: 'PORTFOLIO', sourceId: 'portfolio-social-campaign', verificationStatus: 'VERIFIED', scoreAwarded: 64, verifiedAt: new Date() },
+    create: { id: 'evidence-aisha-social-campaign', enrollmentId: enrollment.id, stepId: 'roadmap-step-content-pillars', studentId, competencyId: 'competency-content-pillars', sourceType: 'PORTFOLIO', sourceId: 'portfolio-social-campaign', note: 'Verified campaign planning and content strategy portfolio evidence.', verificationStatus: 'VERIFIED', scoreAwarded: 64, verifiedAt: new Date() }
+  })
+}
+
+async function seedKnowledgeHub(studentId: string, campusId: string, assets: SeedAssets) {
+  const [brian, grace] = await Promise.all([
+    prisma.studentProfile.findFirst({ where: { user: { email: 'brian.otieno@zumbarl.test' } } }),
+    prisma.studentProfile.findFirst({ where: { user: { email: 'grace.wanjiku@zumbarl.test' } } })
+  ])
+  const libraryOwnerId = brian?.id || studentId
+  const groupOwnerId = grace?.id || studentId
+  const library = await prisma.knowledgeSpace.upsert({
+    where: { slug: 'zetech-digital-library' },
+    update: { ownerStudentId: libraryOwnerId, campusId, membershipMode: 'REQUEST', status: 'ACTIVE' },
+    create: {
+      id: 'knowledge-space-zetech-library',
+      ownerStudentId: libraryOwnerId,
+      campusId,
+      type: 'LIBRARY',
+      name: 'Zetech Digital Library',
+      slug: 'zetech-digital-library',
+      description: 'Student-curated past papers, course books and revision notes for the whole campus.',
+      membershipMode: 'REQUEST',
+      visibility: 'CAMPUS',
+      coverImageUrl: assets.campaign
+    }
+  })
+  const group = await prisma.knowledgeSpace.upsert({
+    where: { slug: 'business-and-marketing-study-circle' },
+    update: { ownerStudentId: groupOwnerId, campusId, membershipMode: 'REQUEST', status: 'ACTIVE' },
+    create: {
+      id: 'knowledge-space-marketing-circle',
+      ownerStudentId: groupOwnerId,
+      campusId,
+      type: 'GROUP',
+      name: 'Business & Marketing Study Circle',
+      slug: 'business-and-marketing-study-circle',
+      description: 'Weekly peer revision, reading lists and shared campaign case studies.',
+      membershipMode: 'REQUEST',
+      visibility: 'CAMPUS',
+      coverImageUrl: assets.event
+    }
+  })
+  for (const [space, ownerId] of [[library, libraryOwnerId], [group, groupOwnerId]] as const) {
+    await prisma.knowledgeSpaceMembership.upsert({
+      where: { spaceId_studentId: { spaceId: space.id, studentId: ownerId } },
+      update: { role: 'OWNER', status: 'ACTIVE' },
+      create: { spaceId: space.id, studentId: ownerId, role: 'OWNER', status: 'ACTIVE' }
+    })
+  }
+  await prisma.knowledgeSpaceMembership.upsert({
+    where: { spaceId_studentId: { spaceId: library.id, studentId } },
+    update: { status: 'ACTIVE' },
+    create: { spaceId: library.id, studentId, status: 'ACTIVE' }
+  })
+  await prisma.knowledgeSpaceFollower.upsert({
+    where: { spaceId_studentId: { spaceId: group.id, studentId } },
+    update: {},
+    create: { spaceId: group.id, studentId }
+  })
+  const resourceSeeds = [
+    {
+      id: 'knowledge-past-paper-bbit-2025', ownerStudentId: libraryOwnerId, spaceId: library.id,
+      title: 'BBIT Database Systems Past Paper', description: 'End-semester paper with a student-reviewed topic guide.',
+      resourceType: 'PAST_PAPER', accessMode: 'FREE_READ', subject: 'Database Systems', courseCode: 'BBIT 2204', academicYear: 2025,
+      institution: 'Zetech University', previewText: 'Topics covered: relational design, SQL queries, normalization and transaction management.', coverImageUrl: assets.campaign
+    },
+    {
+      id: 'knowledge-book-marketing-research', ownerStudentId: libraryOwnerId, spaceId: library.id,
+      title: 'Marketing Research Essentials', description: 'A physical course companion available for two-week borrowing.',
+      resourceType: 'BOOK', accessMode: 'BORROW', subject: 'Marketing', courseCode: 'BMK 2102', academicYear: 2024,
+      institution: 'Zetech University', previewText: 'A practical introduction to research questions, sampling and interpreting market evidence.', availableCopies: 3, coverImageUrl: assets.marketplace
+    },
+    {
+      id: 'knowledge-notes-accounting', ownerStudentId: studentId, spaceId: library.id,
+      title: 'Financial Accounting Revision Notes', description: 'Concise worked examples contributed by Aisha Mwangi.',
+      resourceType: 'NOTES', accessMode: 'BUY', subject: 'Financial Accounting', courseCode: 'BAC 1101', academicYear: 2026,
+      institution: 'Zetech University', previewText: 'Worked examples for journals, ledgers, trial balances and financial statements.', price: 150, coverImageUrl: assets.launch
+    },
+    {
+      id: 'knowledge-guide-content-strategy', ownerStudentId: groupOwnerId, spaceId: group.id,
+      title: 'Campus Campaign Content Strategy Guide', description: 'The study circle’s shared campaign planning guide.',
+      resourceType: 'STUDY_GUIDE', accessMode: 'MEMBERS_ONLY', subject: 'Content Strategy', courseCode: 'BMC 2301', academicYear: 2026,
+      institution: 'Zetech University', previewText: 'A repeatable framework for audience research, content pillars, production and campaign learning.', coverImageUrl: assets.event
+    }
+  ]
+  for (const resource of resourceSeeds) {
+    await prisma.knowledgeResource.upsert({ where: { id: resource.id }, update: resource, create: resource })
+  }
+  await prisma.knowledgeResourceAccess.upsert({
+    where: { resourceId_studentId_action: { resourceId: 'knowledge-past-paper-bbit-2025', studentId, action: 'SAVE' } },
+    update: { status: 'ACTIVE' },
+    create: { resourceId: 'knowledge-past-paper-bbit-2025', studentId, action: 'SAVE', status: 'ACTIVE' }
   })
 }
 
@@ -1349,7 +1618,7 @@ async function seedDatabase() {
       image: assets.campaign,
       category: 'Social Media',
       engagementMode: 'Remote',
-      skills: ['Social Media', 'Canva', 'Copywriting'],
+      skills: ['Social Media', 'Content Strategy', 'Canva', 'Copywriting'],
       budgetAmount: 15000,
       applicationDeadline: new Date('2026-07-24T00:00:00.000Z'),
       duration: '40 hours estimated',
@@ -1443,38 +1712,93 @@ async function seedDatabase() {
     await syncSeedOpportunitySkills(seededOpportunity.id, item.skills)
   }
 
-  await prisma.zumbarlScore.upsert({
+  const scoreRefreshedAt = new Date()
+  const scoreNextRefreshAt = new Date(scoreRefreshedAt)
+  scoreNextRefreshAt.setDate(scoreNextRefreshAt.getDate() + 18)
+  const typedScoreOutcomeCount = await prisma.engagementOutcome.count({ where: { studentId: student.id } })
+  const seededScore = await prisma.zumbarlScore.upsert({
     where: { studentId: student.id },
-    update: {
+    update: typedScoreOutcomeCount ? {} : {
       currentScore: 74,
       tier: 'SILVER',
+      confidence: 'ESTABLISHED',
       qualityScore: 76,
       volumeScore: 64,
       loyaltyScore: 68,
       trustScore: 82,
       deliveryScore: 94,
+      reliabilityScore: 94,
+      professionalismScore: 82,
+      relationshipScore: 68,
       avgRating: 4.6,
       deliveryRate: 94,
       totalGigsCompleted: 23,
       repeatClientRate: 7,
-      endorsementCount: 3
+      endorsementCount: 3,
+      effectiveEngagements: 12,
+      uniqueClients: 7,
+      conservativeLowerBound: 70,
+      qualityGateActive: false,
+      lastRefreshedAt: scoreRefreshedAt,
+      nextRefreshAt: scoreNextRefreshAt
     },
     create: {
       studentId: student.id,
       currentScore: 74,
       tier: 'SILVER',
+      confidence: 'ESTABLISHED',
       qualityScore: 76,
       volumeScore: 64,
       loyaltyScore: 68,
       trustScore: 82,
       deliveryScore: 94,
+      reliabilityScore: 94,
+      professionalismScore: 82,
+      relationshipScore: 68,
       avgRating: 4.6,
       deliveryRate: 94,
       totalGigsCompleted: 23,
       repeatClientRate: 7,
-      endorsementCount: 3
+      endorsementCount: 3,
+      effectiveEngagements: 12,
+      uniqueClients: 7,
+      conservativeLowerBound: 70,
+      qualityGateActive: false,
+      lastRefreshedAt: scoreRefreshedAt,
+      nextRefreshAt: scoreNextRefreshAt
     }
   })
+
+  // Preserve the pre-Bayesian demo/history score as a one-time migration prior.
+  // New typed outcomes adjust this baseline; they do not reset an established
+  // student to provisional simply because older raw reviews were unavailable.
+  const migrationBaseline = await prisma.scoreSnapshot.findFirst({
+    where: { studentId: student.id, snapshotReason: 'MIGRATION_BASELINE' }
+  })
+  if (!migrationBaseline && typedScoreOutcomeCount === 0) {
+    await prisma.scoreSnapshot.create({
+      data: {
+        scoreId: seededScore.id,
+        studentId: student.id,
+        score: 74,
+        tier: 'SILVER',
+        confidence: 'ESTABLISHED',
+        qualityScore: 76,
+        volumeScore: 64,
+        loyaltyScore: 68,
+        trustScore: 82,
+        deliveryScore: 94,
+        reliabilityScore: 94,
+        professionalismScore: 82,
+        relationshipScore: 68,
+        effectiveEngagements: 12,
+        uniqueClients: 7,
+        totalEngagements: 23,
+        conservativeLowerBound: 70,
+        snapshotReason: 'MIGRATION_BASELINE'
+      }
+    })
+  }
 
   const existingMainWallet = await prisma.wallet.findFirst({
     where: { studentId: student.id, type: 'MAIN' },
@@ -1639,8 +1963,8 @@ async function seedDatabase() {
       budgetAmount: 8000,
       budgetLabel: 'KES 8,000',
       currency: 'KES',
-      requirements: ['Social Media', 'Canva', 'Copywriting'],
-      skills: ['Social Media', 'Canva', 'Copywriting'],
+      requirements: ['Social Media', 'Content Strategy', 'Canva', 'Copywriting'],
+      skills: ['Social Media', 'Content Strategy', 'Canva', 'Copywriting'],
       acceptanceCriteria: 'Posts match brand voice and weekly analytics are submitted.',
       revisionLimit: 3,
       publishedAt: new Date(),
@@ -1663,8 +1987,8 @@ async function seedDatabase() {
       budgetAmount: 8000,
       budgetLabel: 'KES 8,000',
       currency: 'KES',
-      requirements: ['Social Media', 'Canva', 'Copywriting'],
-      skills: ['Social Media', 'Canva', 'Copywriting'],
+      requirements: ['Social Media', 'Content Strategy', 'Canva', 'Copywriting'],
+      skills: ['Social Media', 'Content Strategy', 'Canva', 'Copywriting'],
       acceptanceCriteria: 'Posts match brand voice and weekly analytics are submitted.',
       revisionLimit: 3,
       publishedAt: new Date(),
@@ -1673,12 +1997,11 @@ async function seedDatabase() {
     }
   })
   if (!opportunity) throw new Error('Failed to seed social media manager opportunity')
-  await syncSeedOpportunitySkills(opportunity.id, ['Social Media', 'Canva', 'Copywriting'])
+  await syncSeedOpportunitySkills(opportunity.id, ['Social Media', 'Content Strategy', 'Canva', 'Copywriting'])
 
   await prisma.bid.upsert({
     where: { opportunityId_studentId: { opportunityId: opportunity.id, studentId: student.id } },
     update: {
-      status: 'submitted',
       bidAmount: 8000,
       intentId: 'build-career',
       intentLabel: 'Build Career',
@@ -1694,50 +2017,38 @@ async function seedDatabase() {
       proposal: 'I can deliver weekly content and performance reports.'
     }
   })
-  await upsertWorkflowRecord(projects, 'seed-social-media-project', {
+  const socialMediaProjectDefaults = {
+    seedKey: 'seed-team-social-media-project',
     opportunityId: opportunity.id,
     businessId: business.id,
     studentId: student.id,
+    ownerId: studentUser.id,
     title: 'Team Social Media Content Creation',
     status: 'planning',
     fundingStatus: 'unfunded',
     scopeLocked: false,
+    hasTeam: true,
     terms: ['stipend-role', 'attachment', 'internship', 'per-deliverable']
-  })
+  }
+  const existingSocialMediaProject = await prisma.workflowRecord.findUnique({ where: { id: 'team-social-media-content-creation' } })
+  const existingSocialMediaProjectData = existingSocialMediaProject?.data
+    && typeof existingSocialMediaProject.data === 'object'
+    && !Array.isArray(existingSocialMediaProject.data)
+      ? existingSocialMediaProject.data as Record<string, any>
+      : {}
   await prisma.workflowRecord.upsert({
     where: { id: 'team-social-media-content-creation' },
     update: {
       collection: 'projects',
       data: {
-        seedKey: 'seed-team-social-media-project',
-        opportunityId: opportunity.id,
-        businessId: business.id,
-        studentId: student.id,
-        ownerId: studentUser.id,
-        title: 'Team Social Media Content Creation',
-        status: 'planning',
-        fundingStatus: 'unfunded',
-        scopeLocked: false,
-        hasTeam: true,
-        terms: ['stipend-role', 'attachment', 'internship', 'per-deliverable']
+        ...socialMediaProjectDefaults,
+        ...existingSocialMediaProjectData
       }
     },
     create: {
       id: 'team-social-media-content-creation',
       collection: 'projects',
-      data: {
-        seedKey: 'seed-team-social-media-project',
-        opportunityId: opportunity.id,
-        businessId: business.id,
-        studentId: student.id,
-        ownerId: studentUser.id,
-        title: 'Team Social Media Content Creation',
-        status: 'planning',
-        fundingStatus: 'unfunded',
-        scopeLocked: false,
-        hasTeam: true,
-        terms: ['stipend-role', 'attachment', 'internship', 'per-deliverable']
-      }
+      data: socialMediaProjectDefaults
     }
   })
   const campaignSeed = {
@@ -1768,6 +2079,7 @@ async function seedDatabase() {
     update: campaignSeed,
     create: { seedKey: 'seed-level-up-skills-campaign', ...campaignSeed }
   })
+  await seedKnowledgeHub(student.id, campus.id, assets)
   const existingWallet = await prisma.wallet.findFirst({ where: { studentId: student.id, type: 'MAIN' } })
   if (!existingWallet) {
     await prisma.wallet.create({

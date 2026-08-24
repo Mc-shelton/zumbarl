@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { uploadZumbarlFile } from "../../../lib/uploadZumbarlFile";
+import { sendZumbarlApiRequest } from "../../../lib/sendZumbarlApiRequest";
 import {
   createBusinessMarketingCampaign,
   getBusinessMarketingCampaignFromBackend,
@@ -12,7 +13,8 @@ export const MARKETING_CAMPAIGN_STEPS = [
   { id: 2, label: "Audience", detail: "Who should create and see it" },
   { id: 3, label: "Content", detail: "Assets, formats, and proof" },
   { id: 4, label: "Budget", detail: "Payouts and campaign dates" },
-  { id: 5, label: "Review", detail: "Check and launch" },
+  { id: 5, label: "Zumbarl Ads", detail: "Request in-app promotion" },
+  { id: 6, label: "Review", detail: "Check and launch" },
 ];
 
 const INITIAL_FORM = {
@@ -23,7 +25,7 @@ const INITIAL_FORM = {
   destinationUrl: "",
   platforms: ["Instagram"],
   targetAudience: "",
-  campuses: "",
+  campuses: [],
   interests: "",
   minimumFollowers: "0",
   minimumLikes: "0",
@@ -38,6 +40,11 @@ const INITIAL_FORM = {
   payoutPerCampaigner: "",
   startsAt: "",
   endsAt: "",
+  zumbarlAdsRequested: false,
+  adHeadline: "",
+  adDescription: "",
+  adCallToAction: "",
+  adDestinationUrl: "",
 };
 
 function dateInputValue(value) {
@@ -47,6 +54,8 @@ function dateInputValue(value) {
 }
 
 function campaignToForm(campaign) {
+  const adRequest = campaign.zumbarlAds || {};
+  const storedAd = campaign.zumbarlAd || {};
   return {
     ...INITIAL_FORM,
     ...Object.fromEntries(
@@ -54,6 +63,14 @@ function campaignToForm(campaign) {
         .filter((key) => campaign[key] != null)
         .map((key) => [key, campaign[key]]),
     ),
+    campuses: Array.isArray(campaign.campuses)
+      ? campaign.campuses.map((campus) =>
+          typeof campus === "object" ? campus.id || campus.name : campus,
+        ).filter(Boolean)
+      : String(campaign.campuses || "")
+          .split(",")
+          .map((campus) => campus.trim())
+          .filter(Boolean),
     minimumFollowers: String(campaign.minimumFollowers || 0),
     minimumLikes: String(campaign.minimumLikes || 0),
     minimumEngagement: String(campaign.minimumEngagement || 0),
@@ -68,6 +85,14 @@ function campaignToForm(campaign) {
       : [],
     startsAt: dateInputValue(campaign.startsAt),
     endsAt: dateInputValue(campaign.endsAt),
+    zumbarlAdsRequested:
+      adRequest.requested === true ||
+      Boolean(storedAd.id && storedAd.status !== "withdrawn"),
+    adHeadline: adRequest.headline || storedAd.headline || "",
+    adDescription: adRequest.description || storedAd.description || "",
+    adCallToAction: adRequest.callToAction || storedAd.callToAction || "",
+    adDestinationUrl:
+      adRequest.destinationUrl || storedAd.destinationUrl || "",
   };
 }
 
@@ -111,6 +136,18 @@ function validateStep(form, step) {
     if (new Date(form.endsAt) <= new Date(form.startsAt))
       return "The end date must be after the start date.";
   }
+  if (step === 5 && form.zumbarlAdsRequested) {
+    if (!form.adHeadline.trim() || !form.adDescription.trim())
+      return "Add a headline and description for the Zumbarl Ad request.";
+    const destinationUrl = form.adDestinationUrl.trim() || form.destinationUrl.trim();
+    if (destinationUrl) {
+      try {
+        new URL(destinationUrl);
+      } catch {
+        return "Enter a valid destination URL for the Zumbarl Ad.";
+      }
+    }
+  }
   return "";
 }
 
@@ -124,6 +161,25 @@ export function useMarketingCampaignCreate() {
   const [isLoading, setIsLoading] = useState(isEditing);
   const [isUploadingMaterial, setIsUploadingMaterial] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [campusOptions, setCampusOptions] = useState([]);
+  const [campusesLoading, setCampusesLoading] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    sendZumbarlApiRequest("/auth/campuses")
+      .then((response) => {
+        if (active) setCampusOptions(response?.campuses || []);
+      })
+      .catch(() => {
+        if (active) setCampusOptions([]);
+      })
+      .finally(() => {
+        if (active) setCampusesLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!campaignId) return;
@@ -183,7 +239,7 @@ export function useMarketingCampaignCreate() {
       setError("Wait for the campaign media upload to finish.");
       return;
     }
-    for (let step = 1; step <= 4; step += 1) {
+    for (let step = 1; step <= 5; step += 1) {
       const validationError = validateStep(form, step);
       if (validationError) {
         setActiveStep(step);
@@ -195,6 +251,13 @@ export function useMarketingCampaignCreate() {
     setSaving(true);
     setError("");
     try {
+      const selectedCampuses = campusOptions.filter((campus) =>
+        form.campuses.some(
+          (value) =>
+            value === campus.id ||
+            String(value).toLocaleLowerCase() === campus.name.toLocaleLowerCase(),
+        ),
+      );
       const payload = {
         title: form.title.trim(),
         description: form.description.trim(),
@@ -204,7 +267,13 @@ export function useMarketingCampaignCreate() {
         destinationUrl: form.destinationUrl.trim() || undefined,
         platforms: form.platforms,
         targetAudience: form.targetAudience.trim(),
-        campuses: form.campuses.trim(),
+        campuses: selectedCampuses.map((campus) => campus.id),
+        priorityCampuses: selectedCampuses.map((campus) => ({
+          id: campus.id,
+          name: campus.name,
+          branch: campus.branch || null,
+          city: campus.city || null,
+        })),
         interests: form.interests.trim(),
         minimumFollowers: Number(form.minimumFollowers || 0),
         minimumLikes: Number(form.minimumLikes || 0),
@@ -234,6 +303,20 @@ export function useMarketingCampaignCreate() {
         payoutPerCampaigner: Number(form.payoutPerCampaigner),
         startsAt: form.startsAt,
         endsAt: form.endsAt,
+        zumbarlAds: {
+          requested: form.zumbarlAdsRequested,
+          ...(form.zumbarlAdsRequested
+            ? {
+                headline: form.adHeadline.trim(),
+                description: form.adDescription.trim(),
+                callToAction: form.adCallToAction.trim(),
+                destinationUrl:
+                  form.adDestinationUrl.trim() ||
+                  form.destinationUrl.trim() ||
+                  undefined,
+              }
+            : {}),
+        },
         ...(!isEditing ? { status } : {}),
       };
       const campaign = isEditing
@@ -253,6 +336,8 @@ export function useMarketingCampaignCreate() {
   return {
     activeStep,
     capacity,
+    campusOptions,
+    campusesLoading,
     error,
     form,
     isEditing,
@@ -262,6 +347,25 @@ export function useMarketingCampaignCreate() {
     goToStep,
     removeMaterial() {
       update("materials", []);
+    },
+    toggleZumbarlAds(requested) {
+      setError("");
+      setForm((current) => ({
+        ...current,
+        zumbarlAdsRequested: requested,
+        adHeadline: requested
+          ? current.adHeadline || current.title
+          : current.adHeadline,
+        adDescription: requested
+          ? current.adDescription || current.description
+          : current.adDescription,
+        adCallToAction: requested
+          ? current.adCallToAction || current.callToAction
+          : current.adCallToAction,
+        adDestinationUrl: requested
+          ? current.adDestinationUrl || current.destinationUrl
+          : current.adDestinationUrl,
+      }));
     },
     async uploadMaterial(file) {
       if (!file) return;

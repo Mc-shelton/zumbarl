@@ -45,8 +45,11 @@ async function createMarketingCampaignService(businessId: string | undefined, pa
     workflow: { proofSubmitted: false, statsGenerated: false, endorsed: false }
   })
   const materials = await normalizeCampaignMaterials(campaign.id, campaign.title, campaign.materials)
-  if (materials === campaign.materials) return campaign
-  return await marketingCampaignsRepository.updateCampaign(campaign.id, { materials }) ?? campaign
+  const savedCampaign = materials === campaign.materials
+    ? campaign
+    : await marketingCampaignsRepository.updateCampaign(campaign.id, { materials }) ?? campaign
+  await marketingCampaignsRepository.syncZumbarlAd(campaign.id)
+  return savedCampaign
 }
 
 async function readMarketingCampaignService(id: string, actor?: AuthUser) {
@@ -89,7 +92,9 @@ async function updateMarketingCampaignService(id: string, actor: AuthUser | unde
   const sourceMaterials = enrichedPatch.materials ?? detail.campaign.materials
   const materials = await normalizeCampaignMaterials(id, campaignTitle, sourceMaterials)
   const nextPatch = materials === sourceMaterials ? enrichedPatch : { ...enrichedPatch, materials }
-  return await marketingCampaignsRepository.updateCampaign(id, nextPatch) ?? notFound('Campaign')
+  const campaign = await marketingCampaignsRepository.updateCampaign(id, nextPatch) ?? notFound('Campaign')
+  await marketingCampaignsRepository.syncZumbarlAd(id)
+  return campaign
 }
 
 async function fundMarketingCampaignService(id: string) {
@@ -97,7 +102,17 @@ async function fundMarketingCampaignService(id: string) {
 }
 
 async function publishMarketingCampaignService(id: string) {
-  return await marketingCampaignsRepository.updateCampaign(id, { status: 'published', inviteOnlyUntil: null }) ?? notFound('Campaign')
+  return await marketingCampaignsRepository.publishCampaign(id) ?? notFound('Campaign')
+}
+
+function listZumbarlAdsService(query: Record<string, unknown>) {
+  return marketingCampaignsRepository.listZumbarlAds(query)
+}
+
+async function publishZumbarlAdService(id: string, actor?: AuthUser) {
+  const ad = await marketingCampaignsRepository.publishZumbarlAd(id, actor?.id)
+  if (!ad) throw new ApiError(409, 'Only pending Zumbarl Ads can be published.', 'ZUMBARL_AD_NOT_PUBLISHABLE')
+  return ad
 }
 
 async function inviteCampaignersService(id: string, payload: Record<string, any>) {
@@ -153,6 +168,8 @@ export {
   updateMarketingCampaignService,
   fundMarketingCampaignService,
   publishMarketingCampaignService,
+  listZumbarlAdsService,
+  publishZumbarlAdService,
   inviteCampaignersService,
   acceptMarketingCampaignService,
   submitMarketingCampaignProofService,

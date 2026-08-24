@@ -176,13 +176,13 @@ async function listConversationsService(userId?: string) {
   const conversations = new Map<string, any>()
   for (const message of messages) {
     const participant = message.senderId === userId ? message.recipient : message.sender
-    const key = `${participant.id}:${message.opportunityId || ''}`
+    const key = participant.id
     const current = conversations.get(key)
     if (!current) {
       conversations.set(key, {
         id: key,
         participant: participantPayload(participant),
-        opportunityId: message.opportunityId,
+        opportunityId: null,
         latestMessage: {
           id: message.id,
           body: message.body,
@@ -208,9 +208,7 @@ async function listMessagesService(
   input: { participantId: string; opportunityId?: string }
 ) {
   if (!userId) forbidden()
-  const opportunityFilter = input.opportunityId
-    ? { opportunityId: input.opportunityId }
-    : { opportunityId: null }
+  const opportunityFilter = input.opportunityId ? { opportunityId: input.opportunityId } : {}
   const where = {
     ...opportunityFilter,
     OR: [

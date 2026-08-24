@@ -71,11 +71,28 @@ function useOpportunityPlaceBidState() {
   }, [earnFlow.opportunities, location.state, opportunityId])
 
   const selectedOpportunityId = selectedGig?.submissionOpportunityId || selectedGig?.id || opportunityId
+  const existingSubmittedBid = (earnFlow.bids || []).find((bid) => bid.opportunityId === selectedOpportunityId && !bid.isDraft) || null
+  const existingActiveProject = (earnFlow.projects || []).find((project) => project.opportunityId === selectedOpportunityId && project.status !== 'Completed') || null
   const applicationDraft = draftLoadResult.opportunityId === selectedOpportunityId ? draftLoadResult.draft : null
   const isLoadingDraft = Boolean(selectedOpportunityId && draftLoadResult.opportunityId !== selectedOpportunityId)
   const opportunityOverviewPath = selectedOpportunityId
     ? `/campus/opportunities?opportunity=${encodeURIComponent(selectedOpportunityId)}`
     : '/campus/opportunities'
+
+  useEffect(() => {
+    if (submittedBid || isSubmitting) return
+    if (existingSubmittedBid?.status === 'Awarded' && existingSubmittedBid.projectId) {
+      navigate(`/campus/opportunities?tab=ongoing&project=${encodeURIComponent(existingSubmittedBid.projectId)}`, { replace: true })
+      return
+    }
+    if (existingSubmittedBid) {
+      navigate(`/campus/opportunities?tab=bids&bid=${encodeURIComponent(existingSubmittedBid.id)}`, { replace: true })
+      return
+    }
+    if (existingActiveProject) {
+      navigate(`/campus/opportunities?tab=ongoing&project=${encodeURIComponent(existingActiveProject.id)}`, { replace: true })
+    }
+  }, [existingActiveProject, existingSubmittedBid, isSubmitting, navigate, submittedBid])
 
   useEffect(() => {
     if (!selectedOpportunityId) return undefined

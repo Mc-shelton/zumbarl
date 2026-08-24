@@ -56,10 +56,16 @@ function matchesRelationshipFilter(student, filter) {
   return true
 }
 
-export function useBusinessBrowseStudents(studentGroups) {
+export function useBusinessBrowseStudents(studentGroups, initialFilters = {}) {
   const [query, setQuery] = useState('')
-  const [activeCategoryId, setActiveCategoryId] = useState('all')
-  const [activeQuickFilters, setActiveQuickFilters] = useState([])
+  const [activeCategoryId, setActiveCategoryId] = useState(() => (
+    CATEGORY_TAG_KEYWORDS[initialFilters.categoryId]
+      ? initialFilters.categoryId
+      : 'all'
+  ))
+  const [activeQuickFilters, setActiveQuickFilters] = useState(() => (
+    (initialFilters.quickFilters || []).filter((filter) => QUICK_FILTER_MATCHERS[filter])
+  ))
   const [availabilityFilters, setAvailabilityFilters] = useState([])
   const [relationshipFilters, setRelationshipFilters] = useState([])
   const [sortBy, setSortBy] = useState('recommended')

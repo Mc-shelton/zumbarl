@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FiImage, FiSearch, FiShoppingBag, FiUploadCloud, FiX } from 'react-icons/fi'
+import { FiBookOpen, FiImage, FiSearch, FiShoppingBag, FiUploadCloud, FiUsers, FiX } from 'react-icons/fi'
 import { useDialog } from '../../../components/ui'
 import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 import { readMyMarketplaceInventory } from '../../opportunities/services/marketplaceInteractionService'
+import { readKnowledgeHub } from '../../learn/services/learnService'
 
 const FALLBACK_MEDIA = {
   personal: '/assets/index/business_page_images/optimized/justin-buisson-vIluu0IH6Ps-unsplash.webp',
@@ -22,6 +23,8 @@ function ExploreStoryComposer({ isOpen, onClose, onPublish }) {
   const [isLoadingProducts, setIsLoadingProducts] = useState(false)
   const [isPublishing, setIsPublishing] = useState(false)
   const [error, setError] = useState('')
+  const [knowledgeSpaces, setKnowledgeSpaces] = useState([])
+  const [knowledgeSpaceId, setKnowledgeSpaceId] = useState('')
   const selectedProduct = useMemo(() => products.find((item) => item.id === selectedProductId) || null, [products, selectedProductId])
   const visibleProducts = useMemo(() => {
     const query = productQuery.trim().toLowerCase()
@@ -36,7 +39,14 @@ function ExploreStoryComposer({ isOpen, onClose, onPublish }) {
 
   useEffect(() => {
     if (!isOpen) return
-    setStoryKind('personal'); setTitle(''); setCaption(''); setMediaFile(null); setSelectedProductId(''); setProductQuery(''); setVideoDuration(0); setTrimStart(0); setTrimEnd(0); setError('')
+    setStoryKind('personal'); setTitle(''); setCaption(''); setMediaFile(null); setSelectedProductId(''); setProductQuery(''); setVideoDuration(0); setTrimStart(0); setTrimEnd(0); setKnowledgeSpaceId(''); setError('')
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+    readKnowledgeHub()
+      .then((response) => setKnowledgeSpaces([...(response.libraries || []), ...(response.groups || [])].filter((space) => space.membership?.status === 'active')))
+      .catch(() => setKnowledgeSpaces([]))
   }, [isOpen])
 
   useEffect(() => {
@@ -97,6 +107,7 @@ function ExploreStoryComposer({ isOpen, onClose, onPublish }) {
         likes: 0,
         comments: 0,
         product,
+        knowledgeSpaceId: knowledgeSpaceId || undefined,
         trimStart: mediaType === 'video' ? trimStart : undefined,
         trimEnd: mediaType === 'video' ? trimEnd : undefined,
       })
@@ -130,6 +141,15 @@ function ExploreStoryComposer({ isOpen, onClose, onPublish }) {
         <div className="explore-story-composer-fields">
             {(mediaPreviewUrl || selectedProduct) ? <div className="explore-story-composer-preview">{mediaFile?.type?.startsWith('video/') ? <video ref={previewVideoRef} src={mediaPreviewUrl} controls muted onLoadedMetadata={(event) => { const duration = event.currentTarget.duration || 0; setVideoDuration(duration); setTrimStart(0); setTrimEnd(Math.min(duration, 30)) }} onTimeUpdate={(event) => { if (trimEnd && event.currentTarget.currentTime >= trimEnd) { event.currentTarget.currentTime = trimStart; event.currentTarget.pause() } }} /> : <img src={mediaPreviewUrl || normalizeZumbarlFileUrl((selectedProduct.images || selectedProduct.gallery || [])[0])} alt="Story preview" />}<span>{storyKind === 'product' ? 'Product story' : 'Your story'}</span></div> : null}
             {mediaFile?.type?.startsWith('video/') && videoDuration ? <section className="explore-story-video-trimmer"><header><strong>Trim video</strong><span>{trimStart.toFixed(1)}s – {trimEnd.toFixed(1)}s · {(trimEnd - trimStart).toFixed(1)}s</span></header><label>Start<input type="range" min="0" max={Math.max(0, videoDuration - .5)} step=".1" value={trimStart} onChange={(event) => { const value = Number(event.target.value); setTrimStart(value); setTrimEnd((current) => Math.min(videoDuration, Math.max(value + .5, Math.min(current, value + 30)))); if (previewVideoRef.current) previewVideoRef.current.currentTime = value }} /></label><label>End<input type="range" min={Math.min(videoDuration, trimStart + .5)} max={Math.min(videoDuration, trimStart + 30)} step=".1" value={trimEnd} onChange={(event) => setTrimEnd(Number(event.target.value))} /></label><button type="button" onClick={() => { if (previewVideoRef.current) { previewVideoRef.current.currentTime = trimStart; previewVideoRef.current.play() } }}>Preview trimmed clip</button><small>Stories can use up to 30 seconds from this video.</small></section> : null}
+            <label>
+              Post story to
+              <select value={knowledgeSpaceId} onChange={(event) => setKnowledgeSpaceId(event.target.value)}>
+                <option value="">Your personal story</option>
+                {knowledgeSpaces.map((space) => <option value={space.id} key={space.id}>{space.type === 'library' ? 'Library' : 'Group'} · {space.name}</option>)}
+              </select>
+              <small>{knowledgeSpaceId ? 'This story appears under that community in Explore Campus.' : 'Visible in the People stories tab.'}</small>
+            </label>
+            {knowledgeSpaceId ? <div className="explore-story-space-note">{knowledgeSpaces.find((space) => space.id === knowledgeSpaceId)?.type === 'library' ? <FiBookOpen /> : <FiUsers />} Posting for {knowledgeSpaces.find((space) => space.id === knowledgeSpaceId)?.name}</div> : null}
             <label>
               Story title <small>Optional</small>
               <input value={title} placeholder={storyKind === 'product' ? 'Meet my latest product' : 'What is happening?'} onChange={(event) => setTitle(event.target.value)} />

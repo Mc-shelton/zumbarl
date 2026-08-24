@@ -83,6 +83,22 @@ class EarnWorkflowsRepository {
     return pageEnvelope(items.map(toOpportunityCard), query)
   }
 
+  async readPublishedOpportunity(id: string) {
+    const opportunity = await prisma.opportunity.findFirst({
+      where: {
+        id,
+        status: { in: OPPORTUNITY_APPLICABLE_STATUSES },
+        visibility: 'public',
+        publishedAt: { not: null }
+      },
+      include: {
+        company: true,
+        requiredAttachments: { orderBy: { sortOrder: 'asc' } }
+      }
+    })
+    return opportunity ? toOpportunityCard(opportunity) : null
+  }
+
   findProjectRecord(id: string) {
     return projects.findById(id)
   }
@@ -562,7 +578,13 @@ class EarnWorkflowsRepository {
         && (item.scopeItemId ?? null) === scopeItemId
       ))
       const isWholeProjectDeliverable = Boolean(scopeReference && isSystemGeneratedDeliverable(scopeReference))
-      const allowMultipleTasks = Boolean(sourceProject.isTeamProject) && !isWholeProjectDeliverable
+      const taskIds = Array.isArray(payload.taskIds) ? payload.taskIds.map(String) : []
+      // Team deliverables may contain several independent task submissions, but
+      // a plain second upload with no declared tasks is still a duplicate and
+      // must go through the explicit revision chain.
+      const allowMultipleTasks = Boolean(sourceProject.isTeamProject)
+        && !isWholeProjectDeliverable
+        && taskIds.length > 0
 
       // A completed (paid-out) deliverable/milestone no longer accepts submissions.
       const targetPayouts = await payouts.listAll((item) => (
@@ -645,7 +667,6 @@ class EarnWorkflowsRepository {
 
       // Carry the student's chosen tasks into the submission: each moves to
       // `submitted` and inherits the submitted files as its evidence.
-      const taskIds = Array.isArray(payload.taskIds) ? payload.taskIds.map(String) : []
       if (taskIds.length) {
         await deliverableTasksRepository.attachTasksToSubmission(tx, taskIds, {
           id: deliverable.id,

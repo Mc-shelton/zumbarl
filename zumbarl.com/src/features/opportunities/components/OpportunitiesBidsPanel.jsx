@@ -92,10 +92,20 @@ function OpportunitiesBidsPanel({
   onRespondCounterOffer = () => {},
   onViewBidOpportunity = () => {},
   selectedBidId,
+  shouldFocusSelectedBid = false,
 }) {
   const [statusFilterId, setStatusFilterId] = useState('all')
+  const selectedBidRef = useRef(null)
   const statusFilter = BID_STATUS_FILTERS.find((filter) => filter.id === statusFilterId) || BID_STATUS_FILTERS[0]
   const visibleBids = bids.filter(statusFilter.matches)
+
+  useEffect(() => {
+    if (!shouldFocusSelectedBid || !selectedBidId || !selectedBidRef.current) return
+    const frame = window.requestAnimationFrame(() => {
+      selectedBidRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [selectedBidId, shouldFocusSelectedBid, visibleBids.length])
 
   return (
     <section className="opportunities-list-section opportunities-bids-section" aria-label="My bids">
@@ -138,6 +148,7 @@ function OpportunitiesBidsPanel({
           return (
             <article
               key={bid.id}
+              ref={selectedBidId === bid.id ? selectedBidRef : null}
               className={`opportunities-bid-card${selectedBidId === bid.id ? ' is-selected' : ''}`}
               role="button"
               tabIndex={0}

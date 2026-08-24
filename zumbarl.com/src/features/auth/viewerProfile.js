@@ -9,6 +9,7 @@ import {
   getBusinessProfileSnapshot,
   subscribeBusinessProfile,
 } from '../business/services/businessProfileService'
+import { normalizeZumbarlFileUrl } from '../../lib/normalizeZumbarlFileUrl'
 
 const STUDENT_VIEWER = {
   name: 'Zumbarl Student',
@@ -66,6 +67,11 @@ function getRealViewerDetails(roleSide) {
 
   return withoutEmptyValues({
     name: fullName,
+    avatar: normalizeZumbarlFileUrl(
+      authSnapshot?.student?.avatarUrl
+      || user?.avatarUrl
+      || user?.avatar,
+    ),
     campus: authSnapshot?.student?.campus,
   })
 }

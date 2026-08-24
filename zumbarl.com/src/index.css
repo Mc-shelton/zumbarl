@@ -3,8 +3,68 @@
 body {
   margin: 0;
   font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
   color: var(--color-text);
   background: var(--bg-panel);
+  text-rendering: optimizeLegibility;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+h1,
+h2,
+h3,
+h4,
+p {
+  margin-block-start: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-heading);
+  line-height: var(--leading-title);
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--text-page-title); }
+h2 { font-size: var(--text-title-lg); }
+h3 { font-size: var(--text-title-sm); }
+h4 { font-size: var(--text-body-lg); }
+small { font-size: var(--text-caption); }
+
+/* Reusable semantic roles for new and shared UI. */
+.type-display {
+  font-size: var(--text-display);
+  line-height: var(--leading-display);
+  letter-spacing: -0.03em;
+}
+
+.type-page-title {
+  font-size: var(--text-page-title);
+  line-height: var(--leading-title);
+  letter-spacing: -0.02em;
+}
+
+.type-section-title { font-size: var(--text-title-md); }
+.type-card-title { font-size: var(--text-title-sm); }
+.type-body-lg { font-size: var(--text-body-lg); }
+.type-body { font-size: var(--text-body); }
+.type-small { font-size: var(--text-small); }
+.type-caption { font-size: var(--text-caption); }
+.type-micro { font-size: var(--text-micro); }
+.type-metric {
+  font-family: var(--font-sans);
+  font-size: var(--text-metric);
+  line-height: var(--leading-display);
+  letter-spacing: -0.02em;
 }
 
 #root {
@@ -29,4 +89,15 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+}
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
 }

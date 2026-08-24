@@ -1,5 +1,38 @@
 import { describe, expect, it } from 'vitest'
-import { submitCampaignProofSchema } from './validateMarketingPayloads.js'
+import { createMarketingCampaignSchema, submitCampaignProofSchema } from './validateMarketingPayloads.js'
+
+const validCampaign = {
+  title: 'Campus launch campaign',
+  budgetAmount: 1000,
+  platforms: ['Instagram'],
+  payoutPerCampaigner: 100,
+  materials: [{ title: 'Creative', type: 'image', url: 'https://example.com/ad.png' }]
+}
+
+describe('Zumbarl Ads campaign validation', () => {
+  it('accepts a complete optional ad review request', () => {
+    expect(createMarketingCampaignSchema.safeParse({
+      ...validCampaign,
+      zumbarlAds: {
+        requested: true,
+        headline: 'Meet students where they are',
+        description: 'Discover the new campus launch.',
+        destinationUrl: 'https://example.com/launch'
+      }
+    }).success).toBe(true)
+  })
+
+  it('requires ad copy only when promotion is requested', () => {
+    expect(createMarketingCampaignSchema.safeParse({
+      ...validCampaign,
+      zumbarlAds: { requested: true }
+    }).success).toBe(false)
+    expect(createMarketingCampaignSchema.safeParse({
+      ...validCampaign,
+      zumbarlAds: { requested: false }
+    }).success).toBe(true)
+  })
+})
 
 describe('campaign proof validation', () => {
   it('accepts one post and analytics screenshot per campaign platform', () => {

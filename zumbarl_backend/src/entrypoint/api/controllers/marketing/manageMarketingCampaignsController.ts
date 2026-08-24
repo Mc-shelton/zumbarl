@@ -8,6 +8,8 @@ import {
   fundMarketingCampaignService,
   generateMarketingCampaignStatsService,
   inviteCampaignersService,
+  listZumbarlAdsService,
+  publishZumbarlAdService,
   listMarketingCampaignsService,
   publishMarketingCampaignService,
   readMarketingCampaignService,
@@ -51,6 +53,15 @@ async function publishMarketingCampaignController(request: FastifyRequest, reply
 async function inviteCampaignersController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
   return reply.code(201).send(await inviteCampaignersService(id, requireBody(inviteCampaignersSchema, request)))
+}
+
+async function listZumbarlAdsController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await listZumbarlAdsService(request.query as Record<string, unknown>))
+}
+
+async function publishZumbarlAdController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await publishZumbarlAdService(id, request.authUser))
 }
 
 async function acceptMarketingCampaignController(request: FastifyRequest, reply: FastifyReply) {
@@ -116,6 +127,8 @@ export {
   fundMarketingCampaignController,
   publishMarketingCampaignController,
   inviteCampaignersController,
+  listZumbarlAdsController,
+  publishZumbarlAdController,
   acceptMarketingCampaignController,
   submitMarketingCampaignProofController,
   trackMarketingCampaignClickController,

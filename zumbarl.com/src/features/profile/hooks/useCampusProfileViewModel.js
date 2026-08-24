@@ -6,9 +6,7 @@ import {
   SHOP_PRODUCTS_WITH_UID,
   SKILLS_CORE,
   SKILLS_OTHER,
-  SKILLS_PROGRESS_TIMELINE,
   buildRadarPoints,
-  buildSkillsTrendCoordinates,
   getPortfolioDetail,
   getShopProductDetail,
 } from '../constants'
@@ -38,7 +36,7 @@ function useCampusProfileViewModel({
   const isPortfolioTab = activeTab === 'Portfolio'
   const isMarketingTab = activeTab === 'Marketing'
   const isExperienceTab = activeTab === 'Experience'
-  const isSkillsTab = activeTab === 'Skills'
+  const isPagesTab = activeTab === 'Pages'
   const isShopTab = activeTab === 'Shop'
   const earnFlow = useEarnFlowState()
   const portfolioEvidenceItems = useMemo(() => earnFlow.portfolioEvidence.map((item) => ({
@@ -151,14 +149,29 @@ function useCampusProfileViewModel({
     hasSkillsResults,
   } = useMemo(() => {
     const normalizedSkillSearch = skillsSearchQuery.trim().toLowerCase()
-    const backendSkills = (profileExperience?.skills || []).map((skill) => ({
-      id: skill.id,
-      name: skill.name,
-      category: skill.category || 'General',
-      level: String(skill.level || 'BEGINNER').toLowerCase().replace(/^./, (letter) => letter.toUpperCase()),
-      endorsements: skill.verifiedByGigs || 0,
-      score: skill.verifiedByGigs || 0,
-    }))
+    const backendSkills = (profileExperience?.skills || []).map((skill) => {
+      const level = String(skill.level || 'BEGINNER').toLowerCase().replace(/^./, (letter) => letter.toUpperCase())
+      const verifiedProjects = Number(skill.verifiedByGigs || 0)
+      const levelProgress = { Beginner: 25, Intermediate: 55, Advanced: 75, Expert: 95 }
+      const score = Math.max(0, Math.min(100, Number(skill.score ?? skill.zumbarlScore ?? (verifiedProjects ? 30 + (verifiedProjects * 8) : 0))))
+      const iconLabel = String(skill.name || 'Skill').split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
+
+      return {
+        id: skill.id,
+        name: skill.name,
+        category: skill.category || 'General',
+        level,
+        endorsements: verifiedProjects,
+        iconLabel,
+        iconTone: 'is-social',
+        proficiency: Math.max(0, Math.min(100, Number(skill.proficiency ?? skill.score ?? levelProgress[level] ?? 0))),
+        projects: `${verifiedProjects} verified project${verifiedProjects === 1 ? '' : 's'}`,
+        score,
+        scoreMeta: verifiedProjects ? `${verifiedProjects} verified project${verifiedProjects === 1 ? '' : 's'}` : 'No verified work yet',
+        scoreTier: level,
+        lastUsed: skill.lastUsed || 'Not yet',
+      }
+    })
     const coreSource = backendSkills.length ? backendSkills : SKILLS_CORE
     const nextCoreSkills = coreSource.filter((skill) => (
       matchesSkillFilters(skill, normalizedSkillSearch, skillsCategoryFilter, skillsLevelFilter)
@@ -173,24 +186,6 @@ function useCampusProfileViewModel({
       hasSkillsResults: nextCoreSkills.length > 0 || nextOtherSkills.length > 0,
     }
   }, [profileExperience?.skills, skillsCategoryFilter, skillsLevelFilter, skillsSearchQuery])
-
-  const {
-    skillsTrendCoordinates,
-    skillsTrendFillPoints,
-    skillsTrendPoints,
-  } = useMemo(() => {
-    const coordinates = buildSkillsTrendCoordinates(SKILLS_PROGRESS_TIMELINE)
-    const points = coordinates.map((point) => `${point.x},${point.y}`).join(' ')
-    const fillPoints = coordinates.length
-      ? `${coordinates[0].x},98 ${points} ${coordinates[coordinates.length - 1].x},98`
-      : ''
-
-    return {
-      skillsTrendCoordinates: coordinates,
-      skillsTrendFillPoints: fillPoints,
-      skillsTrendPoints: points,
-    }
-  }, [])
 
   const filteredShopProducts = useMemo(() => (
     activeShopFilter === 'all'
@@ -222,16 +217,17 @@ function useCampusProfileViewModel({
     hasSkillsResults,
     isExperienceTab,
     isMarketingTab,
+    isPagesTab,
     isPortfolioDetailOpen,
     isPortfolioProjectDetailOpen,
     isPortfolioServiceDetailOpen,
     isPortfolioTab,
     isShopProductDetailOpen,
     isShopTab,
-    isSkillsTab,
     normalizedShopDetailImageIndex,
     portfolioItems,
     portfolioServices,
+    profileScore: profileExperience?.score || null,
     selectedPortfolioDetail,
     selectedPortfolioItem,
     selectedPortfolioScorePoints,
@@ -240,9 +236,6 @@ function useCampusProfileViewModel({
     selectedShopProductDetail,
     shopDetailGallery,
     workHighlights,
-    skillsTrendCoordinates,
-    skillsTrendFillPoints,
-    skillsTrendPoints,
   }
 }
 

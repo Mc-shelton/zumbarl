@@ -96,6 +96,16 @@ function readSuperAdminAuditLogs() {
   return sendZumbarlApiRequest('/admin/super-admin/audit-logs?pageSize=25')
 }
 
+function listZumbarlAds() {
+  return sendZumbarlApiRequest('/marketing/ads?pageSize=100')
+}
+
+function publishZumbarlAd(adId) {
+  return sendZumbarlApiRequest(`/marketing/ads/${adId}/publish`, {
+    method: 'POST',
+  })
+}
+
 export {
   readSuperAdminDashboard,
   listSuperAdminAccounts,
@@ -115,4 +125,6 @@ export {
   writeSuperAdminConfiguration,
   readSuperAdminAnalytics,
   readSuperAdminAuditLogs,
+  listZumbarlAds,
+  publishZumbarlAd,
 }

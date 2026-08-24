@@ -7,6 +7,8 @@ import {
   fundMarketingCampaignController,
   generateMarketingCampaignStatsController,
   inviteCampaignersController,
+  listZumbarlAdsController,
+  publishZumbarlAdController,
   listMarketingCampaignsController,
   publishMarketingCampaignController,
   readMarketingCampaignController,
@@ -21,10 +23,13 @@ async function registerMarketingRoutes(app: FastifyInstance) {
   const anyActor = requireRoles(...roleGroups.student, ...roleGroups.business, ...roleGroups.admin)
   const businessOnly = requireRoles(...roleGroups.business, ...roleGroups.admin)
   const studentOnly = requireRoles(...roleGroups.student, ...roleGroups.admin)
+  const adminOnly = requireRoles(...roleGroups.admin)
   app.get('/track-client.js', readMarketingCampaignTrackingClientController)
   app.get('/track/:token', readMarketingCampaignTrackingPageController)
   app.post('/track/:token/click', trackMarketingCampaignClickController)
   app.get('/campaigns', { preHandler: anyActor }, listMarketingCampaignsController)
+  app.get('/ads', { preHandler: adminOnly }, listZumbarlAdsController)
+  app.post('/ads/:id/publish', { preHandler: adminOnly }, publishZumbarlAdController)
   app.post('/campaigns', { preHandler: businessOnly }, createMarketingCampaignController)
   app.get('/campaigns/:id', { preHandler: anyActor }, readMarketingCampaignController)
   app.patch('/campaigns/:id', { preHandler: businessOnly }, updateMarketingCampaignController)

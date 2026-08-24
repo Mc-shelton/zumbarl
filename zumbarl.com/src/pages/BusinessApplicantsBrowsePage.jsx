@@ -5,13 +5,14 @@ import {
   FiClock,
   FiFilter,
   FiMapPin,
+  FiRadio,
   FiSearch,
   FiStar,
   FiTrendingUp,
   FiUsers,
   FiZap,
 } from 'react-icons/fi'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import Seo from '../components/Seo'
 import { Breadcrumb, StatusPill } from '../components/ui'
 import { BusinessWorkspaceHeader } from '../features/business/components/BusinessWorkspaceHeader'
@@ -317,7 +318,13 @@ function BusinessStudentCard({ student }) {
 }
 
 function BusinessApplicantsBrowsePage() {
-  const browse = useBusinessBrowseStudents(STUDENT_GROUPS)
+  const [searchParams] = useSearchParams()
+  const sourceCampaignId = searchParams.get('campaignId') || ''
+  const sourceCampaignTitle = searchParams.get('campaignTitle') || ''
+  const browse = useBusinessBrowseStudents(STUDENT_GROUPS, {
+    categoryId: searchParams.get('category') || 'all',
+    quickFilters: searchParams.getAll('quick'),
+  })
 
   return (
     <main className="campus-page business-workspace-page business-applicants-browse-page">
@@ -346,6 +353,17 @@ function BusinessApplicantsBrowsePage() {
               primaryActionHref="/business/opportunities/create"
               primaryActionLabel="Create Opportunity"
             />
+
+            {sourceCampaignId ? (
+              <section className="business-profile-card business-browse-campaign-context">
+                <span aria-hidden="true"><FiRadio /></span>
+                <div>
+                  <strong>Find creators for {sourceCampaignTitle || 'your campaign'}</strong>
+                  <p>Marketing creators are prefiltered. Open a profile to review fit and availability.</p>
+                </div>
+                <Link to={`/business/marketing/${sourceCampaignId}`}>Back to campaign</Link>
+              </section>
+            ) : null}
 
             <section className="business-browse-categories" aria-labelledby="business-browse-categories-title">
               <header>

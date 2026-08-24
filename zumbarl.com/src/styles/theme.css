@@ -4,15 +4,41 @@
   --font-family-display: var(--font-family-sans);
   --font-family-hand: 'Caveat', cursive;
 
-  --font-size-2xs: 0.58rem;
-  --font-size-xs: 0.66rem;
-  --font-size-sm: 0.72rem;
-  --font-size-md: 0.78rem;
-  --font-size-lg: 0.82rem;
-  --font-size-xl: 0.9rem;
-  --font-size-2xl: 0.95rem;
-  --font-size-3xl: 1.1rem;
-  --font-size-page-title: clamp(2rem, 3vw, 3.1rem);
+  /*
+   * Canonical product type scale.
+   *
+   * This follows the profile hierarchy: compact labels, comfortable body copy,
+   * clear section titles, one page-title tier, and dedicated metric/display
+   * tiers. Feature styles should use these roles instead of inventing a local
+   * size so the same kind of information reads consistently across Zumbarl.
+   */
+  --text-micro: 0.625rem;       /* 10px: badges and dense metadata only */
+  --text-caption: 0.75rem;      /* 12px: captions and supporting labels */
+  --text-small: 0.875rem;       /* 14px: secondary copy and compact controls */
+  --text-body: 1rem;            /* 16px: default product copy */
+  --text-body-lg: 1.125rem;     /* 18px: prominent copy and navigation */
+  --text-title-sm: 1.25rem;     /* 20px: card titles */
+  --text-title-md: 1.5rem;      /* 24px: section titles */
+  --text-title-lg: 1.875rem;    /* 30px: large sections */
+  --text-page-title: clamp(2rem, 2.4vw, 2.375rem); /* 32-38px */
+  --text-metric: 2.8125rem;     /* 45px: primary metrics */
+  --text-display: clamp(3.25rem, 4vw, 4.0625rem); /* 52-65px */
+
+  --leading-display: 1;
+  --leading-title: 1.15;
+  --leading-body: 1.5;
+  --leading-compact: 1.3;
+
+  /* Backwards-compatible aliases for shared components. */
+  --font-size-2xs: var(--text-micro);
+  --font-size-xs: var(--text-caption);
+  --font-size-sm: var(--text-small);
+  --font-size-md: var(--text-body);
+  --font-size-lg: var(--text-body-lg);
+  --font-size-xl: var(--text-title-sm);
+  --font-size-2xl: var(--text-title-md);
+  --font-size-3xl: var(--text-title-lg);
+  --font-size-page-title: var(--text-page-title);
 
   --font-weight-regular: 400;
   --font-weight-medium: 500;

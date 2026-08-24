@@ -24,6 +24,13 @@ export const BUSINESS_NAV_ITEMS = [
     requiredAccess: ACCESS_KEYS.business.postOpportunities,
   },
   {
+    id: "projects",
+    label: "Projects",
+    icon: "briefcase",
+    href: "/business/projects",
+    requiredAccess: ACCESS_KEYS.projects.view,
+  },
+  {
     id: "browse",
     label: "Browse",
     icon: "user",

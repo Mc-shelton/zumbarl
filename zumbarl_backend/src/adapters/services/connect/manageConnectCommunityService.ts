@@ -38,8 +38,15 @@ async function createManagedProfilePostService(id: string, userId: string | unde
 }
 const readConnectProfileService = (studentId: string | undefined) => connectCommunityRepository.readProfile(requireStudentId(studentId))
 async function upsertConnectProfileService(studentId: string | undefined, payload: Record<string, any>) { return connectCommunityRepository.upsertProfile(studentId, payload) }
-const createStoryService = (studentId: string | undefined, payload: Record<string, any>) => connectCommunityRepository.createStory({ ...payload, studentId, expiresAt: new Date(Date.now() + 86400000).toISOString(), status: 'live' })
+async function createStoryService(studentId: string | undefined, payload: Record<string, any>) {
+  const resolvedStudentId = requireStudentId(studentId)
+  if (payload.knowledgeSpaceId && !await connectCommunityRepository.isActiveKnowledgeSpaceMember(payload.knowledgeSpaceId, resolvedStudentId)) {
+    throw new ApiError(403, 'Only active members can add a story for this library or group', 'FORBIDDEN')
+  }
+  return connectCommunityRepository.createStory({ ...payload, studentId: resolvedStudentId, expiresAt: new Date(Date.now() + 86400000).toISOString(), status: 'live' })
+}
 const listStoriesService = (studentId?: string) => connectCommunityRepository.listStories(studentId)
+const listSuggestedProfilesService = (studentId?: string, limit = 12) => connectCommunityRepository.listSuggestedProfiles(requireStudentId(studentId), limit)
 async function readRelationshipService(studentId: string | undefined, targetStudentId: string) {
   const actorStudentId = requireStudentId(studentId)
   if (actorStudentId === targetStudentId) throw new ApiError(400, 'You cannot connect with yourself', 'SELF_RELATIONSHIP')
@@ -51,6 +58,7 @@ async function setRelationshipService(studentId: string | undefined, targetStude
   return connectCommunityRepository.setRelationship(actorStudentId, targetStudentId, type, active)
 }
 const searchEventOrganizersService = (query: string, studentId?: string, businessId?: string) => connectCommunityRepository.searchEventOrganizers(query, studentId, businessId)
+const searchPostTagTargetsService = (query: string, studentId?: string) => connectCommunityRepository.searchPostTagTargets(query, studentId)
 async function readStoryEngagementService(reference: string, studentId: string | undefined) {
   return await connectCommunityRepository.readStoryEngagement(reference, studentId) ?? {
     storyId: null,
@@ -76,14 +84,43 @@ async function reactToStoryCommentService(id: string, studentId: string | undefi
   return await connectCommunityRepository.toggleStoryCommentReaction(id, requireStudentId(studentId), reaction)
     ?? notFound('Story comment')
 }
-const createPostService = (studentId: string | undefined, payload: Record<string, any>) => connectCommunityRepository.createPost({ ...payload, studentId, status: 'published', reactions: {}, saves: 0, reposts: 0 })
+async function createPostService(studentId: string | undefined, payload: Record<string, any>) {
+  const resolvedStudentId = requireStudentId(studentId)
+  if (payload.knowledgeSpaceId && !await connectCommunityRepository.isActiveKnowledgeSpaceMember(payload.knowledgeSpaceId, resolvedStudentId)) {
+    throw new ApiError(403, 'Only active members can post inside this library or group', 'FORBIDDEN')
+  }
+  return connectCommunityRepository.createPost({ ...payload, studentId: resolvedStudentId, status: 'published', reactions: {}, saves: 0, reposts: 0 })
+}
 async function updateOwnedPostService(id: string, studentId: string | undefined, payload: Record<string, any>) {
   const post = await connectCommunityRepository.findPost(id) ?? notFound('Post')
   if (!studentId || post.studentId !== studentId) throw new ApiError(403, 'You can only edit your own posts', 'FORBIDDEN')
   return connectCommunityRepository.updatePost(id, payload)
 }
-async function reactToPostService(id: string, studentId: string | undefined, reaction: string) { const post = await connectCommunityRepository.findPost(id) ?? notFound('Post'); return connectCommunityRepository.updatePost(id, { reactions: { ...(post.reactions ?? {}), [studentId ?? 'anonymous']: reaction } }) }
-async function commentOnPostService(id: string, studentId: string | undefined, payload: Record<string, any>) { await connectCommunityRepository.findPost(id) ?? notFound('Post'); return connectCommunityRepository.createComment({ ...payload, postId: id, studentId, status: 'published' }) }
+async function reactToPostService(id: string, studentId: string | undefined, reaction: string, snapshot: Record<string, any>) {
+  return await connectCommunityRepository.togglePostReaction(id, requireStudentId(studentId), reaction, snapshot)
+    ?? notFound('Post')
+}
+async function commentOnPostService(id: string, studentId: string | undefined, payload: Record<string, any>) {
+  const actorStudentId = requireStudentId(studentId)
+  await connectCommunityRepository.ensurePost(id, payload.post ?? {})
+  return connectCommunityRepository.createComment({ ...payload, postId: id, studentId: actorStudentId, status: 'published' })
+}
+async function resharePostService(id: string, studentId: string | undefined, snapshot: Record<string, any>, active: boolean, commentary = '') {
+  const actorStudentId = requireStudentId(studentId)
+  const existingPost = await connectCommunityRepository.findPost(id)
+  if (active && existingPost?.studentId === actorStudentId) {
+    throw new ApiError(400, 'You cannot reshare your own post', 'SELF_RESHARE')
+  }
+  return await connectCommunityRepository.setPostReshare(id, actorStudentId, snapshot, active, commentary)
+    ?? notFound('Post')
+}
+async function respondToEventService(id: string, studentId: string | undefined, status: 'GOING' | 'INTERESTED' | 'CANCELLED') {
+  const result = await connectCommunityRepository.setEventResponse(id, requireStudentId(studentId), status)
+  if (!result) return notFound('Event post')
+  if ('invalidEvent' in result) throw new ApiError(400, 'This post is not a campus event', 'NOT_AN_EVENT')
+  if ('capacityReached' in result) throw new ApiError(409, `This event has reached its capacity of ${result.capacity}`, 'EVENT_AT_CAPACITY')
+  return result
+}
 async function reportPostService(id: string, reporterId: string | undefined, payload: Record<string, any>) { await connectCommunityRepository.findPost(id) ?? notFound('Post'); return connectCommunityRepository.createModerationCase({ ...payload, scope: 'post', scopeId: id, reporterId, status: 'open' }) }
 async function readAnnouncementTargetsService(studentId?: string) { return connectCommunityRepository.listAnnouncementTargets(requireStudentId(studentId)) }
 async function submitPostForAnnouncementService(id: string, studentId: string | undefined, payload: Record<string, any>) {
@@ -116,9 +153,11 @@ export {
   upsertConnectProfileService,
   createStoryService,
   listStoriesService,
+  listSuggestedProfilesService,
   readRelationshipService,
   setRelationshipService,
   searchEventOrganizersService,
+  searchPostTagTargetsService,
   readStoryEngagementService,
   reactToStoryService,
   commentOnStoryService,
@@ -127,6 +166,8 @@ export {
   updateOwnedPostService,
   reactToPostService,
   commentOnPostService,
+  resharePostService,
+  respondToEventService,
   reportPostService,
   readAnnouncementTargetsService,
   submitPostForAnnouncementService,

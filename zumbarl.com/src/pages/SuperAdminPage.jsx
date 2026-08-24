@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Seo from "../components/Seo";
 import {
+  listZumbarlAds,
   listSuperAdminAccounts,
+  publishZumbarlAd,
   readSuperAdminAnalytics,
   readSuperAdminAuditLogs,
   readSuperAdminConfiguration,
@@ -29,6 +31,7 @@ const MODULES = [
   { id: "score", label: "Score" },
   { id: "safety", label: "Safety" },
   { id: "content", label: "Content" },
+  { id: "ads", label: "Zumbarl Ads" },
   { id: "configuration", label: "Config" },
   { id: "analytics", label: "Analytics" },
   { id: "audit", label: "Audit" },
@@ -188,6 +191,83 @@ function AccountsPanel({ accounts, onRefresh, onAction }) {
   );
 }
 
+function ZumbarlAdsPanel({ ads, onAction }) {
+  const records = ads?.data || [];
+  const pendingCount = records.filter((ad) => ad.status === "pending_review").length;
+  const publishedCount = records.filter((ad) => ad.status === "published").length;
+
+  return (
+    <Panel title="Zumbarl Ads" eyebrow="Campaign promotion review queue">
+      <section className="super-admin-metrics-grid compact">
+        <MetricTile label="Pending review" value={pendingCount} />
+        <MetricTile label="Published" value={publishedCount} />
+        <MetricTile label="Stored requests" value={records.length} />
+      </section>
+      <p className="super-admin-boundary-note">
+        Published records are ready for future Zumbarl Ads placements. No placement surface is enabled yet.
+      </p>
+      <div className="super-admin-table-wrap">
+        <table className="super-admin-table super-admin-ads-table">
+          <thead>
+            <tr>
+              <th>Creative</th>
+              <th>Campaign</th>
+              <th>Ad copy</th>
+              <th>Status</th>
+              <th>Requested</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {records.map((ad) => {
+              const materials = Array.isArray(ad.campaign?.materials)
+                ? ad.campaign.materials
+                : [];
+              const previewImage =
+                ad.campaign?.previewImage ||
+                materials.find((material) => material.type === "image")?.url;
+              return (
+                <tr key={ad.id}>
+                  <td>
+                    {previewImage ? (
+                      <img className="super-admin-ad-thumb" src={previewImage} alt="" />
+                    ) : (
+                      <span className="super-admin-ad-thumb is-empty">Ad</span>
+                    )}
+                  </td>
+                  <td>
+                    <strong>{ad.campaign?.title || "Campaign"}</strong>
+                    <span>{ad.campaignId}</span>
+                  </td>
+                  <td>
+                    <strong>{ad.headline}</strong>
+                    <span>{ad.description}</span>
+                    {ad.callToAction ? <small>{ad.callToAction}</small> : null}
+                  </td>
+                  <td><span className={`super-admin-ad-status is-${ad.status}`}>{ad.status.replaceAll("_", " ")}</span></td>
+                  <td>{new Date(ad.createdAt).toLocaleString()}</td>
+                  <td>
+                    <button
+                      type="button"
+                      disabled={ad.status !== "pending_review"}
+                      onClick={() => onAction(() => publishZumbarlAd(ad.id))}
+                    >
+                      {ad.status === "published" ? "Published" : "Publish"}
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+            {!records.length ? (
+              <tr><td colSpan="6">No Zumbarl Ads requests have been submitted yet.</td></tr>
+            ) : null}
+          </tbody>
+        </table>
+      </div>
+    </Panel>
+  );
+}
+
 function SuperAdminPage() {
   const [activeModule, setActiveModule] = useState("overview");
   const [data, setData] = useState({});
@@ -212,6 +292,7 @@ function SuperAdminPage() {
         score: readSuperAdminScore,
         safety: readSuperAdminSafetyMetrics,
         content: readSuperAdminContent,
+        ads: listZumbarlAds,
         configuration: readSuperAdminConfiguration,
         analytics: readSuperAdminAnalytics,
         audit: readSuperAdminAuditLogs,
@@ -531,6 +612,10 @@ function SuperAdminPage() {
               ]}
             />
           </Panel>
+        ) : null}
+
+        {activeModule === "ads" ? (
+          <ZumbarlAdsPanel ads={activePayload} onAction={performAction} />
         ) : null}
 
         {activeModule === "configuration" ? (

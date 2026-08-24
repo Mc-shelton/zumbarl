@@ -18,7 +18,7 @@ export function useCartPageState() {
         setCartItems(cart.items.map((item) => ({
           id: item.listingId,
           title: item.title || 'Marketplace item',
-          badge: item.offerId ? 'Accepted offer' : 'Marketplace',
+          badge: item.offerId ? 'Accepted offer' : item.kind === 'service' ? (item.serviceMode === 'order_ahead' ? 'Order ahead' : 'Service booking') : 'Marketplace',
           badgeTone: item.offerId ? 'is-purple' : 'is-orange',
           description: item.description || 'Complete checkout to secure this item.',
           unitPrice: Number(item.unitAmount || 0),
@@ -27,8 +27,11 @@ export function useCartPageState() {
           deliveryOptions: item.deliveryOptions || [],
           deliveryZones: item.deliveryZones || [],
           locationLabel: item.locationLabel,
+          kind: item.kind || 'product',
+          serviceMode: item.serviceMode,
+          serviceRequest: item.serviceRequest,
           fulfilment: item.fulfilment || { method: 'unquoted', location: 'Arrange with seller', fee: 0, quoted: false },
-          lockedQuantity: Boolean(item.lockedQuantity),
+          lockedQuantity: Boolean(item.lockedQuantity || item.kind === 'service'),
         })))
       })
       .catch(() => {})

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { FiBarChart2, FiStar } from 'react-icons/fi'
 import {
   ACHIEVEMENTS,
@@ -5,14 +6,29 @@ import {
   ENDORSEMENTS,
   PROFILE_SCORE,
   SCORE_BARS,
-  TOP_SKILLS,
   getScoreFillColor,
 } from '../constants'
 import { useProfileTrustSnapshot } from '../hooks/useProfileTrustSnapshot'
 
-function ProfileOverviewPanel({ endorsements = [], workHighlights = [] }) {
-  const trustSnapshot = useProfileTrustSnapshot()
-  const profileScore = trustSnapshot?.score || PROFILE_SCORE
+function ProfileOverviewPanel({ endorsements = [], score = null, workHighlights = [] }) {
+  const [showScoreExplanation, setShowScoreExplanation] = useState(false)
+  const legacyTrustSnapshot = useProfileTrustSnapshot()
+  const trustSnapshot = score ? {
+    score: Number(score.currentScore || 0),
+    tier: score.tier,
+    confidence: score.confidence,
+    averageRating: score.avgRating ? Number(score.avgRating).toFixed(1) : 'Pending',
+    nextStep: score.confidence === 'PROVISIONAL'
+      ? `Complete verified work with ${Math.max(0, 2 - Number(score.uniqueClients || 0))} more client${Math.max(0, 2 - Number(score.uniqueClients || 0)) === 1 ? '' : 's'}`
+      : 'Keep completing verified work to strengthen confidence',
+    scoreBars: [
+      { label: 'Quality', value: Math.round(Number(score.qualityScore || 0)), max: 100 },
+      { label: 'Reliability', value: Math.round(Number(score.reliabilityScore || score.deliveryScore || 0)), max: 100 },
+      { label: 'Professionalism', value: Math.round(Number(score.professionalismScore || score.trustScore || 0)), max: 100 },
+      { label: 'Client relationship', value: Math.round(Number(score.relationshipScore || score.loyaltyScore || 0)), max: 100 },
+    ],
+  } : legacyTrustSnapshot
+  const profileScore = trustSnapshot?.score ?? PROFILE_SCORE
   const scoreBars = trustSnapshot?.scoreBars?.length ? trustSnapshot.scoreBars : SCORE_BARS
   const profileScoreColor = getScoreFillColor(profileScore, 100)
   const visibleEndorsements = endorsements.length ? [...endorsements, ...ENDORSEMENTS] : ENDORSEMENTS
@@ -30,7 +46,14 @@ function ProfileOverviewPanel({ endorsements = [], workHighlights = [] }) {
               <h2>Zumbarl Score Breakdown</h2>
               <p>Your overall performance across key areas</p>
             </div>
-            <button type="button" className="campus-link-btn">What is this?</button>
+            <button
+              type="button"
+              className="campus-link-btn"
+              aria-expanded={showScoreExplanation}
+              onClick={() => setShowScoreExplanation((visible) => !visible)}
+            >
+              What is this?
+            </button>
           </header>
 
           <div className="campus-profile-score-grid">
@@ -42,8 +65,8 @@ function ProfileOverviewPanel({ endorsements = [], workHighlights = [] }) {
               }}
             >
               <div>
-                <strong>{profileScore}</strong>
-                <span>{trustSnapshot?.tier || 'Tier 3'}</span>
+                <strong>{trustSnapshot?.confidence === 'PROVISIONAL' ? '—' : profileScore}</strong>
+                <span>{trustSnapshot?.confidence === 'PROVISIONAL' ? 'Provisional' : trustSnapshot?.tier || 'Tier 3'}</span>
               </div>
             </div>
 
@@ -64,6 +87,18 @@ function ProfileOverviewPanel({ endorsements = [], workHighlights = [] }) {
               ))}
             </div>
           </div>
+
+          {showScoreExplanation ? (
+            <div className="campus-profile-score-explanation" role="note">
+              <strong>A confidence-weighted work score</strong>
+              <p>
+                Verified project outcomes update quality, reliability, professionalism, and client relationship using a Bayesian model. Recent work counts more, repeat work from one client is discounted, and unverified evidence does not count.
+              </p>
+              <p>
+                {Number(score?.effectiveEngagements || 0).toFixed(1)} effective engagements across {Number(score?.uniqueClients || 0)} clients · {String(score?.confidence || 'provisional').toLowerCase()} confidence.
+              </p>
+            </div>
+          ) : null}
 
           <footer className="campus-profile-score-foot">
             <p>Average reviewed rating: {trustSnapshot?.averageRating || 'Pending'}</p>
@@ -141,20 +176,6 @@ function ProfileOverviewPanel({ endorsements = [], workHighlights = [] }) {
           </div>
         </article>
 
-        <article className="campus-profile-surface">
-          <header className="campus-profile-card-head">
-            <h2>Top Skills</h2>
-            <button type="button" className="campus-link-btn">View all</button>
-          </header>
-          <div className="campus-profile-skill-chip-list">
-            {TOP_SKILLS.map((skill) => (
-              <span key={skill.label} className="campus-profile-skill-chip">
-                {skill.label}
-                <em>{skill.level}</em>
-              </span>
-            ))}
-          </div>
-        </article>
       </div>
 
       <article className="campus-profile-surface campus-profile-work-card">

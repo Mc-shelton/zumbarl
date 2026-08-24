@@ -72,7 +72,9 @@ function OpportunitiesPage() {
               activeOpportunityIntentId={pageState.activeOpportunityIntent.id}
               activeOpportunityTypeId={pageState.activeOpportunityTypeId}
               selectedBidId={pageState.selectedBidId}
+              shouldFocusSelectedBid={pageState.shouldFocusSelectedBid}
               selectedOpportunityUuid={pageState.selectedOpportunityUuid}
+              selectedProjectId={pageState.selectedProjectId}
               searchQuery={pageState.searchQuery}
               visibleBids={pageState.visibleBids}
               visibleOpportunities={pageState.visibleOpportunities}
@@ -97,6 +99,8 @@ function OpportunitiesPage() {
               skillOptions={pageState.skillOptions}
               activeOpportunityIntentId={pageState.activeOpportunityIntent.id}
               selectedOpportunity={pageState.selectedOpportunity}
+              selectedOpportunityBid={pageState.selectedOpportunityBid}
+              selectedOpportunityProject={pageState.selectedOpportunityProject}
               selectedOpportunityThumbnail={pageState.selectedOpportunityThumbnail}
             />
           ) : null}

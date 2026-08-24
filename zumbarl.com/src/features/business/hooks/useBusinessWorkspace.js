@@ -23,6 +23,7 @@ const EMPTY_WORKSPACE = {
   ],
   opportunities: [],
   pipelineStages: [],
+  projects: [],
   reviewEvents: [],
   upcomingActions: [],
 }

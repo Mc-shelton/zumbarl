@@ -136,7 +136,7 @@
   color: #fff;
   display: grid;
   place-items: center;
-  font-size: 0.72rem;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 
@@ -225,13 +225,13 @@
   padding: 8px 18px;
   background: #f0ecff;
   color: #4e2cb1;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
 }
 
 .messages-thread header p {
   margin-top: 3px;
   color: #74788b;
-  font-size: 0.8rem;
+  font-size: var(--text-small);
 }
 
 .messages-thread-body {
@@ -306,7 +306,7 @@
   padding: 4px 7px;
   color: #705baf;
   background: #f0ecff;
-  font-size: 8px;
+  font-size: var(--text-micro);
   font-weight: 850;
   letter-spacing: .04em;
   text-transform: uppercase;
@@ -329,7 +329,7 @@
   padding: 5px 8px;
   color: #5b35dc;
   background: #fff;
-  font-size: 9px;
+  font-size: var(--text-micro);
   font-weight: 800;
   line-height: 1;
   text-decoration: none;
@@ -364,7 +364,7 @@
 
 .messages-product-preview small {
   color: #7968b6;
-  font-size: 9px;
+  font-size: var(--text-micro);
   font-weight: 850;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -380,7 +380,7 @@
 .messages-product-preview b {
   margin-top: 2px;
   color: #16824d;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .messages-thread-body p {
@@ -394,7 +394,7 @@
   margin-top: 5px;
   color: inherit;
   opacity: 0.68;
-  font-size: 0.7rem;
+  font-size: var(--text-caption);
   text-align: right;
 }
 
@@ -463,7 +463,7 @@
   }
 
   .messages-page-header h1 {
-    font-size: 1.45rem;
+    font-size: var(--text-title-md);
   }
 
   .messages-page-header p {
@@ -504,7 +504,7 @@
   }
 
   .messages-thread h2 {
-    font-size: 1rem;
+    font-size: var(--text-body);
   }
 
   .messages-call-actions {

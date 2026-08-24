@@ -1,9 +1,12 @@
 import {
   FiBookOpen,
   FiBox,
+  FiCalendar,
+  FiCoffee,
   FiGrid,
   FiHome,
   FiMoreHorizontal,
+  FiScissors,
   FiShoppingBag,
   FiSmartphone,
   FiTool,
@@ -18,6 +21,9 @@ const CATEGORY_ICON_MAP = {
   'shopping-bag': FiShoppingBag,
   box: FiBox,
   tool: FiTool,
+  calendar: FiCalendar,
+  coffee: FiCoffee,
+  scissors: FiScissors,
   more: FiMoreHorizontal,
 }
 
@@ -28,7 +34,7 @@ function MarketplaceCategories({
 }) {
   return (
     <section className="opportunities-marketplace-categories" aria-label="Marketplace categories">
-      {MARKETPLACE_CATEGORIES.map(({ label, count, icon }) => {
+      {MARKETPLACE_CATEGORIES.map(({ label, description, icon }) => {
         const Icon = CATEGORY_ICON_MAP[icon] || FiMoreHorizontal
         const isActive = label === activeCategory
 
@@ -47,7 +53,7 @@ function MarketplaceCategories({
               <Icon aria-hidden="true" />
             </div>
             <h3>{label}</h3>
-            <p>{count.toLocaleString()}</p>
+            <p>{description}</p>
           </article>
         )
       })}

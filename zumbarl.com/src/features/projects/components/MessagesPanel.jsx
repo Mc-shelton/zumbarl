@@ -51,7 +51,7 @@ function MessagesPanel() {
                   <span>{message.date}</span>
                 </p>
                 <div className="project-chat-bubble">
-                  {message.text}
+                  <span className="project-chat-message-text">{message.text}</span>
                   {message.files ? (
                     <div className="project-chat-files">
                       {message.files.map((file) => (

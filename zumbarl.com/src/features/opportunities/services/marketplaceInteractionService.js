@@ -7,6 +7,14 @@ function mapMarketplaceApiListing(listing) {
   if (!listing) return null
   const images = (listing.images || listing.gallery || []).map((image) => normalizeZumbarlFileUrl(image)).filter(Boolean)
   const priceAmount = Number(listing.priceAmount || 0)
+  const kind = String(listing.kind || listing.listingType || 'product').toLowerCase() === 'service' ? 'service' : 'product'
+  const searchable = `${listing.category || ''} ${listing.title || ''}`.toLowerCase()
+  const inferredMode = /food|meal|eatery|restaurant|cafe|coffee|snack|baker/.test(searchable)
+    ? 'order_ahead'
+    : /barber|salon|beauty|nail|wellness|massage|tutor|lesson|session/.test(searchable)
+      ? 'appointment'
+      : 'request_quote'
+  const serviceMode = kind === 'service' ? (listing.serviceMode || listing.orderMode || inferredMode) : 'product'
   return {
     ...listing,
     id: listing.id,
@@ -24,6 +32,11 @@ function mapMarketplaceApiListing(listing) {
     badge: listing.status === 'published' ? 'Available' : String(listing.status || 'Available').replace(/^./, (letter) => letter.toUpperCase()),
     stock: listing.stock ?? listing.stockCount ?? 1,
     seller: listing.seller,
+    kind,
+    listingType: listing.listingType || kind.toUpperCase(),
+    serviceMode,
+    duration: listing.duration || listing.serviceDuration || '',
+    availabilityText: listing.availabilityText || listing.availability || '',
   }
 }
 
@@ -88,10 +101,10 @@ function addAcceptedOfferToCart(listingId, offerId) {
   })
 }
 
-function addMarketplaceListingToCart(listingId, quantity = 1) {
+function addMarketplaceListingToCart(listingId, quantity = 1, serviceRequest) {
   return sendZumbarlApiRequest('/marketplace/cart/items', {
     method: 'POST',
-    body: JSON.stringify({ listingId, quantity }),
+    body: JSON.stringify({ listingId, quantity, ...(serviceRequest ? { serviceRequest } : {}) }),
   })
 }
 

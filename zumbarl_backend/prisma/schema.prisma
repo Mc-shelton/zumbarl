@@ -71,6 +71,8 @@ enum TransactionType {
   MICRO_ADVANCE
   ADVANCE_REPAYMENT
   COMPANY_PAYMENT
+  RESOURCE_PURCHASE
+  RESOURCE_SALE
 }
 
 enum TransactionStatus {
@@ -88,10 +90,11 @@ enum MpesaDirection {
 }
 
 enum ScoreTier {
-  BRONZE // 0–24
-  SILVER // 25–74
-  GOLD // 75–89
-  PLATINUM // 90–100
+  PROVISIONAL // no public score until confidence gates are met
+  BRONZE // below 60
+  SILVER // 60–74
+  GOLD // 75–89 plus evidence gates
+  PLATINUM // 90–100 plus evidence and reliability gates
 }
 
 enum SkillLevel {
@@ -226,34 +229,48 @@ model StudentProfile {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user                    User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  campus                  Campus                        @relation(fields: [campusId], references: [id])
-  course                  Course                        @relation(fields: [courseId], references: [id])
-  kycDocuments            KycDocument[]
-  zumbarl                 ZumbarlScore?
-  skillLevels             SkillLevel_[]
-  bids                    Bid[]
-  pipelineRelationships   PipelineRelationship[]
-  endorsementsReceived    Endorsement[]                 @relation("EndorsementsReceived")
-  achievements            Achievement[]
-  portfolioItems          PortfolioItem[]
-  stories                 StudentStory[]
-  posts                   CampusPost[]
-  marketplaceShops        MarketplaceShop[]
-  marketplaceListings     MarketplaceListing[]
-  eventRsvps              CampusEventRsvp[]
-  roadmapEnrollments      StudentRoadmapEnrollment[]
-  studentSkills           StudentSkill[]
-  wallets                 Wallet[]
-  certificates            Certificate[]
-  chamaMembers            ChamaMember[]
-  deliverableTasks        DeliverableTask[]             @relation("DeliverableTaskOwner")
-  connectStoryReactions   ConnectStoryReaction[]
-  connectStoryComments    ConnectStoryComment[]
-  connectStories          ConnectStory[]
-  connectCommentReactions ConnectStoryCommentReaction[]
-  outgoingRelationships   ConnectRelationship[]         @relation("ConnectRelationshipActor")
-  incomingRelationships   ConnectRelationship[]         @relation("ConnectRelationshipTarget")
+  user                        User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campus                      Campus                        @relation(fields: [campusId], references: [id])
+  course                      Course                        @relation(fields: [courseId], references: [id])
+  kycDocuments                KycDocument[]
+  zumbarl                     ZumbarlScore?
+  skillLevels                 SkillLevel_[]
+  bids                        Bid[]
+  pipelineRelationships       PipelineRelationship[]
+  endorsementsReceived        Endorsement[]                 @relation("EndorsementsReceived")
+  achievements                Achievement[]
+  portfolioItems              PortfolioItem[]
+  stories                     StudentStory[]
+  posts                       CampusPost[]
+  marketplaceShops            MarketplaceShop[]
+  marketplaceListings         MarketplaceListing[]
+  eventRsvps                  CampusEventRsvp[]
+  roadmapEnrollments          StudentRoadmapEnrollment[]
+  roadmapEvidence             RoadmapEvidence[]
+  roadmapAssessmentAttempts   RoadmapAssessmentAttempt[]
+  learningPracticeSubmissions LearningPracticeSubmission[]
+  competencyStates            StudentCompetencyState[]
+  studentSkills               StudentSkill[]
+  engagementOutcomes          EngagementOutcome[]
+  categoryScores              StudentCategoryScore[]
+  wallets                     Wallet[]
+  certificates                Certificate[]
+  chamaMembers                ChamaMember[]
+  deliverableTasks            DeliverableTask[]             @relation("DeliverableTaskOwner")
+  connectStoryReactions       ConnectStoryReaction[]
+  connectStoryComments        ConnectStoryComment[]
+  connectStories              ConnectStory[]
+  knowledgeResources          KnowledgeResource[]           @relation("KnowledgeResourceOwner")
+  knowledgeSpaces             KnowledgeSpace[]              @relation("KnowledgeSpaceOwner")
+  knowledgeMemberships        KnowledgeSpaceMembership[]
+  knowledgeFollows            KnowledgeSpaceFollower[]
+  knowledgeAccesses           KnowledgeResourceAccess[]
+  knowledgeRoomsCreated       KnowledgeRoom[]               @relation("KnowledgeRoomCreator")
+  knowledgeRoomMemberships    KnowledgeRoomMembership[]
+  knowledgeRoomMessages       KnowledgeRoomMessage[]        @relation("KnowledgeRoomMessageAuthor")
+  connectCommentReactions     ConnectStoryCommentReaction[]
+  outgoingRelationships       ConnectRelationship[]         @relation("ConnectRelationshipActor")
+  incomingRelationships       ConnectRelationship[]         @relation("ConnectRelationshipTarget")
 
   @@index([campusId])
   @@index([kycStatus])
@@ -515,10 +532,34 @@ model MarketingCampaign {
   invites     MarketingCampaignInvite[]
   acceptances MarketingCampaignAcceptance[]
   proofs      MarketingCampaignProof[]
+  zumbarlAd   ZumbarlAd?
 
   @@index([businessId])
   @@index([status, createdAt])
   @@map("marketing_campaigns")
+}
+
+model ZumbarlAd {
+  id             String    @id @default(cuid())
+  campaignId     String    @unique
+  businessId     String?
+  headline       String
+  description    String
+  callToAction   String?
+  destinationUrl String?
+  status         String    @default("draft") // draft | pending_review | published | withdrawn
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  publishedAt    DateTime?
+  payload        Json?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  campaign MarketingCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([businessId])
+  @@map("zumbarl_ads")
 }
 
 model MarketingCampaignInvite {
@@ -630,24 +671,26 @@ model ConnectRelationship {
 }
 
 model ConnectStory {
-  id         String   @id @default(cuid())
-  sourceId   String?  @unique
-  studentId  String?
-  text       String
-  mediaUrl   String?
-  visibility String   @default("campus")
-  context    String?
-  expiresAt  DateTime
-  status     String   @default("live")
-  payload    Json?
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  id               String   @id @default(cuid())
+  sourceId         String?  @unique
+  studentId        String?
+  knowledgeSpaceId String?
+  text             String
+  mediaUrl         String?
+  visibility       String   @default("campus")
+  context          String?
+  expiresAt        DateTime
+  status           String   @default("live")
+  payload          Json?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   reactions ConnectStoryReaction[]
   comments  ConnectStoryComment[]
   student   StudentProfile?        @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
+  @@index([knowledgeSpaceId, status, createdAt])
   @@index([status, expiresAt])
   @@map("connect_stories")
 }
@@ -709,6 +752,7 @@ model ConnectPost {
   id               String   @id @default(cuid())
   studentId        String?
   managedProfileId String?
+  knowledgeSpaceId String?
   type             String   @default("post")
   body             String
   tags             Json?
@@ -726,6 +770,7 @@ model ConnectPost {
 
   @@index([studentId])
   @@index([managedProfileId])
+  @@index([knowledgeSpaceId, status, createdAt])
   @@index([status, createdAt])
   @@map("connect_posts")
 }
@@ -1052,6 +1097,7 @@ model Company {
   placements            Placement[]
   wallet                CompanyWallet?
   managedProfile        ManagedProfile?
+  engagementOutcomes    EngagementOutcome[]
 
   @@index([kycStatus])
   @@index([sector])
@@ -1229,17 +1275,19 @@ model Opportunity {
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
 
-  company             Company                         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  postedByContact     CompanyContact?                 @relation(fields: [postedByContactId], references: [id], onDelete: SetNull)
-  scopeItems          OpportunityScopeItem[]
-  opportunitySkills   OpportunitySkill[]
-  requiredAttachments OpportunityRequiredAttachment[]
-  activityEvents      OpportunityActivityEvent[]
-  invites             OpportunityInvite[]
-  bids                Bid[]
-  submissions         OpportunitySubmission[]
-  ratings             OpportunityRating[]
-  escrowHolds         OpportunityEscrowHold[]
+  company                 Company                         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  postedByContact         CompanyContact?                 @relation(fields: [postedByContactId], references: [id], onDelete: SetNull)
+  scopeItems              OpportunityScopeItem[]
+  opportunitySkills       OpportunitySkill[]
+  opportunityCompetencies OpportunityCompetency[]
+  requiredAttachments     OpportunityRequiredAttachment[]
+  activityEvents          OpportunityActivityEvent[]
+  invites                 OpportunityInvite[]
+  bids                    Bid[]
+  submissions             OpportunitySubmission[]
+  ratings                 OpportunityRating[]
+  escrowHolds             OpportunityEscrowHold[]
+  engagementOutcomes      EngagementOutcome[]
 
   @@index([companyId])
   @@index([postedByContactId])
@@ -1707,24 +1755,33 @@ model ZumbarlScore {
   studentId    String    @unique
   currentScore Float     @default(0)
   tier         ScoreTier @default(BRONZE)
+  confidence   String    @default("PROVISIONAL")
 
   // Sub-scores (0–100 each)
-  qualityScore  Float @default(0)
-  volumeScore   Float @default(0)
-  loyaltyScore  Float @default(0)
-  trustScore    Float @default(0)
-  deliveryScore Float @default(0)
+  qualityScore         Float @default(0)
+  volumeScore          Float @default(0)
+  loyaltyScore         Float @default(0)
+  trustScore           Float @default(0)
+  deliveryScore        Float @default(0)
+  reliabilityScore     Float @default(0)
+  professionalismScore Float @default(0)
+  relationshipScore    Float @default(0)
 
   // Raw inputs for calculator
-  avgRating          Float @default(0)
-  deliveryRate       Float @default(0)
-  totalGigsCompleted Int   @default(0)
-  repeatClientRate   Float @default(0)
-  endorsementCount   Int   @default(0)
+  avgRating              Float @default(0)
+  deliveryRate           Float @default(0)
+  totalGigsCompleted     Int   @default(0)
+  repeatClientRate       Float @default(0)
+  endorsementCount       Int   @default(0)
+  effectiveEngagements   Float @default(0)
+  uniqueClients          Int   @default(0)
+  conservativeLowerBound Float @default(0)
 
   // Penalty flags
   deliveryPenaltyActive Boolean @default(false)
   qualityGateActive     Boolean @default(true) // true until 3 gigs done
+  isUnderReview         Boolean @default(false)
+  isRestricted          Boolean @default(false)
 
   // Refresh cycle
   lastRefreshedAt  DateTime?
@@ -1746,24 +1803,107 @@ model ZumbarlScore {
 }
 
 model ScoreSnapshot {
-  id             String    @id @default(cuid())
-  scoreId        String
-  studentId      String
-  score          Float
-  tier           ScoreTier
-  qualityScore   Float
-  volumeScore    Float
-  loyaltyScore   Float
-  trustScore     Float
-  deliveryScore  Float
-  snapshotReason String // REFRESH | GIG_COMPLETED | ENDORSEMENT | PENALTY
-  createdAt      DateTime  @default(now())
+  id                     String    @id @default(cuid())
+  scoreId                String
+  studentId              String
+  score                  Float
+  tier                   ScoreTier
+  qualityScore           Float
+  volumeScore            Float
+  loyaltyScore           Float
+  trustScore             Float
+  deliveryScore          Float
+  confidence             String    @default("PROVISIONAL")
+  reliabilityScore       Float     @default(0)
+  professionalismScore   Float     @default(0)
+  relationshipScore      Float     @default(0)
+  effectiveEngagements   Float     @default(0)
+  uniqueClients          Int       @default(0)
+  totalEngagements       Int       @default(0)
+  conservativeLowerBound Float     @default(0)
+  categoryScores         Json?
+  isUnderReview          Boolean   @default(false)
+  isRestricted           Boolean   @default(false)
+  snapshotReason         String // REFRESH | GIG_COMPLETED | ENDORSEMENT | PENALTY
+  createdAt              DateTime  @default(now())
 
   zumbarlScore ZumbarlScore @relation(fields: [scoreId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
   @@index([createdAt])
   @@map("score_snapshots")
+}
+
+// One immutable scoring unit per completed student engagement. Deliverables,
+// tasks, reviews and payouts feed this row; they do not award points separately.
+model EngagementOutcome {
+  id            String   @id @default(cuid())
+  opportunityId String
+  studentId     String
+  companyId     String
+  projectId     String?
+  category      String
+  completedAt   DateTime
+
+  contractValueKes       Float
+  categoryMedianValueKes Float
+  isVerified             Boolean @default(false)
+  raterIsCredible        Boolean @default(true)
+
+  deliveryQualityRating Float
+  briefAdherenceRating  Float
+  categoryRubricScore   Float   @default(0.5)
+  firstPassAccepted     Boolean @default(false)
+
+  completedWithinDeadline     Boolean
+  deadlineMissWasStudentFault Boolean @default(false)
+  submissionWasComplete       Boolean @default(true)
+  studentCancelledMidway      Boolean @default(false)
+  attributableRevisionCount   Int     @default(0)
+  contractRevisionAllowance   Int     @default(2)
+
+  communicationRating         Float
+  conductRating               Float
+  disputeRaised               Boolean @default(false)
+  disputeUpheldAgainstStudent Boolean @default(false)
+
+  wouldHireAgain           Boolean
+  isRepeatEngagement       Boolean @default(false)
+  clientSatisfactionRating Float
+  publicFeedback           String?
+  categoryRubricEvidence   Json?
+
+  isQuarantined  Boolean  @default(false)
+  quarantineNote String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  opportunity Opportunity    @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  company     Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, opportunityId])
+  @@index([studentId, completedAt])
+  @@index([companyId])
+  @@index([category])
+  @@map("engagement_outcomes")
+}
+
+// Denormalised category view used for business-side filtering and matching.
+model StudentCategoryScore {
+  id          String   @id @default(cuid())
+  studentId   String
+  category    String
+  score       Float
+  engagements Int
+  confidence  String
+  updatedAt   DateTime @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, category])
+  @@index([category, score])
+  @@map("student_category_scores")
 }
 
 model SkillLevel_ {
@@ -1821,6 +1961,7 @@ model Skill {
   aliases           SkillAlias[]
   opportunitySkills OpportunitySkill[]
   studentSkills     StudentSkill[]
+  competencies      Competency[]
 
   @@index([categoryId])
   @@index([status])
@@ -1944,21 +2085,26 @@ model CareerStageProgress {
 }
 
 model CareerRoadmap {
-  id             String   @id @default(cuid())
-  campusId       String?
-  title          String
-  slug           String   @unique
-  description    String
-  careerFamily   String
-  level          String   @default("BEGINNER") // BEGINNER | INTERMEDIATE | ADVANCED
-  estimatedWeeks Int      @default(4)
-  coverImageUrl  String?
-  skills         String[] @default([])
-  outcomes       String[] @default([])
-  status         String   @default("PUBLISHED") // DRAFT | PUBLISHED | ARCHIVED
-  sortOrder      Int      @default(0)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  campusId              String?
+  title                 String
+  slug                  String   @unique
+  description           String
+  careerFamily          String
+  level                 String   @default("BEGINNER") // BEGINNER | INTERMEDIATE | ADVANCED
+  estimatedWeeks        Int      @default(4)
+  coverImageUrl         String?
+  skills                String[] @default([])
+  outcomes              String[] @default([])
+  status                String   @default("PUBLISHED") // DRAFT | PUBLISHED | ARCHIVED
+  sortOrder             Int      @default(0)
+  version               Int      @default(1)
+  intents               String[] @default([])
+  evidenceWeight        Int      @default(80)
+  testWeight            Int      @default(20)
+  verificationThreshold Int      @default(90)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   campus      Campus?                    @relation(fields: [campusId], references: [id])
   steps       CareerRoadmapStep[]
@@ -1980,10 +2126,19 @@ model CareerRoadmapStep {
   estimatedHours Float?
   required       Boolean  @default(true)
   sortOrder      Int      @default(0)
+  assessment     Json?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  roadmap CareerRoadmap @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  roadmap             CareerRoadmap                 @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  competencies        CareerRoadmapStepCompetency[]
+  resources           CareerRoadmapStepResource[]
+  progress            StudentRoadmapStepProgress[]
+  evidence            RoadmapEvidence[]
+  assessmentAttempts  RoadmapAssessmentAttempt[]
+  practiceSubmissions LearningPracticeSubmission[]
+  prerequisites       RoadmapStepPrerequisite[]     @relation("RoadmapStepPrerequisiteTarget")
+  dependants          RoadmapStepPrerequisite[]     @relation("RoadmapStepPrerequisiteSource")
 
   @@index([roadmapId])
   @@map("career_roadmap_steps")
@@ -2000,16 +2155,459 @@ model StudentRoadmapEnrollment {
   evidenceUrls     String[]  @default([])
   startedAt        DateTime  @default(now())
   completedAt      DateTime?
+  intent           String    @default("explore")
+  lockedAt         DateTime?
+  verifiedAt       DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  roadmap CareerRoadmap  @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  student             StudentProfile               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  roadmap             CareerRoadmap                @relation(fields: [roadmapId], references: [id], onDelete: Cascade)
+  stepProgress        StudentRoadmapStepProgress[]
+  evidence            RoadmapEvidence[]
+  assessmentAttempts  RoadmapAssessmentAttempt[]
+  practiceSubmissions LearningPracticeSubmission[]
+  transitions         RoadmapStageTransition[]
 
   @@unique([studentId, roadmapId])
   @@index([studentId])
   @@index([roadmapId])
   @@map("student_roadmap_enrollments")
+}
+
+model Competency {
+  id          String   @id @default(cuid())
+  skillId     String?
+  name        String
+  slug        String   @unique
+  description String?
+  level       String   @default("FOUNDATION")
+  status      String   @default("ACTIVE")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  skill            Skill?                        @relation(fields: [skillId], references: [id], onDelete: SetNull)
+  roadmapSteps     CareerRoadmapStepCompetency[]
+  opportunityLinks OpportunityCompetency[]
+  resourceLinks    LearningResourceCompetency[]
+  studentStates    StudentCompetencyState[]
+  evidence         RoadmapEvidence[]
+
+  @@index([skillId])
+  @@index([status])
+  @@map("competencies")
+}
+
+model CareerRoadmapStepCompetency {
+  id            String @id @default(cuid())
+  stepId        String
+  competencyId  String
+  weight        Int    @default(1)
+  requiredScore Int    @default(70)
+
+  step       CareerRoadmapStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  competency Competency        @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  @@unique([stepId, competencyId])
+  @@index([competencyId])
+  @@map("career_roadmap_step_competencies")
+}
+
+model RoadmapStepPrerequisite {
+  id                 String @id @default(cuid())
+  stepId             String
+  prerequisiteStepId String
+
+  step             CareerRoadmapStep @relation("RoadmapStepPrerequisiteTarget", fields: [stepId], references: [id], onDelete: Cascade)
+  prerequisiteStep CareerRoadmapStep @relation("RoadmapStepPrerequisiteSource", fields: [prerequisiteStepId], references: [id], onDelete: Cascade)
+
+  @@unique([stepId, prerequisiteStepId])
+  @@index([prerequisiteStepId])
+  @@map("roadmap_step_prerequisites")
+}
+
+model LearningResource {
+  id           String   @id @default(cuid())
+  title        String
+  description  String?
+  resourceType String   @default("ARTICLE")
+  url          String?
+  provider     String?
+  status       String   @default("PUBLISHED")
+  content      Json?
+  practice     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  competencies        LearningResourceCompetency[]
+  roadmapSteps        CareerRoadmapStepResource[]
+  practiceSubmissions LearningPracticeSubmission[]
+
+  @@index([status])
+  @@map("learning_resources")
+}
+
+// Student-owned libraries, study groups and circulating learning material.
+// These are deliberately separate from LearningResource, which is curated
+// lesson content attached to career-roadmap checkpoints.
+model KnowledgeSpace {
+  id             String   @id @default(cuid())
+  ownerStudentId String?
+  type           String // LIBRARY | GROUP
+  name           String
+  slug           String   @unique
+  description    String?
+  campusId       String?
+  visibility     String   @default("CAMPUS") // PUBLIC | CAMPUS | PRIVATE
+  membershipMode String   @default("REQUEST") // REQUEST | INVITE (legacy OPEN spaces also require approval)
+  avatarUrl      String?
+  coverImageUrl  String?
+  status         String   @default("ACTIVE")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  owner       StudentProfile?            @relation("KnowledgeSpaceOwner", fields: [ownerStudentId], references: [id], onDelete: SetNull)
+  resources   KnowledgeResource[]
+  memberships KnowledgeSpaceMembership[]
+  followers   KnowledgeSpaceFollower[]
+  rooms       KnowledgeRoom[]
+
+  @@index([type, status])
+  @@index([campusId, visibility])
+  @@map("knowledge_spaces")
+}
+
+model KnowledgeSpaceMembership {
+  id        String   @id @default(cuid())
+  spaceId   String
+  studentId String
+  role      String   @default("MEMBER") // OWNER | ADMIN | MEMBER
+  status    String   @default("ACTIVE") // PENDING | ACTIVE | BLOCKED
+  joinedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space   KnowledgeSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, studentId])
+  @@index([studentId, status])
+  @@map("knowledge_space_memberships")
+}
+
+model KnowledgeSpaceFollower {
+  id        String   @id @default(cuid())
+  spaceId   String
+  studentId String
+  createdAt DateTime @default(now())
+
+  space   KnowledgeSpace @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, studentId])
+  @@index([studentId])
+  @@map("knowledge_space_followers")
+}
+
+model KnowledgeRoom {
+  id                 String   @id @default(cuid())
+  spaceId            String
+  createdByStudentId String
+  resourceId         String?
+  title              String
+  description        String?
+  isPrimary          Boolean  @default(false)
+  status             String   @default("ACTIVE") // ACTIVE | ARCHIVED
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  space       KnowledgeSpace            @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  creator     StudentProfile            @relation("KnowledgeRoomCreator", fields: [createdByStudentId], references: [id], onDelete: Cascade)
+  resource    KnowledgeResource?        @relation(fields: [resourceId], references: [id], onDelete: SetNull)
+  memberships KnowledgeRoomMembership[]
+  messages    KnowledgeRoomMessage[]
+
+  @@index([spaceId, status, updatedAt])
+  @@index([resourceId])
+  @@map("knowledge_rooms")
+}
+
+model KnowledgeRoomMembership {
+  id        String   @id @default(cuid())
+  roomId    String
+  studentId String
+  role      String   @default("MEMBER") // ADMIN | MEMBER
+  status    String   @default("PENDING") // PENDING | ACTIVE | BLOCKED
+  joinedAt  DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  room    KnowledgeRoom  @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([roomId, studentId])
+  @@index([studentId, status])
+  @@index([roomId, status])
+  @@map("knowledge_room_memberships")
+}
+
+model KnowledgeRoomMessage {
+  id              String   @id @default(cuid())
+  roomId          String
+  authorStudentId String
+  body            String
+  attachments     Json?
+  linkPreviews    Json?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  room      KnowledgeRoom       @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  author    StudentProfile      @relation("KnowledgeRoomMessageAuthor", fields: [authorStudentId], references: [id], onDelete: Cascade)
+  resources KnowledgeResource[] @relation("KnowledgeMessageResources")
+
+  @@index([roomId, createdAt])
+  @@index([authorStudentId])
+  @@map("knowledge_room_messages")
+}
+
+model KnowledgeResource {
+  id              String   @id @default(cuid())
+  ownerStudentId  String
+  spaceId         String?
+  sourceMessageId String?
+  title           String
+  description     String?
+  resourceType    String // PAST_PAPER | BOOK | NOTES | STUDY_GUIDE | ARTICLE
+  accessMode      String   @default("FREE_READ") // FREE_READ | BORROW | BUY | MEMBERS_ONLY
+  subject         String?
+  courseCode      String?
+  unitId          String?
+  academicYear    Int?
+  institution     String?
+  price           Float?
+  currency        String   @default("KES")
+  sourceMode      String   @default("LINK") // LINK | FILES
+  fileUrl         String?
+  fileUrls        String[] @default([])
+  coverImageUrl   String?
+  previewText     String?
+  availableCopies Int?
+  status          String   @default("PUBLISHED")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  owner    StudentProfile            @relation("KnowledgeResourceOwner", fields: [ownerStudentId], references: [id], onDelete: Cascade)
+  space    KnowledgeSpace?           @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  sourceMessage KnowledgeRoomMessage? @relation("KnowledgeMessageResources", fields: [sourceMessageId], references: [id], onDelete: SetNull)
+  unit     KnowledgeUnit?            @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  accesses KnowledgeResourceAccess[]
+  rooms    KnowledgeRoom[]
+
+  @@index([resourceType, status])
+  @@index([spaceId, createdAt])
+  @@index([sourceMessageId])
+  @@index([unitId])
+  @@index([ownerStudentId, createdAt])
+  @@map("knowledge_resources")
+}
+
+model KnowledgeUnit {
+  id             String   @id @default(cuid())
+  name           String
+  normalizedName String   @unique
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  resources KnowledgeResource[]
+
+  @@index([name])
+  @@map("knowledge_units")
+}
+
+model KnowledgeResourceAccess {
+  id         String    @id @default(cuid())
+  resourceId String
+  studentId  String
+  action     String // READ | BORROW | PURCHASE | SAVE
+  status     String    @default("ACTIVE") // ACTIVE | PENDING | RETURNED | COMPLETED | CANCELLED
+  amount     Float?
+  dueAt      DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  resource KnowledgeResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  student  StudentProfile    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, studentId, action])
+  @@index([studentId, status])
+  @@map("knowledge_resource_accesses")
+}
+
+model LearningResourceCompetency {
+  id           String @id @default(cuid())
+  resourceId   String
+  competencyId String
+
+  resource   LearningResource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  competency Competency       @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, competencyId])
+  @@index([competencyId])
+  @@map("learning_resource_competencies")
+}
+
+model CareerRoadmapStepResource {
+  id         String @id @default(cuid())
+  stepId     String
+  resourceId String
+  sortOrder  Int    @default(0)
+
+  step     CareerRoadmapStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  resource LearningResource  @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([stepId, resourceId])
+  @@index([resourceId])
+  @@map("career_roadmap_step_resources")
+}
+
+model OpportunityCompetency {
+  id            String  @id @default(cuid())
+  opportunityId String
+  competencyId  String
+  required      Boolean @default(true)
+  weight        Int     @default(1)
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  competency  Competency  @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, competencyId])
+  @@index([competencyId])
+  @@map("opportunity_competencies")
+}
+
+model StudentCompetencyState {
+  id               String   @id @default(cuid())
+  studentId        String
+  competencyId     String
+  evidenceScore    Int      @default(0)
+  assessmentScore  Int      @default(0)
+  status           String   @default("NOT_STARTED")
+  lastCalculatedAt DateTime @default(now())
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  student    StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  competency Competency     @relation(fields: [competencyId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, competencyId])
+  @@index([competencyId])
+  @@map("student_competency_states")
+}
+
+model StudentRoadmapStepProgress {
+  id            String    @id @default(cuid())
+  enrollmentId  String
+  stepId        String
+  evidenceScore Int       @default(0)
+  testScore     Int       @default(0)
+  status        String    @default("LOCKED")
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  enrollment StudentRoadmapEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  step       CareerRoadmapStep        @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([enrollmentId, stepId])
+  @@index([stepId])
+  @@map("student_roadmap_step_progress")
+}
+
+model RoadmapAssessmentAttempt {
+  id                String   @id @default(cuid())
+  enrollmentId      String
+  stepId            String
+  studentId         String
+  answers           Json
+  score             Int
+  correctAnswers    Int
+  totalQuestions    Int
+  assessmentVersion Int      @default(1)
+  completedAt       DateTime @default(now())
+  createdAt         DateTime @default(now())
+
+  enrollment StudentRoadmapEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  step       CareerRoadmapStep        @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  student    StudentProfile           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([enrollmentId, stepId, completedAt])
+  @@index([studentId, completedAt])
+  @@map("roadmap_assessment_attempts")
+}
+
+model LearningPracticeSubmission {
+  id           String    @id @default(cuid())
+  enrollmentId String
+  stepId       String
+  resourceId   String
+  studentId    String
+  responses    Json
+  status       String    @default("SUBMITTED")
+  submittedAt  DateTime  @default(now())
+  reviewedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  enrollment StudentRoadmapEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  step       CareerRoadmapStep        @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  resource   LearningResource         @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  student    StudentProfile           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([enrollmentId, stepId])
+  @@index([studentId, submittedAt])
+  @@map("learning_practice_submissions")
+}
+
+model RoadmapEvidence {
+  id                 String    @id @default(cuid())
+  enrollmentId       String
+  stepId             String
+  studentId          String
+  competencyId       String?
+  sourceType         String
+  sourceId           String?
+  note               String?
+  verificationStatus String    @default("PENDING")
+  scoreAwarded       Int       @default(0)
+  submittedByUserId  String?
+  verifiedByUserId   String?
+  verifiedAt         DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  enrollment StudentRoadmapEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+  step       CareerRoadmapStep        @relation(fields: [stepId], references: [id], onDelete: Cascade)
+  student    StudentProfile           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  competency Competency?              @relation(fields: [competencyId], references: [id], onDelete: SetNull)
+
+  @@unique([enrollmentId, stepId, sourceType, sourceId])
+  @@index([enrollmentId, stepId])
+  @@index([studentId, verificationStatus])
+  @@index([sourceType, sourceId])
+  @@map("roadmap_evidence")
+}
+
+model RoadmapStageTransition {
+  id           String   @id @default(cuid())
+  enrollmentId String
+  fromStepId   String?
+  toStepId     String?
+  reason       String
+  score        Int
+  createdAt    DateTime @default(now())
+
+  enrollment StudentRoadmapEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([enrollmentId, createdAt])
+  @@map("roadmap_stage_transitions")
 }
 
 model PortfolioItem {

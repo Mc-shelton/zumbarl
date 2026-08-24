@@ -150,6 +150,10 @@ function CampusSidebar({
             height="42"
             src={resolvedViewer.avatar}
             alt={resolvedViewer.name}
+            onError={(event) => {
+              event.currentTarget.onerror = null;
+              event.currentTarget.src = "/assets/index/bee_nobg.png";
+            }}
           />
           <div>
             <p className="campus-profile-name">{resolvedViewer.name}</p>

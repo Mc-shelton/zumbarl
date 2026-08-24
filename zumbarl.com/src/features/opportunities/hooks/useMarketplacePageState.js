@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   FEATURED_ITEMS,
   RECENT_ITEMS,
@@ -10,12 +10,25 @@ import { listMarketplaceListings, mapMarketplaceApiListing } from '../services/m
 
 const VIEWER_CAMPUS = 'Kenyatta University'
 
-function filterByCategory(items, activeCategory) {
-  if (activeCategory === 'All Items') {
-    return items
-  }
+function isService(item) {
+  return String(item.kind || item.listingType || '').toLowerCase() === 'service'
+}
 
-  return items.filter((item) => item.category === activeCategory)
+function matchesMarketplaceLane(item, activeCategory) {
+  if (activeCategory === 'Everything') return true
+  if (activeCategory === 'Products') return !isService(item)
+  if (!isService(item)) return false
+
+  const searchable = `${item.category || ''} ${item.title || ''}`.toLowerCase()
+  if (activeCategory === 'Food & drink') return item.serviceMode === 'order_ahead' || /food|meal|eatery|restaurant|cafe|coffee|snack|baker/.test(searchable)
+  if (activeCategory === 'Academic help') return /academic|tutor|lesson|study|notes|research|assignment/.test(searchable)
+  if (activeCategory === 'Beauty & care') return /barber|salon|beauty|nail|wellness|massage|hair/.test(searchable)
+  if (activeCategory === 'Tech & print') return /tech|repair|print|computer|phone|design|website/.test(searchable)
+  return activeCategory === 'Book a service'
+}
+
+function filterByCategory(items, activeCategory) {
+  return items.filter((item) => matchesMarketplaceLane(item, activeCategory))
 }
 
 function getItemPriceAmount(item) {
@@ -45,7 +58,9 @@ function applyRecentFilter(items, recentFilter) {
 
 function useMarketplacePageState() {
   const navigate = useNavigate()
-  const [activeCategory, setActiveCategory] = useState('All Items')
+  const [searchParams] = useSearchParams()
+  const requestedMode = searchParams.get('mode')
+  const [activeCategory, setActiveCategory] = useState(requestedMode === 'services' ? 'Book a service' : 'Everything')
   const [activeRecentFilter, setActiveRecentFilter] = useState('All')
   const [databaseItems, setDatabaseItems] = useState([])
 
@@ -61,7 +76,11 @@ function useMarketplacePageState() {
 
   const marketplaceItems = useMemo(() => {
     const byId = new Map(databaseItems.map((item) => [item.id, item]))
-    const mergedFeatured = FEATURED_ITEMS.map((item) => byId.get(item.id) ? { ...item, ...byId.get(item.id) } : item)
+    const serviceListings = databaseItems.filter(isService)
+    const mergedFeatured = [
+      ...serviceListings.slice(0, 4),
+      ...FEATURED_ITEMS.map((item) => byId.get(item.id) ? { ...item, ...byId.get(item.id) } : item),
+    ].filter((item, index, items) => items.findIndex((candidate) => candidate.id === item.id) === index)
     const featuredIds = new Set(mergedFeatured.map((item) => item.id))
     const mergedRecent = [
       ...databaseItems.filter((item) => !featuredIds.has(item.id)),
@@ -77,8 +96,11 @@ function useMarketplacePageState() {
     applyRecentFilter(filterByCategory(marketplaceItems.recent, activeCategory), activeRecentFilter)
   ), [activeCategory, activeRecentFilter, marketplaceItems.recent])
   const filteredTrendingItems = useMemo(() => (
-    filterByCategory(TRENDING_ITEMS, activeCategory)
-  ), [activeCategory])
+    filterByCategory([
+      ...marketplaceItems.featured.map((item) => ({ ...item, trend: item.trend || item.viewCount || item.savedCount || 1 })),
+      ...TRENDING_ITEMS.filter((item) => !marketplaceItems.featured.some((listing) => listing.id === item.id)),
+    ], activeCategory).slice(0, 5)
+  ), [activeCategory, marketplaceItems.featured])
 
   const openItemDetail = (itemId) => {
     navigate(getMarketplaceItemPath(itemId))

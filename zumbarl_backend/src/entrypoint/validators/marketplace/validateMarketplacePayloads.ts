@@ -5,6 +5,9 @@ const marketplaceLocationSearchSchema = z.object({ q: z.string().trim().min(3).m
 const listingSchema = z.object({
   title: z.string().min(2),
   kind: z.enum(['product', 'service']).default('product'),
+  serviceMode: z.enum(['appointment', 'order_ahead', 'request_quote']).optional(),
+  duration: z.string().trim().max(80).optional(),
+  availabilityText: z.string().trim().max(180).optional(),
   description: z.string().optional(),
   subtitle: z.string().optional(),
   category: z.string().min(1),
@@ -29,7 +32,17 @@ const listingSchema = z.object({
   gallery: z.array(z.string()).max(8).default([]),
   status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'RESERVED', 'SOLD', 'ARCHIVED']).default('ACTIVE')
 })
-const cartItemSchema = z.object({ listingId: z.string(), offerId: z.string().optional(), quantity: z.coerce.number().int().positive().default(1) })
+const cartItemSchema = z.object({
+  listingId: z.string(),
+  offerId: z.string().optional(),
+  quantity: z.coerce.number().int().positive().default(1),
+  serviceRequest: z.object({
+    mode: z.enum(['appointment', 'order_ahead']),
+    date: z.string().trim().optional(),
+    time: z.string().trim().min(1),
+    notes: z.string().trim().max(500).optional(),
+  }).optional(),
+})
 const cartItemFulfilmentSchema = z.object({ method: z.enum(['pickup', 'seller_delivery', 'zumbarl_delivery', 'digital', 'unquoted']), location: z.string().min(1), fee: z.coerce.number().nonnegative(), quoted: z.boolean(), distanceKm: z.coerce.number().positive().optional(), buyerLatitude: z.coerce.number().min(-90).max(90).optional(), buyerLongitude: z.coerce.number().min(-180).max(180).optional() })
 const zumbarlDeliveryQuoteSchema = z.object({ listingId: z.string().min(1), buyerLatitude: z.coerce.number().min(-90).max(90), buyerLongitude: z.coerce.number().min(-180).max(180), destination: z.string().trim().min(2).default('Buyer current location') })
 const orderSchema = z.object({ cartId: z.string(), handoffType: z.enum(['pickup', 'drop-off']), handoffSpot: z.string(), paymentReference: z.string().optional() })

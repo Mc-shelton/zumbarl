@@ -154,12 +154,14 @@ function ExploreProductRail({
               <li key={`${activeRailProduct.id}-${detail}`}>{detail}</li>
             ))}
           </ul>
-          <h4>Available Colors</h4>
-          <div className="explore-campus-product-color-row">
-            {activeRailProduct.colors.map((color) => (
-              <span key={`${activeRailProduct.id}-${color}`} style={{ background: color }} />
-            ))}
-          </div>
+          {activeRailProduct.colors.length ? <>
+            <h4>Available Colors</h4>
+            <div className="explore-campus-product-color-row">
+              {activeRailProduct.colors.map((color) => (
+                <span key={`${activeRailProduct.id}-${color}`} style={{ background: color }} />
+              ))}
+            </div>
+          </> : null}
           <footer className="explore-campus-product-footer">
             <p>
               <FiMapPin aria-hidden="true" />

@@ -4,6 +4,7 @@ import {
   acceptOpportunityInviteService,
   declineOpportunityInviteService,
   listEarnOpportunitiesService,
+  readEarnOpportunityService,
   listStudentBidsService,
   listStudentInvitesService,
   listStudentInterviewsService,
@@ -25,6 +26,11 @@ async function listEarnOpportunitiesController(request: FastifyRequest, reply: F
 
 async function listStudentBidsController(request: FastifyRequest, reply: FastifyReply) {
   return reply.send(await listStudentBidsService(request.authUser?.studentId, request.query as Record<string, unknown>))
+}
+
+async function readEarnOpportunityController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await readEarnOpportunityService(id))
 }
 
 async function submitOpportunityBidController(request: FastifyRequest, reply: FastifyReply) {
@@ -98,6 +104,7 @@ async function respondToBidCounterOfferController(request: FastifyRequest, reply
 
 export {
   listEarnOpportunitiesController,
+  readEarnOpportunityController,
   listStudentBidsController,
   readOpportunityBidDraftController,
   saveOpportunityBidDraftController,

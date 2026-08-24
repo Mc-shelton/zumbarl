@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="title description">
+  <title id="title">Default library avatar</title>
+  <desc id="description">An open book on a plum and teal background.</desc>
+  <defs>
+    <linearGradient id="background" x1="24" y1="20" x2="216" y2="220" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#76506f"/>
+      <stop offset="1" stop-color="#283249"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" rx="52" fill="url(#background)"/>
+  <circle cx="187" cy="53" r="29" fill="#65b8b3" opacity=".42"/>
+  <path d="M47 72c28-8 51-2 73 17v92c-20-17-44-23-73-15V72Z" fill="#fff"/>
+  <path d="M193 72c-28-8-51-2-73 17v92c20-17 44-23 73-15V72Z" fill="#f3eaf3"/>
+  <path d="M120 88v94" stroke="#d5c1d2" stroke-width="6" stroke-linecap="round"/>
+  <path d="M62 94c17-2 30 2 42 10M62 116c17-2 30 2 42 10M136 104c12-8 25-12 42-10M136 126c12-8 25-12 42-10" fill="none" stroke="#76506f" stroke-width="6" stroke-linecap="round" opacity=".72"/>
+</svg>

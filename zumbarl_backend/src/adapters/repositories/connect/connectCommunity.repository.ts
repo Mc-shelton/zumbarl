@@ -14,6 +14,38 @@ function payloadObject(value: unknown) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {}
 }
 
+function validDate(value: unknown, fallback = new Date()) {
+  const date = new Date(String(value || ''))
+  return Number.isNaN(date.getTime()) ? fallback : date
+}
+
+function campusEventData(payload: Record<string, any>, campusId: string | null, fallbackStartsAt = new Date()) {
+  const event = payloadObject(payload.event)
+  const organizer = payloadObject(event.organizer)
+  const startsAt = validDate(event.startsAt, fallbackStartsAt)
+  const endsAt = event.endsAt ? validDate(event.endsAt, startsAt) : null
+  return {
+    campusId,
+    title: String(event.title || payload.body || 'Campus event'),
+    description: String(payload.body || event.title || 'Campus event'),
+    category: String(event.category || 'Campus event'),
+    organizerName: String(organizer.name || 'Zumbarl community'),
+    organizerType: organizer.type === 'business' ? 'BUSINESS' : organizer.type === 'person' ? 'STUDENT' : 'CAMPUS',
+    coverImageUrl: event.thumbnailUrl || payload.mediaUrls?.[0] || null,
+    locationName: String(event.location || ''),
+    locationAddress: String(event.location || ''),
+    latitude: event.latitude == null ? null : Number(event.latitude),
+    longitude: event.longitude == null ? null : Number(event.longitude),
+    startsAt,
+    endsAt,
+    capacity: event.capacity == null ? null : Number(event.capacity),
+    priceAmount: Number(event.priceAmount || 0),
+    currency: String(event.currency || 'KES'),
+    tags: Array.isArray(payload.tags) ? payload.tags.map((tag: any) => String(tag?.label || tag)).filter(Boolean) : [],
+    status: 'PUBLISHED'
+  }
+}
+
 function toRecord(record: Record<string, any>) {
   const { payload, ...rest } = record
   return { ...payloadObject(payload), ...rest }
@@ -106,19 +138,27 @@ class ConnectCommunityRepository {
   }
 
   async createManagedProfilePost(managedProfileId: string, payload: Record<string, any>) {
-    return prisma.connectPost.create({
-      data: {
-        managedProfileId,
-        type: payload.type ?? 'post',
-        body: payload.body,
-        tags: jsonInput(payload.tags ?? []),
-        visibility: payload.visibility ?? 'public',
-        status: 'published',
-        reactions: {},
-        saves: 0,
-        reposts: 0,
-        payload: jsonInput(payload)
+    return prisma.$transaction(async (tx) => {
+      let storedPayload = { ...payload }
+      if (payload.type === 'event' && Object.keys(payloadObject(payload.event)).length) {
+        const profile = await tx.managedProfile.findUnique({ where: { id: managedProfileId }, select: { campusId: true } })
+        const event = await tx.campusEvent.create({ data: campusEventData(payload, profile?.campusId ?? null) })
+        storedPayload = { ...payload, event: { ...payloadObject(payload.event), id: event.id, goingCount: 0, interestedCount: 0, responseCount: 0, viewerResponse: null } }
       }
+      return tx.connectPost.create({
+        data: {
+          managedProfileId,
+          type: payload.type ?? 'post',
+          body: payload.body,
+          tags: jsonInput(payload.tags ?? []),
+          visibility: payload.visibility ?? 'public',
+          status: 'published',
+          reactions: {},
+          saves: 0,
+          reposts: 0,
+          payload: jsonInput(storedPayload)
+        }
+      })
     })
   }
 
@@ -132,16 +172,78 @@ class ConnectCommunityRepository {
     const students = await prisma.studentProfile.findMany({ where: { id: { in: studentIds } }, include: { user: true, campus: true } })
     const managedProfileIds = [...new Set(records.map((record) => record.managedProfileId).filter(Boolean))] as string[]
     const managedProfiles = await prisma.managedProfile.findMany({ where: { id: { in: managedProfileIds } }, include: { campus: true, communityGroup: true } })
+    const knowledgeSpaceIds = [...new Set(records.map((record) => record.knowledgeSpaceId).filter(Boolean))] as string[]
+    const knowledgeSpaces = knowledgeSpaceIds.length ? await prisma.knowledgeSpace.findMany({
+      where: { id: { in: knowledgeSpaceIds }, status: 'ACTIVE' },
+      select: { id: true, slug: true, name: true, type: true, avatarUrl: true }
+    }) : []
+    const eventIds = [...new Set(records.map((record) => String(payloadObject(payloadObject(record.payload).event).id || '')).filter(Boolean))]
+    const [eventResponseGroups, viewerEventResponses] = await Promise.all([
+      eventIds.length ? prisma.campusEventRsvp.groupBy({
+        by: ['eventId', 'status'],
+        where: { eventId: { in: eventIds }, status: { in: ['GOING', 'INTERESTED'] } },
+        _count: { _all: true }
+      }) : [],
+      eventIds.length && viewerStudentId ? prisma.campusEventRsvp.findMany({
+        where: { eventId: { in: eventIds }, studentId: viewerStudentId, status: { in: ['GOING', 'INTERESTED'] } },
+        select: { eventId: true, status: true }
+      }) : []
+    ])
+    const eventResponseCounts = new Map<string, { goingCount: number, interestedCount: number }>()
+    eventResponseGroups.forEach((group) => {
+      const counts = eventResponseCounts.get(group.eventId) ?? { goingCount: 0, interestedCount: 0 }
+      if (group.status === 'GOING') counts.goingCount = group._count._all
+      if (group.status === 'INTERESTED') counts.interestedCount = group._count._all
+      eventResponseCounts.set(group.eventId, counts)
+    })
+    const viewerEventResponseById = new Map(viewerEventResponses.map((response) => [response.eventId, response.status]))
     const viewer = viewerStudentId ? await prisma.studentProfile.findUnique({ where: { id: viewerStudentId }, select: { campusId: true } }) : null
     const viewerGroups = viewerStudentId ? await prisma.communityGroupMembership.findMany({ where: { studentId: viewerStudentId, status: 'active' }, select: { groupId: true } }) : []
+    const [viewerKnowledgeMemberships, viewerKnowledgeFollows] = viewerStudentId ? await Promise.all([
+      prisma.knowledgeSpaceMembership.findMany({ where: { studentId: viewerStudentId, status: 'ACTIVE' }, select: { spaceId: true } }),
+      prisma.knowledgeSpaceFollower.findMany({ where: { studentId: viewerStudentId }, select: { spaceId: true } })
+    ]) : [[], []]
     const followed = viewerStudentId ? await prisma.connectRelationship.findMany({ where: { actorStudentId: viewerStudentId, type: 'follow' }, select: { targetStudentId: true } }) : []
     const followedIds = new Set(followed.map((entry) => entry.targetStudentId))
     const viewerGroupIds = new Set(viewerGroups.map((entry) => entry.groupId))
+    const priorityKnowledgeSpaceIds = new Set([...viewerKnowledgeMemberships, ...viewerKnowledgeFollows].map((entry) => entry.spaceId))
     const studentById = new Map(students.map((student) => [student.id, student]))
     const managedProfileById = new Map(managedProfiles.map((profile) => [profile.id, profile]))
-    return pageEnvelope(records.map((record) => {
-      const student = record.studentId ? studentById.get(record.studentId) : null
-      const managedProfile = record.managedProfileId ? managedProfileById.get(record.managedProfileId) : null
+    const knowledgeSpaceById = new Map(knowledgeSpaces.map((space) => [space.id, space]))
+    const recordById = new Map(records.map((record) => [record.id, record]))
+    const creatorFor = (candidate: typeof records[number]) => {
+      const candidateKnowledgeSpace = candidate.knowledgeSpaceId ? knowledgeSpaceById.get(candidate.knowledgeSpaceId) : null
+      const candidateStudent = candidate.studentId ? studentById.get(candidate.studentId) : null
+      const candidateManagedProfile = candidate.managedProfileId ? managedProfileById.get(candidate.managedProfileId) : null
+      const candidateSnapshot = payloadObject(payloadObject(candidate.payload).sourceSnapshot)
+      return candidateKnowledgeSpace ? {
+        id: candidateKnowledgeSpace.id,
+        profileType: `knowledge-${candidateKnowledgeSpace.type.toLowerCase()}`,
+        slug: candidateKnowledgeSpace.slug,
+        name: candidateKnowledgeSpace.name,
+        handle: candidateKnowledgeSpace.type === 'LIBRARY' ? 'Library' : 'Study group',
+        avatarUrl: candidateKnowledgeSpace.avatarUrl || `/assets/knowledge/default-${candidateKnowledgeSpace.type.toLowerCase()}-avatar.svg`,
+        campus: candidateStudent?.campus?.name || null,
+        isVerified: false
+      } : candidateManagedProfile ? {
+        id: candidateManagedProfile.id,
+        profileType: candidateManagedProfile.type,
+        slug: candidateManagedProfile.slug,
+        name: candidateManagedProfile.name,
+        handle: `@${candidateManagedProfile.handle}`,
+        avatarUrl: candidateManagedProfile.avatarUrl,
+        campus: candidateManagedProfile.campus?.name || candidateManagedProfile.communityGroup?.campus || null,
+        isVerified: candidateManagedProfile.isVerified
+      } : candidateStudent ? {
+        id: candidateStudent.id,
+        profileType: 'student',
+        name: [candidateStudent.firstName, candidateStudent.lastName].filter(Boolean).join(' '),
+        handle: `@${candidateStudent.user?.username || candidateStudent.user?.email?.split('@')[0] || 'student'}`,
+        avatarUrl: candidateStudent.avatarUrl,
+        campus: candidateStudent.campus?.name || null
+      } : candidateSnapshot.creator ? payloadObject(candidateSnapshot.creator) : null
+    }
+    const mappedRecords = records.map((record) => {
       const comments = record.comments.map((comment) => {
         const author = comment.studentId ? studentById.get(comment.studentId) : null
         return {
@@ -154,33 +256,66 @@ class ConnectCommunityRepository {
         }
       })
       const announcement = payloadObject(record.payload).announcementRequest
+      const sourceSnapshot = payloadObject(payloadObject(record.payload).sourceSnapshot)
+      const storedRecord = payloadObject(record.payload)
+      const storedEvent = payloadObject(storedRecord.event)
+      const storedEventId = String(storedEvent.id || '')
+      const storedEventCounts = eventResponseCounts.get(storedEventId) ?? { goingCount: 0, interestedCount: 0 }
+      const resharedPost = payloadObject(storedRecord.resharedPost)
+      const originalRecord = storedRecord.reshareOfPostId ? recordById.get(String(storedRecord.reshareOfPostId)) : null
+      const originalPayload = originalRecord ? payloadObject(originalRecord.payload) : {}
+      const originalReshares = payloadObject(originalPayload.reshares)
+      const reactions = payloadObject(record.reactions)
+      const reshares = payloadObject(payloadObject(record.payload).reshares)
+      const baseReactionCount = Number(sourceSnapshot.reactionCount || 0)
+      const baseCommentCount = Number(sourceSnapshot.commentCount || 0)
       const announcementVisible = Boolean(payloadObject(record.payload).isPinnedAnnouncement) || (announcement?.status === 'approved' && ((announcement.targetType === 'campus' && announcement.targetId === viewer?.campusId) || (announcement.targetType === 'group' && viewerGroupIds.has(announcement.targetId))))
       return {
         ...toRecord(record),
         comments,
-        commentCount: comments.length,
-        creator: managedProfile ? {
-          id: managedProfile.id,
-          profileType: managedProfile.type,
-          slug: managedProfile.slug,
-          name: managedProfile.name,
-          handle: `@${managedProfile.handle}`,
-          avatarUrl: managedProfile.avatarUrl,
-          campus: managedProfile.campus?.name || managedProfile.communityGroup?.campus || null,
-          isVerified: managedProfile.isVerified
-        } : student ? {
-          id: student.id,
-          name: [student.firstName, student.lastName].filter(Boolean).join(' '),
-          handle: `@${student.user?.username || student.user?.email?.split('@')[0] || 'student'}`,
-          avatarUrl: student.avatarUrl,
-          campus: student.campus?.name || null
-        } : null,
+        reactionCount: baseReactionCount + Object.keys(reactions).length,
+        viewerReacted: Boolean(viewerStudentId && reactions[viewerStudentId]),
+        commentCount: baseCommentCount + comments.length,
+        repostCount: record.reposts,
+        viewerReshared: Boolean(viewerStudentId && reshares[viewerStudentId]),
+        viewerReshareCommentary: viewerStudentId ? String(payloadObject(reshares[viewerStudentId]).commentary || '') : '',
+        creator: creatorFor(record),
+        knowledgeSpace: record.knowledgeSpaceId ? knowledgeSpaceById.get(record.knowledgeSpaceId) || null : null,
+        event: Object.keys(storedEvent).length ? {
+          ...storedEvent,
+          ...storedEventCounts,
+          responseCount: storedEventCounts.goingCount + storedEventCounts.interestedCount,
+          viewerResponse: viewerEventResponseById.get(storedEventId) ?? null
+        } : undefined,
+        ...(Object.keys(resharedPost).length ? {
+          resharedPost: {
+            ...resharedPost,
+            creator: originalRecord ? creatorFor(originalRecord) ?? resharedPost.creator : resharedPost.creator,
+            repostCount: originalRecord?.reposts ?? resharedPost.repostCount ?? 0,
+            viewerReshared: Boolean(viewerStudentId && originalReshares[viewerStudentId]),
+            viewerReshareCommentary: viewerStudentId ? String(payloadObject(originalReshares[viewerStudentId]).commentary || '') : '',
+            isMine: Boolean(viewerStudentId && originalRecord?.studentId === viewerStudentId)
+          }
+        } : {}),
         isMine: Boolean(viewerStudentId && record.studentId === viewerStudentId),
         isFollowing: Boolean(record.studentId && followedIds.has(record.studentId))
+        ,isPriorityForViewer: Boolean(record.knowledgeSpaceId && priorityKnowledgeSpaceIds.has(record.knowledgeSpaceId)) || (Array.isArray(record.tags) && record.tags.some((tag) => {
+          const candidate = payloadObject(tag)
+          return String(candidate.type || '').startsWith('knowledge-') && priorityKnowledgeSpaceIds.has(String(candidate.id || ''))
+        }))
         ,announcementRequest: record.studentId === viewerStudentId ? announcement ?? null : undefined
         ,isPinnedAnnouncement: Boolean(announcementVisible)
       }
-    }), query)
+    })
+    const focusedPostId = String(query.postId || query.post || '').trim()
+    const priorityRecords = mappedRecords.sort((left, right) => Number(right.isPriorityForViewer) - Number(left.isPriorityForViewer) || new Date(String((right as Record<string, any>).createdAt)).getTime() - new Date(String((left as Record<string, any>).createdAt)).getTime())
+    const priorityFocusedIndex = focusedPostId
+      ? priorityRecords.findIndex((record) => String((record as Record<string, any>).id || '') === focusedPostId)
+      : -1
+    const orderedRecords = priorityFocusedIndex > 0
+      ? [priorityRecords[priorityFocusedIndex], ...priorityRecords.filter((_, index) => index !== priorityFocusedIndex)]
+      : priorityRecords
+    return pageEnvelope(orderedRecords, query)
   }
 
   async findProfile(studentId?: string) {
@@ -220,6 +355,7 @@ class ConnectCommunityRepository {
       data: {
         sourceId: payload.sourceId ?? null,
         studentId: payload.studentId ?? null,
+        knowledgeSpaceId: payload.knowledgeSpaceId ?? null,
         text: payload.text,
         mediaUrl: payload.mediaUrl ?? null,
         visibility: payload.visibility ?? 'campus',
@@ -256,6 +392,12 @@ class ConnectCommunityRepository {
       include: { student: { include: { user: true, campus: true } }, _count: { select: { reactions: true, comments: true } } },
       orderBy: { createdAt: 'desc' }
     })
+    const storySpaceIds = [...new Set(records.map((record) => record.knowledgeSpaceId).filter(Boolean))] as string[]
+    const storySpaces = storySpaceIds.length ? await prisma.knowledgeSpace.findMany({
+      where: { id: { in: storySpaceIds }, status: 'ACTIVE' },
+      select: { id: true, slug: true, name: true, type: true, avatarUrl: true }
+    }) : []
+    const storySpaceById = new Map(storySpaces.map((space) => [space.id, space]))
     return {
       data: records.map((record) => {
         const { _count, student, ...story } = record
@@ -263,6 +405,7 @@ class ConnectCommunityRepository {
           ...toRecord(story),
           isMine: Boolean(viewerStudentId && record.studentId === viewerStudentId),
           creator: student ? { id: student.id, name: [student.firstName, student.lastName].filter(Boolean).join(' '), handle: `@${student.user.username || student.user.email.split('@')[0]}`, avatarUrl: student.avatarUrl, campus: student.campus.name, isSameCampus: student.campusId === viewer?.campusId } : null,
+          knowledgeSpace: record.knowledgeSpaceId ? storySpaceById.get(record.knowledgeSpaceId) || null : null,
           reactionCount: _count.reactions,
           commentCount: _count.comments
         }
@@ -283,6 +426,52 @@ class ConnectCommunityRepository {
       isFollowing: records.some((record) => record.type === 'follow' && record.actorStudentId === actorStudentId),
       isConnected: records.some((record) => record.type === 'connect')
     }
+  }
+
+  async listSuggestedProfiles(viewerStudentId: string, limit = 12) {
+    const viewer = await prisma.studentProfile.findUnique({
+      where: { id: viewerStudentId },
+      select: { campusId: true }
+    })
+    if (!viewer) return []
+    const candidates = await prisma.studentProfile.findMany({
+      where: { id: { not: viewerStudentId }, user: { isActive: true } },
+      include: { user: true, campus: true },
+      orderBy: { updatedAt: 'desc' },
+      take: Math.max(24, limit * 3)
+    })
+    const candidateIds = candidates.map((candidate) => candidate.id)
+    const relationships = candidateIds.length ? await prisma.connectRelationship.findMany({
+      where: {
+        OR: [
+          { actorStudentId: viewerStudentId, targetStudentId: { in: candidateIds }, type: 'follow' },
+          { type: 'connect', OR: [
+            { actorStudentId: viewerStudentId, targetStudentId: { in: candidateIds } },
+            { targetStudentId: viewerStudentId, actorStudentId: { in: candidateIds } }
+          ] }
+        ]
+      }
+    }) : []
+    const followedIds = new Set(relationships.filter((relationship) => relationship.type === 'follow').map((relationship) => relationship.targetStudentId))
+    const connectedIds = new Set(relationships.filter((relationship) => relationship.type === 'connect').map((relationship) => relationship.actorStudentId === viewerStudentId ? relationship.targetStudentId : relationship.actorStudentId))
+    return candidates
+      .sort((left, right) => {
+        const campusDifference = Number(right.campusId === viewer.campusId) - Number(left.campusId === viewer.campusId)
+        if (campusDifference) return campusDifference
+        return right.updatedAt.getTime() - left.updatedAt.getTime()
+      })
+      .slice(0, Math.max(1, Math.min(limit, 30)))
+      .map((candidate) => ({
+        id: candidate.id,
+        name: [candidate.firstName, candidate.lastName].filter(Boolean).join(' '),
+        handle: `@${candidate.user.username || candidate.user.email.split('@')[0]}`,
+        avatarUrl: candidate.avatarUrl,
+        campus: candidate.campus.name,
+        careerPath: candidate.careerPath,
+        isFollowing: followedIds.has(candidate.id),
+        isConnected: connectedIds.has(candidate.id),
+        isOnline: Boolean(candidate.user.lastLoginAt && Date.now() - candidate.user.lastLoginAt.getTime() < 15 * 60 * 1000)
+      }))
   }
 
   async setRelationship(actorStudentId: string, targetStudentId: string, type: 'follow' | 'connect', active: boolean) {
@@ -435,25 +624,211 @@ class ConnectCommunityRepository {
   }
 
   async createPost(payload: Record<string, any>) {
-    return toRecord(await prisma.connectPost.create({
-      data: {
-        studentId: payload.studentId ?? null,
-        type: payload.type ?? 'post',
-        body: payload.body,
-        tags: jsonInput(payload.tags ?? []),
-        visibility: payload.visibility ?? 'campus',
-        status: payload.status ?? 'published',
-        reactions: jsonInput(payload.reactions ?? {}),
-        saves: Number(payload.saves ?? 0),
-        reposts: Number(payload.reposts ?? 0),
-        payload: jsonInput(payload)
+    return prisma.$transaction(async (tx) => {
+      let storedPayload = { ...payload }
+      if (payload.type === 'event' && Object.keys(payloadObject(payload.event)).length) {
+        const student = payload.studentId ? await tx.studentProfile.findUnique({ where: { id: payload.studentId }, select: { campusId: true } }) : null
+        const event = await tx.campusEvent.create({ data: campusEventData(payload, student?.campusId ?? null) })
+        storedPayload = { ...payload, event: { ...payloadObject(payload.event), id: event.id, goingCount: 0, interestedCount: 0, responseCount: 0, viewerResponse: null } }
       }
-    }))
+      return toRecord(await tx.connectPost.create({
+        data: {
+          studentId: payload.studentId ?? null,
+          knowledgeSpaceId: payload.knowledgeSpaceId ?? null,
+          type: payload.type ?? 'post',
+          body: payload.body,
+          tags: jsonInput(payload.tags ?? []),
+          visibility: payload.visibility ?? 'campus',
+          status: payload.status ?? 'published',
+          reactions: jsonInput(payload.reactions ?? {}),
+          saves: Number(payload.saves ?? 0),
+          reposts: Number(payload.reposts ?? 0),
+          payload: jsonInput(storedPayload)
+        }
+      }))
+    })
+  }
+
+  async setEventResponse(postId: string, studentId: string, status: 'GOING' | 'INTERESTED' | 'CANCELLED') {
+    return prisma.$transaction(async (tx) => {
+      const post = await tx.connectPost.findUnique({ where: { id: postId } })
+      if (!post) return null
+      const payload = payloadObject(post.payload)
+      const eventPayload = payloadObject(payload.event)
+      if (post.type !== 'event' || !Object.keys(eventPayload).length) return { invalidEvent: true as const }
+
+      let eventId = String(eventPayload.id || '')
+      let event = eventId ? await tx.campusEvent.findUnique({ where: { id: eventId } }) : null
+      if (!event) {
+        const [student, managedProfile] = await Promise.all([
+          tx.studentProfile.findUnique({ where: { id: post.studentId || studentId }, select: { campusId: true } }),
+          post.managedProfileId ? tx.managedProfile.findUnique({ where: { id: post.managedProfileId }, select: { campusId: true } }) : null
+        ])
+        event = await tx.campusEvent.create({ data: campusEventData(payload, managedProfile?.campusId ?? student?.campusId ?? null, post.createdAt) })
+        eventId = event.id
+        await tx.connectPost.update({
+          where: { id: postId },
+          data: { payload: jsonInput({ ...payload, event: { ...eventPayload, id: eventId } }) }
+        })
+      }
+
+      const previousResponse = await tx.campusEventRsvp.findUnique({
+        where: { eventId_studentId: { eventId, studentId } }
+      })
+      if (status === 'GOING' && event.capacity && previousResponse?.status !== 'GOING') {
+        const goingCount = await tx.campusEventRsvp.count({ where: { eventId, status: 'GOING' } })
+        if (goingCount >= event.capacity) return { capacityReached: true as const, capacity: event.capacity }
+      }
+
+      await tx.campusEventRsvp.upsert({
+        where: { eventId_studentId: { eventId, studentId } },
+        update: { status },
+        create: { eventId, studentId, status }
+      })
+      const [goingCount, interestedCount] = await Promise.all([
+        tx.campusEventRsvp.count({ where: { eventId, status: 'GOING' } }),
+        tx.campusEventRsvp.count({ where: { eventId, status: 'INTERESTED' } })
+      ])
+      return {
+        postId,
+        eventId,
+        viewerResponse: status === 'CANCELLED' ? null : status,
+        goingCount,
+        interestedCount,
+        responseCount: goingCount + interestedCount
+      }
+    })
   }
 
   async findPost(id: string) {
     const post = await prisma.connectPost.findUnique({ where: { id } })
     return post ? toRecord(post) : null
+  }
+
+  async isActiveKnowledgeSpaceMember(spaceId: string, studentId: string) {
+    const space = await prisma.knowledgeSpace.findUnique({
+      where: { id: spaceId },
+      select: { ownerStudentId: true, status: true, memberships: { where: { studentId }, select: { status: true } } }
+    })
+    return Boolean(space?.status === 'ACTIVE' && (space.ownerStudentId === studentId || space.memberships[0]?.status === 'ACTIVE'))
+  }
+
+  async ensurePost(id: string, snapshot: Record<string, any>) {
+    const existing = await prisma.connectPost.findUnique({ where: { id } })
+    if (existing) return toRecord(existing)
+    return toRecord(await prisma.connectPost.create({
+      data: {
+        id,
+        type: snapshot.type ?? 'post',
+        body: String(snapshot.body || 'Shared post'),
+        visibility: 'campus',
+        status: 'published',
+        reactions: {},
+        saves: 0,
+        reposts: Number(snapshot.repostCount || 0),
+        payload: jsonInput({
+          sourceSnapshot: snapshot,
+          mediaUrls: snapshot.mediaUrls ?? [],
+          mediaEdits: snapshot.mediaEdits ?? [],
+          reshares: {}
+        })
+      }
+    }))
+  }
+
+  async togglePostReaction(id: string, studentId: string, reaction: string, snapshot: Record<string, any>) {
+    await this.ensurePost(id, snapshot)
+    return prisma.$transaction(async (tx) => {
+      const post = await tx.connectPost.findUnique({ where: { id } })
+      if (!post) return null
+      const reactions = payloadObject(post.reactions)
+      const viewerReacted = !reactions[studentId]
+      if (viewerReacted) reactions[studentId] = reaction
+      else delete reactions[studentId]
+      await tx.connectPost.update({ where: { id }, data: { reactions: jsonInput(reactions) } })
+      const sourceSnapshot = payloadObject(payloadObject(post.payload).sourceSnapshot)
+      return {
+        postId: id,
+        viewerReacted,
+        reactionCount: Number(sourceSnapshot.reactionCount || 0) + Object.keys(reactions).length
+      }
+    })
+  }
+
+  async setPostReshare(id: string, studentId: string, snapshot: Record<string, any>, active: boolean, commentary = '') {
+    if (active) await this.ensurePost(id, snapshot)
+    return prisma.$transaction(async (tx) => {
+      const post = await tx.connectPost.findUnique({ where: { id } })
+      if (!post) return null
+      const payload = payloadObject(post.payload)
+      const reshares = payloadObject(payload.reshares)
+      const existingReshare = payloadObject(reshares[studentId])
+      const wasReshared = Boolean(reshares[studentId])
+      let resharePostId = String(existingReshare.resharePostId || '')
+      if (active && !wasReshared) {
+        const createdAt = new Date().toISOString()
+        const resharePost = await tx.connectPost.create({
+          data: {
+            studentId,
+            type: 'reshare',
+            body: commentary || 'Reshared post',
+            tags: [],
+            visibility: post.visibility,
+            status: 'published',
+            reactions: {},
+            saves: 0,
+            reposts: 0,
+            payload: jsonInput({
+              reshareOfPostId: id,
+              resharedPost: { id, ...snapshot },
+              reshareCommentary: commentary,
+              mediaUrls: [],
+              mediaEdits: []
+            })
+          }
+        })
+        resharePostId = resharePost.id
+        reshares[studentId] = { createdAt, resharePostId, commentary }
+      } else if (active && wasReshared) {
+        if (resharePostId) {
+          const existingPost = await tx.connectPost.findFirst({ where: { id: resharePostId, studentId } })
+          if (existingPost) {
+            const resharePayload = payloadObject(existingPost.payload)
+            await tx.connectPost.update({
+              where: { id: resharePostId },
+              data: {
+                body: commentary || 'Reshared post',
+                payload: jsonInput({ ...resharePayload, reshareCommentary: commentary })
+              }
+            })
+          }
+        }
+        reshares[studentId] = { ...existingReshare, commentary }
+      } else if (!active && wasReshared) {
+        if (resharePostId) {
+          await tx.connectPost.deleteMany({ where: { id: resharePostId, studentId } })
+        }
+        delete reshares[studentId]
+      }
+      const updated = await tx.connectPost.update({
+        where: { id },
+        data: {
+          reposts: active && !wasReshared
+            ? post.reposts + 1
+            : !active && wasReshared
+              ? Math.max(0, post.reposts - 1)
+              : post.reposts,
+          payload: jsonInput({ ...payload, reshares })
+        }
+      })
+      return {
+        postId: id,
+        viewerReshared: active ? true : wasReshared ? false : false,
+        viewerReshareCommentary: active ? commentary : '',
+        repostCount: Math.max(0, updated.reposts),
+        resharePostId: resharePostId || null
+      }
+    })
   }
 
   async listAnnouncementTargets(studentId: string) {
@@ -474,6 +849,33 @@ class ConnectCommunityRepository {
       ...students.map((student) => ({ id: student.id, type: 'person', name: [student.firstName, student.lastName].filter(Boolean).join(' '), handle: `@${student.user.username || student.user.email.split('@')[0]}`, avatarUrl: student.avatarUrl, isSelf: student.id === actorStudentId })),
       ...companies.map((company) => ({ id: company.id, type: 'business', name: company.name, handle: company.sector, avatarUrl: company.logoUrl, isSelf: company.id === actorBusinessId })),
       ...campuses.map((campus) => ({ id: campus.id, type: 'campus', name: campus.name, handle: [campus.branch, campus.city].filter(Boolean).join(' · '), avatarUrl: null, isSelf: false }))
+    ] }
+  }
+
+  async searchPostTagTargets(query: string, actorStudentId?: string) {
+    const term = query.trim()
+    const actor = actorStudentId ? await prisma.studentProfile.findUnique({ where: { id: actorStudentId }, select: { campusId: true, courseId: true } }) : null
+    const [campuses, courses, units] = await Promise.all([
+      prisma.campus.findMany({
+        where: { isActive: true, ...(term ? { OR: [{ name: { contains: term, mode: 'insensitive' } }, { branch: { contains: term, mode: 'insensitive' } }, { city: { contains: term, mode: 'insensitive' } }] } : actor?.campusId ? { id: actor.campusId } : {}) },
+        orderBy: { name: 'asc' },
+        take: 8
+      }),
+      prisma.course.findMany({
+        where: term ? { OR: [{ name: { contains: term, mode: 'insensitive' } }, { category: { contains: term, mode: 'insensitive' } }] } : actor?.courseId ? { id: actor.courseId } : {},
+        orderBy: { name: 'asc' },
+        take: 8
+      }),
+      prisma.knowledgeUnit.findMany({
+        where: term ? { name: { contains: term, mode: 'insensitive' } } : {},
+        orderBy: term ? { name: 'asc' } : { updatedAt: 'desc' },
+        take: term ? 10 : 5
+      })
+    ])
+    return { data: [
+      ...campuses.map((campus) => ({ type: 'university', id: campus.id, label: campus.name, kind: 'University', detail: [campus.branch, campus.city].filter(Boolean).join(' · ') })),
+      ...courses.map((course) => ({ type: 'course', id: course.id, label: course.name, kind: 'Course', detail: course.category })),
+      ...units.map((unit) => ({ type: 'unit', id: unit.id, label: unit.name, kind: 'Unit', detail: 'Learning unit' }))
     ] }
   }
 
@@ -598,6 +1000,9 @@ class ConnectCommunityRepository {
     if (type === 'group' || type === 'club') return prisma.communityGroup.findUnique({ where: { id } })
     if (type === 'opportunity') return prisma.opportunity.findUnique({ where: { id } })
     if (type === 'roadmap') return prisma.careerRoadmap.findUnique({ where: { id } })
+    if (type === 'university') return prisma.campus.findUnique({ where: { id } })
+    if (type === 'course') return prisma.course.findUnique({ where: { id } })
+    if (type === 'unit') return prisma.knowledgeUnit.findUnique({ where: { id } })
     return null
   }
 

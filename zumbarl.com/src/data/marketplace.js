@@ -8,14 +8,13 @@ const DEFAULT_GALLERY_IMAGES = [
 ]
 
 export const MARKETPLACE_CATEGORIES = [
-  { label: 'All Items', count: 2340, icon: 'grid', active: true },
-  { label: 'Electronics', count: 420, icon: 'smartphone' },
-  { label: 'Books & Notes', count: 512, icon: 'book' },
-  { label: 'Furniture', count: 268, icon: 'home' },
-  { label: 'Fashion', count: 318, icon: 'shopping-bag' },
-  { label: 'Sports', count: 156, icon: 'box' },
-  { label: 'Services', count: 366, icon: 'tool' },
-  { label: 'Other', count: 300, icon: 'more' },
+  { label: 'Everything', description: 'All campus offers', icon: 'grid', active: true },
+  { label: 'Products', description: 'Buy and collect', icon: 'shopping-bag' },
+  { label: 'Book a service', description: 'Choose a time slot', icon: 'calendar' },
+  { label: 'Food & drink', description: 'Order ahead', icon: 'coffee' },
+  { label: 'Academic help', description: 'Tutors and study help', icon: 'book' },
+  { label: 'Beauty & care', description: 'Barbers and wellness', icon: 'scissors' },
+  { label: 'Tech & print', description: 'Repairs and printing', icon: 'tool' },
 ]
 
 export const RECENT_FILTERS = ['All', 'Near You', 'New Today', 'Price: Low to High', 'Price: High to Low']

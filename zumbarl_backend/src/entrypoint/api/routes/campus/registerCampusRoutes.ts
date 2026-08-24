@@ -6,6 +6,7 @@ import {
   markUserNotificationReadController,
   readCampusHomeExperienceController,
   readMyStudentProfileExperienceController,
+  readStudentProfileScoreController,
   readStudentProfileExperienceController,
   runCampusAssistantController
   ,updateMyStudentProfileController
@@ -20,6 +21,7 @@ async function registerCampusRoutes(app: FastifyInstance) {
   app.post('/notifications/:id/read', { preHandler: campusActor }, markUserNotificationReadController)
   app.get('/profile/me', { preHandler: campusActor }, readMyStudentProfileExperienceController)
   app.patch('/profile/me', { preHandler: campusActor }, updateMyStudentProfileController)
+  app.get('/profiles/:id/score', { preHandler: campusActor }, readStudentProfileScoreController)
   app.get('/profiles/:id', { preHandler: campusActor }, readStudentProfileExperienceController)
 }
 

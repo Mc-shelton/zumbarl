@@ -5,6 +5,7 @@ function toProfileHeader(student: Record<string, any> | null) {
   if (!student) return null
   return {
     id: student.id,
+    userId: student.userId,
     name: `${student.firstName} ${student.lastName}`.trim(),
     firstName: student.firstName,
     lastName: student.lastName,
@@ -12,7 +13,11 @@ function toProfileHeader(student: Record<string, any> | null) {
     headline: `${student.campus?.name ?? 'Campus'} · Year ${Math.max(new Date().getFullYear() - student.yearJoined + 1, 1)} · ${student.careerPath ?? student.course?.name ?? 'Student'}`,
     location: student.locationCity,
     careerPath: student.careerPath,
-    handle: student.user?.email ? `@${student.user.email.split('@')[0].replace(/[^a-z0-9_]/gi, '_')}` : '@student',
+    handle: student.user?.username
+      ? `@${student.user.username}`
+      : student.user?.email
+        ? `@${student.user.email.split('@')[0].replace(/[^a-z0-9_]/gi, '_')}`
+        : '@student',
     avatar: student.avatarUrl,
     bio: student.bio,
     tags: student.skillLevels?.slice(0, 4).map((skill: Record<string, any>) => skill.skillName) ?? []
@@ -58,6 +63,12 @@ function formatEventDate(value: Date) {
     hour: 'numeric',
     minute: '2-digit'
   })
+}
+
+function jsonObject(value: unknown) {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {}
 }
 
 function mapOpportunity(opportunity: Record<string, any>) {
@@ -134,7 +145,8 @@ function mapCampusEvent(event: Record<string, any>) {
     href: '/campus/explore',
     actionLabel: 'View event',
     attendeeCount: event._count?.rsvps ?? 0,
-    isGoing: event.rsvps?.some((rsvp: Record<string, any>) => rsvp.status === 'GOING') ?? false
+    isGoing: event.rsvps?.some((rsvp: Record<string, any>) => rsvp.status === 'GOING') ?? false,
+    isInterested: event.rsvps?.some((rsvp: Record<string, any>) => rsvp.status === 'INTERESTED') ?? false
   }
 }
 
@@ -327,8 +339,8 @@ class CampusExperienceRepository {
       prisma.campusEvent.findMany({
         where: { status: 'PUBLISHED', startsAt: { gte: new Date() }, ...campusWhere },
         include: {
-          _count: { select: { rsvps: true } },
-          ...(studentId ? { rsvps: { where: { studentId } } } : {})
+          _count: { select: { rsvps: { where: { status: { in: ['GOING', 'ATTENDED'] } } } } },
+          ...(studentId ? { rsvps: { where: { studentId, status: { in: ['GOING', 'INTERESTED'] } } } } : {})
         },
         orderBy: { startsAt: 'asc' },
         take: 6
@@ -395,7 +407,14 @@ class CampusExperienceRepository {
         portfolio: {
           meta: [student.campus?.name, yearOfStudy ? `Year ${yearOfStudy}` : null, student.careerPath ?? student.course?.name].filter(Boolean).join(' · '),
           stats: [
-            { label: 'Zumbarl Score', value: Math.round(score?.currentScore ?? 0), detail: score?.tier ?? 'BRONZE', trend: score?.trendDirection ?? 'Building profile' },
+            {
+              label: 'Zumbarl Score',
+              value: score?.confidence === 'PROVISIONAL' ? 'Provisional' : Math.round(score?.currentScore ?? 0),
+              detail: score?.confidence === 'PROVISIONAL' ? 'Building confidence' : score?.tier ?? 'BRONZE',
+              trend: score?.confidence === 'PROVISIONAL'
+                ? `${Number(score?.effectiveEngagements ?? 0).toFixed(1)} of 3 effective engagements`
+                : score?.trendDirection ?? 'Building profile'
+            },
             { label: 'Gigs Completed', value: score?.totalGigsCompleted ?? 0, detail: `${score?.endorsementCount ?? 0} endorsements`, trend: `${student.portfolioItems.length} portfolio pieces` }
           ],
           groups: [
@@ -418,8 +437,15 @@ class CampusExperienceRepository {
   }
 
   async readProfileExperience(studentId?: string) {
+    const profileReference = String(studentId || '').trim().replace(/^@/, '')
     const student = await prisma.studentProfile.findFirst({
-      where: studentId ? { id: studentId } : undefined,
+      where: studentId ? {
+        OR: [
+          { id: studentId },
+          { user: { username: { equals: profileReference, mode: 'insensitive' } } },
+          { user: { email: { startsWith: `${profileReference}@`, mode: 'insensitive' } } }
+        ]
+      } : undefined,
       orderBy: { createdAt: 'asc' },
       include: {
         user: true,
@@ -436,7 +462,7 @@ class CampusExperienceRepository {
     })
     if (!student) return null
 
-    const [profileListings, profilePosts, profileStories, profileRoadmaps, walletTransactions] = await Promise.all([
+    const [profileListings, profilePosts, profileStories, profileRoadmaps, walletTransactions, followerCount, followingCount, campusPostTotals, connectPosts] = await Promise.all([
       prisma.marketplaceListing.findMany({
         where: { sellerId: student.id, status: 'ACTIVE' },
         include: { shop: true, seller: true },
@@ -462,6 +488,21 @@ class CampusExperienceRepository {
         where: { wallet: { studentId: student.id }, status: 'COMPLETED' },
         orderBy: { createdAt: 'desc' },
         take: 6
+      }),
+      prisma.connectRelationship.count({
+        where: { targetStudentId: student.id, type: 'follow' }
+      }),
+      prisma.connectRelationship.count({
+        where: { actorStudentId: student.id, type: 'follow' }
+      }),
+      prisma.campusPost.aggregate({
+        where: { studentId: student.id, status: 'PUBLISHED' },
+        _count: { _all: true },
+        _sum: { likeCount: true }
+      }),
+      prisma.connectPost.findMany({
+        where: { studentId: student.id, status: { not: 'removed' }, type: { not: 'reshare' } },
+        select: { reactions: true }
       })
     ])
     const score = student.zumbarl
@@ -474,11 +515,27 @@ class CampusExperienceRepository {
       value: `+${endorsement.currencyAwarded} EC`,
       date: endorsement.createdAt.toISOString()
     }))
+    const connectPostLikes = connectPosts.reduce(
+      (total, post) => total + Object.keys(jsonObject(post.reactions)).length,
+      0
+    )
 
     return {
       header: toProfileHeader(student),
+      socialStats: {
+        followers: followerCount,
+        following: followingCount,
+        likes: Number(campusPostTotals._sum.likeCount || 0) + connectPostLikes,
+        posts: campusPostTotals._count._all + connectPosts.length
+      },
       metrics: [
-        { label: 'Zumbarl Score', value: score?.currentScore ? Math.round(score.currentScore) : 0, meta: score?.tier ?? 'BRONZE' },
+        {
+          label: 'Zumbarl Score',
+          value: score?.confidence === 'PROVISIONAL' ? 'Provisional' : score?.currentScore ? Math.round(score.currentScore) : 0,
+          meta: score?.confidence === 'PROVISIONAL'
+            ? `${Number(score?.effectiveEngagements ?? 0).toFixed(1)} effective engagements`
+            : score?.tier ?? 'BRONZE'
+        },
         { label: 'Gigs Completed', value: score?.totalGigsCompleted ?? 0, meta: `${score?.endorsementCount ?? 0} endorsements` },
         { label: 'Delivery Rate', value: `${Math.round(score?.deliveryRate ?? 0)}%`, meta: 'on-time delivery' },
         { label: 'Avg. Rating', value: score?.avgRating ? `${score.avgRating.toFixed(1)}/5` : 'Pending', meta: 'from reviews' },

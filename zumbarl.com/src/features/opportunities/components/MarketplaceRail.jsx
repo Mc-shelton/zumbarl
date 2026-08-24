@@ -1,4 +1,10 @@
-import { FiChevronDown, FiTrendingUp } from 'react-icons/fi'
+import { FiCalendar, FiCheckCircle, FiCoffee, FiMessageCircle, FiShield, FiTrendingUp } from 'react-icons/fi'
+
+const SERVICE_FLOWS = [
+  { icon: FiCoffee, title: 'Eateries', detail: 'Choose food and a pickup time.', tone: 'food' },
+  { icon: FiCalendar, title: 'Appointments', detail: 'Reserve an available service slot.', tone: 'appointment' },
+  { icon: FiMessageCircle, title: 'Custom services', detail: 'Agree scope and price before paying.', tone: 'quote' },
+]
 
 function MarketplaceRail({
   activeCategory,
@@ -7,54 +13,30 @@ function MarketplaceRail({
   onOpenItemDetail,
 }) {
   return (
-    <aside className="campus-rail opportunities-rail opportunities-marketplace-rail" aria-label="Marketplace filters and trends">
-      <section className="campus-rail-card opportunities-marketplace-filter-card">
+    <aside className="campus-rail opportunities-rail opportunities-marketplace-rail" aria-label="Marketplace guidance and trends">
+      <section className="campus-rail-card marketplace-service-guide-card">
         <header>
-          <h3>Filter Items</h3>
-          <button type="button" className="campus-link-btn">Clear all</button>
-        </header>
-
-        <div className="opportunities-marketplace-filter-group">
-          <h4>Category</h4>
-          <button type="button" className="opportunities-select">
-            All Categories
-            <FiChevronDown aria-hidden="true" />
-          </button>
-        </div>
-
-        <div className="opportunities-marketplace-filter-group">
-          <h4>Condition</h4>
-          <button type="button" className="opportunities-select">
-            All Conditions
-            <FiChevronDown aria-hidden="true" />
-          </button>
-        </div>
-
-        <div className="opportunities-marketplace-filter-group">
-          <h4>Price Range</h4>
-          <div className="opportunities-budget-row">
-            <input type="text" placeholder="Min" />
-            <input type="text" placeholder="Max" />
+          <div>
+            <span>Campus services</span>
+            <h3>One place, the right flow</h3>
           </div>
+          <FiCheckCircle aria-hidden="true" />
+        </header>
+        <p>Every provider shows exactly how the service will be fulfilled before you pay.</p>
+        <div>
+          {SERVICE_FLOWS.map(({ icon: Icon, title, detail, tone }) => (
+            <article key={title} className={`is-${tone}`}>
+              <i><Icon aria-hidden="true" /></i>
+              <span><strong>{title}</strong><small>{detail}</small></span>
+            </article>
+          ))}
         </div>
-
-        <div className="opportunities-marketplace-filter-group">
-          <h4>Location</h4>
-          <button type="button" className="opportunities-select">
-            All Locations
-            <FiChevronDown aria-hidden="true" />
-          </button>
-        </div>
-
-        <button type="button" className="opportunities-search-btn opportunities-marketplace-apply-btn">
-          Apply Filters
-        </button>
+        <footer><FiShield aria-hidden="true" /> Payment is protected until the order is accepted.</footer>
       </section>
 
       <section className="campus-rail-card opportunities-marketplace-trending-card">
         <header>
-          <h3>Trending on Campus</h3>
-          <button type="button" className="campus-link-btn">View all</button>
+          <h3>Popular now</h3>
         </header>
 
         <div className="opportunities-marketplace-trending-list">
@@ -84,14 +66,11 @@ function MarketplaceRail({
 
           {filteredTrendingItems.length === 0 ? (
             <article className="opportunities-marketplace-empty-state is-compact" aria-live="polite">
-              <p>No trending items in {activeCategory} right now.</p>
+              <p>No popular listings in {activeCategory} yet.</p>
             </article>
           ) : null}
         </div>
 
-        <button type="button" className="opportunities-marketplace-trending-cta">
-          See more trending
-        </button>
       </section>
     </aside>
   )

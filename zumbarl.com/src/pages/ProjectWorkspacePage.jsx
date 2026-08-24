@@ -135,10 +135,10 @@ function ProjectWorkspacePage() {
     closeSubmitWork()
   }
 
-  const handleSubmissionReview = async (deliverableId, { decision, feedback }) => {
+  const handleSubmissionReview = async (deliverableId, { decision, feedback, review }) => {
     setReviewActionState({ pendingId: deliverableId, error: '', notice: '' })
     try {
-      await reviewProjectDeliverable(deliverableId, { decision, feedback })
+      await reviewProjectDeliverable(deliverableId, { decision, feedback, review })
       await Promise.all([
         refreshWorkspace(),
         deliverableTasks.refresh(),

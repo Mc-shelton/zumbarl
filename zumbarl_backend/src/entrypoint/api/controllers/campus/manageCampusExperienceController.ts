@@ -6,6 +6,7 @@ import {
   markAllUserNotificationsReadService,
   markUserNotificationReadService,
   readCampusHomeExperienceService,
+  readStudentProfileScoreService,
   readStudentProfileExperienceService,
   runCampusAssistantQueryService
   ,updateStudentProfileService
@@ -54,6 +55,11 @@ async function readStudentProfileExperienceController(request: FastifyRequest, r
   return reply.send(await readStudentProfileExperienceService(id))
 }
 
+async function readStudentProfileScoreController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await readStudentProfileScoreService(id))
+}
+
 async function runCampusAssistantController(request: FastifyRequest, reply: FastifyReply) {
   const { query } = requireBody(assistantQuerySchema, request)
   return reply.send(await runCampusAssistantQueryService(request.authUser?.studentId, query))
@@ -65,6 +71,7 @@ export {
   markUserNotificationReadController,
   readCampusHomeExperienceController,
   readMyStudentProfileExperienceController,
+  readStudentProfileScoreController,
   readStudentProfileExperienceController,
   runCampusAssistantController
   ,updateMyStudentProfileController

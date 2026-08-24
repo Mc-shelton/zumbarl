@@ -1,15 +1,33 @@
 import ProfileExperiencePanel from './ProfileExperiencePanel'
 import ProfileMarketingPanel from './ProfileMarketingPanel'
 import ProfileOverviewPanel from './ProfileOverviewPanel'
+import ProfilePagesPanel from './ProfilePagesPanel'
 import ProfilePlaceholderPanel from './ProfilePlaceholderPanel'
 import ProfilePortfolioPanel from './ProfilePortfolioPanel'
 import ProfileShopPanel from './ProfileShopPanel'
 import ProfileShopOrders from './ProfileShopOrders'
 import ProfileSkillsPanel from './ProfileSkillsPanel'
 
-function ProfileTabContent({ activeTab, canManageMarketing = false, canManageShop = false, handlers, isShopOrdersOpen = false, pendingShopOffers = [], profileState, sellerOrders = [], sellerOrdersError = '', sellerOrdersLoading = false, shop, shopOfferDecisionId = '', updatingOrderId = '', viewModel }) {
+function ProfileTabContent({ activeTab, canManageMarketing = false, canManageShop = false, handlers, isOwnProfile = false, isShopOrdersOpen = false, onOpenKnowledgeHub, pendingShopOffers = [], profileName = '', profileState, profileStudentId = '', sellerOrders = [], sellerOrdersError = '', sellerOrdersLoading = false, shop, shopOfferDecisionId = '', updatingOrderId = '', viewModel }) {
   if (activeTab === 'Overview') {
-    return <ProfileOverviewPanel endorsements={viewModel.endorsements} workHighlights={viewModel.workHighlights} />
+    return (
+      <>
+        <ProfileOverviewPanel endorsements={viewModel.endorsements} score={viewModel.profileScore} workHighlights={viewModel.workHighlights} />
+        <ProfileSkillsPanel
+          canManage={isOwnProfile}
+          embedded
+          filteredCoreSkills={viewModel.filteredCoreSkills}
+          filteredOtherSkills={viewModel.filteredOtherSkills}
+          hasSkillsResults={viewModel.hasSkillsResults}
+          onCategoryFilterChange={profileState.setSkillsCategoryFilter}
+          onLevelFilterChange={profileState.setSkillsLevelFilter}
+          onSearchQueryChange={profileState.setSkillsSearchQuery}
+          skillsCategoryFilter={profileState.skillsCategoryFilter}
+          skillsLevelFilter={profileState.skillsLevelFilter}
+          skillsSearchQuery={profileState.skillsSearchQuery}
+        />
+      </>
+    )
   }
 
   if (activeTab === 'Portfolio') {
@@ -35,18 +53,13 @@ function ProfileTabContent({ activeTab, canManageMarketing = false, canManageSho
     return <ProfileExperiencePanel />
   }
 
-  if (viewModel.isSkillsTab) {
+  if (viewModel.isPagesTab) {
     return (
-      <ProfileSkillsPanel
-        filteredCoreSkills={viewModel.filteredCoreSkills}
-        filteredOtherSkills={viewModel.filteredOtherSkills}
-        hasSkillsResults={viewModel.hasSkillsResults}
-        onCategoryFilterChange={profileState.setSkillsCategoryFilter}
-        onLevelFilterChange={profileState.setSkillsLevelFilter}
-        onSearchQueryChange={profileState.setSkillsSearchQuery}
-        skillsCategoryFilter={profileState.skillsCategoryFilter}
-        skillsLevelFilter={profileState.skillsLevelFilter}
-        skillsSearchQuery={profileState.skillsSearchQuery}
+      <ProfilePagesPanel
+        isOwnProfile={isOwnProfile}
+        onOpenKnowledgeHub={onOpenKnowledgeHub}
+        profileName={profileName}
+        profileStudentId={profileStudentId}
       />
     )
   }

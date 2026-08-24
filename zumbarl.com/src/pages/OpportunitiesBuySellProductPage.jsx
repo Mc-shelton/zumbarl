@@ -9,6 +9,7 @@ import MarketplaceOfferModal from '../features/opportunities/components/Marketpl
 import MarketplaceProductDetails from '../features/opportunities/components/MarketplaceProductDetails'
 import MarketplaceProductHead from '../features/opportunities/components/MarketplaceProductHead'
 import MarketplaceProductRail from '../features/opportunities/components/MarketplaceProductRail'
+import MarketplaceServiceRequestModal from '../features/opportunities/components/MarketplaceServiceRequestModal'
 import MarketplaceProductRelated from '../features/opportunities/components/MarketplaceProductRelated'
 import useMarketplaceProductState from '../features/opportunities/hooks/useMarketplaceProductState'
 import { addAcceptedOfferToCart, addMarketplaceListingToCart, readMarketplaceSeller, recordMarketplaceSellerView, sendMarketplaceOffer, startMarketplaceChat, updateMarketplaceListing } from '../features/opportunities/services/marketplaceInteractionService'
@@ -23,6 +24,7 @@ function OpportunitiesBuySellProductPage() {
   const navigate = useNavigate()
   const [seller, setSeller] = useState(MARKETPLACE_DEFAULT_SELLER)
   const [isOfferOpen, setIsOfferOpen] = useState(false)
+  const [isServiceRequestOpen, setIsServiceRequestOpen] = useState(false)
   const [actionStatus, setActionStatus] = useState('')
   const [isActionPending, setIsActionPending] = useState(false)
   const [viewerUserId, setViewerUserId] = useState(() => getAuthUserSnapshot()?.user?.id || '')
@@ -125,12 +127,13 @@ function OpportunitiesBuySellProductPage() {
     }
   }
 
-  async function handleAddToCart() {
+  async function handleAddToCart(serviceRequest) {
     if (isActionPending) return
     setIsActionPending(true)
-    setActionStatus('Adding item to your cart…')
+    setActionStatus(serviceRequest ? 'Saving your service request…' : 'Adding item to your cart…')
     try {
-      await addMarketplaceListingToCart(productState.item.id)
+      await addMarketplaceListingToCart(productState.item.id, 1, serviceRequest)
+      setIsServiceRequestOpen(false)
       navigate('/campus/cart')
     } catch (requestError) {
       setActionStatus(requestError.message)
@@ -201,6 +204,7 @@ function OpportunitiesBuySellProductPage() {
             onMakeOffer={() => {
               if (!productState.activeOffer || productState.activeOffer.status === 'declined') setIsOfferOpen(true)
             }}
+            onRequestService={() => setIsServiceRequestOpen(true)}
             onViewSellerProfile={handleViewSellerProfile}
             onCardKeyDown={productState.handleCardKeyDown}
             onOpenItemDetail={productState.onOpenItemDetail}
@@ -216,6 +220,14 @@ function OpportunitiesBuySellProductPage() {
             onSubmit={handleSendOffer}
             seller={seller}
           />
+          {isServiceRequestOpen ? (
+            <MarketplaceServiceRequestModal
+              isPending={isActionPending}
+              item={productState.item}
+              onClose={() => setIsServiceRequestOpen(false)}
+              onSubmit={handleAddToCart}
+            />
+          ) : null}
         </div>
       </div>
     </main>

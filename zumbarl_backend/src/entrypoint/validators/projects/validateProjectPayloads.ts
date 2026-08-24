@@ -144,9 +144,22 @@ const createDeliverableNoteSchema = z.object({
   files: z.array(z.record(z.string(), z.any())).optional()
 })
 
+const engagementReviewSchema = z.object({
+  deliveryQualityRating: z.coerce.number().min(1).max(5),
+  briefAdherenceRating: z.coerce.number().min(1).max(5),
+  communicationRating: z.coerce.number().min(1).max(5),
+  conductRating: z.coerce.number().min(1).max(5),
+  clientSatisfactionRating: z.coerce.number().min(1).max(5),
+  wouldHireAgain: z.boolean(),
+  publicFeedback: z.string().trim().max(300).optional(),
+  deadlineOutcome: z.enum(['on_time', 'student_delay', 'client_delay']).optional(),
+  submissionCompleteness: z.enum(['complete', 'partial', 'missing_major']).optional()
+})
+
 const reviewDeliverableSchema = z.object({
   decision: z.enum(['approved', 'changes_requested']),
-  feedback: z.string().optional()
+  feedback: z.string().optional(),
+  review: engagementReviewSchema.optional()
 })
 
 const inviteProjectTeamMembersSchema = z.object({
@@ -161,7 +174,8 @@ const respondToProjectTeamInviteSchema = z.object({
 
 const completeScopeTargetSchema = z.object({
   scopeItemId: z.string().min(1).optional(),
-  milestoneId: z.string().min(1).optional()
+  milestoneId: z.string().min(1).optional(),
+  review: engagementReviewSchema.optional()
 }).refine((value) => Boolean(value.scopeItemId) || Boolean(value.milestoneId), {
   message: 'Provide a deliverable (scopeItemId) or milestone to complete.'
 })

@@ -682,8 +682,11 @@ export function useBusinessOpportunities() {
     setProjectActionState({ error: '', notice: '', pending: 'fund' })
     try {
       const escrow = await fundBackendBusinessOpportunity(opportunityId, payment)
-      await refreshApplicantsAfterProjectAction()
-      setProjectActionState({ error: '', notice: 'Escrow updated. The project can now be started.', pending: '' })
+      await hydrateBusinessOpportunitiesFromBackend()
+      // Applicant rows do not determine whether funding succeeded. Refresh them
+      // opportunistically without turning a completed payment into a UI error.
+      refreshApplicantsAfterProjectAction().catch(() => {})
+      setProjectActionState({ error: '', notice: 'Escrow funded successfully.', pending: '' })
       return escrow
     } catch (error) {
       setProjectActionState({ error: error instanceof Error ? error.message : 'Could not update escrow.', notice: '', pending: '' })

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-labelledby="title description">
+  <title id="title">Default study group avatar</title>
+  <desc id="description">Three learners on a teal and navy background.</desc>
+  <defs>
+    <linearGradient id="background" x1="25" y1="18" x2="214" y2="221" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#3c9895"/>
+      <stop offset="1" stop-color="#283249"/>
+    </linearGradient>
+  </defs>
+  <rect width="240" height="240" rx="52" fill="url(#background)"/>
+  <circle cx="54" cy="47" r="27" fill="#e1c8df" opacity=".34"/>
+  <circle cx="120" cy="88" r="31" fill="#fff"/>
+  <circle cx="66" cy="108" r="25" fill="#f3eaf3"/>
+  <circle cx="174" cy="108" r="25" fill="#e2f3f1"/>
+  <path d="M70 190c3-39 20-59 50-59s47 20 50 59H70Z" fill="#fff"/>
+  <path d="M27 188c2-31 15-48 39-48 15 0 27 7 34 21-6 9-9 18-10 27H27Z" fill="#f3eaf3"/>
+  <path d="M213 188c-2-31-15-48-39-48-15 0-27 7-34 21 6 9 9 18 10 27h63Z" fill="#e2f3f1"/>
+</svg>

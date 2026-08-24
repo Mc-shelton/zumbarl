@@ -39,7 +39,7 @@
   border-radius: 20px;
   background: #f4eff5;
   color: #79506f;
-  font-size: 32px;
+  font-size: var(--text-title-lg);
   box-shadow: 0 8px 24px #30283918;
 }
 .business-company-logo img {
@@ -61,7 +61,7 @@
   align-items: center;
   margin: 4px 0 8px;
   color: #25243a;
-  font-size: 30px;
+  font-size: var(--text-title-lg);
 }
 .business-company-intro h1 svg {
   color: #16866c;
@@ -123,11 +123,11 @@
 .business-company-metrics strong {
   display: block;
   color: #29283b;
-  font-size: 22px;
+  font-size: var(--text-title-sm);
 }
 .business-company-metrics span {
   color: #73788d;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 .business-company-tabs {
   display: flex;
@@ -172,7 +172,7 @@
   align-items: center;
   margin: 0 0 12px;
   color: #29283b;
-  font-size: 18px;
+  font-size: var(--text-body-lg);
 }
 .business-company-card > p,
 .business-company-list header p,
@@ -207,7 +207,7 @@
 }
 .business-company-pillars svg {
   color: #79506f;
-  font-size: 21px;
+  font-size: var(--text-title-sm);
 }
 .business-company-pillars strong {
   color: #303044;
@@ -238,7 +238,7 @@
 .business-company-trust > svg {
   flex: 0 0 auto;
   color: #16866c;
-  font-size: 25px;
+  font-size: var(--text-title-md);
 }
 .business-company-trust a {
   color: #79506f;
@@ -293,7 +293,7 @@
   color: #777b8e;
 }
 .business-company-empty svg {
-  font-size: 34px;
+  font-size: var(--text-title-lg);
   color: #79506f;
 }
 .business-company-empty h3 {

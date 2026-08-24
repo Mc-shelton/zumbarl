@@ -2,34 +2,34 @@ import ProfileDefaultRail from './ProfileDefaultRail'
 import ProfileExperienceRail from './ProfileExperienceRail'
 import ProfileShopDetailRail from './ProfileShopDetailRail'
 import ProfileShopRail from './ProfileShopRail'
-import ProfileSkillsRail from './ProfileSkillsRail'
 
 function ProfileSideRail({
   activeShopDetailImage,
   activeShopDetailTab,
+  canContact = false,
+  contactName,
   isExperienceTab,
+  isFollowedByViewer = false,
   isOwnProfile = false,
   isShopProductDetailOpen,
   isShopTab,
-  isSkillsTab,
   normalizedShopDetailImageIndex,
   onCloseShopDetail,
+  onAudioCall,
   onDetailImageChange,
   onDetailTabChange,
   onNextShopImage,
   onEditListing,
+  onMessage,
   onPreviousShopImage,
+  onVideoCall,
   profileExperience,
   shop,
   selectedShopProduct,
   selectedShopProductDetail,
-  skillsTrendCoordinates,
-  skillsTrendFillPoints,
-  skillsTrendPoints,
 }) {
   const railClasses = [
     'campus-rail campus-profile-rail',
-    isSkillsTab ? 'is-skills-rail' : '',
     isShopTab ? 'is-shop-rail' : '',
     isShopProductDetailOpen ? 'is-shop-detail-open' : '',
   ].filter(Boolean).join(' ')
@@ -38,12 +38,6 @@ function ProfileSideRail({
     <aside className={railClasses}>
       {isExperienceTab ? (
         <ProfileExperienceRail />
-      ) : isSkillsTab ? (
-        <ProfileSkillsRail
-          skillsTrendCoordinates={skillsTrendCoordinates}
-          skillsTrendFillPoints={skillsTrendFillPoints}
-          skillsTrendPoints={skillsTrendPoints}
-        />
       ) : isShopTab ? (
         isShopProductDetailOpen && selectedShopProduct ? (
           <ProfileShopDetailRail
@@ -65,9 +59,16 @@ function ProfileSideRail({
         )
       ) : (
         <ProfileDefaultRail
+          canContact={canContact}
+          contactName={contactName}
+          isFollowedByViewer={isFollowedByViewer}
           isOwnProfile={isOwnProfile}
+          onAudioCall={onAudioCall}
+          onMessage={onMessage}
+          onVideoCall={onVideoCall}
           recentActivity={profileExperience?.recentActivity}
           relationships={profileExperience?.relationships}
+          socialStats={profileExperience?.socialStats}
         />
       )}
     </aside>

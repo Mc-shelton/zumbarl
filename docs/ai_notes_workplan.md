@@ -83,6 +83,6 @@ Your observation is correct. Project pages inherit from `opportunities.css` and 
    - Add referral tracking, ambassador dashboard, WhatsApp notification mock/service boundary.
    - Later: real WhatsApp, bank, supermarket, university, printing/eatery integrations.
    - Output: launch mechanics and ecosystem hooks.
-
+f
 **Suggested First Move**
 Start with **Theme System + Route/Access Registry**. That gives us consistency and reduces rework before adding big workflows. After that, I’d implement the **Earn Flow end-to-end**, because it is the strongest MVP survival tool from the notes.

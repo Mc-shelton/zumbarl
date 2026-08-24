@@ -39,6 +39,7 @@ const storySchema = z.object({
   product: z.record(z.any()).nullable().optional(),
   visibility: z.enum(['campus', 'group', 'public']).default('campus'),
   context: z.string().optional()
+  ,knowledgeSpaceId: z.string().min(1).optional()
   ,trimStart: z.number().min(0).optional()
   ,trimEnd: z.number().positive().optional()
 })
@@ -52,14 +53,30 @@ const postSchema = z.object({
   event: z.object({ title: z.string().min(1), startsAt: z.string(), endsAt: z.string().optional(), location: z.string().min(1), latitude: z.number().min(-90).max(90), longitude: z.number().min(-180).max(180), thumbnailUrl: z.string().nullable().optional(), organizer: z.object({ id: z.string().min(1), type: z.enum(['person', 'business', 'campus']), name: z.string().min(1), handle: z.string().optional(), avatarUrl: z.string().nullable().optional() }).optional() }).optional(),
   poll: z.object({ question: z.string().min(1), optionType: z.enum(['text', 'number', 'date', 'time']).default('text'), selectionMode: z.enum(['single', 'multiple']).default('single'), options: z.array(z.object({ id: z.string(), label: z.string().min(1), value: z.string().min(1) })).min(2).max(6), expiresAt: z.string().optional() }).optional(),
   feeling: z.object({ emoji: z.string().min(1), label: z.string().min(1) }).optional()
+  ,knowledgeSpaceId: z.string().min(1).optional()
 })
 const updatePostSchema = z.object({
   body: z.string().min(1).max(5000),
   mediaUrls: z.array(z.string()).max(8).optional(),
   mediaEdits: z.array(z.object({ type: z.enum(['image', 'video']), zoom: z.number().min(1).max(3).optional(), positionX: z.number().min(0).max(100).optional(), positionY: z.number().min(0).max(100).optional(), trimStart: z.number().min(0).optional(), trimEnd: z.number().positive().optional() })).max(8).optional()
 })
-const reactionSchema = z.object({ reaction: z.string().default('like'), story: storySnapshotSchema.optional() })
-const commentSchema = z.object({ body: z.string().min(1), story: storySnapshotSchema.optional() })
+const postEngagementSnapshotSchema = z.object({
+  body: z.string().min(1),
+  type: z.string().optional(),
+  mediaUrls: z.array(z.string()).max(8).default([]),
+  mediaEdits: z.array(z.record(z.any())).max(8).default([]),
+  creator: z.object({ id: z.string().optional(), slug: z.string().optional(), profileType: z.string().optional(), name: z.string(), handle: z.string().optional(), avatarUrl: z.string().nullable().optional(), campus: z.string().nullable().optional() }).optional(),
+  reactionCount: z.coerce.number().int().nonnegative().default(0),
+  commentCount: z.coerce.number().int().nonnegative().default(0),
+  repostCount: z.coerce.number().int().nonnegative().default(0)
+})
+const reactionSchema = z.object({ reaction: z.string().default('like'), story: storySnapshotSchema.optional(), post: postEngagementSnapshotSchema.optional() })
+const commentSchema = z.object({ body: z.string().min(1), story: storySnapshotSchema.optional(), post: postEngagementSnapshotSchema.optional() })
+const postReshareSchema = z.object({
+  post: postEngagementSnapshotSchema.optional(),
+  commentary: z.string().trim().max(3000).default('')
+})
+const eventResponseSchema = z.object({ status: z.enum(['GOING', 'INTERESTED', 'CANCELLED']) })
 const reportPostSchema = z.object({ reason: z.string().min(3), detail: z.string().optional() })
 const announcementSubmissionSchema = z.object({ targetType: z.enum(['campus', 'group']), targetId: z.string().min(1), reason: z.string().min(10).max(500) })
 const announcementDecisionSchema = z.object({ decision: z.enum(['approved', 'rejected']), note: z.string().max(500).optional() })
@@ -76,6 +93,8 @@ export {
   updatePostSchema,
   reactionSchema,
   commentSchema,
+  postReshareSchema,
+  eventResponseSchema,
   reportPostSchema,
   announcementSubmissionSchema,
   announcementDecisionSchema,

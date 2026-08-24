@@ -1,4 +1,4 @@
-import { FiBarChart2, FiEdit3, FiEye, FiHeart, FiMessageCircle, FiPackage, FiShield, FiShoppingCart } from 'react-icons/fi'
+import { FiBarChart2, FiCalendar, FiCoffee, FiEdit3, FiEye, FiHeart, FiMessageCircle, FiPackage, FiShield, FiShoppingCart } from 'react-icons/fi'
 import { MARKETPLACE_DEFAULT_SELLER } from '../../../data/marketplace'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 
@@ -13,6 +13,7 @@ function MarketplaceProductRail({
   onCheckoutAcceptedOffer,
   onCardKeyDown,
   onMakeOffer,
+  onRequestService,
   onOpenItemDetail,
   onEditListing,
   onUpdateListingStatus,
@@ -22,10 +23,15 @@ function MarketplaceProductRail({
 }) {
   const canBuy = hasAccess(ACCESS_KEYS.marketplace.buy)
   const acceptsBuyerActions = !item.status || ['published', 'active'].includes(String(item.status).toLowerCase())
+  const isService = String(item.kind || item.listingType || '').toLowerCase() === 'service'
+  const isQuoteService = isService && item.serviceMode === 'request_quote'
+  const ServiceActionIcon = item.serviceMode === 'order_ahead' ? FiCoffee : FiCalendar
+  const serviceActionLabel = item.serviceMode === 'order_ahead' ? 'Choose pickup time' : 'Choose a time'
 
   return (
-    <aside className="campus-rail opportunities-rail opportunities-marketplace-rail opportunities-marketplace-product-rail" aria-label="Product purchase and seller info">
+    <aside className="campus-rail opportunities-rail opportunities-marketplace-rail opportunities-marketplace-product-rail" aria-label="Marketplace checkout and provider information">
       <section className="campus-rail-card opportunities-marketplace-product-price-card">
+        <span className="opportunities-marketplace-product-price-label">{isService ? 'Starting price' : 'Marketplace price'}</span>
         <p>{item.price}</p>
         {isOwner ? (
           <>
@@ -41,14 +47,15 @@ function MarketplaceProductRail({
           </>
         ) : canBuy && acceptsBuyerActions ? (
           <>
-            {!activeOffer ? <button type="button" className="opportunities-marketplace-product-primary-btn" disabled={isActionPending || Number(item.stock ?? 1) < 1} onClick={onAddToCart}>
-              <FiShoppingCart aria-hidden="true" />
-              {Number(item.stock ?? 1) < 1 ? 'Out of stock' : 'Add to cart'}
-            </button> : null}
-            <button type="button" className="opportunities-marketplace-product-primary-btn" disabled={isActionPending} onClick={onChatWithSeller}>
-              <FiMessageCircle aria-hidden="true" />
-              Chat with Seller
-            </button>
+            {!activeOffer && !isService ? <button type="button" className="opportunities-marketplace-product-primary-btn is-cart" disabled={isActionPending || Number(item.stock ?? 1) < 1} onClick={onAddToCart}><FiShoppingCart aria-hidden="true" />{Number(item.stock ?? 1) < 1 ? 'Out of stock' : 'Add to cart'}</button> : null}
+            {!activeOffer && isService && !isQuoteService ? <button type="button" className="opportunities-marketplace-product-primary-btn is-cart" disabled={isActionPending || Number(item.stock ?? 1) < 1} onClick={onRequestService}><ServiceActionIcon aria-hidden="true" />{Number(item.stock ?? 1) < 1 ? 'Fully booked' : serviceActionLabel}</button> : null}
+            {!activeOffer && isQuoteService ? <button type="button" className="opportunities-marketplace-product-primary-btn is-cart" disabled={isActionPending} onClick={onChatWithSeller}><FiMessageCircle aria-hidden="true" />Request service</button> : null}
+            {!isQuoteService ? (
+              <button type="button" className="opportunities-marketplace-product-primary-btn is-chat" disabled={isActionPending} onClick={onChatWithSeller}>
+                <FiMessageCircle aria-hidden="true" />
+                Chat with {isService ? 'provider' : 'seller'}
+              </button>
+            ) : null}
             {activeOffer?.status === 'accepted' ? (
               <div className="opportunities-marketplace-offer-accepted" role="status">
                 <strong>Offer accepted!</strong>
@@ -66,9 +73,9 @@ function MarketplaceProductRail({
                 <strong>Offer pending</strong>
                 <span>Your KSh {Number(activeOffer.amount).toLocaleString('en-KE')} offer is awaiting the seller’s response.</span>
               </div>
-            ) : (
+            ) : !isService ? (
               <button type="button" className="opportunities-marketplace-product-secondary-btn" disabled={isActionPending} onClick={onMakeOffer}>Make an Offer</button>
-            )}
+            ) : null}
           </>
         ) : canBuy ? <span className="opportunities-marketplace-owner-label">Currently unavailable</span> : null}
         {actionStatus ? <p className="opportunities-marketplace-action-status" role="status">{actionStatus}</p> : null}
@@ -86,14 +93,14 @@ function MarketplaceProductRail({
             <FiShield aria-hidden="true" />
             <div>
               <h4>Shop safely</h4>
-              <p>Meet in a public place and check the item before paying.</p>
+              <p>{isService ? 'Your payment is protected while the provider confirms and fulfils the request.' : 'Meet in a public place and check the item before paying.'}</p>
             </div>
           </article>
         )}
       </section>
 
       <section className="campus-rail-card opportunities-marketplace-product-seller-card">
-        <h3>{isOwner ? 'Your shop' : 'Seller Information'}</h3>
+        <h3>{isOwner ? 'Your shop' : (isService ? 'Provider information' : 'Seller information')}</h3>
 
         <div className="opportunities-marketplace-product-seller-head">
           <img src={seller.avatar} alt={seller.name} />
@@ -107,7 +114,7 @@ function MarketplaceProductRail({
         <div className="opportunities-marketplace-product-seller-metrics">
           <article>
             <strong>{seller.itemsSold}</strong>
-            <span>Items Sold</span>
+            <span>{isService ? 'Orders' : 'Items sold'}</span>
           </article>
           <article>
             <strong>{seller.rating}</strong>
@@ -121,7 +128,7 @@ function MarketplaceProductRail({
 
         <button type="button" className="opportunities-marketplace-product-secondary-btn" disabled={isActionPending} onClick={onViewSellerProfile}>
           {isOwner ? <FiEye aria-hidden="true" /> : null}
-          {isOwner ? 'View your shop' : 'View Seller Profile'}
+          {isOwner ? 'View your shop' : `View ${isService ? 'provider' : 'seller'} profile`}
         </button>
       </section>
 

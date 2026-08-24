@@ -34,14 +34,14 @@
   margin: 6px 0 4px;
   color: var(--project-ink);
   font-family: var(--project-heading-font);
-  font-size: 20px;
+  font-size: var(--text-title-sm);
 }
 
 .deliverable-room-header p {
   margin: 0;
   max-width: 62ch;
   color: var(--project-muted);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .deliverable-room-back {
@@ -50,7 +50,7 @@
   background: none;
   color: var(--project-primary);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   cursor: pointer;
 }
 
@@ -70,7 +70,7 @@
 
 .deliverable-room-stats dt {
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -78,7 +78,7 @@
 .deliverable-room-stats dd {
   margin: 4px 0 0;
   color: var(--project-ink);
-  font-size: 20px;
+  font-size: var(--text-title-sm);
   font-weight: 700;
 }
 
@@ -101,7 +101,7 @@
   border-radius: 10px;
   background: color-mix(in srgb, #d9534f 10%, transparent);
   color: #a33b38;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .deliverable-room-error p {
@@ -115,7 +115,7 @@
   background: none;
   color: inherit;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -125,7 +125,7 @@
   border: 1px dashed var(--project-border);
   border-radius: 10px;
   color: var(--project-muted);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .deliverable-room-declare-btn {
@@ -143,7 +143,7 @@
 .deliverable-room-declare label {
   display: grid;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   color: var(--project-muted);
 }
 
@@ -155,7 +155,7 @@
   background: var(--color-surface);
   color: var(--project-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .deliverable-room-declare-claim {
@@ -177,7 +177,7 @@
   background: none;
   color: var(--project-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   cursor: pointer;
 }
 
@@ -214,7 +214,7 @@
 
 .deliverable-room-task header strong {
   color: var(--project-ink);
-  font-size: 15px;
+  font-size: var(--text-body);
   line-height: 1.35;
 }
 
@@ -224,7 +224,7 @@
   border-radius: 999px;
   background: var(--project-primary-soft);
   color: var(--project-primary);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
@@ -242,7 +242,7 @@
   margin: 0;
   overflow: hidden;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -263,7 +263,7 @@
   border-radius: 999px;
   background: var(--project-primary-soft);
   color: var(--project-primary);
-  font-size: 10px;
+  font-size: var(--text-micro);
 }
 
 .deliverable-room-task-owner > span {
@@ -311,7 +311,7 @@
   align-items: center;
   gap: 10px;
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -325,7 +325,7 @@
   background: var(--color-surface);
   color: var(--project-ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-weight: 700;
 }
 
@@ -340,7 +340,7 @@
   background: var(--color-surface-muted, #f8fafc);
   color: var(--project-muted);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -383,7 +383,7 @@
   gap: 8px;
   margin: 0;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .deliverable-room-lock.is-confirmed {
@@ -397,13 +397,13 @@
   background: var(--project-primary);
   color: #fff;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
 .deliverable-room-lock em {
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 
@@ -420,13 +420,13 @@
   margin: 0;
   color: var(--project-ink);
   font-family: var(--project-heading-font);
-  font-size: 15px;
+  font-size: var(--text-body);
 }
 
 .deliverable-room-thread header p {
   margin: 4px 0 12px;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-room-thread ol {
@@ -449,18 +449,18 @@
   gap: 10px;
   margin: 0 0 4px;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .deliverable-room-thread time {
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-room-thread-body {
   margin: 0;
   color: var(--project-muted);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .deliverable-room-thread-files {
@@ -475,13 +475,13 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-room-thread-empty {
   margin: 0 0 12px;
   color: var(--project-muted);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .deliverable-room-thread form {
@@ -497,7 +497,7 @@
   background: var(--color-surface);
   color: var(--project-ink);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   resize: vertical;
 }
 
@@ -509,7 +509,7 @@
   background: var(--project-primary);
   color: #fff;
   font: inherit;
-  font-size: 13px;
+  font-size: var(--text-small);
   cursor: pointer;
 }
 
@@ -528,13 +528,13 @@
   margin: 0;
   color: var(--project-ink);
   font-family: var(--project-heading-font);
-  font-size: 15px;
+  font-size: var(--text-body);
 }
 
 .deliverable-room-dependencies header p {
   margin: 4px 0 10px;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-room-dependencies ul {
@@ -562,12 +562,12 @@
 .deliverable-room-dependencies li strong {
   display: block;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .deliverable-room-dependencies li em {
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-style: normal;
 }
 
@@ -578,7 +578,7 @@
   background: none;
   color: var(--project-ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -595,7 +595,7 @@
   align-items: center;
   gap: 6px;
   color: #a33b38;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-room-task-blocked li em {
@@ -603,7 +603,7 @@
   padding: 1px 7px;
   border-radius: 999px;
   background: color-mix(in srgb, #a33b38 12%, transparent);
-  font-size: 10px;
+  font-size: var(--text-micro);
   font-style: normal;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -648,7 +648,7 @@
 .deliverable-room-blocker-picker h5 {
   margin: 0;
   color: var(--project-ink);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .deliverable-room-blocker-picker header button {
@@ -666,7 +666,7 @@
 .deliverable-room-blocker-picker h6 {
   margin: 0;
   color: var(--project-ink);
-  font-size: 12px;
+  font-size: var(--text-caption);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -674,7 +674,7 @@
 .deliverable-room-blocker-picker section > p {
   margin: 3px 0 8px;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-room-blocker-picker ul {
@@ -689,7 +689,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--text-caption);
   color: var(--project-ink);
   cursor: pointer;
 }
@@ -698,13 +698,13 @@
   margin-left: auto;
   color: var(--project-muted);
   font-style: normal;
-  font-size: 11px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-room-blocker-empty {
   margin: 0;
   color: var(--project-muted);
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-room-add-dependency {
@@ -719,7 +719,7 @@
   background: none;
   color: var(--project-ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -740,7 +740,7 @@
   background: var(--color-surface);
   color: var(--project-ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
 }
 
 .deliverable-room-blocker-picker footer {
@@ -766,7 +766,7 @@
   background: none;
   color: var(--project-muted);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -774,7 +774,7 @@
   padding: 0 6px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--project-ink) 8%, transparent);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 
@@ -824,7 +824,7 @@
   margin: 0;
   padding: 28px 12px;
   color: var(--project-muted);
-  font-size: 13px;
+  font-size: var(--text-small);
 }
 
 .deliverable-room-filter-empty button {
@@ -834,7 +834,7 @@
   background: none;
   color: var(--project-ink);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--text-caption);
   cursor: pointer;
 }
 
@@ -848,7 +848,7 @@
   border-radius: 999px;
   background: color-mix(in srgb, var(--project-ink) 7%, transparent);
   color: var(--project-muted);
-  font-size: 11px;
+  font-size: var(--text-caption);
   font-weight: 600;
 }
 

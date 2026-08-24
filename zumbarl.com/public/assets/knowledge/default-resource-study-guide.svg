@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title">
+  <title id="title">Default study guide cover</title>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#37725e"/><stop offset="1" stop-color="#293a47"/></linearGradient></defs>
+  <rect width="640" height="360" rx="28" fill="url(#bg)"/><path d="M458 0L214 360h426V0z" fill="#fff" opacity=".05"/>
+  <rect x="219" y="66" width="202" height="216" rx="20" fill="#fff"/><circle cx="270" cy="125" r="19" fill="#7bb39f"/><path d="M306 125h73M252 179l15 15 28-35M306 180h73M252 230l15 15 28-35M306 231h73" fill="none" stroke="#37725e" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="320" y="325" fill="#fff" font-family="Arial, sans-serif" font-size="24" font-weight="700" text-anchor="middle">STUDY GUIDE</text>
+</svg>

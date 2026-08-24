@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { requireRoles, roleGroups } from '../../../../lib/security.js'
-import { cancelCallController, commentOnPostController, commentOnStoryController, connectProfileController, contributeToChamaController, createCallController, createGroupController, createManagedProfilePostController, createMessageController, createPostController, createProjectGroupMessageController, createStoryController, decideAnnouncementRequestController, endCallController, followProfileController, heartbeatController, joinGroupController, listAnnouncementRequestsController, listConnectFeedController, listConversationsController, listGroupsController, listIncomingCallsController, listMessagesController, listMyManagedProfilesController, listProjectGroupMessagesController, listStoriesController, reactToPostController, reactToStoryCommentController, reactToStoryController, readAnnouncementTargetsController, readCallController, readConnectProfileController, readManagedProfileController, readRelationshipController, readStoryEngagementController, readTagContextController, realtimeEventsController, reportPostController, respondToCallController, searchEventOrganizersController, submitPostForAnnouncementController, updateManagedProfileController, updateOwnedPostController, upsertConnectProfileController } from '../../controllers/connect/index.js'
+import { cancelCallController, commentOnPostController, commentOnStoryController, connectProfileController, contributeToChamaController, createCallController, createGroupController, createManagedProfilePostController, createMessageController, createPostController, createProjectGroupMessageController, createStoryController, decideAnnouncementRequestController, endCallController, followProfileController, heartbeatController, joinGroupController, listAnnouncementRequestsController, listConnectFeedController, listConversationsController, listGroupsController, listIncomingCallsController, listMessagesController, listMyManagedProfilesController, listProjectGroupMessagesController, listStoriesController, listSuggestedProfilesController, reactToPostController, reactToStoryCommentController, reactToStoryController, readAnnouncementTargetsController, readCallController, readConnectProfileController, readManagedProfileController, readRelationshipController, readStoryEngagementController, readTagContextController, realtimeEventsController, removePostReshareController, reportPostController, resharePostController, respondToCallController, respondToEventController, searchEventOrganizersController, searchPostTagTargetsController, submitPostForAnnouncementController, updateManagedProfileController, updateOwnedPostController, upsertConnectProfileController } from '../../controllers/connect/index.js'
 import { extractSocialMetricsController, readSocialMarketingProfileController, saveSocialMetricsController } from '../../controllers/connect/index.js'
 import { addManagedProfileManagerController, createManagedProfileController, removeManagedProfileManagerController } from '../../controllers/connect/index.js'
 import { followManagedProfileController } from '../../controllers/connect/index.js'
@@ -36,6 +36,7 @@ async function registerConnectRoutes(app: FastifyInstance) {
   app.get('/profile/marketing', { preHandler: students }, readSocialMarketingProfileController)
   app.post('/profile/marketing/extract', { preHandler: students }, extractSocialMetricsController)
   app.post('/profile/marketing/accounts', { preHandler: students }, saveSocialMetricsController)
+  app.get('/profiles/suggestions', { preHandler: students }, listSuggestedProfilesController)
   app.get('/profiles/:id/relationship', { preHandler: students }, readRelationshipController)
   app.post('/profiles/:id/follow', { preHandler: students }, followProfileController)
   app.delete('/profiles/:id/follow', { preHandler: students }, followProfileController)
@@ -49,9 +50,13 @@ async function registerConnectRoutes(app: FastifyInstance) {
   app.post('/stories/comments/:id/reactions', { preHandler: students }, reactToStoryCommentController)
   app.post('/posts', { preHandler: students }, createPostController)
   app.get('/event-organizers', { preHandler: authenticatedUsers }, searchEventOrganizersController)
+  app.get('/post-tag-targets', { preHandler: authenticatedUsers }, searchPostTagTargetsController)
   app.patch('/posts/:id', { preHandler: students }, updateOwnedPostController)
   app.post('/posts/:id/reactions', { preHandler: students }, reactToPostController)
   app.post('/posts/:id/comments', { preHandler: students }, commentOnPostController)
+  app.post('/posts/:id/reshares', { preHandler: students }, resharePostController)
+  app.delete('/posts/:id/reshares', { preHandler: students }, removePostReshareController)
+  app.put('/posts/:id/event-response', { preHandler: students }, respondToEventController)
   app.post('/posts/:id/report', { preHandler: students }, reportPostController)
   app.get('/announcements/targets', { preHandler: students }, readAnnouncementTargetsController)
   app.post('/posts/:id/announcement-submissions', { preHandler: students }, submitPostForAnnouncementController)

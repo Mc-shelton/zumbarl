@@ -3,6 +3,7 @@ import { env } from './config/env.js'
 import { migrateLegacyAppRecords, migrateWorkflowDomains, seedDatabase } from './data/index.js'
 import { backfillDefaultProjectDeliverables } from './shared/projects/ensureDefaultProjectDeliverable.js'
 import { processMarketplaceDeliveryDeadlinesService } from './adapters/services/marketplace/index.js'
+import { scheduleDueScoreRefreshes } from './adapters/services/scores/index.js'
 
 await migrateLegacyAppRecords()
 await migrateWorkflowDomains()
@@ -14,9 +15,17 @@ const app = await buildApp()
 // Run once on boot and hourly thereafter. The repository guards every payout,
 // so retries and overlapping application instances remain idempotent.
 await processMarketplaceDeliveryDeadlinesService()
+await scheduleDueScoreRefreshes()
 const marketplaceEscrowTimer = globalThis.setInterval(() => {
   void processMarketplaceDeliveryDeadlinesService().catch((error) => app.log.error(error, 'Marketplace escrow deadline processing failed'))
 }, 60 * 60 * 1000)
 marketplaceEscrowTimer.unref()
+
+// Recency decay changes Bayesian evidence even without a new engagement. Check
+// hourly and refresh only scores whose 18-day cycle is due.
+const scoreRefreshTimer = globalThis.setInterval(() => {
+  void scheduleDueScoreRefreshes().catch((error) => app.log.error(error, 'Zumbarl score refresh failed'))
+}, 60 * 60 * 1000)
+scoreRefreshTimer.unref()
 
 await app.listen({ host: env.HOST, port: env.PORT })

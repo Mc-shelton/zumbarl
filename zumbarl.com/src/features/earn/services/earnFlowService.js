@@ -99,6 +99,19 @@ export function refreshEarnFlowFromBackend() {
   return hydrateEarnFlowFromBackend()
 }
 
+export async function hydrateEarnOpportunityById(opportunityId) {
+  if (!opportunityId) return null
+  const opportunity = await sendZumbarlApiRequest(`/earn/opportunities/${encodeURIComponent(opportunityId)}`)
+  setEarnFlowState((state) => ({
+    ...state,
+    opportunities: [
+      opportunity,
+      ...state.opportunities.filter((item) => item.id !== opportunity.id),
+    ],
+  }))
+  return opportunity
+}
+
 export function readOpportunityBidDraft(opportunityId) {
   return sendZumbarlApiRequest(`/earn/opportunities/${opportunityId}/bid-draft`)
 }

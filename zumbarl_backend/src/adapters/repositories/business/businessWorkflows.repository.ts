@@ -641,8 +641,34 @@ class BusinessWorkflowsRepository {
     }
   }
 
-  listBusinessProjects(businessId: string | undefined) {
-    return projects.listAll((project) => !businessId || project.businessId === businessId)
+  async listBusinessProjects(businessId: string | undefined) {
+    const items = await projects.listAll((project) => !businessId || project.businessId === businessId)
+    const linkedBids = await prisma.bid.findMany({
+      where: {
+        projectId: { not: null },
+        ...(businessId ? { opportunity: { companyId: businessId } } : {})
+      },
+      select: { projectId: true }
+    })
+    const linkedProjectIds = new Set(linkedBids.flatMap((bid) => bid.projectId ? [bid.projectId] : []))
+    const lifecyclePriority = (project: Record<string, any>) => {
+      const status = String(project.status || '').toLowerCase()
+      return (linkedProjectIds.has(project.id) ? 100 : 0)
+        + (project.startedAt ? 20 : 0)
+        + (['active', 'execution', 'in_progress'].includes(status) ? 10 : 0)
+        + (project.endedAt || project.completedAt ? 5 : 0)
+    }
+    const byOpportunity = new Map<string, Record<string, any>>()
+    for (const project of items) {
+      const key = project.opportunityId || project.id
+      const current = byOpportunity.get(key)
+      if (!current
+        || lifecyclePriority(project) > lifecyclePriority(current)
+        || (lifecyclePriority(project) === lifecyclePriority(current) && Date.parse(project.updatedAt) > Date.parse(current.updatedAt))) {
+        byOpportunity.set(key, project)
+      }
+    }
+    return [...byOpportunity.values()].sort((left, right) => Date.parse(right.updatedAt) - Date.parse(left.updatedAt))
   }
 
   async listBusinessCampaigns(businessId: string | undefined) {
@@ -1110,8 +1136,12 @@ class BusinessWorkflowsRepository {
         campus: item.student.campus?.name,
         course: item.student.course?.name,
         skills: item.student.studentSkills.map((studentSkill) => studentSkill.skill.name),
-        score: item.student.zumbarl?.currentScore ?? 0,
-        scoreTier: item.student.zumbarl?.tier ?? 'BRONZE',
+        score: item.student.zumbarl?.confidence === 'PROVISIONAL'
+          ? null
+          : item.student.zumbarl?.currentScore ?? null,
+        matchingScore: item.student.zumbarl?.conservativeLowerBound ?? 0,
+        scoreTier: item.student.zumbarl?.tier ?? 'PROVISIONAL',
+        scoreConfidence: item.student.zumbarl?.confidence ?? 'PROVISIONAL',
         completedGigs: item.student.zumbarl?.totalGigsCompleted ?? 0
       }
     }}))
@@ -1243,7 +1273,11 @@ class BusinessWorkflowsRepository {
             campus: student.campus?.name,
             course: student.course?.name,
             locationCity: student.locationCity,
-            score: student.zumbarl?.currentScore ?? 0
+            score: student.zumbarl?.confidence === 'PROVISIONAL'
+              ? null
+              : student.zumbarl?.currentScore ?? null,
+            matchingScore: student.zumbarl?.conservativeLowerBound ?? 0,
+            scoreConfidence: student.zumbarl?.confidence ?? 'PROVISIONAL'
           } : null
         }
       })

@@ -24,6 +24,25 @@ const STATUS_META = {
   superseded: { label: 'Superseded', tone: 'is-muted', icon: FiFileText },
 }
 
+const DEFAULT_SCORE_REVIEW = {
+  deliveryQualityRating: 4,
+  briefAdherenceRating: 4,
+  communicationRating: 4,
+  conductRating: 4,
+  clientSatisfactionRating: 4,
+  wouldHireAgain: true,
+  deadlineOutcome: 'on_time',
+  submissionCompleteness: 'complete',
+}
+
+const RATING_FIELDS = [
+  ['deliveryQualityRating', 'Work quality'],
+  ['briefAdherenceRating', 'Matched the brief'],
+  ['communicationRating', 'Communication'],
+  ['conductRating', 'Professionalism'],
+  ['clientSatisfactionRating', 'Overall satisfaction'],
+]
+
 function statusMeta(value) {
   return STATUS_META[String(value || '').toLowerCase()]
     || { label: 'Submitted', tone: 'is-muted', icon: FiFileText }
@@ -58,6 +77,7 @@ function TeamReviewsPanel({
   const [filter, setFilter] = useState('all')
   const [selectedId, setSelectedId] = useState('')
   const [feedback, setFeedback] = useState('')
+  const [scoreReview, setScoreReview] = useState(DEFAULT_SCORE_REVIEW)
   const milestoneById = useMemo(() => new Map(milestones.map((item) => [item.id, item.title])), [milestones])
   const submissionRows = useMemo(() => submissions
     .filter((submission) => submission.status !== 'superseded')
@@ -89,8 +109,17 @@ function TeamReviewsPanel({
   async function decide(decision) {
     if (!selected || !onReview) return
     if (decision === 'changes_requested' && !feedback.trim()) return
-    const succeeded = await onReview(selected.id, { decision, feedback: feedback.trim() })
-    if (succeeded) setFeedback('')
+    const succeeded = await onReview(selected.id, {
+      decision,
+      feedback: feedback.trim(),
+      ...(decision === 'approved' ? {
+        review: { ...scoreReview, publicFeedback: feedback.trim() || undefined },
+      } : {}),
+    })
+    if (succeeded) {
+      setFeedback('')
+      setScoreReview(DEFAULT_SCORE_REVIEW)
+    }
   }
 
   return (
@@ -143,6 +172,7 @@ function TeamReviewsPanel({
                   onClick={() => {
                     setSelectedId(submission.id)
                     setFeedback('')
+                    setScoreReview(DEFAULT_SCORE_REVIEW)
                   }}
                 >
                   <span className={`project-review-list-icon ${meta.tone}`}><StatusIcon aria-hidden="true" /></span>
@@ -218,6 +248,64 @@ function TeamReviewsPanel({
 
             {isBusinessViewer && selected.status === 'submitted' ? (
               <section className="project-review-decision">
+                <fieldset className="project-score-review">
+                  <legend>Rate this completed work</legend>
+                  <p>These ratings update the student’s Zumbarl Score after the full project is completed.</p>
+                  <div>
+                    <label htmlFor={`review-deadline-${selected.id}`}>
+                      <span>Deadline outcome</span>
+                      <select
+                        id={`review-deadline-${selected.id}`}
+                        value={scoreReview.deadlineOutcome}
+                        onChange={(event) => setScoreReview((current) => ({ ...current, deadlineOutcome: event.target.value }))}
+                      >
+                        <option value="on_time">Delivered on time</option>
+                        <option value="student_delay">Late · student-related</option>
+                        <option value="client_delay">Late · client-related</option>
+                      </select>
+                    </label>
+                    <label htmlFor={`review-completeness-${selected.id}`}>
+                      <span>Initial submission</span>
+                      <select
+                        id={`review-completeness-${selected.id}`}
+                        value={scoreReview.submissionCompleteness}
+                        onChange={(event) => setScoreReview((current) => ({ ...current, submissionCompleteness: event.target.value }))}
+                      >
+                        <option value="complete">Complete</option>
+                        <option value="partial">Partially complete</option>
+                        <option value="missing_major">Missing major elements</option>
+                      </select>
+                    </label>
+                    {RATING_FIELDS.map(([field, label]) => (
+                      <label key={field} htmlFor={`review-${field}-${selected.id}`}>
+                        <span>{label}</span>
+                        <select
+                          id={`review-${field}-${selected.id}`}
+                          value={scoreReview[field]}
+                          onChange={(event) => setScoreReview((current) => ({
+                            ...current,
+                            [field]: Number(event.target.value),
+                          }))}
+                        >
+                          <option value={1}>1 · Poor</option>
+                          <option value={2}>2 · Below expectations</option>
+                          <option value={3}>3 · Met expectations</option>
+                          <option value={4}>4 · Above expectations</option>
+                          <option value={5}>5 · Exceptional</option>
+                        </select>
+                      </label>
+                    ))}
+                    <label className="project-score-review-repeat" htmlFor={`review-repeat-${selected.id}`}>
+                      <input
+                        id={`review-repeat-${selected.id}`}
+                        type="checkbox"
+                        checked={scoreReview.wouldHireAgain}
+                        onChange={(event) => setScoreReview((current) => ({ ...current, wouldHireAgain: event.target.checked }))}
+                      />
+                      <span>I would hire this student again</span>
+                    </label>
+                  </div>
+                </fieldset>
                 <label htmlFor={`review-feedback-${selected.id}`}>Feedback</label>
                 <textarea
                   id={`review-feedback-${selected.id}`}

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title">
+  <title id="title">Default article cover</title>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5b5f91"/><stop offset="1" stop-color="#333448"/></linearGradient></defs>
+  <rect width="640" height="360" rx="28" fill="url(#bg)"/><circle cx="558" cy="300" r="132" fill="#fff" opacity=".06"/>
+  <rect x="211" y="66" width="218" height="216" rx="20" fill="#fff"/><rect x="245" y="101" width="74" height="68" rx="9" fill="#aaaed2"/><path d="M339 109h56M339 139h56M245 199h150M245 231h150" stroke="#5b5f91" stroke-width="11" stroke-linecap="round"/>
+  <text x="320" y="325" fill="#fff" font-family="Arial, sans-serif" font-size="24" font-weight="700" text-anchor="middle">ARTICLE</text>
+</svg>

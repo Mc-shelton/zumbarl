@@ -268,13 +268,14 @@ class MarketingCampaignsRepository {
     const campaign = await prisma.marketingCampaign.findUnique({
       where: { id: campaignId },
       include: {
+        zumbarlAd: true,
         invites: { orderBy: { createdAt: 'desc' } },
         acceptances: { orderBy: { createdAt: 'desc' } },
         proofs: { orderBy: { createdAt: 'desc' } }
       }
     })
     if (!campaign) return { campaign: null, invites: [], acceptances: [], proofs: [] }
-    const { invites, acceptances, proofs, ...campaignRecord } = campaign
+    const { zumbarlAd, invites, acceptances, proofs, ...campaignRecord } = campaign
     const studentIds = [...new Set(acceptances.map((item) => item.studentId))]
     const [students, creatorProfiles] = studentIds.length
       ? await Promise.all([
@@ -293,7 +294,11 @@ class MarketingCampaignsRepository {
       verifiedSocialAccounts: socialAccountsFromProfile(profilesByStudentId.get(item.studentId) || null)
     }))
     const acceptedCreatorsCount = acceptances.filter((item) => item.status === 'accepted').length
-    const record: Record<string, any> = { ...toCampaignRecord(campaignRecord), acceptedCreatorsCount }
+    const record: Record<string, any> = {
+      ...toCampaignRecord(campaignRecord),
+      acceptedCreatorsCount,
+      zumbarlAd
+    }
     const profile = studentId
       ? await prisma.connectProfile.findUnique({ where: { studentId } })
       : null
@@ -305,6 +310,83 @@ class MarketingCampaignsRepository {
       acceptances: acceptanceRecords,
       proofs
     }
+  }
+
+  async syncZumbarlAd(campaignId: string) {
+    const campaign = await prisma.marketingCampaign.findUnique({ where: { id: campaignId } })
+    if (!campaign) return null
+    const campaignPayload = payloadObject(campaign.payload)
+    const request = payloadObject(campaignPayload.zumbarlAds)
+    const existing = await prisma.zumbarlAd.findUnique({ where: { campaignId } })
+
+    if (request.requested !== true) {
+      if (!existing) return null
+      return prisma.zumbarlAd.update({
+        where: { campaignId },
+        data: { status: 'withdrawn', payload: jsonInput(request) }
+      })
+    }
+
+    const nextStatus = campaign.status === 'draft' ? 'draft' : 'pending_review'
+    const data = {
+      businessId: campaign.businessId,
+      headline: String(request.headline || campaign.title),
+      description: String(request.description || campaign.description || campaign.title),
+      callToAction: request.callToAction ? String(request.callToAction) : null,
+      destinationUrl: request.destinationUrl ? String(request.destinationUrl) : null,
+      status: nextStatus,
+      reviewedBy: null,
+      reviewedAt: null,
+      publishedAt: null,
+      payload: jsonInput(request)
+    }
+    return prisma.zumbarlAd.upsert({
+      where: { campaignId },
+      create: { campaignId, ...data },
+      update: data
+    })
+  }
+
+  async publishCampaign(id: string) {
+    const campaign = await this.updateCampaign(id, { status: 'published', inviteOnlyUntil: null })
+    if (!campaign) return null
+    await this.syncZumbarlAd(id)
+    return campaign
+  }
+
+  async listZumbarlAds(query: Record<string, unknown>) {
+    const ads = await prisma.zumbarlAd.findMany({
+      include: {
+        campaign: {
+          select: {
+            id: true,
+            title: true,
+            previewImage: true,
+            materials: true,
+            status: true,
+            createdAt: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    })
+    return pageEnvelope(ads, query)
+  }
+
+  async publishZumbarlAd(id: string, reviewedBy?: string) {
+    const ad = await prisma.zumbarlAd.findUnique({ where: { id } })
+    if (!ad || ad.status !== 'pending_review') return null
+    const now = new Date()
+    return prisma.zumbarlAd.update({
+      where: { id },
+      data: {
+        status: 'published',
+        reviewedBy: reviewedBy ?? null,
+        reviewedAt: now,
+        publishedAt: ad.publishedAt ?? now
+      },
+      include: { campaign: { select: { id: true, title: true, previewImage: true, materials: true } } }
+    })
   }
 
   fundCampaign(id: string) {

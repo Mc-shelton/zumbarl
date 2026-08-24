@@ -33,5 +33,8 @@
 - before award, you can't open the project as a student
 - submission can be just a reproting
 - as much as the project is not closed for bidding, once i've placed a bid, it should not show on my discover list
+- the campaign creation need a safe exit
+the
 links:
+
 https://www.itl.nist.gov/div898/handbook/apr/section2/apr1a.htm

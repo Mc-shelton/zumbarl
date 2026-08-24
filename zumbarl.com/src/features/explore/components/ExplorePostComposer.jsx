@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   FiArrowLeft,
   FiArrowRight,
+  FiBookOpen,
   FiCheck,
   FiImage,
   FiMapPin,
   FiPlus,
   FiSearch,
+  FiShoppingBag,
+  FiTag,
   FiTrash2,
   FiUploadCloud,
   FiX,
@@ -14,8 +18,13 @@ import {
 import { useDialog } from "../../../components/ui";
 import { normalizeZumbarlFileUrl } from "../../../lib/normalizeZumbarlFileUrl";
 import { uploadZumbarlFile } from "../../../lib/uploadZumbarlFile";
-import { searchMarketplaceLocations } from "../../opportunities/services/marketplaceInteractionService";
-import { searchEventOrganizers } from "../services/postService";
+import {
+  listMarketplaceListings,
+  mapMarketplaceApiListing,
+  searchMarketplaceLocations,
+} from "../../opportunities/services/marketplaceInteractionService";
+import { readKnowledgeHub } from "../../learn/services/learnService";
+import { searchEventOrganizers, searchPostTagTargets } from "../services/postService";
 
 const TYPES = [
   { id: "post", label: "Post" },
@@ -38,8 +47,13 @@ function ExplorePostComposer({
   isOpen,
   onClose,
   onPublish,
+  requiredTag = null,
+  allowSpaceTags = true,
 }) {
   const dialogRef = useDialog({ isOpen, onClose });
+  const requiredTagId = requiredTag?.id || "";
+  const requiredTagLabel = requiredTag?.label || "";
+  const requiredTagType = requiredTag?.type || "";
   const [type, setType] = useState(initialType);
   const [body, setBody] = useState("");
   const [files, setFiles] = useState([]);
@@ -72,6 +86,9 @@ function ExplorePostComposer({
   const [feeling, setFeeling] = useState(null);
   const [isPublishing, setIsPublishing] = useState(false);
   const [error, setError] = useState("");
+  const [tagQuery, setTagQuery] = useState("");
+  const [tagTargets, setTagTargets] = useState([]);
+  const [selectedTags, setSelectedTags] = useState([]);
   useEffect(() => {
     if (isOpen) {
       setType(initialType);
@@ -97,9 +114,43 @@ function ExplorePostComposer({
         { label: "", value: "" },
       ]);
       setFeeling(null);
+      setTagQuery("");
+      setSelectedTags(requiredTagId ? [{ id: requiredTagId, label: requiredTagLabel, type: requiredTagType, locked: true }] : []);
       setError("");
     }
-  }, [initialType, isOpen]);
+  }, [initialType, isOpen, requiredTagId, requiredTagLabel, requiredTagType]);
+  useEffect(() => {
+    if (!isOpen) return;
+    Promise.allSettled([readKnowledgeHub(), listMarketplaceListings(), allowSpaceTags ? searchPostTagTargets("") : Promise.resolve({ data: [] })])
+      .then(([knowledgeResult, marketplaceResult, academicResult]) => {
+        const knowledge = knowledgeResult.status === "fulfilled" ? knowledgeResult.value : {};
+        const products = marketplaceResult.status === "fulfilled" ? marketplaceResult.value?.data || [] : [];
+        const academicTargets = academicResult.status === "fulfilled" ? academicResult.value?.data || [] : [];
+        setTagTargets([
+          ...(allowSpaceTags ? (knowledge.libraries || []).map((space) => ({ type: "knowledge-library", id: space.id, label: space.name, kind: "Library" })) : []),
+          ...(allowSpaceTags ? (knowledge.groups || []).map((space) => ({ type: "knowledge-group", id: space.id, label: space.name, kind: "Group" })) : []),
+          ...products.map(mapMarketplaceApiListing).filter(Boolean).map((product) => ({
+            type: "product",
+            id: product.id,
+            label: product.title,
+            kind: "Product",
+            image: product.image,
+            detail: product.price,
+          })),
+          ...academicTargets,
+        ]);
+      });
+  }, [allowSpaceTags, isOpen]);
+  useEffect(() => {
+    if (!isOpen || !allowSpaceTags) return undefined;
+    const timer = window.setTimeout(() => {
+      searchPostTagTargets(tagQuery.trim()).then((response) => {
+        const academicTypes = new Set(["university", "course", "unit"]);
+        setTagTargets((current) => [...current.filter((target) => !academicTypes.has(target.type)), ...(response.data || [])]);
+      }).catch(() => {});
+    }, tagQuery.trim() ? 250 : 0);
+    return () => window.clearTimeout(timer);
+  }, [allowSpaceTags, isOpen, tagQuery]);
   useEffect(() => {
     const query = event.location.trim();
     if (type !== "event" || event.latitude !== "" || query.length < 3) {
@@ -159,6 +210,12 @@ function ExplorePostComposer({
         event.longitude !== "")) &&
     (type !== "poll" || (pollQuestion && validPollOptions.length >= 2)) &&
     (type !== "feeling" || feeling);
+  function selectTagTarget(target) {
+    setSelectedTags((current) => ["product", "university", "course", "unit"].includes(target.type)
+      ? [...current.filter((item) => item.type !== target.type), target]
+      : [...current, target]);
+    setTagQuery("");
+  }
   async function submit(e) {
     e.preventDefault();
     if (!valid) return;
@@ -186,9 +243,16 @@ function ExplorePostComposer({
             : type,
         body: body.trim(),
         visibility: "campus",
-        tags: [],
+        tags: selectedTags.map(({ type: tagType, id, label }) => ({ type: tagType, id, label })),
         mediaUrls,
-        mediaEdits: mediaEdits.map(({ previewUrl, ...edit }) => edit),
+        mediaEdits: mediaEdits.map((edit) => ({
+          type: edit.type,
+          zoom: edit.zoom,
+          positionX: edit.positionX,
+          positionY: edit.positionY,
+          trimStart: edit.trimStart,
+          trimEnd: edit.trimEnd,
+        })),
         ...(type === "event"
           ? {
               event: {
@@ -265,7 +329,7 @@ function ExplorePostComposer({
     setMediaEdits(reorder);
     setActiveMediaIndex(nextIndex);
   };
-  return (
+  return createPortal((
     <section
       ref={dialogRef}
       className="explore-post-backdrop"
@@ -307,6 +371,15 @@ function ExplorePostComposer({
             onChange={(e) => setBody(e.target.value)}
             placeholder="What's happening on campus?"
           />
+          <section className="explore-post-tag-picker">
+            <label><FiTag /> {allowSpaceTags ? "Tag a university, course, unit, space or product" : "Tag a product"}</label>
+            <div className="explore-post-tag-search"><FiSearch /><input type="search" value={tagQuery} onChange={(event) => setTagQuery(event.target.value)} placeholder={allowSpaceTags ? "Search universities, courses, units, spaces and products" : "Search marketplace products"} /></div>
+            {selectedTags.length ? <div className="explore-post-selected-tags">{selectedTags.map((tag) => tag.locked
+              ? <span className="is-required" key={`${tag.type}-${tag.id}`}><FiCheck /> {tag.label}<small>Tagged automatically</small></span>
+              : <button type="button" className={tag.type === "product" ? "is-product" : ""} key={`${tag.type}-${tag.id}`} onClick={() => setSelectedTags((current) => current.filter((item) => item.type !== tag.type || item.id !== tag.id))}>{tag.type === "product" ? <FiShoppingBag /> : ["course", "unit"].includes(tag.type) ? <FiBookOpen /> : tag.type === "university" ? <FiMapPin /> : null}{tag.label} <FiX /></button>)}</div> : null}
+            {tagQuery.trim() ? <div className="explore-post-tag-results">{tagTargets.filter((target) => `${target.label} ${target.kind}`.toLowerCase().includes(tagQuery.trim().toLowerCase()) && !selectedTags.some((tag) => tag.type === target.type && tag.id === target.id)).slice(0, 10).map((target) => <button type="button" className={target.type === "product" ? "is-product" : ""} key={`${target.type}-${target.id}`} onClick={() => selectTagTarget(target)}>{target.image ? <img src={target.image} alt="" /> : target.type === "product" ? <FiShoppingBag className="explore-post-tag-result-icon" /> : ["course", "unit"].includes(target.type) ? <FiBookOpen className="explore-post-tag-result-icon" /> : target.type === "university" ? <FiMapPin className="explore-post-tag-result-icon" /> : null}<span><strong>{target.label}</strong><small>{target.kind}{target.detail ? ` · ${target.detail}` : ""}</small></span><FiPlus /></button>)}</div> : null}
+            <small>{allowSpaceTags ? "Academic and space tags make related posts discoverable. Space followers also see tagged posts first; product tags open the marketplace item." : "This publishes as the library or group profile. A product tag is optional."}</small>
+          </section>
           {type === "media" ? (
             <>
               <label className={`explore-post-upload explore-event-thumbnail-upload${activeEdit ? " has-preview" : ""}`}>
@@ -652,6 +725,6 @@ function ExplorePostComposer({
         </footer>
       </form>
     </section>
-  );
+  ), document.body);
 }
 export default ExplorePostComposer;

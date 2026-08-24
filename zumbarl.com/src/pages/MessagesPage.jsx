@@ -23,6 +23,10 @@ function formatTime(value) {
 function MessagesPage() {
   const [searchParams] = useSearchParams()
   const requestedParticipantId = searchParams.get('participantId') || ''
+  const requestedParticipantName = searchParams.get('participantName') || 'New conversation'
+  const requestedParticipantAvatar = searchParams.get('participantAvatar') || ''
+  const requestedParticipantStudentId = searchParams.get('participantStudentId') || ''
+  const requestedCallType = ['audio', 'video'].includes(searchParams.get('call')) ? searchParams.get('call') : ''
   const isBusiness = getCurrentLoginRole().side === 'company'
   const [conversations, setConversations] = useState([])
   const [activeConversationId, setActiveConversationId] = useState('')
@@ -39,6 +43,7 @@ function MessagesPage() {
   const messageEndRef = useRef(null)
   const shouldJumpToLatestRef = useRef(false)
   const shouldScrollAfterSendRef = useRef(false)
+  const autoCallStartedRef = useRef('')
   const activeConversation = conversations.find((item) => item.id === activeConversationId) || conversations[0]
   const activeParticipantId = activeConversation?.participant.id
   const activeOpportunityId = activeConversation?.opportunityId
@@ -48,14 +53,47 @@ function MessagesPage() {
   }, {})))
 
   const applyConversationResponse = useCallback((response) => {
-    const nextConversations = response?.data || []
-    setConversations(nextConversations)
-    setActiveConversationId((current) => (
-      nextConversations.some((item) => item.id === current)
-        ? current
-        : nextConversations.find((item) => item.participant.id === requestedParticipantId)?.id || nextConversations[0]?.id || ''
+    const loadedConversations = [...(response?.data || []).reduce((grouped, conversation) => {
+      const existing = grouped.get(conversation.participant.id)
+      if (!existing) {
+        grouped.set(conversation.participant.id, { ...conversation, id: conversation.participant.id, opportunityId: null })
+      } else {
+        grouped.set(conversation.participant.id, {
+          ...existing,
+          unreadCount: Number(existing.unreadCount || 0) + Number(conversation.unreadCount || 0),
+        })
+      }
+      return grouped
+    }, new Map()).values()]
+    const hasRequestedConversation = loadedConversations.some((item) => (
+      item.participant.id === requestedParticipantId && !item.opportunityId
     ))
-  }, [requestedParticipantId])
+    const directConversation = requestedParticipantId && !hasRequestedConversation ? {
+      id: `direct:${requestedParticipantId}`,
+      participant: {
+        id: requestedParticipantId,
+        name: requestedParticipantName,
+        avatarUrl: requestedParticipantAvatar || null,
+        studentId: requestedParticipantStudentId || null,
+      },
+      opportunityId: null,
+      latestMessage: { body: 'Start a conversation' },
+      unreadCount: 0,
+    } : null
+    const nextConversations = directConversation
+      ? [directConversation, ...loadedConversations]
+      : loadedConversations
+    setConversations(nextConversations)
+    setActiveConversationId((current) => {
+      const requestedDirectConversation = nextConversations.find((item) => (
+        item.participant.id === requestedParticipantId && !item.opportunityId
+      ))
+      if (requestedDirectConversation) return requestedDirectConversation.id
+      return nextConversations.some((item) => item.id === current)
+        ? current
+        : nextConversations[0]?.id || ''
+    })
+  }, [requestedParticipantAvatar, requestedParticipantId, requestedParticipantName, requestedParticipantStudentId])
 
   const refreshConversations = useCallback(async () => {
     const response = await listConversations()
@@ -178,6 +216,24 @@ function MessagesPage() {
       window.clearInterval(statusInterval)
     }
   }, [activeCall?.id, activeCall?.status])
+
+  useEffect(() => {
+    if (!requestedCallType || !activeParticipantId || activeParticipantId !== requestedParticipantId) return
+    const requestKey = `${activeParticipantId}:${requestedCallType}`
+    if (autoCallStartedRef.current === requestKey) return
+    autoCallStartedRef.current = requestKey
+    setCallStatus(`Starting ${requestedCallType} call…`)
+    createCall({
+      recipientId: activeParticipantId,
+      opportunityId: activeOpportunityId,
+      callType: requestedCallType,
+    }).then((call) => {
+      setActiveCall(call)
+      setCallStatus(`Calling ${activeConversation?.participant.name || requestedParticipantName}…`)
+    }).catch((requestError) => {
+      setCallStatus(requestError.message)
+    })
+  }, [activeConversation?.participant.name, activeOpportunityId, activeParticipantId, requestedCallType, requestedParticipantId, requestedParticipantName])
 
   async function startCall(callType) {
     if (!activeConversation) return

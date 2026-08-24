@@ -2,12 +2,14 @@ import {
   FiArrowLeft,
   FiArrowRight,
   FiCheck,
+  FiChevronDown,
   FiInfo,
   FiSave,
   FiSend,
   FiTrash2,
   FiUploadCloud,
 } from "react-icons/fi";
+import { useMemo, useState } from "react";
 import { Breadcrumb } from "../components/ui";
 import Seo from "../components/Seo";
 import { BusinessWorkspaceSidebar } from "../features/business/components/BusinessApplicantSidebar";
@@ -66,6 +68,82 @@ function ChoiceGroup({ label, name, options, selected, onToggle }) {
         ))}
       </div>
     </fieldset>
+  );
+}
+
+function PriorityCampusSelect({ isLoading, onChange, options, selected }) {
+  const [query, setQuery] = useState("");
+  const isSelected = (campus) => selected.some(
+    (value) =>
+      value === campus.id ||
+      String(value).toLocaleLowerCase() === campus.name.toLocaleLowerCase(),
+  );
+  const selectedCampuses = options.filter(isSelected);
+  const visibleCampuses = useMemo(() => {
+    const term = query.trim().toLocaleLowerCase();
+    if (!term) return options;
+    return options.filter((campus) =>
+      [campus.name, campus.branch, campus.city]
+        .filter(Boolean)
+        .some((value) => value.toLocaleLowerCase().includes(term)),
+    );
+  }, [options, query]);
+  const summary = selectedCampuses.length
+    ? selectedCampuses.map((campus) => campus.name).join(", ")
+    : "Select priority campuses";
+
+  return (
+    <div className="marketing-campus-field">
+      <span>Priority campuses</span>
+      <details className="marketing-campus-select">
+        <summary>
+          <span className={selectedCampuses.length ? "" : "is-placeholder"}>{summary}</span>
+          <FiChevronDown aria-hidden="true" />
+        </summary>
+        <div className="marketing-campus-select-menu">
+          <input
+            type="search"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search campuses"
+            aria-label="Search campuses"
+          />
+          <div role="listbox" aria-label="Available campuses" aria-multiselectable="true">
+            {visibleCampuses.map((campus) => {
+              const checked = isSelected(campus);
+              const location = [campus.branch, campus.city].filter(Boolean).join(" · ");
+              return (
+                <label key={campus.id} className={checked ? "is-selected" : ""}>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => onChange(
+                      checked
+                        ? selected.filter(
+                            (value) =>
+                              value !== campus.id &&
+                              String(value).toLocaleLowerCase() !== campus.name.toLocaleLowerCase(),
+                          )
+                        : [...selected, campus.id],
+                    )}
+                  />
+                  <span aria-hidden="true">{checked && <FiCheck />}</span>
+                  <div>
+                    <strong>{campus.name}</strong>
+                    {location && <small>{location}</small>}
+                  </div>
+                </label>
+              );
+            })}
+            {!isLoading && !visibleCampuses.length ? (
+              <p>No campuses match your search.</p>
+            ) : null}
+            {isLoading ? <p>Loading campuses…</p> : null}
+          </div>
+        </div>
+      </details>
+      <small>Select one or more campuses, or leave this open to all campuses.</small>
+    </div>
   );
 }
 
@@ -149,14 +227,12 @@ function CampaignStep({ campaign }) {
               placeholder="e.g. Students aged 18–24 interested in tech"
             />
           </label>
-          <label>
-            Priority campuses
-            <input
-              value={form.campuses}
-              onChange={(event) => update("campuses", event.target.value)}
-              placeholder="e.g. KU, Zetech, USIU"
-            />
-          </label>
+          <PriorityCampusSelect
+            isLoading={campaign.campusesLoading}
+            onChange={(campuses) => update("campuses", campuses)}
+            options={campaign.campusOptions}
+            selected={form.campuses}
+          />
           <label>
             Audience interests
             <input
@@ -386,6 +462,87 @@ function CampaignStep({ campaign }) {
         </div>
       </section>
     );
+  if (activeStep === 5)
+    return (
+      <section className="marketing-form-card marketing-ads-step">
+        <h2>Promote with Zumbarl Ads</h2>
+        <p>
+          Submit this campaign to the Zumbarl team for review. Approved ads are
+          stored and marked ready to publish; placement surfaces will be added later.
+        </p>
+        <label className={`marketing-ads-toggle ${form.zumbarlAdsRequested ? "is-selected" : ""}`}>
+          <input
+            type="checkbox"
+            checked={form.zumbarlAdsRequested}
+            onChange={(event) => campaign.toggleZumbarlAds(event.target.checked)}
+          />
+          <span><FiCheck aria-hidden="true" /></span>
+          <div>
+            <strong>Add this campaign to Zumbarl Ads</strong>
+            <p>An admin will review the creative and publish it to the Zumbarl Ads inventory.</p>
+          </div>
+        </label>
+        {form.zumbarlAdsRequested ? (
+          <div className="marketing-ads-builder">
+            <div className="marketing-form-grid">
+              <label>
+                Ad headline <strong>*</strong>
+                <input
+                  value={form.adHeadline}
+                  onChange={(event) => update("adHeadline", event.target.value)}
+                  placeholder="A short, clear campaign headline"
+                />
+              </label>
+              <label>
+                Call to action
+                <input
+                  value={form.adCallToAction}
+                  onChange={(event) => update("adCallToAction", event.target.value)}
+                  placeholder="e.g. Learn more"
+                />
+              </label>
+              <label className="is-wide">
+                Ad description <strong>*</strong>
+                <textarea
+                  value={form.adDescription}
+                  onChange={(event) => update("adDescription", event.target.value)}
+                  placeholder="The short message people will see with the ad."
+                />
+              </label>
+              <label className="is-wide">
+                Destination URL
+                <input
+                  type="url"
+                  value={form.adDestinationUrl}
+                  onChange={(event) => update("adDestinationUrl", event.target.value)}
+                  placeholder={form.destinationUrl || "https://your-site.example/offer"}
+                />
+                <small>Defaults to the campaign destination URL when left blank.</small>
+              </label>
+            </div>
+            <aside className="marketing-ad-preview" aria-label="Zumbarl Ad preview">
+              <span>Preview</span>
+              {form.materials[0]?.type === "image" ? (
+                <img
+                  src={form.materials[0].previewUrl || form.materials[0].url}
+                  alt=""
+                />
+              ) : (
+                <div className="marketing-ad-preview-media">Campaign creative</div>
+              )}
+              <small>Sponsored · Zumbarl Ads</small>
+              <strong>{form.adHeadline || "Your ad headline"}</strong>
+              <p>{form.adDescription || "Your ad description will appear here."}</p>
+              <b>{form.adCallToAction || "Learn more"}</b>
+            </aside>
+          </div>
+        ) : (
+          <div className="marketing-ads-skip-note">
+            This is optional. You can save or publish the creator campaign without requesting an ad.
+          </div>
+        )}
+      </section>
+    );
   return (
     <section className="marketing-form-card">
       <h2>Review and launch</h2>
@@ -444,6 +601,14 @@ function CampaignStep({ campaign }) {
         <div className="is-wide">
           <dt>Campaign media</dt>
           <dd>{form.materials[0]?.title || "No media uploaded"}</dd>
+        </div>
+        <div className="is-wide">
+          <dt>Zumbarl Ads</dt>
+          <dd>
+            {form.zumbarlAdsRequested
+              ? `Submit for admin review · ${form.adHeadline}`
+              : "Not requested"}
+          </dd>
         </div>
         <div className="is-wide">
           <dt>Brief</dt>
@@ -538,7 +703,7 @@ function BusinessCreateMarketingCampaignPage() {
                 <FiArrowLeft /> Back
               </button>
               <div>
-                {campaign.activeStep === 5 && !campaign.isEditing && (
+                {campaign.activeStep === 6 && !campaign.isEditing && (
                   <button
                     type="button"
                     className="is-secondary"
@@ -548,7 +713,7 @@ function BusinessCreateMarketingCampaignPage() {
                     <FiSave /> Save draft
                   </button>
                 )}
-                {campaign.activeStep < 5 ? (
+                {campaign.activeStep < 6 ? (
                   <button
                     type="button"
                     disabled={campaign.saving || campaign.isUploadingMaterial}
@@ -598,6 +763,10 @@ function BusinessCreateMarketingCampaignPage() {
               <div>
                 <dt>Slots</dt>
                 <dd>{campaign.form.creatorsLimit || 0}</dd>
+              </div>
+              <div>
+                <dt>Zumbarl Ads</dt>
+                <dd>{campaign.form.zumbarlAdsRequested ? "Admin review requested" : "Not requested"}</dd>
               </div>
             </dl>
             <div className="marketing-rail-note">

@@ -17,6 +17,8 @@ function OpportunitiesDiscoverRail({
   onRailFilterToggle,
   railFilters,
   selectedOpportunity,
+  selectedOpportunityBid,
+  selectedOpportunityProject,
   selectedOpportunityThumbnail,
   skillOptions,
 }) {
@@ -49,6 +51,8 @@ function OpportunitiesDiscoverRail({
         onEditFilters={onEditFilters}
         onOpenPlaceBid={onOpenPlaceBid}
         selectedOpportunity={selectedOpportunity}
+        selectedOpportunityBid={selectedOpportunityBid}
+        selectedOpportunityProject={selectedOpportunityProject}
         selectedOpportunityThumbnail={selectedOpportunityThumbnail}
       />
     </aside>

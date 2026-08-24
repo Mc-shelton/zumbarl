@@ -32,6 +32,9 @@ export const BusinessOpportunitiesPage = lazy(
   () => import("../../pages/BusinessOpportunitiesPage"),
 );
 export const BusinessPage = lazy(() => import("../../pages/BusinessPage"));
+export const BusinessProjectsPage = lazy(
+  () => import("../../pages/BusinessProjectsPage"),
+);
 export const BusinessServicesBrowsePage = lazy(
   () => import("../../pages/BusinessServicesBrowsePage"),
 );
@@ -62,6 +65,15 @@ export const ExploreCampusPage = lazy(
 export const HelpPage = lazy(() => import("../../pages/HelpPage"));
 export const HomePage = lazy(() => import("../../pages/HomePage"));
 export const LearnPage = lazy(() => import("../../pages/LearnPage"));
+export const KnowledgeSpacePage = lazy(
+  () => import("../../pages/KnowledgeSpacePage"),
+);
+export const LearnAssessmentPage = lazy(
+  () => import("../../pages/LearnAssessmentPage"),
+);
+export const LearnPracticePage = lazy(
+  () => import("../../pages/LearnPracticePage"),
+);
 export const MessagesPage = lazy(() => import("../../pages/MessagesPage"));
 export const MarketplaceListingStudioPage = lazy(
   () => import("../../pages/MarketplaceListingStudioPage"),

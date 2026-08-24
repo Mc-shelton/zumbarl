@@ -1,9 +1,9 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { z } from 'zod'
 import { idParamSchema, requireBody, requireParams } from '../../../../lib/http.js'
-import { announcementDecisionSchema, announcementSubmissionSchema, chamaContributionSchema, commentSchema, connectProfileSchema, groupSchema, postSchema, reactionSchema, reportPostSchema, storySchema, updatePostSchema } from '../../../validators/connect/index.js'
+import { announcementDecisionSchema, announcementSubmissionSchema, chamaContributionSchema, commentSchema, connectProfileSchema, eventResponseSchema, groupSchema, postReshareSchema, postSchema, reactionSchema, reportPostSchema, storySchema, updatePostSchema } from '../../../validators/connect/index.js'
 import { socialMetricsAccountSchema, socialMetricsExtractionSchema } from '../../../validators/connect/index.js'
-import { commentOnPostService, commentOnStoryService, contributeToChamaService, createGroupService, createManagedProfilePostService, createPostService, createStoryService, decideAnnouncementRequestService, joinGroupService, listAnnouncementRequestsService, listConnectFeedService, listGroupsService, listMyManagedProfilesService, listStoriesService, reactToPostService, reactToStoryCommentService, reactToStoryService, readAnnouncementTargetsService, readConnectProfileService, readManagedProfileService, readRelationshipService, readStoryEngagementService, readTagContextService, reportPostService, searchEventOrganizersService, setRelationshipService, submitPostForAnnouncementService, updateManagedProfileService, updateOwnedPostService, upsertConnectProfileService } from '../../../../adapters/services/connect/index.js'
+import { commentOnPostService, commentOnStoryService, contributeToChamaService, createGroupService, createManagedProfilePostService, createPostService, createStoryService, decideAnnouncementRequestService, joinGroupService, listAnnouncementRequestsService, listConnectFeedService, listGroupsService, listMyManagedProfilesService, listStoriesService, listSuggestedProfilesService, reactToPostService, reactToStoryCommentService, reactToStoryService, readAnnouncementTargetsService, readConnectProfileService, readManagedProfileService, readRelationshipService, readStoryEngagementService, readTagContextService, reportPostService, resharePostService, respondToEventService, searchEventOrganizersService, searchPostTagTargetsService, setRelationshipService, submitPostForAnnouncementService, updateManagedProfileService, updateOwnedPostService, upsertConnectProfileService } from '../../../../adapters/services/connect/index.js'
 import { extractSocialMetricsService, readSocialMarketingProfileService, saveSocialMetricsService } from '../../../../adapters/services/connect/index.js'
 import { addManagedProfileManagerService, createManagedProfileService, removeManagedProfileManagerService } from '../../../../adapters/services/connect/index.js'
 import { setManagedProfileFollowService } from '../../../../adapters/services/connect/index.js'
@@ -27,6 +27,7 @@ async function extractSocialMetricsController(request: FastifyRequest, reply: Fa
 async function saveSocialMetricsController(request: FastifyRequest, reply: FastifyReply) { return reply.code(201).send(await saveSocialMetricsService(request.authUser?.studentId, request.authUser?.id, requireBody(socialMetricsAccountSchema, request))) }
 async function createStoryController(request: FastifyRequest, reply: FastifyReply) { return reply.code(201).send(await createStoryService(request.authUser?.studentId, requireBody(storySchema, request))) }
 async function listStoriesController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listStoriesService(request.authUser?.studentId)) }
+async function listSuggestedProfilesController(request: FastifyRequest, reply: FastifyReply) { const { limit } = z.object({ limit: z.coerce.number().int().min(1).max(30).default(12) }).parse(request.query); return reply.send({ data: await listSuggestedProfilesService(request.authUser?.studentId, limit) }) }
 async function readRelationshipController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await readRelationshipService(request.authUser?.studentId, id)) }
 async function followProfileController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await setRelationshipService(request.authUser?.studentId, id, 'follow', request.method !== 'DELETE')) }
 async function connectProfileController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await setRelationshipService(request.authUser?.studentId, id, 'connect', request.method !== 'DELETE')) }
@@ -36,9 +37,13 @@ async function commentOnStoryController(request: FastifyRequest, reply: FastifyR
 async function reactToStoryCommentController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await reactToStoryCommentService(id, request.authUser?.studentId, requireBody(reactionSchema, request).reaction)) }
 async function createPostController(request: FastifyRequest, reply: FastifyReply) { return reply.code(201).send(await createPostService(request.authUser?.studentId, requireBody(postSchema, request))) }
 async function searchEventOrganizersController(request: FastifyRequest, reply: FastifyReply) { const { q } = z.object({ q: z.string().max(100).default('') }).parse(request.query); return reply.send(await searchEventOrganizersService(q, request.authUser?.studentId, request.authUser?.businessId)) }
+async function searchPostTagTargetsController(request: FastifyRequest, reply: FastifyReply) { const { q } = z.object({ q: z.string().max(100).default('') }).parse(request.query); return reply.send(await searchPostTagTargetsService(q, request.authUser?.studentId)) }
 async function updateOwnedPostController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await updateOwnedPostService(id, request.authUser?.studentId, requireBody(updatePostSchema, request))) }
-async function reactToPostController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await reactToPostService(id, request.authUser?.studentId, requireBody(reactionSchema, request).reaction)) }
+async function reactToPostController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); const payload = requireBody(reactionSchema, request); return reply.send(await reactToPostService(id, request.authUser?.studentId, payload.reaction, payload.post ?? {})) }
 async function commentOnPostController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await commentOnPostService(id, request.authUser?.studentId, requireBody(commentSchema, request))) }
+async function resharePostController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); const payload = requireBody(postReshareSchema, request); return reply.send(await resharePostService(id, request.authUser?.studentId, payload.post ?? {}, true, payload.commentary)) }
+async function removePostReshareController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await resharePostService(id, request.authUser?.studentId, {}, false)) }
+async function respondToEventController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); const { status } = requireBody(eventResponseSchema, request); return reply.send(await respondToEventService(id, request.authUser?.studentId, status)) }
 async function reportPostController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await reportPostService(id, request.authUser?.id, requireBody(reportPostSchema, request))) }
 async function readAnnouncementTargetsController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await readAnnouncementTargetsService(request.authUser?.studentId)) }
 async function submitPostForAnnouncementController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await submitPostForAnnouncementService(id, request.authUser?.studentId, requireBody(announcementSubmissionSchema, request))) }
@@ -67,6 +72,7 @@ export {
   saveSocialMetricsController,
   createStoryController,
   listStoriesController,
+  listSuggestedProfilesController,
   readRelationshipController,
   followProfileController,
   connectProfileController,
@@ -76,9 +82,13 @@ export {
   reactToStoryCommentController,
   createPostController,
   searchEventOrganizersController,
+  searchPostTagTargetsController,
   updateOwnedPostController,
   reactToPostController,
   commentOnPostController,
+  resharePostController,
+  removePostReshareController,
+  respondToEventController,
   reportPostController,
   readAnnouncementTargetsController,
   submitPostForAnnouncementController,
