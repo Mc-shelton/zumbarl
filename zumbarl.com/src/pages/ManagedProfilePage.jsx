@@ -27,6 +27,7 @@ import {
 } from "../features/profile/services/managedProfileService";
 import "../styles/campus.css";
 import "../styles/managed-profile.css";
+import "../styles/managed-profile-about.css";
 import "../styles/managed-profile-social.css";
 
 const TYPE_META = {
@@ -179,6 +180,7 @@ export default function ManagedProfilePage() {
     );
   const posts = profile.posts || [];
   const followerCount = profile._count?.followers || 0;
+  const attachedServices = profile.attachedServices || [];
   const primaryHref =
     profile.type === "campus"
       ? `/campus/explore?campus=${encodeURIComponent(profile.campus?.name || profile.name)}`
@@ -474,14 +476,20 @@ export default function ManagedProfilePage() {
               </div>
             ) : null}
             {activeTab === "about" ? (
-              <section className="managed-profile-grid">
-                {sections.map(([key, value]) => (
-                  <article key={key}>
-                    <h2>{LABELS[key] || key.replace(/([A-Z])/g, " $1")}</h2>
-                    <Value value={value} />
-                  </article>
-                ))}
-              </section>
+              <div className="managed-profile-about-layout">
+                <section className="managed-profile-about-overview">
+                  <header><span>Campus overview</span><h2>Everything happening around {profile.name}</h2><p>{profile.bio || "Your campus hub for services, facilities, student life, and official updates."}</p></header>
+                  <div className="managed-profile-about-facts">
+                    <article><FiMapPin /><span><small>Location</small><strong>{profile.locationLabel || profile.campus?.city || "Campus"}</strong></span></article>
+                    <article><FiUsers /><span><small>Followers</small><strong>{followerCount.toLocaleString()}</strong></span></article>
+                    <article><FiCheckCircle /><span><small>Trust status</small><strong>{profile.isVerified ? "Verified campus" : "Campus page"}</strong></span></article>
+                  </div>
+                </section>
+                {attachedServices.length ? <section className="managed-profile-services"><header><div><span>On campus</span><h2>Campus services</h2></div><small>{attachedServices.length} available</small></header><div>{attachedServices.map((service) => { const type = service.type === "barber_shop" ? "Barber shop" : service.type === "hotel" ? "Hotel" : "Campus service"; return <Link className="managed-profile-service-card" to={`/campus/organizations/${encodeURIComponent(service.slug || service.id)}`} key={service.id}><img src={service.avatarUrl || "/assets/index/bee_nobg.png"} alt="" /><span><small>{type}</small><strong>{service.name}</strong><em>{service.bio || service.locationLabel || "View service details"}</em><b>{service._count?.posts || 0} updates · {service._count?.followers || 0} followers <FiExternalLink /></b></span></Link> })}</div></section> : null}
+                <section className="managed-profile-grid managed-profile-about-details">
+                  {sections.map(([key, value]) => <article key={key}><h2>{LABELS[key] || key.replace(/([A-Z])/g, " $1")}</h2><Value value={value} /></article>)}
+                </section>
+              </div>
             ) : null}
             {activeTab === "posts" ? activity : null}
             {activeTab === "people" ? (

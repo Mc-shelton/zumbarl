@@ -55,7 +55,7 @@ class ConnectCommunityRepository {
   async listManagedProfiles(userId: string) {
     return prisma.managedProfile.findMany({
       where: { managers: { some: { userId } }, status: 'active' },
-      include: { campus: true, communityGroup: true, managers: { where: { userId }, select: { role: true } } },
+      include: { campus: true, communityGroup: true, managers: { select: { role: true, user: { select: { id: true, name: true, email: true, username: true } } } }, _count: { select: { posts: true, followers: true } } },
       orderBy: { name: 'asc' }
     })
   }
@@ -103,8 +103,19 @@ class ConnectCommunityRepository {
       }
     })
     if (!profile) return null
+    const attachedServices = profile.type === 'campus'
+      ? await prisma.managedProfile.findMany({
+          where: {
+            status: 'active',
+            type: { in: ['hotel', 'barber_shop', 'service'] },
+            details: { path: ['campusManagedProfileId'], equals: profile.id }
+          },
+          select: { id: true, type: true, slug: true, name: true, bio: true, avatarUrl: true, locationLabel: true, _count: { select: { followers: true, posts: true } } },
+          orderBy: { name: 'asc' }
+        })
+      : []
     const isFollowing = Boolean(viewerUserId && await prisma.managedProfileFollower.findUnique({ where: { managedProfileId_userId: { managedProfileId: profile.id, userId: viewerUserId } } }))
-    return { ...profile, isFollowing }
+    return { ...profile, attachedServices, isFollowing }
   }
 
   async setManagedProfileFollow(managedProfileId: string, userId: string, active: boolean) {

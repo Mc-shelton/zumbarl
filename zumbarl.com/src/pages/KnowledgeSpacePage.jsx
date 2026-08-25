@@ -17,7 +17,6 @@ import {
   FiMessageCircle,
   FiPaperclip,
   FiInfo,
-  FiHeart,
   FiLink,
   FiLogOut,
   FiPlus,
@@ -976,7 +975,7 @@ export default function KnowledgeSpacePage() {
                   {space.owner.campus && <><FiMapPin /><span>{space.owner.campus}</span></>}
                 </div>
                 <dl className="knowledge-space-hero-stats" aria-label="Space activity">
-                  <div title="Followers"><dt><span className="sr-only">Followers</span><FiHeart /></dt><dd>{space.followerCount || 0}</dd></div>
+                  <div title="Followers"><dt><span className="sr-only">Followers</span><FiUserPlus /></dt><dd>{space.followerCount || 0}</dd></div>
                   {isLibrary ? <>
                     <div title="Resources"><dt><span className="sr-only">Resources</span><FiBookOpen /></dt><dd>{resources.length}</dd></div>
                     <div title="Rooms"><dt><span className="sr-only">Rooms</span><FiMessageCircle /></dt><dd>{rooms.length}</dd></div>

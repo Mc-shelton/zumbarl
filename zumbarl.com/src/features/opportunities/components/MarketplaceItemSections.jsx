@@ -6,6 +6,8 @@ function MarketplaceItemCard({
   item,
   onCardKeyDown,
   onOpenItemDetail,
+  onToggleSavedItem,
+  savedItemIds = [],
   variant = 'featured',
 }) {
   const isRecent = variant === 'recent'
@@ -28,7 +30,7 @@ function MarketplaceItemCard({
       <div className="opportunities-marketplace-card-image-wrap">
         <img src={item.image} alt={item.title} loading="lazy" />
         {isRecent ? (
-          <button type="button" aria-label={`Save ${item.title}`} onClick={(event) => event.stopPropagation()}>
+          <button type="button" className={savedItemIds.includes(item.id) ? 'is-saved' : ''} aria-label={`${savedItemIds.includes(item.id) ? 'Remove' : 'Save'} ${item.title}`} aria-pressed={savedItemIds.includes(item.id)} onClick={(event) => { event.stopPropagation(); onToggleSavedItem(item.id) }}>
             <FiHeart aria-hidden="true" />
           </button>
         ) : (
@@ -54,7 +56,7 @@ function MarketplaceItemCard({
               {item.posted}
             </span>
           ) : (
-            <button type="button" aria-label={`Save ${item.title}`} onClick={(event) => event.stopPropagation()}>
+            <button type="button" className={savedItemIds.includes(item.id) ? 'is-saved' : ''} aria-label={`${savedItemIds.includes(item.id) ? 'Remove' : 'Save'} ${item.title}`} aria-pressed={savedItemIds.includes(item.id)} onClick={(event) => { event.stopPropagation(); onToggleSavedItem(item.id) }}>
               <FiHeart aria-hidden="true" />
             </button>
           )}
@@ -73,6 +75,8 @@ function MarketplaceItemSections({
   onCategoryChange = () => {},
   onOpenItemDetail,
   onRecentFilterChange = () => {},
+  onToggleSavedItem,
+  savedItemIds = [],
 }) {
   return (
     <>
@@ -94,6 +98,8 @@ function MarketplaceItemSections({
               item={item}
               onCardKeyDown={onCardKeyDown}
               onOpenItemDetail={onOpenItemDetail}
+              onToggleSavedItem={onToggleSavedItem}
+              savedItemIds={savedItemIds}
             />
           ))}
 
@@ -141,6 +147,8 @@ function MarketplaceItemSections({
               item={item}
               onCardKeyDown={onCardKeyDown}
               onOpenItemDetail={onOpenItemDetail}
+              onToggleSavedItem={onToggleSavedItem}
+              savedItemIds={savedItemIds}
               variant="recent"
             />
           ))}

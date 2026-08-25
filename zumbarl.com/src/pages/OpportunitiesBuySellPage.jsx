@@ -5,7 +5,7 @@ import Seo from '../components/Seo'
 import { ConfirmDialog } from '../components/ui'
 import MarketplaceCategories from '../features/opportunities/components/MarketplaceCategories'
 import MarketplaceCommerceGuide from '../features/opportunities/components/MarketplaceCommerceGuide'
-import MarketplaceHeader from '../features/opportunities/components/MarketplaceHeader'
+import MarketplaceHeader, { MarketplaceSearch } from '../features/opportunities/components/MarketplaceHeader'
 import MarketplaceBuyerOrders from '../features/opportunities/components/MarketplaceBuyerOrders'
 import MarketplaceItemSections from '../features/opportunities/components/MarketplaceItemSections'
 import MarketplaceRail from '../features/opportunities/components/MarketplaceRail'
@@ -77,7 +77,7 @@ function OpportunitiesBuySellPage() {
           <CampusSidebar activeItemId="marketplace" />
 
           <section ref={marketplaceMainRef} className="campus-main opportunities-main opportunities-marketplace-main">
-            <MarketplaceHeader isOrdersOpen={isOrdersOpen} onOpenOrders={() => { if (!isOrdersOpen) setOrdersLoading(true); setSearchParams(isOrdersOpen ? {} : { view: 'orders' }) }} onPostItem={() => navigate('/campus/marketplace/listings/new')} showSearch={!isOrdersOpen} />
+            <MarketplaceHeader isOrdersOpen={isOrdersOpen} onOpenOrders={() => { if (!isOrdersOpen) setOrdersLoading(true); setSearchParams(isOrdersOpen ? {} : { view: 'orders' }) }} onPostItem={() => navigate('/campus/marketplace/listings/new')} />
             {isOrdersOpen ? <MarketplaceBuyerOrders error={ordersError} isLoading={ordersLoading} onCancel={setOrderToCancel} onConfirmReceived={(order) => updateBuyerOrder(order, 'received')} onContinueShopping={() => setSearchParams({})} onMessageSeller={() => navigate('/messages')} onRefresh={loadOrders} orders={orders} updatingOrderId={updatingOrderId} /> : <>
             <MarketplaceCommerceGuide onSelect={marketplaceState.onCategoryChange} />
             <MarketplaceCategories
@@ -85,6 +85,7 @@ function OpportunitiesBuySellPage() {
               onCategoryChange={marketplaceState.onCategoryChange}
               onCategoryKeyDown={marketplaceState.handleCategoryKeyDown}
             />
+            <MarketplaceSearch />
             <MarketplaceItemSections
               activeCategory={marketplaceState.activeCategory}
               activeRecentFilter={marketplaceState.activeRecentFilter}
@@ -94,6 +95,8 @@ function OpportunitiesBuySellPage() {
               onCategoryChange={marketplaceState.onCategoryChange}
               onOpenItemDetail={marketplaceState.onOpenItemDetail}
               onRecentFilterChange={marketplaceState.onRecentFilterChange}
+              onToggleSavedItem={marketplaceState.onToggleSavedItem}
+              savedItemIds={marketplaceState.savedItemIds}
             />
             </>}
           </section>

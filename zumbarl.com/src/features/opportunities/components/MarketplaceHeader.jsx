@@ -3,11 +3,30 @@ import CampusTopActions from '../../../components/layout/CampusTopActions'
 import { Breadcrumb } from '../../../components/ui'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 
-function MarketplaceHeader({ isOrdersOpen = false, onOpenOrders, onPostItem, showSearch = true }) {
+function MarketplaceSearch() {
+  return (
+    <section className="opportunities-marketplace-search-row" aria-label="Search marketplace products and services">
+      <div className="opportunities-marketplace-search-field">
+        <FiSearch aria-hidden="true" />
+        <input type="search" placeholder="Search products, eateries, services or providers..." />
+      </div>
+
+      <button type="button" className="opportunities-location-btn opportunities-marketplace-location-btn">
+        <FiMapPin aria-hidden="true" />
+        All locations
+        <FiChevronDown aria-hidden="true" />
+      </button>
+
+      <button type="button" className="opportunities-search-btn opportunities-marketplace-search-btn">Search</button>
+    </section>
+  )
+}
+
+function MarketplaceHeader({ isOrdersOpen = false, onOpenOrders, onPostItem }) {
   const canPostItem = hasAccess(ACCESS_KEYS.marketplace.sell)
 
   return (
-    <>
+    <section className="marketplace-page-intro">
       <header className="campus-header opportunities-header opportunities-marketplace-header">
         <div className="opportunities-head-copy">
           <Breadcrumb
@@ -31,24 +50,9 @@ function MarketplaceHeader({ isOrdersOpen = false, onOpenOrders, onPostItem, sho
         />
       </header>
 
-      {showSearch ? (
-        <section className="opportunities-marketplace-search-row" aria-label="Search marketplace products and services">
-          <div className="opportunities-marketplace-search-field">
-            <FiSearch aria-hidden="true" />
-            <input type="search" placeholder="Search products, eateries, services or providers..." />
-          </div>
-
-          <button type="button" className="opportunities-location-btn opportunities-marketplace-location-btn">
-            <FiMapPin aria-hidden="true" />
-            All locations
-            <FiChevronDown aria-hidden="true" />
-          </button>
-
-          <button type="button" className="opportunities-search-btn opportunities-marketplace-search-btn">Search</button>
-        </section>
-      ) : null}
-    </>
+    </section>
   )
 }
 
+export { MarketplaceSearch }
 export default MarketplaceHeader

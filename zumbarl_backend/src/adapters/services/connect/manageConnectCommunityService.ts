@@ -8,8 +8,11 @@ function requireStudentId(studentId?: string) {
 
 const listConnectFeedService = (query: Record<string, unknown>, studentId?: string) => connectCommunityRepository.listFeed(query, studentId)
 const listMyManagedProfilesService = (userId: string | undefined) => connectCommunityRepository.listManagedProfiles(userId ?? '')
-async function createManagedProfileService(userId: string | undefined, payload: Record<string, any>) {
+async function createManagedProfileService(userId: string | undefined, payload: Record<string, any>, actorRole?: string) {
   if (!userId) throw new ApiError(401, 'Sign in to create a page', 'UNAUTHENTICATED')
+  if (['hotel', 'barber_shop', 'service'].includes(payload.type) && !['ADMIN', 'SUPER_ADMIN'].includes(String(actorRole || '').toUpperCase())) {
+    throw new ApiError(403, 'Only campus administrators can create service pages', 'ADMIN_REQUIRED')
+  }
   return connectCommunityRepository.createManagedProfile(userId, payload)
 }
 async function addManagedProfileManagerService(id: string, ownerUserId: string | undefined, payload: Record<string, any>) {

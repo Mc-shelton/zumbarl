@@ -3,6 +3,7 @@ import { BsPinAngleFill } from 'react-icons/bs'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { creatorProfilePath, postCreatorProfilePath } from '../utils/creatorProfilePath'
+import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 
 function PostComments({ comments, onComment, post }) {
   const [draft, setDraft] = useState('')
@@ -102,7 +103,7 @@ function ResharedPostPreview({ onOpenMediaViewer, post }) {
     id: original.id || post.reshareOfPostId,
     author: creator.name || 'Zumbarl creator',
     handle: creator.handle || '@creator',
-    avatar: creator.avatarUrl,
+    avatar: normalizeZumbarlFileUrl(creator.avatarUrl),
     creatorId: creator.id,
     campus: creator.campus,
     copy: original.body || '',
@@ -118,7 +119,7 @@ function ResharedPostPreview({ onOpenMediaViewer, post }) {
   return (
     <section className="explore-reshared-post" aria-label={`Original post by ${mediaPost.author}`}>
       <header>
-        {profilePath ? <Link className="explore-reshared-owner-avatar" to={profilePath} aria-label={`View ${mediaPost.author}'s profile`}><img src={mediaPost.avatar || '/assets/index/bee_nobg.png'} alt="" loading="lazy" /></Link> : <img src={mediaPost.avatar || '/assets/index/bee_nobg.png'} alt="" loading="lazy" />}
+        {profilePath ? <Link className="explore-reshared-owner-avatar" to={profilePath} aria-label={`View ${mediaPost.author}'s profile`}><img src={normalizeZumbarlFileUrl(mediaPost.avatar) || '/assets/index/bee_nobg.png'} alt="" loading="lazy" /></Link> : <img src={normalizeZumbarlFileUrl(mediaPost.avatar) || '/assets/index/bee_nobg.png'} alt="" loading="lazy" />}
         <div>
           {profilePath ? <Link className="explore-reshared-owner-link" to={profilePath}>{mediaPost.author}</Link> : <strong>{mediaPost.author}</strong>}
           <span>{mediaPost.handle}{mediaPost.campus ? ` · ${mediaPost.campus}` : ''}</span>

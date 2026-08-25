@@ -1,0 +1,174 @@
+.managed-profile-about-layout {
+  display: grid;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.managed-profile-about-overview,
+.managed-profile-services,
+.managed-profile-about-details article {
+  border: 1px solid #e1e5f0;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 6px 18px rgba(35, 42, 75, .04);
+}
+
+.managed-profile-about-overview {
+  padding: 22px;
+  background: linear-gradient(120deg, #f5eef6, #f5f8fc 72%);
+}
+
+.managed-profile-about-overview header > span,
+.managed-profile-services header span {
+  color: #76506f;
+  font-size: var(--text-caption);
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.managed-profile-about-overview h2,
+.managed-profile-services h2 {
+  margin: 5px 0 0;
+  color: #1a2150;
+  font-size: var(--text-title-md);
+}
+
+.managed-profile-about-overview p {
+  max-width: 760px;
+  margin: 8px 0 0;
+  color: #68718c;
+  line-height: 1.5;
+}
+
+.managed-profile-about-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.managed-profile-about-facts article {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid rgba(216, 202, 219, .8);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .72);
+  color: #76506f;
+}
+
+.managed-profile-about-facts span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.managed-profile-about-facts small,
+.managed-profile-service-card > span > small {
+  color: #7e87a2;
+  font-size: var(--text-micro);
+}
+
+.managed-profile-about-facts strong {
+  color: #29325a;
+  font-size: var(--text-small);
+}
+
+.managed-profile-services {
+  padding: 18px;
+}
+
+.managed-profile-services > header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.managed-profile-services > header small {
+  color: #76506f;
+  font-size: var(--text-caption);
+  font-weight: 750;
+}
+
+.managed-profile-services > div {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.managed-profile-service-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid #e1e5ef;
+  border-radius: 10px;
+  background: #fafafd;
+  color: inherit;
+  text-decoration: none;
+}
+
+.managed-profile-service-card:hover {
+  border-color: #c9b8ca;
+  background: #f8f2f8;
+}
+
+.managed-profile-service-card img {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #f1edf5;
+}
+
+.managed-profile-service-card > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.managed-profile-service-card strong {
+  overflow: hidden;
+  color: #29325a;
+  font-size: var(--text-small);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.managed-profile-service-card em {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #707a96;
+  font-size: var(--text-caption);
+  font-style: normal;
+  line-height: 1.35;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.managed-profile-service-card b {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #8b93ab;
+  font-size: var(--text-micro);
+  font-weight: 600;
+}
+
+.managed-profile-about-details {
+  margin-top: 0;
+}
+
+@media (max-width: 850px) {
+  .managed-profile-about-facts,
+  .managed-profile-services > div {
+    grid-template-columns: 1fr;
+  }
+}

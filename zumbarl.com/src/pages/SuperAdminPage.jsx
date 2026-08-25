@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Seo from "../components/Seo";
 import {
+  addManagedProfileManager,
+  createManagedProfile,
+  listMyManagedProfiles,
+  removeManagedProfileManager,
+} from "../features/profile/services/managedProfileService";
+import {
   listZumbarlAds,
   listSuperAdminAccounts,
   publishZumbarlAd,
@@ -31,6 +37,7 @@ const MODULES = [
   { id: "score", label: "Score" },
   { id: "safety", label: "Safety" },
   { id: "content", label: "Content" },
+  { id: "pages", label: "Pages" },
   { id: "ads", label: "Zumbarl Ads" },
   { id: "configuration", label: "Config" },
   { id: "analytics", label: "Analytics" },
@@ -268,6 +275,103 @@ function ZumbarlAdsPanel({ ads, onAction }) {
   );
 }
 
+function ManagedPagesPanel({ accounts, onAction }) {
+  const [campuses, setCampuses] = useState([]);
+  const [campusForm, setCampusForm] = useState({ name: "", slug: "", managerId: "", managerRole: "admin", bio: "" });
+  const [serviceForm, setServiceForm] = useState({ type: "hotel", name: "", slug: "", campusId: "", managerId: "", managerRole: "editor", bio: "" });
+  const [notice, setNotice] = useState("");
+  const [editingCampus, setEditingCampus] = useState(null);
+
+  const users = accounts?.data || [];
+
+  useEffect(() => {
+    listMyManagedProfiles()
+      .then((response) => setCampuses((response?.data || []).filter((page) => page.type === "campus")))
+      .catch(() => {});
+  }, []);
+  const slugify = (value) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const update = (setter, name, value) => setter((current) => ({ ...current, [name]: value }));
+
+  async function createPage(form, type, parent) {
+    const slug = slugify(form.slug || form.name);
+    const page = await createManagedProfile({
+      type,
+      name: form.name,
+      slug,
+      handle: slug.replaceAll("-", "_").slice(0, 40),
+      bio: form.bio,
+      details: parent ? { campusManagedProfileId: parent.id, campusName: parent.name } : {},
+    });
+    if (form.managerId) await addManagedProfileManager(page.id, { email: users.find((user) => user.id === form.managerId)?.email, role: form.managerRole });
+    return page;
+  }
+
+  async function submitCampus(event) {
+    event.preventDefault();
+    try {
+      const page = await createPage(campusForm, "campus");
+      setCampuses((current) => [...current, page]);
+      setCampusForm({ name: "", slug: "", managerId: "", managerRole: "admin", bio: "" });
+      setNotice(`${page.name} was created and assigned.`);
+      onAction(() => Promise.resolve());
+    } catch (requestError) { setNotice(requestError.message || "Campus page could not be created."); }
+  }
+
+  async function submitService(event) {
+    event.preventDefault();
+    const parent = campuses.find((campus) => campus.id === serviceForm.campusId);
+    if (!parent) return;
+    try {
+      const page = await createPage(serviceForm, serviceForm.type, parent);
+      setServiceForm({ type: "hotel", name: "", slug: "", campusId: "", managerId: "", managerRole: "editor", bio: "" });
+      setNotice(`${page.name} was created under ${parent.name} and assigned.`);
+      onAction(() => Promise.resolve());
+    } catch (requestError) { setNotice(requestError.message || "Service page could not be created."); }
+  }
+
+  async function assignManager(event) {
+    event.preventDefault();
+    const user = users.find((candidate) => candidate.id === editingCampus.managerId);
+    if (!user) return;
+    try {
+      await addManagedProfileManager(editingCampus.id, { email: user.email, role: editingCampus.managerRole });
+      setCampuses((current) => current.map((campus) => campus.id === editingCampus.id
+        ? { ...campus, managers: [...(campus.managers || []).filter((manager) => manager.user?.id !== user.id), { role: editingCampus.managerRole, user }] }
+        : campus));
+      setEditingCampus((current) => ({ ...current, managerId: "" }));
+      setNotice(`${user.name || user.email} is now assigned to ${editingCampus.name}.`);
+    } catch (requestError) { setNotice(requestError.message || "The manager could not be assigned."); }
+  }
+
+  async function unassignManager(campus, manager) {
+    try {
+      await removeManagedProfileManager(campus.id, manager.user.id);
+      setCampuses((current) => current.map((item) => item.id === campus.id
+        ? { ...item, managers: (item.managers || []).filter((candidate) => candidate.user?.id !== manager.user.id) }
+        : item));
+      setNotice(`${manager.user.name || manager.user.email} was removed from ${campus.name}.`);
+    } catch (requestError) { setNotice(requestError.message || "The manager could not be removed."); }
+  }
+
+  const managerFields = (form, setter) => (
+    <>
+      <label><span>Assign manager</span><select required value={form.managerId} onChange={(event) => update(setter, "managerId", event.target.value)}><option value="">Select a user</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name || user.email} · {user.email}</option>)}</select></label>
+      <label><span>Manager role</span><select value={form.managerRole} onChange={(event) => update(setter, "managerRole", event.target.value)}><option value="admin">Admin</option><option value="editor">Editor</option></select></label>
+    </>
+  );
+
+  return <Panel title="Campus Pages & Services" eyebrow="Admin-created identities and assignments">
+    <p className="super-admin-boundary-note">Create verified campus pages here, assign a Zumbarl user to manage them, then add internal services such as hotels and barber shops beneath the campus page.</p>
+    {notice ? <p className="super-admin-boundary-note">{notice}</p> : null}
+    <div className="super-admin-page-management-grid">
+      <form className="super-admin-action-form" onSubmit={submitCampus}><h3>Create campus page</h3><label><span>Campus name</span><input required value={campusForm.name} onChange={(event) => update(setCampusForm, "name", event.target.value)} placeholder="e.g. Zetech University" /></label><label><span>Slug (optional)</span><input value={campusForm.slug} onChange={(event) => update(setCampusForm, "slug", event.target.value)} placeholder="zetech-university" /></label><label><span>Description</span><textarea value={campusForm.bio} onChange={(event) => update(setCampusForm, "bio", event.target.value)} /></label>{managerFields(campusForm, setCampusForm)}<button type="submit">Create campus page</button></form>
+      <form className="super-admin-action-form" onSubmit={submitService}><h3>Create internal service</h3><label><span>Service type</span><select value={serviceForm.type} onChange={(event) => update(setServiceForm, "type", event.target.value)}><option value="hotel">Hotel</option><option value="barber_shop">Barber shop</option><option value="service">Other campus service</option></select></label><label><span>Service name</span><input required value={serviceForm.name} onChange={(event) => update(setServiceForm, "name", event.target.value)} placeholder="e.g. Zetech Campus Hotel" /></label><label><span>Campus page</span><select required value={serviceForm.campusId} onChange={(event) => update(setServiceForm, "campusId", event.target.value)}><option value="">Select a campus page</option>{campuses.map((campus) => <option key={campus.id} value={campus.id}>{campus.name}</option>)}</select></label><label><span>Description</span><textarea value={serviceForm.bio} onChange={(event) => update(setServiceForm, "bio", event.target.value)} /></label>{managerFields(serviceForm, setServiceForm)}<button type="submit">Create service page</button></form>
+    </div>
+    {campuses.length ? <div className="super-admin-boundary-grid">{campuses.map((campus) => <article key={campus.id}><strong>{campus.name}</strong><span>Campus page ready for internal service pages.</span><button type="button" onClick={() => setEditingCampus({ ...campus, managerId: "", managerRole: "editor" })}>Edit assignments</button></article>)}</div> : null}
+    {editingCampus ? <div className="super-admin-assignment-editor"><header><div><span>Manager assignments</span><h3>{editingCampus.name}</h3></div><button type="button" onClick={() => setEditingCampus(null)}>Close</button></header><div className="super-admin-assignment-list">{(editingCampus.managers || []).map((manager) => <div key={manager.user.id}><span><strong>{manager.user.name || manager.user.email}</strong><small>{manager.user.email} · {manager.role}</small></span>{manager.role === "owner" ? <em>Owner</em> : <button type="button" onClick={() => unassignManager(editingCampus, manager)}>Remove</button>}</div>)}{!(editingCampus.managers || []).length ? <p>No managers assigned yet.</p> : null}</div><form className="super-admin-assignment-form" onSubmit={assignManager}><label><span>Add user</span><select required value={editingCampus.managerId} onChange={(event) => setEditingCampus((current) => ({ ...current, managerId: event.target.value }))}><option value="">Select a user</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name || user.email} · {user.email}</option>)}</select></label><label><span>Role</span><select value={editingCampus.managerRole} onChange={(event) => setEditingCampus((current) => ({ ...current, managerRole: event.target.value }))}><option value="admin">Admin</option><option value="editor">Editor</option></select></label><button type="submit">Assign manager</button></form></div> : null}
+  </Panel>;
+}
+
 function SuperAdminPage() {
   const [activeModule, setActiveModule] = useState("overview");
   const [data, setData] = useState({});
@@ -297,7 +401,7 @@ function SuperAdminPage() {
         analytics: readSuperAdminAnalytics,
         audit: readSuperAdminAuditLogs,
       };
-      if (moduleId === "accounts") {
+      if (moduleId === "accounts" || moduleId === "pages") {
         const response = await listSuperAdminAccounts("?pageSize=25");
         setAccounts(response);
       } else if (loaders[moduleId]) {
@@ -616,6 +720,10 @@ function SuperAdminPage() {
 
         {activeModule === "ads" ? (
           <ZumbarlAdsPanel ads={activePayload} onAction={performAction} />
+        ) : null}
+
+        {activeModule === "pages" ? (
+          <ManagedPagesPanel accounts={accounts} onAction={performAction} />
         ) : null}
 
         {activeModule === "configuration" ? (

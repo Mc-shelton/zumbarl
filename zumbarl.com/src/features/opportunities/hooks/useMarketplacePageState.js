@@ -9,6 +9,17 @@ import {
 import { listMarketplaceListings, mapMarketplaceApiListing } from '../services/marketplaceInteractionService'
 
 const VIEWER_CAMPUS = 'Kenyatta University'
+const SAVED_ITEMS_KEY = 'zumbarl.marketplace.saved-items.v1'
+
+function readSavedItemIds() {
+  if (typeof window === 'undefined') return []
+  try {
+    const value = JSON.parse(window.localStorage.getItem(SAVED_ITEMS_KEY))
+    return Array.isArray(value) ? value : []
+  } catch {
+    return []
+  }
+}
 
 function isService(item) {
   return String(item.kind || item.listingType || '').toLowerCase() === 'service'
@@ -63,6 +74,11 @@ function useMarketplacePageState() {
   const [activeCategory, setActiveCategory] = useState(requestedMode === 'services' ? 'Book a service' : 'Everything')
   const [activeRecentFilter, setActiveRecentFilter] = useState('All')
   const [databaseItems, setDatabaseItems] = useState([])
+  const [savedItemIds, setSavedItemIds] = useState(readSavedItemIds)
+
+  useEffect(() => {
+    window.localStorage.setItem(SAVED_ITEMS_KEY, JSON.stringify(savedItemIds))
+  }, [savedItemIds])
 
   useEffect(() => {
     let cancelled = false
@@ -120,9 +136,16 @@ function useMarketplacePageState() {
     }
   }
 
+  const toggleSavedItem = (itemId) => {
+    setSavedItemIds((current) => current.includes(itemId)
+      ? current.filter((id) => id !== itemId)
+      : [...current, itemId])
+  }
+
   return {
     activeCategory,
     activeRecentFilter,
+    savedItemIds,
     filteredFeaturedItems,
     filteredRecentItems,
     filteredTrendingItems,
@@ -131,6 +154,7 @@ function useMarketplacePageState() {
     onCategoryChange: setActiveCategory,
     onOpenItemDetail: openItemDetail,
     onRecentFilterChange: setActiveRecentFilter,
+    onToggleSavedItem: toggleSavedItem,
   }
 }
 
