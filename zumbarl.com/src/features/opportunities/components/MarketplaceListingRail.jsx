@@ -6,8 +6,8 @@ function MarketplaceListingRail({ studio }) {
     <aside className="campus-rail marketplace-studio-rail">
       <section className="marketplace-studio-rail-card marketplace-studio-summary">
         <header><div><h2>Listing preview</h2><p>What buyers will see in the marketplace.</p></div><FiEye aria-hidden="true" /></header>
-        <div className="marketplace-studio-summary-image">{cover ? <img src={cover} alt="Listing preview" /> : <FiImage aria-hidden="true" />}</div>
-        <span>{studio.form.category} · {studio.form.condition}</span>
+        <div className="marketplace-studio-summary-image">{cover ? <img src={cover} alt="Listing preview" /> : <><FiImage aria-hidden="true" /><small>Add a cover photo</small></>}<em>Zumbarl Marketplace</em></div>
+        <span>{studio.form.category} · {studio.form.kind === 'service' ? studio.form.serviceMode.replaceAll('_', ' ') : studio.form.condition}</span>
         <h3>{studio.form.title || 'Your listing title'}</h3>
         <p>{studio.form.subtitle || studio.form.description || 'Add a short selling line to preview your product card.'}</p>
         <strong>{new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', maximumFractionDigits: 0 }).format(Number(studio.form.priceAmount) || 0)}</strong>

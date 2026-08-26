@@ -3,10 +3,13 @@ import Seo from "../components/Seo";
 import {
   addManagedProfileManager,
   createManagedProfile,
-  listMyManagedProfiles,
   removeManagedProfileManager,
 } from "../features/profile/services/managedProfileService";
 import {
+  createCampusVendor,
+  updateCampusVendor,
+  addCampusVendorManager,
+  removeCampusVendorManager,
   listZumbarlAds,
   listSuperAdminAccounts,
   publishZumbarlAd,
@@ -22,6 +25,7 @@ import {
   recordSuperAdminContentAction,
   recordSuperAdminFinancialAction,
   recordSuperAdminGigAction,
+  readCampusVendorManagement,
   revokeSuperAdminSessions,
   updateSuperAdminAccount,
   writeSuperAdminConfiguration,
@@ -277,16 +281,22 @@ function ZumbarlAdsPanel({ ads, onAction }) {
 
 function ManagedPagesPanel({ accounts, onAction }) {
   const [campuses, setCampuses] = useState([]);
+  const [vendors, setVendors] = useState([]);
   const [campusForm, setCampusForm] = useState({ name: "", slug: "", managerId: "", managerRole: "admin", bio: "" });
   const [serviceForm, setServiceForm] = useState({ type: "hotel", name: "", slug: "", campusId: "", managerId: "", managerRole: "editor", bio: "" });
   const [notice, setNotice] = useState("");
   const [editingCampus, setEditingCampus] = useState(null);
+  const [editingVendor, setEditingVendor] = useState(null);
 
   const users = accounts?.data || [];
+  const vendorManagers = users.filter((user) => user.studentProfile?.id);
 
   useEffect(() => {
-    listMyManagedProfiles()
-      .then((response) => setCampuses((response?.data || []).filter((page) => page.type === "campus")))
+    readCampusVendorManagement()
+      .then((response) => {
+        setCampuses(response?.campuses || []);
+        setVendors(response?.vendors || []);
+      })
       .catch(() => {});
   }, []);
   const slugify = (value) => value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -322,11 +332,18 @@ function ManagedPagesPanel({ accounts, onAction }) {
     const parent = campuses.find((campus) => campus.id === serviceForm.campusId);
     if (!parent) return;
     try {
-      const page = await createPage(serviceForm, serviceForm.type, parent);
+      const vendor = await createCampusVendor({
+        type: serviceForm.type,
+        name: serviceForm.name,
+        campusManagedProfileId: parent.id,
+        managerUserId: serviceForm.managerId,
+        description: serviceForm.bio,
+      });
+      setVendors((current) => [...current, vendor]);
       setServiceForm({ type: "hotel", name: "", slug: "", campusId: "", managerId: "", managerRole: "editor", bio: "" });
-      setNotice(`${page.name} was created under ${parent.name} and assigned.`);
+      setNotice(`${vendor.name} is now a vendor under ${parent.name}. Its manager can run inventory, orders, posts, and promotions.`);
       onAction(() => Promise.resolve());
-    } catch (requestError) { setNotice(requestError.message || "Service page could not be created."); }
+    } catch (requestError) { setNotice(requestError.message || "The campus vendor could not be created."); }
   }
 
   async function assignManager(event) {
@@ -353,22 +370,62 @@ function ManagedPagesPanel({ accounts, onAction }) {
     } catch (requestError) { setNotice(requestError.message || "The manager could not be removed."); }
   }
 
-  const managerFields = (form, setter) => (
+  async function saveVendor(event) {
+    event.preventDefault();
+    try {
+      const updatedVendor = await updateCampusVendor(editingVendor.id, {
+        name: editingVendor.name,
+        type: editingVendor.type,
+        description: editingVendor.description || null,
+        locationLabel: editingVendor.locationLabel || null,
+        campusManagedProfileId: editingVendor.campusManagedProfileId,
+      });
+      setVendors((current) => current.map((vendor) => vendor.id === updatedVendor.id ? updatedVendor : vendor));
+      setEditingVendor((current) => ({ ...current, ...updatedVendor, assignmentUserId: "", assignmentRole: "editor" }));
+      setNotice(`${updatedVendor.name} was updated.`);
+    } catch (requestError) { setNotice(requestError.message || "The vendor could not be updated."); }
+  }
+
+  async function assignVendorManager(event) {
+    event.preventDefault();
+    const user = vendorManagers.find((candidate) => candidate.id === editingVendor.assignmentUserId);
+    if (!user) return;
+    try {
+      const assignment = await addCampusVendorManager(editingVendor.id, { email: user.email, role: editingVendor.assignmentRole });
+      const managers = [...(editingVendor.managers || []).filter((manager) => manager.user?.id !== user.id), assignment];
+      setEditingVendor((current) => ({ ...current, managers, assignmentUserId: "" }));
+      setVendors((current) => current.map((vendor) => vendor.id === editingVendor.id ? { ...vendor, managers } : vendor));
+      setNotice(`${user.name || user.email} is now a ${assignment.role} for ${editingVendor.name}.`);
+    } catch (requestError) { setNotice(requestError.message || "The vendor assignment could not be saved."); }
+  }
+
+  async function unassignVendorManager(manager) {
+    try {
+      await removeCampusVendorManager(editingVendor.id, manager.user.id);
+      const managers = (editingVendor.managers || []).filter((candidate) => candidate.user?.id !== manager.user.id);
+      setEditingVendor((current) => ({ ...current, managers }));
+      setVendors((current) => current.map((vendor) => vendor.id === editingVendor.id ? { ...vendor, managers } : vendor));
+      setNotice(`${manager.user.name || manager.user.email} was removed from ${editingVendor.name}.`);
+    } catch (requestError) { setNotice(requestError.message || "The vendor assignment could not be removed."); }
+  }
+
+  const managerFields = (form, setter, candidates = users) => (
     <>
-      <label><span>Assign manager</span><select required value={form.managerId} onChange={(event) => update(setter, "managerId", event.target.value)}><option value="">Select a user</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name || user.email} · {user.email}</option>)}</select></label>
+      <label><span>Assign manager</span><select required value={form.managerId} onChange={(event) => update(setter, "managerId", event.target.value)}><option value="">Select a user</option>{candidates.map((user) => <option key={user.id} value={user.id}>{user.name || user.email} · {user.email}</option>)}</select></label>
       <label><span>Manager role</span><select value={form.managerRole} onChange={(event) => update(setter, "managerRole", event.target.value)}><option value="admin">Admin</option><option value="editor">Editor</option></select></label>
     </>
   );
 
-  return <Panel title="Campus Pages & Services" eyebrow="Admin-created identities and assignments">
-    <p className="super-admin-boundary-note">Create verified campus pages here, assign a Zumbarl user to manage them, then add internal services such as hotels and barber shops beneath the campus page.</p>
+  return <Panel title="Campus Pages & Vendors" eyebrow="Campus identities and operating vendors">
+    <p className="super-admin-boundary-note">Create verified campus pages here. Hotels, barber shops, and other services are linked vendors with their own inventory, orders, posts, and promotions—not child pages.</p>
     {notice ? <p className="super-admin-boundary-note">{notice}</p> : null}
     <div className="super-admin-page-management-grid">
       <form className="super-admin-action-form" onSubmit={submitCampus}><h3>Create campus page</h3><label><span>Campus name</span><input required value={campusForm.name} onChange={(event) => update(setCampusForm, "name", event.target.value)} placeholder="e.g. Zetech University" /></label><label><span>Slug (optional)</span><input value={campusForm.slug} onChange={(event) => update(setCampusForm, "slug", event.target.value)} placeholder="zetech-university" /></label><label><span>Description</span><textarea value={campusForm.bio} onChange={(event) => update(setCampusForm, "bio", event.target.value)} /></label>{managerFields(campusForm, setCampusForm)}<button type="submit">Create campus page</button></form>
-      <form className="super-admin-action-form" onSubmit={submitService}><h3>Create internal service</h3><label><span>Service type</span><select value={serviceForm.type} onChange={(event) => update(setServiceForm, "type", event.target.value)}><option value="hotel">Hotel</option><option value="barber_shop">Barber shop</option><option value="service">Other campus service</option></select></label><label><span>Service name</span><input required value={serviceForm.name} onChange={(event) => update(setServiceForm, "name", event.target.value)} placeholder="e.g. Zetech Campus Hotel" /></label><label><span>Campus page</span><select required value={serviceForm.campusId} onChange={(event) => update(setServiceForm, "campusId", event.target.value)}><option value="">Select a campus page</option>{campuses.map((campus) => <option key={campus.id} value={campus.id}>{campus.name}</option>)}</select></label><label><span>Description</span><textarea value={serviceForm.bio} onChange={(event) => update(setServiceForm, "bio", event.target.value)} /></label>{managerFields(serviceForm, setServiceForm)}<button type="submit">Create service page</button></form>
+      <form className="super-admin-action-form" onSubmit={submitService}><h3>Create campus vendor</h3><label><span>Vendor type</span><select value={serviceForm.type} onChange={(event) => update(setServiceForm, "type", event.target.value)}><option value="hotel">Hotel</option><option value="barber_shop">Barber shop</option><option value="service">Other campus service</option></select></label><label><span>Vendor name</span><input required value={serviceForm.name} onChange={(event) => update(setServiceForm, "name", event.target.value)} placeholder="e.g. Zetech Campus Hotel" /></label><label><span>Campus page</span><select required value={serviceForm.campusId} onChange={(event) => update(setServiceForm, "campusId", event.target.value)}><option value="">Select a campus page</option>{campuses.map((campus) => <option key={campus.id} value={campus.id}>{campus.name}</option>)}</select></label><label><span>Description</span><textarea value={serviceForm.bio} onChange={(event) => update(setServiceForm, "bio", event.target.value)} /></label>{managerFields(serviceForm, setServiceForm, vendorManagers)}<button type="submit">Create vendor</button></form>
     </div>
-    {campuses.length ? <div className="super-admin-boundary-grid">{campuses.map((campus) => <article key={campus.id}><strong>{campus.name}</strong><span>Campus page ready for internal service pages.</span><button type="button" onClick={() => setEditingCampus({ ...campus, managerId: "", managerRole: "editor" })}>Edit assignments</button></article>)}</div> : null}
+    {campuses.length ? <div className="super-admin-boundary-grid">{campuses.map((campus) => { const campusVendors = vendors.filter((vendor) => vendor.campusManagedProfileId === campus.id); return <article key={campus.id}><strong>{campus.name}</strong><span>{campusVendors.length ? `${campusVendors.length} linked vendor${campusVendors.length === 1 ? "" : "s"}` : "No vendors linked yet."}</span>{campusVendors.length ? <div className="super-admin-vendor-list">{campusVendors.map((vendor) => <div key={vendor.id}><span><b>{vendor.name}</b><small>{String(vendor.type).replaceAll("_", " ")} · {vendor._count?.listings || 0} inventory items</small></span><span className="super-admin-vendor-actions"><em>Vendor</em><button type="button" onClick={() => setEditingVendor({ ...vendor, assignmentUserId: "", assignmentRole: "editor" })}>Edit vendor</button></span></div>)}</div> : null}<button type="button" onClick={() => setEditingCampus({ ...campus, managerId: "", managerRole: "editor" })}>Edit campus assignments</button></article>; })}</div> : null}
     {editingCampus ? <div className="super-admin-assignment-editor"><header><div><span>Manager assignments</span><h3>{editingCampus.name}</h3></div><button type="button" onClick={() => setEditingCampus(null)}>Close</button></header><div className="super-admin-assignment-list">{(editingCampus.managers || []).map((manager) => <div key={manager.user.id}><span><strong>{manager.user.name || manager.user.email}</strong><small>{manager.user.email} · {manager.role}</small></span>{manager.role === "owner" ? <em>Owner</em> : <button type="button" onClick={() => unassignManager(editingCampus, manager)}>Remove</button>}</div>)}{!(editingCampus.managers || []).length ? <p>No managers assigned yet.</p> : null}</div><form className="super-admin-assignment-form" onSubmit={assignManager}><label><span>Add user</span><select required value={editingCampus.managerId} onChange={(event) => setEditingCampus((current) => ({ ...current, managerId: event.target.value }))}><option value="">Select a user</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name || user.email} · {user.email}</option>)}</select></label><label><span>Role</span><select value={editingCampus.managerRole} onChange={(event) => setEditingCampus((current) => ({ ...current, managerRole: event.target.value }))}><option value="admin">Admin</option><option value="editor">Editor</option></select></label><button type="submit">Assign manager</button></form></div> : null}
+    {editingVendor ? <div className="super-admin-assignment-editor"><header><div><span>Vendor settings & assignments</span><h3>{editingVendor.name}</h3></div><button type="button" onClick={() => setEditingVendor(null)}>Close</button></header><form className="super-admin-assignment-form super-admin-vendor-edit-form" onSubmit={saveVendor}><label><span>Vendor name</span><input required value={editingVendor.name} onChange={(event) => setEditingVendor((current) => ({ ...current, name: event.target.value }))} /></label><label><span>Vendor type</span><select value={editingVendor.type} onChange={(event) => setEditingVendor((current) => ({ ...current, type: event.target.value }))}><option value="hotel">Hotel</option><option value="barber_shop">Barber shop</option><option value="service">Other service</option></select></label><label><span>Campus</span><select value={editingVendor.campusManagedProfileId} onChange={(event) => setEditingVendor((current) => ({ ...current, campusManagedProfileId: event.target.value }))}>{campuses.map((campus) => <option key={campus.id} value={campus.id}>{campus.name}</option>)}</select></label><label><span>Location</span><input value={editingVendor.locationLabel || ""} onChange={(event) => setEditingVendor((current) => ({ ...current, locationLabel: event.target.value }))} /></label><label><span>Description</span><textarea value={editingVendor.description || ""} onChange={(event) => setEditingVendor((current) => ({ ...current, description: event.target.value }))} /></label><button type="submit">Save vendor</button></form><div className="super-admin-assignment-list">{(editingVendor.managers || []).map((manager) => <div key={manager.user.id}><span><strong>{manager.user.name || manager.user.email}</strong><small>{manager.user.email} · {manager.role}</small></span>{manager.role === "owner" ? <em>Owner</em> : <button type="button" onClick={() => unassignVendorManager(manager)}>Remove</button>}</div>)}</div><form className="super-admin-assignment-form" onSubmit={assignVendorManager}><label><span>Add or change operator</span><select required value={editingVendor.assignmentUserId} onChange={(event) => setEditingVendor((current) => ({ ...current, assignmentUserId: event.target.value }))}><option value="">Select a user</option>{vendorManagers.map((user) => <option key={user.id} value={user.id}>{user.name || user.email} · {user.email}</option>)}</select></label><label><span>Vendor role</span><select value={editingVendor.assignmentRole} onChange={(event) => setEditingVendor((current) => ({ ...current, assignmentRole: event.target.value }))}><option value="admin">Admin</option><option value="editor">Editor</option></select></label><button type="submit">Save assignment</button></form></div> : null}
   </Panel>;
 }
 

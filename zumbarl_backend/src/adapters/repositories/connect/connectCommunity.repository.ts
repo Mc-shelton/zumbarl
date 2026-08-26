@@ -104,14 +104,36 @@ class ConnectCommunityRepository {
     })
     if (!profile) return null
     const attachedServices = profile.type === 'campus'
-      ? await prisma.managedProfile.findMany({
+      ? (await prisma.marketplaceShop.findMany({
           where: {
-            status: 'active',
-            type: { in: ['hotel', 'barber_shop', 'service'] },
-            details: { path: ['campusManagedProfileId'], equals: profile.id }
+            status: 'ACTIVE',
+            payload: { path: ['campusManagedProfileId'], equals: profile.id }
           },
-          select: { id: true, type: true, slug: true, name: true, bio: true, avatarUrl: true, locationLabel: true, _count: { select: { followers: true, posts: true } } },
+          select: {
+            id: true,
+            slug: true,
+            name: true,
+            description: true,
+            logoUrl: true,
+            locationLabel: true,
+            payload: true,
+            _count: { select: { listings: true } }
+          },
           orderBy: { name: 'asc' }
+        })).map((vendor) => {
+          const vendorPayload = payloadObject(vendor.payload)
+          return {
+            id: vendor.id,
+            type: vendorPayload.vendorType || 'service',
+            slug: vendor.slug,
+            name: vendor.name,
+            bio: vendor.description,
+            avatarUrl: vendor.logoUrl,
+            locationLabel: vendor.locationLabel,
+            isVendor: true,
+            capabilities: vendorPayload.capabilities || ['inventory', 'orders', 'posts', 'promotions'],
+            _count: { listings: vendor._count.listings }
+          }
         })
       : []
     const isFollowing = Boolean(viewerUserId && await prisma.managedProfileFollower.findUnique({ where: { managedProfileId_userId: { managedProfileId: profile.id, userId: viewerUserId } } }))
@@ -227,7 +249,17 @@ class ConnectCommunityRepository {
       const candidateStudent = candidate.studentId ? studentById.get(candidate.studentId) : null
       const candidateManagedProfile = candidate.managedProfileId ? managedProfileById.get(candidate.managedProfileId) : null
       const candidateSnapshot = payloadObject(payloadObject(candidate.payload).sourceSnapshot)
-      return candidateKnowledgeSpace ? {
+      const vendorSnapshot = payloadObject(payloadObject(candidate.payload).vendorSnapshot)
+      return vendorSnapshot.id ? {
+        id: vendorSnapshot.id,
+        profileType: 'vendor',
+        slug: vendorSnapshot.slug,
+        name: vendorSnapshot.name,
+        handle: 'Campus vendor',
+        avatarUrl: vendorSnapshot.avatarUrl || null,
+        campus: vendorSnapshot.campus || null,
+        isVerified: vendorSnapshot.isVerified !== false
+      } : candidateKnowledgeSpace ? {
         id: candidateKnowledgeSpace.id,
         profileType: `knowledge-${candidateKnowledgeSpace.type.toLowerCase()}`,
         slug: candidateKnowledgeSpace.slug,

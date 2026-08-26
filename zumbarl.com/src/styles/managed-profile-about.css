@@ -6,6 +6,8 @@
 
 .managed-profile-about-overview,
 .managed-profile-services,
+.managed-profile-about-bio,
+.managed-profile-about-contact,
 .managed-profile-about-details article {
   border: 1px solid #e1e5f0;
   border-radius: 14px;
@@ -166,9 +168,245 @@
   margin-top: 0;
 }
 
+/* About bio & contact cards */
+.managed-profile-about-bio,
+.managed-profile-about-contact {
+  padding: 20px 22px;
+}
+
+.managed-profile-about-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.managed-profile-about-head > div > span {
+  color: #76506f;
+  font-size: var(--text-caption);
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.managed-profile-about-head h2 {
+  margin: 5px 0 0;
+  color: #1a2150;
+  font-size: var(--text-title-md);
+}
+
+.managed-profile-about-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 8px 13px;
+  border: 1px solid #d8ddef;
+  border-radius: 9px;
+  background: #fff;
+  color: #5b4a72;
+  font-size: var(--text-caption);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.managed-profile-about-edit:hover {
+  border-color: #c9b8ca;
+  background: #f8f2f8;
+}
+
+.managed-profile-about-tagline {
+  display: block;
+  margin: 12px 0 0;
+  color: #81516f;
+  font-weight: 700;
+}
+
+.managed-profile-about-bio > p {
+  max-width: 760px;
+  margin: 10px 0 0;
+  color: #4f5878;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+.managed-profile-contact-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.managed-profile-contact-list a,
+.managed-profile-contact-list > span {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-width: 0;
+  padding: 11px 13px;
+  border: 1px solid #edeff7;
+  border-radius: 10px;
+  background: #fafafd;
+  color: inherit;
+  text-decoration: none;
+}
+
+.managed-profile-contact-list a:hover {
+  border-color: #c9b8ca;
+  background: #f8f2f8;
+}
+
+.managed-profile-contact-list svg {
+  flex: 0 0 auto;
+  color: #81516f;
+}
+
+.managed-profile-contact-list span > span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.managed-profile-contact-list small {
+  color: #7e87a2;
+  font-size: var(--text-micro);
+}
+
+.managed-profile-contact-list strong {
+  overflow-wrap: anywhere;
+  color: #29325a;
+  font-size: var(--text-small);
+}
+
+.managed-profile-about-empty {
+  margin: 4px 0 0;
+  color: #7e87a2;
+  line-height: 1.5;
+}
+
+.managed-profile-about-more > header {
+  margin-bottom: 12px;
+}
+
+.managed-profile-services.is-empty p {
+  margin: 0;
+  color: #7e87a2;
+  line-height: 1.5;
+}
+
+/* Page info editor */
+.managed-profile-editor form {
+  width: min(640px, 92vw);
+  max-height: 92vh;
+  overflow-y: auto;
+}
+
+.managed-profile-editor form > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.managed-profile-editor form > header > div > span {
+  color: #76506f;
+  font-size: var(--text-micro);
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.managed-profile-editor form > header h2 {
+  margin: 4px 0 0;
+  color: #1a2150;
+}
+
+.managed-profile-editor form > header p {
+  margin: 6px 0 0;
+  color: #7e87a2;
+}
+
+.managed-profile-editor form > header > button {
+  padding: 9px 11px;
+}
+
+.managed-profile-editor section {
+  display: grid;
+  gap: 10px;
+  padding-top: 14px;
+  border-top: 1px solid #eef0f8;
+}
+
+.managed-profile-editor h3 {
+  margin: 0;
+  color: #1a2150;
+  font-size: var(--text-small);
+}
+
+.managed-profile-editor section > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.managed-profile-editor section > header button {
+  padding: 8px 12px;
+  font-size: var(--text-caption);
+}
+
+.managed-profile-editor textarea {
+  padding: 11px;
+  border: 1px solid #d7dced;
+  border-radius: 9px;
+  font: inherit;
+  resize: vertical;
+}
+
+.managed-profile-detail-row {
+  display: grid;
+  gap: 8px;
+  padding: 11px;
+  border: 1px dashed #d7dced;
+  border-radius: 10px;
+  background: #fafafd;
+}
+
+.managed-profile-detail-row > div {
+  display: flex;
+  gap: 8px;
+}
+
+.managed-profile-detail-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.managed-profile-detail-row > div > button {
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  color: #a04b4b;
+}
+
+.managed-profile-editor form > footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid #eef0f8;
+}
+
+.managed-profile-editor-error {
+  margin: 0;
+  color: #b3261e;
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
 @media (max-width: 850px) {
   .managed-profile-about-facts,
-  .managed-profile-services > div {
+  .managed-profile-services > div,
+  .managed-profile-contact-list {
     grid-template-columns: 1fr;
   }
 }

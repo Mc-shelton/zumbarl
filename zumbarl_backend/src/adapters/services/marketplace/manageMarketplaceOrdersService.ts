@@ -146,11 +146,28 @@ async function recordMarketplaceSellerViewService(actorUserId: string | undefine
 const listMarketplaceShopsService = (query: Record<string, unknown>) => marketplaceOrdersRepository.listShops(query)
 const createMarketplaceShopService = (studentId: string | undefined, payload: Record<string, any>) => marketplaceOrdersRepository.createShop({ ...payload, studentId, status: 'open', score: 0 })
 const listMarketplaceListingsService = (query: Record<string, unknown>) => marketplaceOrdersRepository.listListings(query)
-async function createMarketplaceListingService(studentId: string | undefined, shopId: string, payload: Record<string, any>) {
-  if (!studentId) forbidden('A student seller profile is required')
+async function createMarketplaceListingService(studentId: string | undefined, userId: string | undefined, shopId: string, payload: Record<string, any>) {
+  if (!studentId || !userId) forbidden('A student vendor operator profile is required')
   const shop = await marketplaceOrdersRepository.findShop(shopId) ?? notFound('Shop')
-  if (shop.ownerId !== studentId) forbidden('You can only add products to your own shop')
-  return marketplaceOrdersRepository.createListing({ ...payload, shopId, status: payload.status || 'ACTIVE' })
+  if (shop.ownerId !== studentId && !(await marketplaceOrdersRepository.userManagesShop(userId, shopId))) forbidden('You can only add inventory to a shop you manage')
+  const isCampusHotel = shop.entityType === 'campus_vendor' && shop.vendorType === 'hotel'
+  const foodCategories = new Set(['Meals', 'Snacks', 'Drinks', 'Baked goods', 'Fresh food', 'Other food'])
+  const normalizedPayload = isCampusHotel ? {
+    ...payload,
+    kind: 'service',
+    serviceMode: 'order_ahead',
+    inventoryType: 'food',
+    campusOnly: true,
+    category: foodCategories.has(payload.category) ? payload.category : 'Meals',
+    condition: undefined,
+    negotiable: false,
+    deliveryOptions: ['Campus pickup'],
+    locationLabel: payload.locationLabel || shop.locationLabel || shop.campus || 'Campus pickup',
+    latitude: payload.latitude ?? shop.latitude ?? undefined,
+    longitude: payload.longitude ?? shop.longitude ?? undefined,
+    pickupInstructions: payload.pickupInstructions || `Collect from ${shop.name} on campus.`,
+  } : payload
+  return marketplaceOrdersRepository.createListing({ ...normalizedPayload, shopId, status: payload.status || 'ACTIVE' })
 }
 async function readMyMarketplaceInventoryService(studentId: string | undefined) {
   if (!studentId) forbidden('A student seller profile is required')
@@ -160,6 +177,25 @@ async function readMyMarketplaceInventoryService(studentId: string | undefined) 
   ])
   return { shop, listings }
 }
+async function listMyCampusVendorsService(userId: string | undefined) {
+  if (!userId) forbidden('A vendor manager account is required')
+  return { vendors: await marketplaceOrdersRepository.listOwnedCampusVendors(userId) }
+}
+async function readCampusVendorWorkspaceService(userId: string | undefined, slug: string) {
+  if (!userId) forbidden('A vendor manager account is required')
+  return await marketplaceOrdersRepository.readCampusVendorWorkspace(userId, slug) ?? notFound('Managed campus vendor')
+}
+async function createCampusVendorPostService(userId: string | undefined, slug: string, payload: Record<string, any>) {
+  if (!userId) forbidden('A vendor manager account is required')
+  return await marketplaceOrdersRepository.createCampusVendorPost(userId, slug, payload) ?? notFound('Managed campus vendor')
+}
+async function createCampusVendorPromotionService(userId: string | undefined, slug: string, payload: Record<string, any>) {
+  if (!userId) forbidden('A vendor manager account is required')
+  return await marketplaceOrdersRepository.createCampusVendorPost(userId, slug, payload, true) ?? notFound('Managed campus vendor')
+}
+async function updateCampusVendorForManagerService(userId: string | undefined, slug: string, payload: Record<string, any>) { if (!userId) forbidden('A vendor manager account is required'); return await marketplaceOrdersRepository.updateCampusVendorForManager(userId, slug, payload) ?? forbidden('Only vendor owners and admins can edit this vendor') }
+async function addCampusVendorManagerForManagerService(userId: string | undefined, slug: string, payload: Record<string, any>) { if (!userId) forbidden('A vendor manager account is required'); return await marketplaceOrdersRepository.addCampusVendorManagerForManager(userId, slug, payload.email, payload.role) ?? notFound('Vendor or eligible operator') }
+async function removeCampusVendorManagerForManagerService(userId: string | undefined, slug: string, managerUserId: string) { if (!userId) forbidden('A vendor manager account is required'); return await marketplaceOrdersRepository.removeCampusVendorManagerForManager(userId, slug, managerUserId) ?? forbidden('This vendor assignment cannot be removed') }
 async function updateMyMarketplaceShopService(studentId: string | undefined, payload: Record<string, any>) {
   if (!studentId) forbidden('A student seller profile is required')
   return await marketplaceOrdersRepository.updateOwnedShop(studentId, payload) ?? notFound('Shop')
@@ -234,9 +270,12 @@ async function createOwnedMarketplaceListingService(studentId: string | undefine
     ?? notFound('Student shop')
   return marketplaceOrdersRepository.createListing({ ...payload, shopId: shop.id, status: payload.status || 'ACTIVE' })
 }
-async function updateOwnedMarketplaceListingService(studentId: string | undefined, listingId: string, payload: Record<string, any>) {
-  if (!studentId) forbidden('A student seller profile is required')
-  return await marketplaceOrdersRepository.updateOwnedListing(listingId, studentId, payload)
+async function updateOwnedMarketplaceListingService(studentId: string | undefined, userId: string | undefined, listingId: string, payload: Record<string, any>) {
+  if (!studentId || !userId) forbidden('A student vendor operator profile is required')
+  const listing = await marketplaceOrdersRepository.findListing(listingId) ?? notFound('Listing')
+  const canManage = listing.seller?.studentId === studentId || (listing.shopId && await marketplaceOrdersRepository.userManagesShop(userId, listing.shopId))
+  if (!canManage) forbidden('You can only edit inventory for a shop you manage')
+  return await marketplaceOrdersRepository.updateOwnedListing(listingId, listing.seller?.studentId || studentId, payload)
     ?? notFound('Listing')
 }
 async function readMarketplaceListingService(id: string, actorUserId?: string) {
@@ -342,6 +381,13 @@ export {
   listMarketplaceListingsService,
   createMarketplaceListingService,
   readMyMarketplaceInventoryService,
+  listMyCampusVendorsService,
+  readCampusVendorWorkspaceService,
+  createCampusVendorPostService,
+  createCampusVendorPromotionService,
+  updateCampusVendorForManagerService,
+  addCampusVendorManagerForManagerService,
+  removeCampusVendorManagerForManagerService,
   updateMyMarketplaceShopService,
   searchMarketplaceLocationsService,
   readMyPendingMarketplaceOffersService,

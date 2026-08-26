@@ -77,6 +77,28 @@ const updateModerationCaseSchema = z.object({
   note: z.string().optional()
 })
 
+const campusVendorSchema = z.object({
+  type: z.enum(['hotel', 'barber_shop', 'service']),
+  name: z.string().trim().min(2).max(120),
+  campusManagedProfileId: z.string().min(1),
+  managerUserId: z.string().min(1),
+  description: z.string().trim().max(1000).optional(),
+  locationLabel: z.string().trim().max(160).optional()
+})
+const campusVendorUpdateSchema = z.object({
+  type: z.enum(['hotel', 'barber_shop', 'service']).optional(),
+  name: z.string().trim().min(2).max(120).optional(),
+  campusManagedProfileId: z.string().min(1).optional(),
+  description: z.string().trim().max(1000).nullable().optional(),
+  locationLabel: z.string().trim().max(160).nullable().optional(),
+  logoUrl: z.string().trim().max(2000).nullable().optional(),
+  coverImageUrl: z.string().trim().max(2000).nullable().optional()
+})
+const campusVendorManagerSchema = z.object({
+  email: z.string().email(),
+  role: z.enum(['admin', 'editor']).default('editor')
+})
+
 export {
   updateUserSchema,
   revokeSessionsSchema,
@@ -87,5 +109,8 @@ export {
   scoreConfigurationSchema,
   contentModerationActionSchema,
   systemConfigurationSchema,
-  updateModerationCaseSchema
+  updateModerationCaseSchema,
+  campusVendorSchema,
+  campusVendorUpdateSchema,
+  campusVendorManagerSchema
 }

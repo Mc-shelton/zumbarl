@@ -7,6 +7,7 @@ function creatorProfilePath(creator = {}) {
   const reference = creator.slug || creator.id || normalizedHandle(creator.handle)
   if (!reference) return ''
   const profileType = String(creator.profileType || '').toLowerCase()
+  if (profileType === 'vendor') return ''
   if (profileType.startsWith('knowledge-')) {
     return `/campus/learn/spaces/${encodeURIComponent(reference)}`
   }

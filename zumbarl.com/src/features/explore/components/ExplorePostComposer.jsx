@@ -33,6 +33,7 @@ const TYPES = [
   { id: "poll", label: "Poll" },
   { id: "feeling", label: "Feeling/Activity" },
 ];
+const DEFAULT_TYPE_IDS = TYPES.map((type) => type.id);
 const FEELINGS = [
   ["😊", "happy"],
   ["🎉", "celebrating"],
@@ -43,11 +44,17 @@ const FEELINGS = [
 ];
 
 function ExplorePostComposer({
+  allowedTypes = DEFAULT_TYPE_IDS,
+  identity = null,
   initialType = "post",
   isOpen,
   onClose,
   onPublish,
+  eyebrow = "Zumbarl Connect",
+  placeholder = "What's happening on campus?",
+  publishLabel = "Post",
   requiredTag = null,
+  title = "Create post",
   allowSpaceTags = true,
 }) {
   const dialogRef = useDialog({ isOpen, onClose });
@@ -89,6 +96,7 @@ function ExplorePostComposer({
   const [tagQuery, setTagQuery] = useState("");
   const [tagTargets, setTagTargets] = useState([]);
   const [selectedTags, setSelectedTags] = useState([]);
+  const availableTypes = TYPES.filter((item) => allowedTypes.includes(item.id));
   useEffect(() => {
     if (isOpen) {
       setType(initialType);
@@ -345,15 +353,16 @@ function ExplorePostComposer({
       >
         <header>
           <div>
-            <span>Zumbarl Connect</span>
-            <h2>Create post</h2>
+            <span>{eyebrow}</span>
+            <h2>{title}</h2>
           </div>
           <button type="button" onClick={onClose}>
             <FiX />
           </button>
         </header>
+        {identity ? <div className="explore-post-identity"><img src={normalizeZumbarlFileUrl(identity.avatarUrl) || "/assets/knowledge/default-group-avatar.svg"} alt="" /><span><small>Posting as</small><strong>{identity.name}</strong></span></div> : null}
         <nav>
-          {TYPES.map((item) => (
+          {availableTypes.map((item) => (
             <button
               type="button"
               key={item.id}
@@ -369,7 +378,7 @@ function ExplorePostComposer({
             autoFocus
             value={body}
             onChange={(e) => setBody(e.target.value)}
-            placeholder="What's happening on campus?"
+            placeholder={placeholder}
           />
           <section className="explore-post-tag-picker">
             <label><FiTag /> {allowSpaceTags ? "Tag a university, course, unit, space or product" : "Tag a product"}</label>
@@ -720,7 +729,7 @@ function ExplorePostComposer({
             Cancel
           </button>
           <button type="submit" disabled={!valid || isPublishing}>
-            {isPublishing ? "Posting…" : "Post"}
+            {isPublishing ? "Posting…" : publishLabel}
           </button>
         </footer>
       </form>

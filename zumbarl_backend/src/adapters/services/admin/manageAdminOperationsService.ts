@@ -14,6 +14,13 @@ type AuditContext = {
 
 const readAdminMetricsService = () => adminOperationsRepository.readMetrics()
 const readSuperAdminDashboardService = () => adminOperationsRepository.readSuperAdminDashboard()
+const readCampusVendorManagementService = () => adminOperationsRepository.readCampusVendorManagement()
+async function createCampusVendorService(payload: Record<string, any>, context?: AuditContext) {
+  return await adminOperationsRepository.createCampusVendor(payload, context) ?? notFound('Campus page or student vendor manager')
+}
+async function updateCampusVendorService(id: string, payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.updateCampusVendor(id, payload, context) ?? notFound('Campus vendor') }
+async function addCampusVendorManagerService(id: string, payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.addCampusVendorManager(id, payload.email, payload.role, context) ?? notFound('Campus vendor or eligible operator') }
+async function removeCampusVendorManagerService(id: string, userId: string, context?: AuditContext) { return await adminOperationsRepository.removeCampusVendorManager(id, userId, context) ?? notFound('Removable campus vendor assignment') }
 async function listUsersService(query: Record<string, unknown>) { const users = await adminOperationsRepository.listUsers(query); return { ...users, data: users.data.map(removePasswordHash) } }
 async function updateUserService(id: string, payload: Record<string, any>, context?: AuditContext) { const user = await adminOperationsRepository.updateUser(id, payload, context) ?? notFound('User'); return removePasswordHash(user) }
 async function revokeUserSessionsService(id: string, payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.revokeUserSessions(id, context, payload.reason) }
@@ -39,6 +46,11 @@ async function updateModerationCaseService(id: string, payload: Record<string, a
 export {
   readAdminMetricsService,
   readSuperAdminDashboardService,
+  readCampusVendorManagementService,
+  createCampusVendorService,
+  updateCampusVendorService,
+  addCampusVendorManagerService,
+  removeCampusVendorManagerService,
   listUsersService,
   updateUserService,
   revokeUserSessionsService,

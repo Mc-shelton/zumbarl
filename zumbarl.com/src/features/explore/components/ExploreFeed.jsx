@@ -1,4 +1,4 @@
-import { FiBookmark, FiBriefcase, FiCalendar, FiEdit3, FiHeart, FiImage, FiMessageCircle, FiRepeat, FiSend, FiShare2, FiShoppingBag, FiSmile, FiTrash2, FiX } from 'react-icons/fi'
+import { FiBookmark, FiBriefcase, FiCalendar, FiEdit3, FiHeart, FiImage, FiMessageCircle, FiRepeat, FiSend, FiShare2, FiShoppingBag, FiSmile, FiTrash2, FiTrendingUp, FiX } from 'react-icons/fi'
 import { BsPinAngleFill } from 'react-icons/bs'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
@@ -243,10 +243,11 @@ function ExploreFeed({ activeFilter, commentsByPost, engagementErrors, engagemen
         <article
           key={post.id}
           id={`connect-post-${post.id}`}
-          className={`explore-campus-feed-card${post.isPinnedAnnouncement ? ' explore-campus-pinned-card' : ''}${focusedPostId === post.id ? ' is-shared-focus' : ''}`}
+          className={`explore-campus-feed-card${post.isPinnedAnnouncement ? ' explore-campus-pinned-card' : ''}${post.isPromoted ? ' is-promoted' : ''}${focusedPostId === post.id ? ' is-shared-focus' : ''}`}
           aria-label={`${post.author} post`}
         >
           {post.isPinnedAnnouncement ? <p className="explore-campus-pinned-label"><BsPinAngleFill aria-hidden="true" />Pinned Announcement</p> : null}
+          {post.isPromoted ? <p className="explore-campus-promoted-label"><FiTrendingUp aria-hidden="true" /><strong>Promoted</strong><span>Sponsored campus update from {post.author}</span></p> : null}
           {post.resharedPost ? (
             <p className="explore-campus-reshared-label">
               <FiRepeat aria-hidden="true" />

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   FiBarChart2,
+  FiCalendar,
   FiCheck,
   FiCheckCircle,
   FiEdit3,
@@ -10,10 +11,13 @@ import {
   FiMail,
   FiMapPin,
   FiMessageCircle,
+  FiPhone,
   FiPlus,
   FiShare2,
   FiThumbsUp,
+  FiTrash2,
   FiUsers,
+  FiX,
 } from "react-icons/fi";
 import { Link, useParams } from "react-router-dom";
 import CampusSidebar from "../components/layout/CampusSidebar";
@@ -97,6 +101,84 @@ function Value({ value }) {
   return <p>{String(value || "Not provided")}</p>;
 }
 
+function serializeDetailValue(value) {
+  if (Array.isArray(value))
+    return value
+      .map((item) =>
+        item && typeof item === "object"
+          ? `${item.label ?? ""}: ${item.value ?? ""}`
+          : String(item),
+      )
+      .join("\n");
+  if (value && typeof value === "object")
+    return Object.entries(value)
+      .map(([key, item]) => `${key}: ${String(item)}`)
+      .join("\n");
+  return value === null || value === undefined ? "" : String(value);
+}
+
+function parseDetailValue(text, original) {
+  const lines = String(text)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+  const splitLine = (line) => {
+    const separator = line.indexOf(":");
+    return separator === -1
+      ? [line, ""]
+      : [line.slice(0, separator).trim(), line.slice(separator + 1).trim()];
+  };
+  if (Array.isArray(original)) {
+    const objectItems =
+      original.length > 0 &&
+      original.every(
+        (item) => item && typeof item === "object" && !Array.isArray(item),
+      );
+    if (objectItems)
+      return lines.map((line) => {
+        const [label, value] = splitLine(line);
+        return { label, value };
+      });
+    return lines;
+  }
+  if (original && typeof original === "object") {
+    const parsed = {};
+    for (const line of lines) {
+      const [key, value] = splitLine(line);
+      const number = Number(value);
+      parsed[key] = value !== "" && !Number.isNaN(number) ? number : value;
+    }
+    return parsed;
+  }
+  return String(text).trim();
+}
+
+function buildDraft(record) {
+  const details =
+    record.details &&
+    typeof record.details === "object" &&
+    !Array.isArray(record.details)
+      ? record.details
+      : {};
+  return {
+    name: record.name || "",
+    tagline: typeof details.tagline === "string" ? details.tagline : "",
+    bio: record.bio || "",
+    websiteUrl: record.websiteUrl || "",
+    email: record.email || "",
+    phone: record.phone || "",
+    locationLabel: record.locationLabel || "",
+    detailsEntries: Object.entries(details)
+      .filter(([key]) => key !== "tagline")
+      .map(([key, value]) => ({
+        id: `${key}-${Math.random().toString(36).slice(2, 8)}`,
+        key,
+        text: serializeDetailValue(value),
+        original: value,
+      })),
+  };
+}
+
 export default function ManagedProfilePage() {
   const { profileSlug } = useParams();
   const [profile, setProfile] = useState(null);
@@ -109,6 +191,8 @@ export default function ManagedProfilePage() {
   const [draft, setDraft] = useState({});
   const [postBody, setPostBody] = useState("");
   const [saving, setSaving] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [editorError, setEditorError] = useState("");
   const load = () => {
     setLoadError("");
     return Promise.all([
@@ -117,13 +201,7 @@ export default function ManagedProfilePage() {
     ])
       .then(([record, mine]) => {
         setProfile(record);
-        setDraft({
-          name: record.name,
-          bio: record.bio || "",
-          websiteUrl: record.websiteUrl || "",
-          email: record.email || "",
-          locationLabel: record.locationLabel || "",
-        });
+        setDraft(buildDraft(record));
         setCanManage((mine.data || []).some((item) => item.id === record.id));
       })
       .catch((error) => {
@@ -139,13 +217,7 @@ export default function ManagedProfilePage() {
       .then(([record, mine]) => {
         if (!active) return;
         setProfile(record);
-        setDraft({
-          name: record.name,
-          bio: record.bio || "",
-          websiteUrl: record.websiteUrl || "",
-          email: record.email || "",
-          locationLabel: record.locationLabel || "",
-        });
+        setDraft(buildDraft(record));
         setCanManage((mine.data || []).some((item) => item.id === record.id));
       })
       .catch((error) => {
@@ -181,6 +253,40 @@ export default function ManagedProfilePage() {
   const posts = profile.posts || [];
   const followerCount = profile._count?.followers || 0;
   const attachedServices = profile.attachedServices || [];
+  const foundedYear = profile.foundedAt
+    ? new Date(profile.foundedAt).getFullYear()
+    : null;
+  const contactRows = [
+    profile.websiteUrl && {
+      label: "Website",
+      value: profile.websiteUrl.replace(/^https?:\/\//, ""),
+      icon: <FiGlobe />,
+      href: profile.websiteUrl,
+      external: true,
+    },
+    profile.email && {
+      label: "Email",
+      value: profile.email,
+      icon: <FiMail />,
+      href: `mailto:${profile.email}`,
+    },
+    profile.phone && {
+      label: "Phone",
+      value: profile.phone,
+      icon: <FiPhone />,
+      href: `tel:${profile.phone.replace(/\s+/g, "")}`,
+    },
+    (profile.locationLabel || profile.campus?.city) && {
+      label: "Location",
+      value: profile.locationLabel || profile.campus?.city,
+      icon: <FiMapPin />,
+    },
+    foundedYear && {
+      label: "Founded",
+      value: String(foundedYear),
+      icon: <FiCalendar />,
+    },
+  ].filter(Boolean);
   const primaryHref =
     profile.type === "campus"
       ? `/campus/explore?campus=${encodeURIComponent(profile.campus?.name || profile.name)}`
@@ -219,13 +325,67 @@ export default function ManagedProfilePage() {
       setSaving(false);
     }
   }
+  function updateDetailEntry(id, patch) {
+    setDraft((current) => ({
+      ...current,
+      detailsEntries: current.detailsEntries.map((entry) =>
+        entry.id === id ? { ...entry, ...patch } : entry,
+      ),
+    }));
+  }
+  function addDetailEntry() {
+    setDraft((current) => ({
+      ...current,
+      detailsEntries: [
+        ...current.detailsEntries,
+        {
+          id: `entry-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          key: "",
+          text: "",
+          original: null,
+        },
+      ],
+    }));
+  }
+  function removeDetailEntry(id) {
+    setDraft((current) => ({
+      ...current,
+      detailsEntries: current.detailsEntries.filter(
+        (entry) => entry.id !== id,
+      ),
+    }));
+  }
+  function buildProfilePayload() {
+    const details = {};
+    if (draft.tagline.trim()) details.tagline = draft.tagline.trim();
+    for (const entry of draft.detailsEntries) {
+      const key = entry.key.trim();
+      if (!key) continue;
+      details[key] = parseDetailValue(entry.text, entry.original);
+    }
+    return {
+      name: draft.name.trim(),
+      bio: draft.bio.trim() || null,
+      websiteUrl: draft.websiteUrl.trim() || null,
+      email: draft.email.trim() || null,
+      phone: draft.phone.trim() || null,
+      locationLabel: draft.locationLabel.trim() || null,
+      details,
+    };
+  }
   async function save(event) {
     event.preventDefault();
-    setProfile({
-      ...profile,
-      ...(await updateManagedProfile(profile.id, draft)),
-    });
-    setEditing(false);
+    setSavingProfile(true);
+    setEditorError("");
+    try {
+      await updateManagedProfile(profile.id, buildProfilePayload());
+      await load();
+      setEditing(false);
+    } catch (error) {
+      setEditorError(error.message || "The changes could not be saved.");
+    } finally {
+      setSavingProfile(false);
+    }
   }
   const activity = (
     <div className="managed-profile-feed">
@@ -485,9 +645,173 @@ export default function ManagedProfilePage() {
                     <article><FiCheckCircle /><span><small>Trust status</small><strong>{profile.isVerified ? "Verified campus" : "Campus page"}</strong></span></article>
                   </div>
                 </section>
-                {attachedServices.length ? <section className="managed-profile-services"><header><div><span>On campus</span><h2>Campus services</h2></div><small>{attachedServices.length} available</small></header><div>{attachedServices.map((service) => { const type = service.type === "barber_shop" ? "Barber shop" : service.type === "hotel" ? "Hotel" : "Campus service"; return <Link className="managed-profile-service-card" to={`/campus/organizations/${encodeURIComponent(service.slug || service.id)}`} key={service.id}><img src={service.avatarUrl || "/assets/index/bee_nobg.png"} alt="" /><span><small>{type}</small><strong>{service.name}</strong><em>{service.bio || service.locationLabel || "View service details"}</em><b>{service._count?.posts || 0} updates · {service._count?.followers || 0} followers <FiExternalLink /></b></span></Link> })}</div></section> : null}
-                <section className="managed-profile-grid managed-profile-about-details">
-                  {sections.map(([key, value]) => <article key={key}><h2>{LABELS[key] || key.replace(/([A-Z])/g, " $1")}</h2><Value value={value} /></article>)}
+                <section className="managed-profile-about-bio">
+                  <header className="managed-profile-about-head">
+                    <div>
+                      <span>About</span>
+                      <h2>Who we are</h2>
+                    </div>
+                    {canManage ? (
+                      <button
+                        className="managed-profile-about-edit"
+                        onClick={() => setEditing(true)}
+                      >
+                        <FiEdit3 /> Edit
+                      </button>
+                    ) : null}
+                  </header>
+                  {profile.details?.tagline ? (
+                    <em className="managed-profile-about-tagline">
+                      “{profile.details.tagline}”
+                    </em>
+                  ) : null}
+                  <p>{profile.bio || "This page has not added a bio yet."}</p>
+                </section>
+                <section className="managed-profile-about-contact">
+                  <header className="managed-profile-about-head">
+                    <div>
+                      <span>Contact info</span>
+                      <h2>Contact & links</h2>
+                    </div>
+                    {canManage ? (
+                      <button
+                        className="managed-profile-about-edit"
+                        onClick={() => setEditing(true)}
+                      >
+                        <FiEdit3 /> Edit
+                      </button>
+                    ) : null}
+                  </header>
+                  {contactRows.length ? (
+                    <div className="managed-profile-contact-list">
+                      {contactRows.map((row) =>
+                        row.href ? (
+                          <a
+                            key={row.label}
+                            href={row.href}
+                            {...(row.external
+                              ? { target: "_blank", rel: "noreferrer" }
+                              : {})}
+                          >
+                            {row.icon}
+                            <span>
+                              <small>{row.label}</small>
+                              <strong>{row.value}</strong>
+                            </span>
+                          </a>
+                        ) : (
+                          <span key={row.label}>
+                            {row.icon}
+                            <span>
+                              <small>{row.label}</small>
+                              <strong>{row.value}</strong>
+                            </span>
+                          </span>
+                        ),
+                      )}
+                    </div>
+                  ) : (
+                    <p className="managed-profile-about-empty">
+                      {canManage
+                        ? "Add a website, email, phone number or location so people can reach this page."
+                        : "No contact information has been added yet."}
+                    </p>
+                  )}
+                </section>
+                {attachedServices.length ? (
+                  <section className="managed-profile-services">
+                    <header>
+                      <div>
+                        <span>On campus</span>
+                        <h2>Campus vendors</h2>
+                      </div>
+                      <small>{attachedServices.length} available</small>
+                    </header>
+                    <div>
+                      {attachedServices.map((service) => {
+                        const type =
+                          service.type === "barber_shop"
+                            ? "Barber shop"
+                            : service.type === "hotel"
+                              ? "Hotel"
+                              : "Campus service";
+                        return (
+                          <Link
+                            className="managed-profile-service-card"
+                            to={`/campus/opportunities/buy-sell?shop=${encodeURIComponent(service.slug || service.id)}`}
+                            key={service.id}
+                          >
+                            <img
+                              src={service.avatarUrl || "/assets/index/bee_nobg.png"}
+                              alt=""
+                            />
+                            <span>
+                              <small>{type} vendor</small>
+                              <strong>{service.name}</strong>
+                              <em>
+                                {service.bio ||
+                                  service.locationLabel ||
+                                  "View vendor inventory"}
+                              </em>
+                              <b>
+                                {service._count?.listings || 0} inventory items ·{" "}
+                                Orders enabled{" "}
+                                <FiExternalLink />
+                              </b>
+                            </span>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </section>
+                ) : canManage ? (
+                  <section className="managed-profile-services is-empty">
+                    <header>
+                      <div>
+                        <span>On campus</span>
+                        <h2>Campus vendors</h2>
+                      </div>
+                    </header>
+                    <p>
+                      Campus vendors created by Zumbarl administrators for
+                      this university — such as hotels and barber shops — will
+                      be listed here once active.
+                    </p>
+                  </section>
+                ) : null}
+                <section className="managed-profile-about-more">
+                  <header className="managed-profile-about-head">
+                    <div>
+                      <span>Page details</span>
+                      <h2>More about {profile.name}</h2>
+                    </div>
+                    {canManage ? (
+                      <button
+                        className="managed-profile-about-edit"
+                        onClick={() => setEditing(true)}
+                      >
+                        <FiEdit3 /> Edit details
+                      </button>
+                    ) : null}
+                  </header>
+                  {sections.length ? (
+                    <div className="managed-profile-grid managed-profile-about-details">
+                      {sections.map(([key, value]) => (
+                        <article key={key}>
+                          <h2>
+                            {LABELS[key] || key.replace(/([A-Z])/g, " $1")}
+                          </h2>
+                          <Value value={value} />
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="managed-profile-about-empty">
+                      {canManage
+                        ? "Add sections like “Student life”, “Facilities” or “Important contacts” from the editor."
+                        : "This page has not published any extra details yet."}
+                    </p>
+                  )}
                 </section>
               </div>
             ) : null}
@@ -515,27 +839,179 @@ export default function ManagedProfilePage() {
               </section>
             ) : null}
             {editing ? (
-              <div className="managed-profile-editor">
+              <div
+                className="managed-profile-editor"
+                onClick={(event) => {
+                  if (event.target === event.currentTarget)
+                    setEditing(false);
+                }}
+              >
                 <form onSubmit={save}>
-                  <h2>Admin view</h2>
-                  <p>Update the public identity for {profile.name}.</p>
-                  {Object.keys(draft).map((field) => (
-                    <label key={field}>
-                      {field.replace(/([A-Z])/g, " $1")}
+                  <header>
+                    <div>
+                      <span>Admin tools</span>
+                      <h2>Edit page info</h2>
+                      <p>
+                        Update how {profile.name} appears to everyone on
+                        Zumbarl.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      aria-label="Close editor"
+                      onClick={() => setEditing(false)}
+                    >
+                      <FiX />
+                    </button>
+                  </header>
+                  <section>
+                    <h3>Basics</h3>
+                    <label>
+                      Page name
                       <input
-                        value={draft[field]}
+                        value={draft.name}
+                        required
                         onChange={(event) =>
-                          setDraft({ ...draft, [field]: event.target.value })
+                          setDraft({ ...draft, name: event.target.value })
                         }
                       />
                     </label>
-                  ))}
-                  <div>
+                    <label>
+                      Tagline
+                      <input
+                        value={draft.tagline}
+                        placeholder="A short line shown under the page name"
+                        onChange={(event) =>
+                          setDraft({ ...draft, tagline: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Bio
+                      <textarea
+                        rows={4}
+                        maxLength={1000}
+                        value={draft.bio}
+                        placeholder="Tell people what this page is about"
+                        onChange={(event) =>
+                          setDraft({ ...draft, bio: event.target.value })
+                        }
+                      />
+                    </label>
+                  </section>
+                  <section>
+                    <h3>Contact & links</h3>
+                    <label>
+                      Website
+                      <input
+                        type="url"
+                        value={draft.websiteUrl}
+                        placeholder="https://…"
+                        onChange={(event) =>
+                          setDraft({ ...draft, websiteUrl: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Contact email
+                      <input
+                        type="email"
+                        value={draft.email}
+                        placeholder="info@example.ac.ke"
+                        onChange={(event) =>
+                          setDraft({ ...draft, email: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Phone
+                      <input
+                        value={draft.phone}
+                        placeholder="+254 …"
+                        onChange={(event) =>
+                          setDraft({ ...draft, phone: event.target.value })
+                        }
+                      />
+                    </label>
+                    <label>
+                      Location
+                      <input
+                        value={draft.locationLabel}
+                        placeholder="e.g. Rongai, Nairobi"
+                        onChange={(event) =>
+                          setDraft({
+                            ...draft,
+                            locationLabel: event.target.value,
+                          })
+                        }
+                      />
+                    </label>
+                  </section>
+                  <section>
+                    <header>
+                      <h3>Page details</h3>
+                      <button type="button" onClick={addDetailEntry}>
+                        <FiPlus /> Add section
+                      </button>
+                    </header>
+                    {draft.detailsEntries.length ? (
+                      draft.detailsEntries.map((entry) => (
+                        <div
+                          className="managed-profile-detail-row"
+                          key={entry.id}
+                        >
+                          <div>
+                            <input
+                              value={entry.key}
+                              placeholder="Section title (e.g. Student life)"
+                              onChange={(event) =>
+                                updateDetailEntry(entry.id, {
+                                  key: event.target.value,
+                                })
+                              }
+                            />
+                            <button
+                              type="button"
+                              aria-label="Remove section"
+                              onClick={() => removeDetailEntry(entry.id)}
+                            >
+                              <FiTrash2 />
+                            </button>
+                          </div>
+                          <textarea
+                            rows={2}
+                            value={entry.text}
+                            placeholder={
+                              "One item per line — lists become bullet points.\nUse “Label: value” lines for contact entries."
+                            }
+                            onChange={(event) =>
+                              updateDetailEntry(entry.id, {
+                                text: event.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                      ))
+                    ) : (
+                      <p>
+                        No detail sections yet. Add ones like “Student life”,
+                        “Facilities” or “Important contacts”.
+                      </p>
+                    )}
+                  </section>
+                  {editorError ? (
+                    <p className="managed-profile-editor-error">
+                      {editorError}
+                    </p>
+                  ) : null}
+                  <footer>
                     <button type="button" onClick={() => setEditing(false)}>
                       Cancel
                     </button>
-                    <button className="is-primary">Save changes</button>
-                  </div>
+                    <button className="is-primary" disabled={savingProfile}>
+                      {savingProfile ? "Saving…" : "Save changes"}
+                    </button>
+                  </footer>
                 </form>
               </div>
             ) : null}

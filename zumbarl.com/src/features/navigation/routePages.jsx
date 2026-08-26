@@ -59,6 +59,9 @@ export const CampusPage = lazy(() => import("../../pages/CampusPage"));
 export const CampusProfilePage = lazy(
   () => import("../../pages/CampusProfilePage"),
 );
+export const CampusVendorWorkspacePage = lazy(
+  () => import("../../pages/CampusVendorWorkspacePage"),
+);
 export const ExploreCampusPage = lazy(
   () => import("../../pages/ExploreCampusPage"),
 );

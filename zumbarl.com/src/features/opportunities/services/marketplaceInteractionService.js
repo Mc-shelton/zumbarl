@@ -52,6 +52,40 @@ function readMyMarketplaceInventory() {
   return sendZumbarlApiRequest('/marketplace/my/listings')
 }
 
+function listMyCampusVendors() {
+  return sendZumbarlApiRequest('/marketplace/vendors/me')
+}
+
+function readCampusVendorWorkspace(slug) {
+  return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/workspace`)
+}
+
+function createCampusVendorPost(slug, payload) {
+  return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/posts`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+function createCampusVendorPromotion(slug, payload) {
+  return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/promotions`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+function updateManagedCampusVendor(slug, payload) {
+  return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}`, { method: 'PATCH', body: JSON.stringify(payload) })
+}
+
+function addManagedCampusVendorManager(slug, payload) {
+  return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/managers`, { method: 'POST', body: JSON.stringify(payload) })
+}
+
+function removeManagedCampusVendorManager(slug, userId) {
+  return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/managers/${encodeURIComponent(userId)}`, { method: 'DELETE' })
+}
+
 function updateMyMarketplaceShop(payload) {
   return sendZumbarlApiRequest('/marketplace/my/shop', { method: 'PATCH', body: JSON.stringify(payload) })
 }
@@ -156,6 +190,13 @@ function createMarketplaceListing(payload) {
   })
 }
 
+function createMarketplaceListingForShop(shopId, payload) {
+  return sendZumbarlApiRequest(`/marketplace/shops/${encodeURIComponent(shopId)}/listings`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 function updateMarketplaceListing(id, payload) {
   return sendZumbarlApiRequest(`/marketplace/listings/${encodeURIComponent(id)}`, {
     method: 'PATCH',
@@ -190,6 +231,12 @@ function recordMarketplaceSellerView(username, product) {
 
 export {
   createMarketplaceListing,
+  createMarketplaceListingForShop,
+  createCampusVendorPost,
+  createCampusVendorPromotion,
+  updateManagedCampusVendor,
+  addManagedCampusVendorManager,
+  removeManagedCampusVendorManager,
   createMarketplaceOrder,
   addAcceptedOfferToCart,
   addMarketplaceListingToCart,
@@ -198,6 +245,7 @@ export {
   cancelMarketplaceOrder,
   decideMarketplaceOffer,
   listMarketplaceListings,
+  listMyCampusVendors,
   mapMarketplaceApiListing,
   readMarketplaceListing,
   readMarketplaceOffer,
@@ -206,6 +254,7 @@ export {
   removeMarketplaceCartItem,
   readMarketplaceSeller,
   readMyMarketplaceInventory,
+  readCampusVendorWorkspace,
   updateMyMarketplaceShop,
   searchMarketplaceLocations,
   readMyPendingMarketplaceOffers,

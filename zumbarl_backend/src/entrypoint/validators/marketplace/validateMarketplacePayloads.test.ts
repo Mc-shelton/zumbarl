@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cartItemSchema, listingSchema } from './validateMarketplacePayloads.js'
+import { campusVendorListingSchema, cartItemSchema, listingSchema, vendorPostSchema } from './validateMarketplacePayloads.js'
 
 describe('marketplace service validation', () => {
   it('accepts an appointment-based campus service listing', () => {
@@ -38,5 +38,37 @@ describe('marketplace service validation', () => {
       listingId: 'campus-barber',
       serviceRequest: { mode: 'appointment' },
     }).success).toBe(false)
+  })
+
+  it('accepts the normal Explore Campus post format for a vendor profile', () => {
+    const result = vendorPostSchema.safeParse({
+      type: 'image',
+      body: 'Today’s lunch menu is ready.',
+      visibility: 'campus',
+      tags: [{ type: 'university', id: 'campus-1', label: 'Multimedia University' }],
+      mediaUrls: ['https://cdn.example.com/menu.jpg'],
+      mediaEdits: [{ type: 'image', zoom: 1.2, positionX: 50, positionY: 45 }],
+    })
+
+    expect(result.success).toBe(true)
+  })
+
+  it('accepts campus-only food inventory without delivery coordinates', () => {
+    const result = campusVendorListingSchema.safeParse({
+      title: 'Beef stew and chapati',
+      kind: 'service',
+      serviceMode: 'order_ahead',
+      description: 'Fresh beef stew served with two chapatis.',
+      category: 'Meals',
+      priceAmount: 250,
+      stock: 20,
+      locationLabel: 'MMU main campus',
+      inventoryType: 'food',
+      foodType: 'meal',
+      preparationMinutes: 15,
+      campusOnly: true,
+    })
+
+    expect(result.success).toBe(true)
   })
 })

@@ -23,7 +23,12 @@ import {
   updateModerationCaseController,
   updateUserController,
   writeScoreConfigurationController,
-  writeSystemConfigurationController
+  writeSystemConfigurationController,
+  readCampusVendorManagementController,
+  createCampusVendorController,
+  updateCampusVendorController,
+  addCampusVendorManagerController,
+  removeCampusVendorManagerController
 } from '../../controllers/admin/index.js'
 
 async function registerAdminRoutes(app: FastifyInstance) {
@@ -41,6 +46,11 @@ async function registerAdminRoutes(app: FastifyInstance) {
 
   app.get('/super-admin/dashboard', { preHandler: superAdminOnly }, readSuperAdminDashboardController)
   app.get('/super-admin/accounts', { preHandler: superAdminOnly }, listUsersController)
+  app.get('/super-admin/campus-vendors', { preHandler: superAdminOnly }, readCampusVendorManagementController)
+  app.post('/super-admin/campus-vendors', { preHandler: superAdminOnly }, createCampusVendorController)
+  app.patch('/super-admin/campus-vendors/:id', { preHandler: superAdminOnly }, updateCampusVendorController)
+  app.post('/super-admin/campus-vendors/:id/managers', { preHandler: superAdminOnly }, addCampusVendorManagerController)
+  app.delete('/super-admin/campus-vendors/:id/managers/:userId', { preHandler: superAdminOnly }, removeCampusVendorManagerController)
   app.patch('/super-admin/accounts/:id', { preHandler: superAdminOnly }, updateUserController)
   app.post('/super-admin/accounts/:id/revoke-sessions', { preHandler: superAdminOnly }, revokeUserSessionsController)
   app.post('/super-admin/accounts/:id/review-kyc', { preHandler: superAdminOnly }, reviewUserKycController)

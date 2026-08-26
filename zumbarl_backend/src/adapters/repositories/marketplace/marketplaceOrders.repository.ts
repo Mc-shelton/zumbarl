@@ -26,6 +26,11 @@ function payloadObject(value: unknown) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {}
 }
 
+function toPayloadRecord(record: Record<string, any>) {
+  const { payload, ...rest } = record
+  return { ...payloadObject(payload), ...rest }
+}
+
 function slugify(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'shop'
 }
@@ -335,6 +340,148 @@ class MarketplaceOrdersRepository {
     return shop ? toShopRecord(shop) : null
   }
 
+  async listOwnedCampusVendors(userId: string) {
+    const shops = await prisma.marketplaceShop.findMany({
+      where: { managers: { some: { userId } }, status: { notIn: ['ARCHIVED', 'SUSPENDED'] } },
+      include: { campus: true, managers: { where: { userId }, select: { role: true } }, _count: { select: { listings: true } } },
+      orderBy: { createdAt: 'asc' }
+    })
+    return shops
+      .filter((shop) => payloadObject(shop.payload).entityType === 'campus_vendor')
+      .map((shop) => ({
+        ...toShopRecord(shop),
+        type: payloadObject(shop.payload).vendorType || 'service',
+        campusManagedProfileId: payloadObject(shop.payload).campusManagedProfileId || null,
+        capabilities: payloadObject(shop.payload).capabilities || ['inventory', 'orders', 'posts', 'promotions'],
+        role: shop.managers[0]?.role || 'editor',
+        inventoryCount: shop._count.listings
+      }))
+  }
+
+  async findOwnedCampusVendor(userId: string, slug: string, assignmentRoles?: string[]) {
+    const shop = await prisma.marketplaceShop.findFirst({
+      where: {
+        slug,
+        managers: { some: { userId, ...(assignmentRoles ? { role: { in: assignmentRoles } } : {}) } },
+        status: { notIn: ['ARCHIVED', 'SUSPENDED'] }
+      },
+      include: {
+        campus: true,
+        managers: { select: { role: true, user: { select: { id: true, name: true, email: true, username: true } } }, orderBy: { createdAt: 'asc' } }
+      }
+    })
+    return shop && payloadObject(shop.payload).entityType === 'campus_vendor' ? shop : null
+  }
+
+  async readCampusVendorWorkspace(userId: string, slug: string) {
+    const shop = await this.findOwnedCampusVendor(userId, slug)
+    if (!shop) return null
+    const [listings, posts, sellerOrders] = await Promise.all([
+      prisma.marketplaceListing.findMany({
+        where: { shopId: shop.id, status: { not: 'REMOVED' } },
+        include: listingRelations,
+        orderBy: { updatedAt: 'desc' }
+      }),
+      prisma.connectPost.findMany({
+        where: { payload: { path: ['vendorShopId'], equals: shop.id }, status: { not: 'removed' } },
+        orderBy: { createdAt: 'desc' }
+      }),
+      this.listSellerOrders(shop.ownerId)
+    ])
+    const listingIds = new Set(listings.map((listing) => listing.id))
+    const orders = sellerOrders.filter((order) => order.items.some((item: Record<string, any>) => listingIds.has(item.listingId)))
+    return {
+      shop: {
+        ...toShopRecord(shop),
+        type: payloadObject(shop.payload).vendorType || 'service',
+        capabilities: payloadObject(shop.payload).capabilities || ['inventory', 'orders', 'posts', 'promotions'],
+        managers: shop.managers,
+        viewerRole: shop.managers.find((assignment) => assignment.user.id === userId)?.role || 'editor',
+        canManageAssignments: ['owner', 'admin'].includes(shop.managers.find((assignment) => assignment.user.id === userId)?.role || '')
+      },
+      listings: listings.map(toListingRecord),
+      orders,
+      posts: posts.map(toPayloadRecord)
+    }
+  }
+
+  async createCampusVendorPost(userId: string, slug: string, payload: Record<string, any>, promotion = false) {
+    const shop = await this.findOwnedCampusVendor(userId, slug)
+    if (!shop) return null
+    const promotionPayload = promotion ? { ...payload, status: 'active' } : null
+    const postPayload = {
+      ...payload,
+      vendorShopId: shop.id,
+      vendorSnapshot: {
+        id: shop.id,
+        slug: shop.slug,
+        name: shop.name,
+        avatarUrl: shop.logoUrl,
+        campus: shop.campus?.name || shop.locationLabel,
+        isVerified: true
+      },
+      ...(promotion ? { isPromoted: true, promotion: promotionPayload } : {})
+    }
+    return toPayloadRecord(await prisma.connectPost.create({
+      data: {
+        studentId: shop.ownerId,
+        type: promotion ? 'post' : payload.type || 'post',
+        body: promotion ? `${payload.headline}\n\n${payload.description}` : payload.body,
+        tags: jsonInput(payload.tags ?? (promotion ? [{ type: 'promotion', id: shop.id, label: 'Promotion' }] : [])),
+        visibility: payload.visibility || 'campus',
+        status: 'published',
+        reactions: {},
+        payload: jsonInput(postPayload)
+      }
+    }))
+  }
+
+  async updateCampusVendorForManager(userId: string, slug: string, payload: Record<string, any>) {
+    const shop = await this.findOwnedCampusVendor(userId, slug, ['owner', 'admin'])
+    if (!shop) return null
+    const currentPayload = payloadObject(shop.payload)
+    const vendorType = payload.type || currentPayload.vendorType || 'service'
+    return this.readCampusVendorWorkspace(userId, (await prisma.marketplaceShop.update({
+      where: { id: shop.id },
+      data: {
+        ...(payload.name !== undefined ? { name: payload.name } : {}),
+        ...(payload.description !== undefined ? { description: payload.description || null } : {}),
+        ...(payload.locationLabel !== undefined ? { locationLabel: payload.locationLabel || null } : {}),
+        ...(payload.logoUrl !== undefined ? { logoUrl: payload.logoUrl || null } : {}),
+        ...(payload.coverImageUrl !== undefined ? { coverImageUrl: payload.coverImageUrl || null } : {}),
+        category: vendorType === 'hotel' ? 'Food & hospitality' : vendorType === 'barber_shop' ? 'Beauty & grooming' : 'Campus services',
+        payload: jsonInput({ ...currentPayload, vendorType })
+      }
+    })).slug)
+  }
+
+  async addCampusVendorManagerForManager(userId: string, slug: string, email: string, role: string) {
+    const shop = await this.findOwnedCampusVendor(userId, slug, ['owner', 'admin'])
+    if (!shop) return null
+    const user = await prisma.user.findUnique({ where: { email: email.toLowerCase() }, include: { studentProfile: true } })
+    if (!user?.studentProfile) return null
+    const existing = await prisma.marketplaceShopManager.findUnique({
+      where: { shopId_userId: { shopId: shop.id, userId: user.id } },
+      include: { user: { select: { id: true, name: true, email: true, username: true } } }
+    })
+    if (existing?.role === 'owner') return existing
+    return prisma.marketplaceShopManager.upsert({
+      where: { shopId_userId: { shopId: shop.id, userId: user.id } },
+      update: { role },
+      create: { shopId: shop.id, userId: user.id, role },
+      include: { user: { select: { id: true, name: true, email: true, username: true } } }
+    })
+  }
+
+  async removeCampusVendorManagerForManager(actorUserId: string, slug: string, managerUserId: string) {
+    const shop = await this.findOwnedCampusVendor(actorUserId, slug, ['owner', 'admin'])
+    if (!shop || actorUserId === managerUserId) return null
+    const assignment = await prisma.marketplaceShopManager.findUnique({ where: { shopId_userId: { shopId: shop.id, userId: managerUserId } } })
+    if (!assignment || assignment.role === 'owner') return null
+    await prisma.marketplaceShopManager.delete({ where: { id: assignment.id } })
+    return { shopId: shop.id, userId: managerUserId, removed: true }
+  }
+
   async createDefaultShop(studentId: string) {
     const student = await prisma.studentProfile.findUnique({
       where: { id: studentId },
@@ -392,6 +539,10 @@ class MarketplaceOrdersRepository {
   async findShop(id: string) {
     const shop = await prisma.marketplaceShop.findUnique({ where: { id }, include: { campus: true } })
     return shop ? toShopRecord(shop) : null
+  }
+
+  async userManagesShop(userId: string, shopId: string) {
+    return Boolean(await prisma.marketplaceShopManager.findUnique({ where: { shopId_userId: { shopId, userId } } }))
   }
 
   async findListing(id: string) {

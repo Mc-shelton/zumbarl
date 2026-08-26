@@ -1,12 +1,19 @@
 import type { FastifyInstance } from 'fastify'
 import { requireRoles, roleGroups } from '../../../../lib/security.js'
-import { addCartItemController, cancelBuyerOrderController, clearCartController, confirmOrderReceivedController, createMarketplaceListingController, createMarketplaceOfferController, createMarketplaceShopController, createOrderController, createOwnedMarketplaceListingController, decideMarketplaceOfferController, disputeOrderController, listMarketplaceListingsController, listMarketplaceShopsController, listOrdersController, quoteZumbarlDeliveryController, readCartController, readMarketplaceListingController, readMarketplaceOfferController, readMarketplaceSellerController, readMyMarketplaceInventoryController, readMyPendingMarketplaceOffersController, readZumbarlDeliveryConfigController, recordMarketplaceSellerViewController, removeCartItemController, reviewOrderController, searchMarketplaceLocationsController, startMarketplaceChatController, updateCartItemFulfilmentController, updateMyMarketplaceShopController, updateOrderStatusController, updateOwnedMarketplaceListingController } from '../../controllers/marketplace/index.js'
+import { addCampusVendorManagerForManagerController, addCartItemController, cancelBuyerOrderController, clearCartController, confirmOrderReceivedController, createCampusVendorPostController, createCampusVendorPromotionController, createMarketplaceListingController, createMarketplaceOfferController, createMarketplaceShopController, createOrderController, createOwnedMarketplaceListingController, decideMarketplaceOfferController, disputeOrderController, listMarketplaceListingsController, listMarketplaceShopsController, listMyCampusVendorsController, listOrdersController, quoteZumbarlDeliveryController, readCampusVendorWorkspaceController, readCartController, readMarketplaceListingController, readMarketplaceOfferController, readMarketplaceSellerController, readMyMarketplaceInventoryController, readMyPendingMarketplaceOffersController, readZumbarlDeliveryConfigController, recordMarketplaceSellerViewController, removeCampusVendorManagerForManagerController, removeCartItemController, reviewOrderController, searchMarketplaceLocationsController, startMarketplaceChatController, updateCampusVendorForManagerController, updateCartItemFulfilmentController, updateMyMarketplaceShopController, updateOrderStatusController, updateOwnedMarketplaceListingController } from '../../controllers/marketplace/index.js'
 async function registerMarketplaceRoutes(app: FastifyInstance) {
   const students = requireRoles(...roleGroups.student, ...roleGroups.admin)
   app.get('/shops', { preHandler: students }, listMarketplaceShopsController)
   app.post('/shops', { preHandler: students }, createMarketplaceShopController)
   app.get('/listings', { preHandler: students }, listMarketplaceListingsController)
   app.get('/my/listings', { preHandler: students }, readMyMarketplaceInventoryController)
+  app.get('/vendors/me', { preHandler: students }, listMyCampusVendorsController)
+  app.get('/vendors/:slug/workspace', { preHandler: students }, readCampusVendorWorkspaceController)
+  app.post('/vendors/:slug/posts', { preHandler: students }, createCampusVendorPostController)
+  app.post('/vendors/:slug/promotions', { preHandler: students }, createCampusVendorPromotionController)
+  app.patch('/vendors/:slug', { preHandler: students }, updateCampusVendorForManagerController)
+  app.post('/vendors/:slug/managers', { preHandler: students }, addCampusVendorManagerForManagerController)
+  app.delete('/vendors/:slug/managers/:userId', { preHandler: students }, removeCampusVendorManagerForManagerController)
   app.patch('/my/shop', { preHandler: students }, updateMyMarketplaceShopController)
   app.get('/locations/search', { preHandler: students }, searchMarketplaceLocationsController)
   app.get('/my/offers', { preHandler: students }, readMyPendingMarketplaceOffersController)

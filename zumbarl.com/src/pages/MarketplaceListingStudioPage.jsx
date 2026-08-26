@@ -1,3 +1,4 @@
+import { FiCheckCircle, FiShoppingBag, FiShield } from 'react-icons/fi'
 import CampusSidebar from '../components/layout/CampusSidebar'
 import CampusTopActions from '../components/layout/CampusTopActions'
 import Seo from '../components/Seo'
@@ -20,13 +21,17 @@ function MarketplaceListingStudioPage() {
           <CampusSidebar activeItemId="marketplace" />
           <section className="campus-main marketplace-studio-main">
             <header className="marketplace-studio-header">
-              <div>
+              <div className="marketplace-studio-header-copy">
                 <Breadcrumb items={[{ label: 'Marketplace', href: '/campus/opportunities/buy-sell' }, { label: studio.isEdit ? 'Edit listing' : 'Create listing' }]} />
-                <span>Seller workspace</span>
-                <h1>{studio.isEdit ? 'Edit your listing' : 'Create a marketplace listing'}</h1>
-                <p>Build a complete buyer-ready listing, from the first photo through safe campus fulfilment.</p>
+                <div className="marketplace-studio-kicker"><FiShoppingBag aria-hidden="true" /><span>{studio.vendorMode ? 'Vendor inventory studio' : 'Marketplace seller studio'}</span></div>
+                <h1>{studio.isEdit ? 'Edit your listing' : studio.vendorMode ? 'Add vendor inventory' : 'Create a marketplace listing'}</h1>
+                <p>Give campus buyers everything they need to discover, trust, and order your {studio.vendorMode ? 'vendor offering' : 'listing'}.</p>
+                <div className="marketplace-studio-trust-row"><span><FiShield /> Protected transactions</span><span><FiCheckCircle /> Campus-ready publishing</span></div>
               </div>
-              <CampusTopActions scope="campus" />
+              <aside className="marketplace-studio-header-side">
+                <CampusTopActions scope="campus" />
+                <div className="marketplace-studio-step-status"><span>Listing progress</span><strong>Step {studio.activeStep} of {studio.steps.length}</strong><div><i style={{ width: `${(studio.activeStep / studio.steps.length) * 100}%` }} /></div></div>
+              </aside>
             </header>
             <MarketplaceListingSteps activeStep={studio.activeStep} onStepChange={studio.goToStep} steps={studio.steps} />
             {studio.isLoading ? <section className="marketplace-studio-loading" role="status">Loading your listing studio…</section> : <MarketplaceListingForm studio={studio} />}

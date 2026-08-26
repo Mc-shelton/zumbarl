@@ -8,6 +8,29 @@ function listSuperAdminAccounts(query = '') {
   return sendZumbarlApiRequest(`/admin/super-admin/accounts${query}`)
 }
 
+function readCampusVendorManagement() {
+  return sendZumbarlApiRequest('/admin/super-admin/campus-vendors')
+}
+
+function createCampusVendor(payload) {
+  return sendZumbarlApiRequest('/admin/super-admin/campus-vendors', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+function updateCampusVendor(id, payload) {
+  return sendZumbarlApiRequest(`/admin/super-admin/campus-vendors/${encodeURIComponent(id)}`, { method: 'PATCH', body: JSON.stringify(payload) })
+}
+
+function addCampusVendorManager(id, payload) {
+  return sendZumbarlApiRequest(`/admin/super-admin/campus-vendors/${encodeURIComponent(id)}/managers`, { method: 'POST', body: JSON.stringify(payload) })
+}
+
+function removeCampusVendorManager(id, userId) {
+  return sendZumbarlApiRequest(`/admin/super-admin/campus-vendors/${encodeURIComponent(id)}/managers/${encodeURIComponent(userId)}`, { method: 'DELETE' })
+}
+
 function updateSuperAdminAccount(userId, payload) {
   return sendZumbarlApiRequest(`/admin/super-admin/accounts/${userId}`, {
     method: 'PATCH',
@@ -109,6 +132,11 @@ function publishZumbarlAd(adId) {
 export {
   readSuperAdminDashboard,
   listSuperAdminAccounts,
+  readCampusVendorManagement,
+  createCampusVendor,
+  updateCampusVendor,
+  addCampusVendorManager,
+  removeCampusVendorManager,
   updateSuperAdminAccount,
   revokeSuperAdminSessions,
   reviewSuperAdminKyc,

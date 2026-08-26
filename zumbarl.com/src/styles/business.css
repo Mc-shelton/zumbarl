@@ -19323,6 +19323,66 @@ font-size: clamp(10px, 1vw, 18px);
   font-weight: 700;
 }
 
+.super-admin-vendor-list {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0.75rem 0;
+}
+
+.super-admin-vendor-list > div {
+  align-items: center;
+  background: #f4f1ff;
+  border: 1px solid #dfd7ff;
+  border-radius: 0.7rem;
+  display: flex;
+  justify-content: space-between;
+  padding: 0.65rem 0.75rem;
+}
+
+.super-admin-vendor-list > div span {
+  display: grid;
+  gap: 0.1rem;
+}
+
+.super-admin-vendor-list b,
+.super-admin-vendor-list small {
+  color: #322b48;
+  font-style: normal;
+}
+
+.super-admin-vendor-list em {
+  background: #6238ec;
+  border-radius: 999px;
+  color: #fff;
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 0.28rem 0.5rem;
+  text-transform: uppercase;
+}
+
+.super-admin-vendor-actions {
+  align-items: flex-end;
+  display: flex !important;
+  gap: 0.45rem;
+}
+
+.super-admin-vendor-actions button {
+  background: #fff;
+  border: 1px solid #cfc5f6;
+  border-radius: 0.5rem;
+  color: #4e2bc1;
+  font-weight: 800;
+  padding: 0.35rem 0.55rem;
+}
+
+.super-admin-vendor-edit-form {
+  border-bottom: 1px solid #e5e0ef;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+}
+
 .super-admin-table-wrap {
   overflow-x: auto;
   border: 1px solid #e6e8f0;

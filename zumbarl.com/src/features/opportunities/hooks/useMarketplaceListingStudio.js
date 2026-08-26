@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { getMarketplaceItemPath } from '../../../data/marketplace'
 import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
-import { createMarketplaceListing, readMarketplaceListing, updateMarketplaceListing } from '../services/marketplaceInteractionService'
+import { createMarketplaceListing, createMarketplaceListingForShop, readCampusVendorWorkspace, readMarketplaceListing, updateMarketplaceListing } from '../services/marketplaceInteractionService'
 
 const DRAFT_STORAGE_KEY = 'zumbarl.marketplaceListingDraft.v1'
 
@@ -13,12 +13,26 @@ const MARKETPLACE_LISTING_STEPS = [
   { id: 'fulfilment', label: 'Fulfilment', meta: 'Delivery, pickup & returns' },
   { id: 'review', label: 'Review & publish', meta: 'Preview your listing' },
 ]
+const FOOD_INVENTORY_STEPS = [
+  { id: 'basics', label: 'Menu item', meta: 'Name, type & description' },
+  { id: 'media', label: 'Photo & food details', meta: 'Image, portion & ingredients' },
+  { id: 'pricing', label: 'Price & availability', meta: 'Price and servings today' },
+  { id: 'review', label: 'Review & publish', meta: 'Preview the menu item' },
+]
 
 const DEFAULT_FORM = {
   kind: 'product',
   serviceMode: 'appointment',
   duration: '',
   availabilityText: '',
+  inventoryType: '',
+  foodType: 'meal',
+  ingredients: '',
+  allergens: '',
+  portionSize: '',
+  preparationMinutes: 15,
+  availableToday: true,
+  campusOnly: false,
   title: '',
   subtitle: '',
   category: 'Electronics',
@@ -45,10 +59,10 @@ const DEFAULT_FORM = {
   status: 'DRAFT',
 }
 
-function readLocalDraft() {
+function readLocalDraft(storageKey = DRAFT_STORAGE_KEY) {
   if (typeof window === 'undefined') return DEFAULT_FORM
   try {
-    const value = JSON.parse(window.localStorage.getItem(DRAFT_STORAGE_KEY))
+    const value = JSON.parse(window.localStorage.getItem(storageKey))
     return value && typeof value === 'object' ? { ...DEFAULT_FORM, ...value } : DEFAULT_FORM
   } catch {
     return DEFAULT_FORM
@@ -70,24 +84,24 @@ function mapListingToForm(listing) {
   }
 }
 
-function getStepErrors(step, form) {
+function getStepErrors(stepId, form, foodMode = false) {
   const errors = []
-  if (step === 1) {
-    if (form.title.trim().length < 5) errors.push('Use a title with at least 5 characters.')
-    if (form.description.trim().length < 30) errors.push('Describe the item in at least 30 characters.')
+  if (stepId === 'basics') {
+    if (form.title.trim().length < 5) errors.push(foodMode ? 'Use a clear menu item name.' : 'Use a title with at least 5 characters.')
+    if (form.description.trim().length < (foodMode ? 15 : 30)) errors.push(foodMode ? 'Add a short, useful food description.' : 'Describe the item in at least 30 characters.')
     if (!form.category) errors.push('Choose a category.')
-    if (form.kind === 'service' && !form.serviceMode) errors.push('Choose how customers receive this service.')
-    if (form.kind === 'service' && !form.availabilityText.trim()) errors.push('Explain when this service is available.')
+    if (!foodMode && form.kind === 'service' && !form.serviceMode) errors.push('Choose how customers receive this service.')
+    if (!foodMode && form.kind === 'service' && !form.availabilityText.trim()) errors.push('Explain when this service is available.')
   }
-  if (step === 2 && !form.gallery.length) errors.push(`Add at least one ${form.kind === 'service' ? 'service' : 'product'} image.`)
-  if (step === 3) {
+  if (stepId === 'media' && !form.gallery.length) errors.push(foodMode ? 'Add a clear photo of this menu item.' : `Add at least one ${form.kind === 'service' ? 'service' : 'product'} image.`)
+  if (stepId === 'pricing') {
     if (!(Number(form.priceAmount) > 0)) errors.push('Set a price greater than zero.')
     if (!(Number(form.stock) >= 0)) errors.push('Stock cannot be negative.')
     if (form.negotiable && form.minimumOffer && Number(form.minimumOffer) > Number(form.priceAmount)) {
       errors.push('The minimum offer cannot exceed the listed price.')
     }
   }
-  if (step === 4) {
+  if (stepId === 'fulfilment' && !foodMode) {
     if (!form.deliveryOptions.length) errors.push('Choose at least one fulfilment option.')
     if (!form.locationLabel.trim()) errors.push('Add a pickup or service location.')
     if (!Number.isFinite(Number(form.latitude)) || !Number.isFinite(Number(form.longitude)) || form.latitude === '' || form.longitude === '') errors.push('Use your current location so delivery distance can be calculated.')
@@ -96,16 +110,49 @@ function getStepErrors(step, form) {
   return errors
 }
 
-function getReadinessChecks(form) {
-  return [
-    { id: 'basics', label: 'Clear title and description', complete: getStepErrors(1, form).length === 0, step: 1 },
-    { id: 'media', label: 'At least one product image', complete: getStepErrors(2, form).length === 0, step: 2 },
-    { id: 'price', label: 'Price and stock are ready', complete: getStepErrors(3, form).length === 0, step: 3 },
-    { id: 'fulfilment', label: 'Buyer handoff is explained', complete: getStepErrors(4, form).length === 0, step: 4 },
+function getReadinessChecks(form, foodMode, steps) {
+  const checks = [
+    { id: 'basics', label: foodMode ? 'Menu name and description' : 'Clear title and description' },
+    { id: 'media', label: foodMode ? 'A clear food photo' : 'At least one product image' },
+    { id: 'pricing', label: foodMode ? 'Price and servings are ready' : 'Price and stock are ready' },
+    ...(!foodMode ? [{ id: 'fulfilment', label: 'Buyer handoff is explained' }] : []),
   ]
+  return checks.map((check) => ({ ...check, complete: getStepErrors(check.id, form, foodMode).length === 0, step: steps.findIndex((step) => step.id === check.id) + 1 }))
 }
 
-function toPayload(form, status) {
+function toPayload(form, status, { foodMode = false, vendorContext = null } = {}) {
+  if (foodMode) {
+    return {
+      title: form.title.trim(),
+      subtitle: form.subtitle.trim(),
+      description: form.description.trim(),
+      kind: 'service',
+      serviceMode: 'order_ahead',
+      duration: `${Number(form.preparationMinutes) || 0} minutes`,
+      availabilityText: form.availableToday ? 'Available to order on campus today' : 'Currently unavailable',
+      category: form.category,
+      gallery: form.gallery,
+      priceAmount: Number(form.priceAmount) || 0,
+      currency: form.currency,
+      stock: Number(form.stock) || 0,
+      negotiable: false,
+      deliveryOptions: ['Campus pickup'],
+      locationLabel: vendorContext?.locationLabel || vendorContext?.campus || 'Campus pickup',
+      ...(vendorContext?.latitude != null ? { latitude: Number(vendorContext.latitude) } : {}),
+      ...(vendorContext?.longitude != null ? { longitude: Number(vendorContext.longitude) } : {}),
+      pickupInstructions: `Collect from ${vendorContext?.name || 'the vendor'} on campus.`,
+      returnPolicy: 'Food orders can only be cancelled before preparation begins.',
+      inventoryType: 'food',
+      foodType: form.foodType,
+      ingredients: form.ingredients.trim(),
+      allergens: form.allergens.trim(),
+      portionSize: form.portionSize.trim(),
+      preparationMinutes: Number(form.preparationMinutes) || 0,
+      availableToday: Boolean(form.availableToday),
+      campusOnly: true,
+      status,
+    }
+  }
   return {
     title: form.title.trim(),
     subtitle: form.subtitle.trim(),
@@ -141,6 +188,9 @@ function toPayload(form, status) {
 function useMarketplaceListingStudio() {
   const { listingId = '' } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const vendorId = searchParams.get('vendorId') || ''
+  const vendorSlug = searchParams.get('vendorSlug') || ''
   const [activeStep, setActiveStep] = useState(1)
   const [form, setForm] = useState(() => listingId ? DEFAULT_FORM : readLocalDraft())
   const [savedListingId, setSavedListingId] = useState(listingId)
@@ -267,7 +317,9 @@ function useMarketplaceListingStudio() {
       const payload = toPayload(form, status)
       const listing = savedListingId
         ? await updateMarketplaceListing(savedListingId, payload)
-        : await createMarketplaceListing(payload)
+        : vendorId
+          ? await createMarketplaceListingForShop(vendorId, payload)
+          : await createMarketplaceListing(payload)
       setSavedListingId(listing.id)
       setForm(mapListingToForm(listing))
       setIsDirty(false)
@@ -302,7 +354,7 @@ function useMarketplaceListingStudio() {
 
   function cancel() {
     if (isDirty && !window.confirm('Leave the listing studio? Your unsaved changes will be lost.')) return
-    navigate(savedListingId ? getMarketplaceItemPath(savedListingId) : '/campus/profile?tab=shop')
+    navigate(savedListingId ? getMarketplaceItemPath(savedListingId) : vendorSlug ? `/campus/vendors/${encodeURIComponent(vendorSlug)}/manage` : '/campus/profile?tab=shop')
   }
 
   return {
@@ -333,6 +385,8 @@ function useMarketplaceListingStudio() {
     toggleDeliveryOption,
     updateField,
     uploadImages,
+    vendorMode: Boolean(vendorId),
+    vendorSlug,
   }
 }
 

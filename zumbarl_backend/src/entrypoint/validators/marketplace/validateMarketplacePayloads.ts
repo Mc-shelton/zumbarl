@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { postSchema } from '../connect/validateConnectPayloads.js'
 const shopSchema = z.object({ name: z.string().min(2), category: z.string(), campus: z.string(), tagline: z.string().optional(), description: z.string().optional(), logoUrl: z.string().optional(), coverImageUrl: z.string().optional(), locationLabel: z.string().optional(), latitude: z.coerce.number().min(-90).max(90).optional(), longitude: z.coerce.number().min(-180).max(180).optional(), pickupSpots: z.array(z.string()).default([]), contactRules: z.string().optional(), returnRules: z.string().optional() })
 const marketplaceShopUpdateSchema = shopSchema.partial().extend({ name: z.string().trim().min(2), category: z.string().trim().min(1), locationLabel: z.string().trim().min(2), latitude: z.coerce.number().min(-90).max(90), longitude: z.coerce.number().min(-180).max(180) })
 const marketplaceLocationSearchSchema = z.object({ q: z.string().trim().min(3).max(120) })
@@ -31,6 +32,18 @@ const listingSchema = z.object({
   deliveryZones: z.array(z.object({ location: z.string().min(1), fee: z.coerce.number().nonnegative() })).default([]),
   gallery: z.array(z.string()).max(8).default([]),
   status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'RESERVED', 'SOLD', 'ARCHIVED']).default('ACTIVE')
+})
+const campusVendorListingSchema = listingSchema.extend({
+  latitude: z.coerce.number().min(-90).max(90).optional(),
+  longitude: z.coerce.number().min(-180).max(180).optional(),
+  inventoryType: z.enum(['food']).optional(),
+  foodType: z.enum(['meal', 'snack', 'drink', 'baked_good', 'fresh_food', 'other']).optional(),
+  ingredients: z.string().trim().max(1200).optional(),
+  allergens: z.string().trim().max(500).optional(),
+  portionSize: z.string().trim().max(120).optional(),
+  preparationMinutes: z.coerce.number().int().min(0).max(1440).optional(),
+  availableToday: z.boolean().optional(),
+  campusOnly: z.boolean().optional(),
 })
 const cartItemSchema = z.object({
   listingId: z.string(),
@@ -71,12 +84,31 @@ const marketplaceListingUpdateSchema = listingSchema.partial().extend({
   status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'RESERVED', 'SOLD', 'ARCHIVED']).optional()
 })
 const marketplaceOfferDecisionSchema = z.object({ decision: z.enum(['accepted', 'declined']) })
+const vendorPostSchema = postSchema.extend({
+  type: z.enum(['post', 'image', 'video', 'poll', 'feeling']).default('post'),
+})
+const vendorPromotionSchema = z.object({
+  headline: z.string().trim().min(2).max(160),
+  description: z.string().trim().min(1).max(1200),
+  callToAction: z.string().trim().max(80).optional(),
+  endsAt: z.string().datetime().optional()
+})
+const managedVendorUpdateSchema = z.object({
+  type: z.enum(['hotel', 'barber_shop', 'service']).optional(),
+  name: z.string().trim().min(2).max(120).optional(),
+  description: z.string().trim().max(1000).nullable().optional(),
+  locationLabel: z.string().trim().max(160).nullable().optional(),
+  logoUrl: z.string().trim().max(2000).nullable().optional(),
+  coverImageUrl: z.string().trim().max(2000).nullable().optional()
+})
+const managedVendorManagerSchema = z.object({ email: z.string().email(), role: z.enum(['admin', 'editor']).default('editor') })
 
 export {
   shopSchema,
   marketplaceShopUpdateSchema,
   marketplaceLocationSearchSchema,
   listingSchema,
+  campusVendorListingSchema,
   cartItemSchema,
   cartItemFulfilmentSchema,
   zumbarlDeliveryQuoteSchema,
@@ -88,5 +120,9 @@ export {
   marketplaceOfferSchema,
   marketplaceProfileViewSchema,
   marketplaceListingUpdateSchema,
-  marketplaceOfferDecisionSchema
+  marketplaceOfferDecisionSchema,
+  vendorPostSchema,
+  vendorPromotionSchema,
+  managedVendorUpdateSchema,
+  managedVendorManagerSchema
 }

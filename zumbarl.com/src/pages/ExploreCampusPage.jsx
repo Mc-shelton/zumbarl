@@ -189,6 +189,8 @@ function postMatchesFeed(post, filter) {
   if (filter === "Marketplace")
     return Boolean(
       post.shopProductRef ||
+      post.isPromoted ||
+      post.type === "promotion" ||
       post.type === "marketplace-promo" ||
       post.tag === "Product",
     );
@@ -436,8 +438,11 @@ function ExploreCampusPage() {
       type: String(taggedSpace.type || "").replace("knowledge-", "").toUpperCase(),
     } : null);
     const isSpaceAuthored = Boolean(post.knowledgeSpace);
+    const isPromoted = Boolean(post.isPromoted || post.promotion || post.type === "promotion");
     const spaceType = String(post.knowledgeSpace?.type || "").toLowerCase();
-    const contentTag = post.feeling
+    const contentTag = isPromoted
+      ? "Promoted"
+      : post.feeling
       ? `${post.feeling.emoji} ${post.feeling.label}`
       : shopProductRef
         ? "Product"
@@ -480,6 +485,8 @@ function ExploreCampusPage() {
       reshareOfPostId: post.reshareOfPostId || null,
       announcementRequest: post.announcementRequest || null,
       isPinnedAnnouncement: Boolean(post.isPinnedAnnouncement),
+      isPromoted,
+      promotion: post.promotion || null,
       isMine: Boolean(post.isMine),
       isFollowing: Boolean(post.isFollowing),
       isPriorityForViewer: Boolean(post.isPriorityForViewer),

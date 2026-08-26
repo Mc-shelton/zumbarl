@@ -165,6 +165,7 @@ model User {
   marketplaceOffersReceived  MarketplaceOffer[]       @relation("MarketplaceOfferSeller")
   managedProfiles            ManagedProfileManager[]
   followedManagedProfiles    ManagedProfileFollower[]
+  marketplaceShopAssignments MarketplaceShopManager[]
 
   @@index([email])
   @@index([phone])
@@ -451,11 +452,28 @@ model MarketplaceShop {
   owner    StudentProfile       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   campus   Campus?              @relation(fields: [campusId], references: [id])
   listings MarketplaceListing[]
+  managers MarketplaceShopManager[]
 
   @@index([ownerId])
   @@index([campusId])
   @@index([category, status])
   @@map("marketplace_shops")
+}
+
+model MarketplaceShopManager {
+  id        String   @id @default(cuid())
+  shopId    String
+  userId    String
+  role      String   @default("editor") // owner | admin | editor
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  shop MarketplaceShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  user User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, userId])
+  @@index([userId])
+  @@map("marketplace_shop_managers")
 }
 
 model MarketplaceListing {

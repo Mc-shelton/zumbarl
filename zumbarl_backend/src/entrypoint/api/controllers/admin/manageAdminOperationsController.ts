@@ -1,4 +1,5 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { z } from 'zod'
 import { idParamSchema, requireBody, requireParams } from '../../../../lib/http.js'
 import {
   contentModerationActionSchema,
@@ -10,7 +11,10 @@ import {
   scoreConfigurationSchema,
   systemConfigurationSchema,
   updateModerationCaseSchema,
-  updateUserSchema
+  updateUserSchema,
+  campusVendorSchema,
+  campusVendorUpdateSchema,
+  campusVendorManagerSchema
 } from '../../../validators/admin/index.js'
 import {
   listAuditLogsService,
@@ -35,7 +39,12 @@ import {
   updateModerationCaseService,
   updateUserService,
   writeScoreConfigurationService,
-  writeSystemConfigurationService
+  writeSystemConfigurationService,
+  readCampusVendorManagementService,
+  createCampusVendorService,
+  updateCampusVendorService,
+  addCampusVendorManagerService,
+  removeCampusVendorManagerService
 } from '../../../../adapters/services/admin/index.js'
 
 function firstHeaderValue(value: string | string[] | undefined) {
@@ -59,6 +68,11 @@ function getAuditContext(request: FastifyRequest) {
 
 async function readAdminMetricsController(_request: FastifyRequest, reply: FastifyReply) { return reply.send(await readAdminMetricsService()) }
 async function readSuperAdminDashboardController(_request: FastifyRequest, reply: FastifyReply) { return reply.send(await readSuperAdminDashboardService()) }
+async function readCampusVendorManagementController(_request: FastifyRequest, reply: FastifyReply) { return reply.send(await readCampusVendorManagementService()) }
+async function createCampusVendorController(request: FastifyRequest, reply: FastifyReply) { return reply.code(201).send(await createCampusVendorService(requireBody(campusVendorSchema, request), getAuditContext(request))) }
+async function updateCampusVendorController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await updateCampusVendorService(id, requireBody(campusVendorUpdateSchema, request), getAuditContext(request))) }
+async function addCampusVendorManagerController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await addCampusVendorManagerService(id, requireBody(campusVendorManagerSchema, request), getAuditContext(request))) }
+async function removeCampusVendorManagerController(request: FastifyRequest, reply: FastifyReply) { const params = z.object({ id: z.string(), userId: z.string() }).parse(request.params); return reply.send(await removeCampusVendorManagerService(params.id, params.userId, getAuditContext(request))) }
 async function listUsersController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listUsersService(request.query as Record<string, unknown>)) }
 async function updateUserController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await updateUserService(id, requireBody(updateUserSchema, request), getAuditContext(request))) }
 async function revokeUserSessionsController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await revokeUserSessionsService(id, requireBody(revokeSessionsSchema, request), getAuditContext(request))) }
@@ -84,6 +98,11 @@ async function updateModerationCaseController(request: FastifyRequest, reply: Fa
 export {
   readAdminMetricsController,
   readSuperAdminDashboardController,
+  readCampusVendorManagementController,
+  createCampusVendorController,
+  updateCampusVendorController,
+  addCampusVendorManagerController,
+  removeCampusVendorManagerController,
   listUsersController,
   updateUserController,
   revokeUserSessionsController,

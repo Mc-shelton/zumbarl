@@ -23,6 +23,7 @@ import {
   CallRoomPage,
   CampusPage,
   CampusProfilePage,
+  CampusVendorWorkspacePage,
   ExploreCampusPage,
   HelpPage,
   HomePage,
@@ -129,6 +130,11 @@ export const APP_ROUTES = [
     path: "/campus/marketplace/listings/new",
     access: ACCESS_KEYS.marketplace.sell,
     element: <MarketplaceListingStudioPage />,
+  },
+  {
+    path: "/campus/vendors/:vendorSlug/manage",
+    access: ACCESS_KEYS.marketplace.sell,
+    element: <CampusVendorWorkspacePage />,
   },
   {
     path: "/campus/marketplace/listings/:listingId/edit",

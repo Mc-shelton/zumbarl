@@ -33,6 +33,14 @@ function sanitizeUser(user: Record<string, any>) {
   return safe
 }
 
+function jsonObject(value: unknown) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {}
+}
+
+function slugify(value: string) {
+  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'campus-vendor'
+}
+
 function getActorId(actorId: string | undefined) {
   return actorId ?? 'system'
 }
@@ -170,6 +178,172 @@ class AdminOperationsRepository {
       }
     })
     return pageEnvelope(users.map(sanitizeUser), query)
+  }
+
+  async readCampusVendorManagement() {
+    const [campuses, shops] = await Promise.all([
+      prisma.managedProfile.findMany({
+        where: { type: 'campus', status: 'active' },
+        include: {
+          managers: {
+            select: {
+              role: true,
+              user: { select: { id: true, name: true, email: true, username: true } }
+            }
+          }
+        },
+        orderBy: { name: 'asc' }
+      }),
+      prisma.marketplaceShop.findMany({
+        include: {
+          campus: true,
+          owner: { select: { id: true, user: { select: { id: true, name: true, email: true, username: true } } } },
+          managers: { select: { role: true, user: { select: { id: true, name: true, email: true, username: true } } } },
+          _count: { select: { listings: true } }
+        },
+        orderBy: { name: 'asc' }
+      })
+    ])
+    const vendors = shops
+      .filter((shop) => jsonObject(shop.payload).entityType === 'campus_vendor')
+      .map((shop) => {
+        const payload = jsonObject(shop.payload)
+        return {
+          ...shop,
+          type: payload.vendorType || 'service',
+          campusManagedProfileId: payload.campusManagedProfileId || null,
+          manager: shop.owner.user,
+          managers: shop.managers,
+          capabilities: ['inventory', 'orders', 'posts', 'promotions']
+        }
+      })
+    return { campuses, vendors }
+  }
+
+  async createCampusVendor(payload: Record<string, any>, context?: AuditContext) {
+    const [campusPage, manager] = await Promise.all([
+      prisma.managedProfile.findFirst({ where: { id: payload.campusManagedProfileId, type: 'campus', status: 'active' } }),
+      prisma.user.findUnique({
+        where: { id: payload.managerUserId },
+        include: { studentProfile: { include: { campus: true } } }
+      })
+    ])
+    if (!campusPage || !manager?.studentProfile) return null
+
+    const baseSlug = slugify(payload.name)
+    const duplicate = await prisma.marketplaceShop.findUnique({ where: { slug: baseSlug } })
+    const slug = duplicate ? `${baseSlug}-${Date.now().toString(36)}` : baseSlug
+    const vendorPayload = {
+      entityType: 'campus_vendor',
+      vendorType: payload.type,
+      campusManagedProfileId: campusPage.id,
+      campusName: campusPage.name,
+      managerUserId: manager.id,
+      capabilities: ['inventory', 'orders', 'posts', 'promotions'],
+      createdByAdminId: context?.actorId || null
+    }
+    const vendor = await prisma.marketplaceShop.create({
+      data: {
+        ownerId: manager.studentProfile.id,
+        campusId: manager.studentProfile.campusId,
+        name: payload.name,
+        slug,
+        tagline: `${campusPage.name} ${String(payload.type).replaceAll('_', ' ')}`,
+        description: payload.description || null,
+        category: payload.type === 'hotel' ? 'Food & hospitality' : payload.type === 'barber_shop' ? 'Beauty & grooming' : 'Campus services',
+        locationLabel: payload.locationLabel || campusPage.locationLabel || manager.studentProfile.campus.name,
+        contactRules: 'Keep vendor and customer communication on Zumbarl.',
+        status: 'ACTIVE',
+        payload: vendorPayload,
+        managers: { create: { userId: manager.id, role: 'owner' } }
+      },
+      include: {
+        campus: true,
+        owner: { select: { id: true, user: { select: { id: true, name: true, email: true, username: true } } } },
+        managers: { select: { role: true, user: { select: { id: true, name: true, email: true, username: true } } } },
+        _count: { select: { listings: true } }
+      }
+    })
+    await this.audit('campus_vendor_created', 'marketplace_shop', vendor.id, context, null, vendor)
+    return {
+      ...vendor,
+      type: payload.type,
+      campusManagedProfileId: campusPage.id,
+      manager: vendor.owner.user,
+      managers: vendor.managers,
+      capabilities: vendorPayload.capabilities
+    }
+  }
+
+  async updateCampusVendor(id: string, payload: Record<string, any>, context?: AuditContext) {
+    const before = await prisma.marketplaceShop.findUnique({ where: { id } })
+    if (!before || jsonObject(before.payload).entityType !== 'campus_vendor') return null
+    const currentPayload = jsonObject(before.payload)
+    let campusPageId = currentPayload.campusManagedProfileId
+    let campusName = currentPayload.campusName
+    if (payload.campusManagedProfileId) {
+      const campusPage = await prisma.managedProfile.findFirst({ where: { id: payload.campusManagedProfileId, type: 'campus', status: 'active' } })
+      if (!campusPage) return null
+      campusPageId = campusPage.id
+      campusName = campusPage.name
+    }
+    const vendorType = payload.type || currentPayload.vendorType || 'service'
+    const updated = await prisma.marketplaceShop.update({
+      where: { id },
+      data: {
+        ...(payload.name !== undefined ? { name: payload.name } : {}),
+        ...(payload.description !== undefined ? { description: payload.description || null } : {}),
+        ...(payload.locationLabel !== undefined ? { locationLabel: payload.locationLabel || null } : {}),
+        ...(payload.logoUrl !== undefined ? { logoUrl: payload.logoUrl || null } : {}),
+        ...(payload.coverImageUrl !== undefined ? { coverImageUrl: payload.coverImageUrl || null } : {}),
+        category: vendorType === 'hotel' ? 'Food & hospitality' : vendorType === 'barber_shop' ? 'Beauty & grooming' : 'Campus services',
+        payload: { ...currentPayload, vendorType, campusManagedProfileId: campusPageId, campusName }
+      },
+      include: {
+        campus: true,
+        owner: { select: { id: true, user: { select: { id: true, name: true, email: true, username: true } } } },
+        managers: { select: { role: true, user: { select: { id: true, name: true, email: true, username: true } } } },
+        _count: { select: { listings: true } }
+      }
+    })
+    await this.audit('campus_vendor_updated', 'marketplace_shop', id, context, before, updated)
+    return {
+      ...updated,
+      type: vendorType,
+      campusManagedProfileId: campusPageId,
+      manager: updated.owner.user,
+      managers: updated.managers,
+      capabilities: currentPayload.capabilities || ['inventory', 'orders', 'posts', 'promotions']
+    }
+  }
+
+  async addCampusVendorManager(id: string, email: string, role: string, context?: AuditContext) {
+    const [shop, user] = await Promise.all([
+      prisma.marketplaceShop.findUnique({ where: { id } }),
+      prisma.user.findUnique({ where: { email: email.toLowerCase() }, include: { studentProfile: true } })
+    ])
+    if (!shop || jsonObject(shop.payload).entityType !== 'campus_vendor' || !user?.studentProfile) return null
+    const existing = await prisma.marketplaceShopManager.findUnique({
+      where: { shopId_userId: { shopId: id, userId: user.id } },
+      include: { user: { select: { id: true, name: true, email: true, username: true } } }
+    })
+    if (existing?.role === 'owner') return existing
+    const assignment = await prisma.marketplaceShopManager.upsert({
+      where: { shopId_userId: { shopId: id, userId: user.id } },
+      update: { role },
+      create: { shopId: id, userId: user.id, role },
+      include: { user: { select: { id: true, name: true, email: true, username: true } } }
+    })
+    await this.audit('campus_vendor_manager_assigned', 'marketplace_shop', id, context, null, assignment)
+    return assignment
+  }
+
+  async removeCampusVendorManager(id: string, userId: string, context?: AuditContext) {
+    const assignment = await prisma.marketplaceShopManager.findUnique({ where: { shopId_userId: { shopId: id, userId } } })
+    if (!assignment || assignment.role === 'owner') return null
+    await prisma.marketplaceShopManager.delete({ where: { id: assignment.id } })
+    await this.audit('campus_vendor_manager_removed', 'marketplace_shop', id, context, assignment, null)
+    return { shopId: id, userId, removed: true }
   }
 
   async updateUser(id: string, patch: Record<string, any>, context?: AuditContext) {

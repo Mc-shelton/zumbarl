@@ -526,6 +526,34 @@
   box-shadow: 0 0 0 3px rgba(101, 66, 221, .12), 0 18px 42px rgba(43, 34, 72, .12);
 }
 
+.explore-campus-feed-card.is-promoted {
+  position: relative;
+  border-color: #e5c56f;
+  box-shadow: 0 12px 30px rgba(93, 68, 28, .08);
+  overflow: hidden;
+}
+
+.explore-campus-feed-card.is-promoted::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 4px;
+  background: linear-gradient(90deg, var(--theme-orange), var(--theme-purple));
+}
+
+.explore-campus-promoted-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 2px -2px 8px;
+  color: #7a5b18;
+  font-size: var(--text-caption);
+}
+
+.explore-campus-promoted-label > svg { color: #d58c08; }
+.explore-campus-promoted-label > strong { color: #684d10; font-weight: 900; text-transform: uppercase; letter-spacing: .06em; }
+.explore-campus-promoted-label > span { color: #8b7b5a; }
+
 .explore-feed-empty { margin-top: 12px; padding: 34px 18px; border: 1px dashed #d8d4e2; border-radius: 14px; background: #faf9fc; color: #565b70; text-align: center; }
 .explore-feed-empty p { margin: 6px 0 0; color: #777b8d; }
 
@@ -602,6 +630,11 @@
 .explore-post-modal header span { color: #715075; font-size: 9px; font-weight: 900; text-transform: uppercase; }
 .explore-post-modal h2 { margin: 3px 0 0; color: #29283a; font-size: 18px; line-height: 1.15; }
 .explore-post-modal header button { width: 34px; height: 34px; border: 0; border-radius: 50%; background: #f1eff4; cursor: pointer; }
+.explore-post-identity { display: flex; align-items: center; gap: 9px; margin: 10px 18px 0; padding: 9px 10px; border: 1px solid #e4e1e9; border-radius: 11px; background: #faf9fc; }
+.explore-post-identity > img { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; background: #ecebf0; }
+.explore-post-identity > span { display: grid; gap: 2px; }
+.explore-post-identity small { color: #7b7582; font-size: 9px; font-weight: 750; text-transform: uppercase; letter-spacing: .05em; }
+.explore-post-identity strong { color: #343142; font-size: 12px; }
 .explore-post-modal > nav { display: flex; gap: 5px; padding: 10px 18px; overflow-x: auto; }
 .explore-post-modal > nav button { flex: 0 0 auto; padding: 7px 9px; border: 1px solid #dedbe6; border-radius: 999px; background: #fff; color: #5b5868; font-size: 12px; cursor: pointer; }
 .explore-post-modal > nav button.is-active { border-color: #6542dd; background: #eee9ff; color: #5535c7; font-weight: 800; }
