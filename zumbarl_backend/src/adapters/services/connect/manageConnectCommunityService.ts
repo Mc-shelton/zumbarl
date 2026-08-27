@@ -39,12 +39,43 @@ async function createManagedProfilePostService(id: string, userId: string | unde
   if (!userId || !await connectCommunityRepository.userManagesProfile(userId, id)) throw new ApiError(403, 'You cannot publish as this profile', 'FORBIDDEN')
   return connectCommunityRepository.createManagedProfilePost(id, payload)
 }
+async function updateManagedProfilePostService(id: string, postId: string, userId: string | undefined, payload: Record<string, any>) {
+  if (!userId || !await connectCommunityRepository.userManagesProfile(userId, id)) throw new ApiError(403, 'You cannot edit posts for this profile', 'FORBIDDEN')
+  return await connectCommunityRepository.updateManagedProfilePost(id, postId, payload) ?? notFound('Page post')
+}
 const readConnectProfileService = (studentId: string | undefined) => connectCommunityRepository.readProfile(requireStudentId(studentId))
 async function upsertConnectProfileService(studentId: string | undefined, payload: Record<string, any>) { return connectCommunityRepository.upsertProfile(studentId, payload) }
-async function createStoryService(studentId: string | undefined, payload: Record<string, any>) {
+async function createStoryService(studentId: string | undefined, payload: Record<string, any>, userId?: string) {
   const resolvedStudentId = requireStudentId(studentId)
+  if ([payload.knowledgeSpaceId, payload.managedProfileId, payload.vendorSlug].filter(Boolean).length > 1) {
+    throw new ApiError(400, 'Choose one page identity for this story', 'INVALID_STORY_IDENTITY')
+  }
   if (payload.knowledgeSpaceId && !await connectCommunityRepository.isActiveKnowledgeSpaceMember(payload.knowledgeSpaceId, resolvedStudentId)) {
     throw new ApiError(403, 'Only active members can add a story for this library or group', 'FORBIDDEN')
+  }
+  if (payload.managedProfileId) {
+    if (!userId || !await connectCommunityRepository.userManagesProfile(userId, payload.managedProfileId)) {
+      throw new ApiError(403, 'You cannot publish a story as this page', 'FORBIDDEN')
+    }
+    const managedProfile = await connectCommunityRepository.findManagedProfile(payload.managedProfileId)
+    if (!managedProfile) notFound('Managed profile')
+    payload = { ...payload, managedProfileId: managedProfile.id }
+  }
+  if (payload.vendorSlug) {
+    const vendor = userId ? await connectCommunityRepository.findManagedVendorStoryTarget(userId, payload.vendorSlug) : null
+    if (!vendor) throw new ApiError(403, 'You cannot publish a story as this vendor', 'FORBIDDEN')
+    payload = {
+      ...payload,
+      vendorShopId: vendor.id,
+      vendorSnapshot: {
+        id: vendor.id,
+        slug: vendor.slug,
+        name: vendor.name,
+        avatarUrl: vendor.logoUrl,
+        campus: vendor.campus?.name || vendor.locationLabel,
+        isVerified: true
+      }
+    }
   }
   return connectCommunityRepository.createStory({ ...payload, studentId: resolvedStudentId, expiresAt: new Date(Date.now() + 86400000).toISOString(), status: 'live' })
 }
@@ -152,6 +183,7 @@ export {
   setManagedProfileFollowService,
   updateManagedProfileService,
   createManagedProfilePostService,
+  updateManagedProfilePostService,
   readConnectProfileService,
   upsertConnectProfileService,
   createStoryService,

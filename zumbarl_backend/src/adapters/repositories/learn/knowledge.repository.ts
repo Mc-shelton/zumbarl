@@ -273,12 +273,22 @@ class LearnKnowledgeRepository {
     })
     const posts = await prisma.connectPost.findMany({
       where: { knowledgeSpaceId: space.id, status: 'published' },
+      include: {
+        comments: {
+          where: { status: 'published' },
+          orderBy: { createdAt: 'asc' }
+        }
+      },
       orderBy: [{ createdAt: 'desc' }],
       take: 100
     })
     const postAuthors = posts.length
       ? await prisma.studentProfile.findMany({
-        where: { id: { in: [...new Set(posts.map((post) => post.studentId).filter(Boolean))] as string[] } },
+        where: {
+          id: {
+            in: [...new Set(posts.flatMap((post) => [post.studentId, ...post.comments.map((comment) => comment.studentId)]).filter(Boolean))] as string[]
+          }
+        },
         ...managedStudentSummary
       })
       : []
@@ -296,7 +306,14 @@ class LearnKnowledgeRepository {
     return {
       space,
       resources,
-      posts: posts.map((post) => ({ ...post, author: post.studentId ? postAuthorById.get(post.studentId) || null : null })),
+      posts: posts.map((post) => ({
+        ...post,
+        author: post.studentId ? postAuthorById.get(post.studentId) || null : null,
+        comments: post.comments.map((comment) => ({
+          ...comment,
+          author: comment.studentId ? postAuthorById.get(comment.studentId) || null : null
+        }))
+      })),
       rooms,
       activeMemberships,
       followedMemberIds,

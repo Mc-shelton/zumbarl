@@ -187,6 +187,20 @@ function payloadObject(value: unknown) {
 function mapSpacePost(post: Record<string, any>, viewerStudentId: string, canManage: boolean, space: Record<string, any>) {
   const payload = payloadObject(post.payload)
   const spaceType = String(space.type || 'GROUP').toLowerCase()
+  const reactions = payloadObject(post.reactions)
+  const reshares = payloadObject(payload.reshares)
+  const comments = (post.comments || []).map((comment: Record<string, any>) => ({
+    id: comment.id,
+    body: comment.body,
+    createdAt: comment.createdAt,
+    author: comment.author ? mapManagedStudent(comment.author) : {
+      id: null,
+      name: 'Zumbarl student',
+      handle: '@student',
+      avatarUrl: null,
+      campus: null
+    }
+  }))
   return {
     id: post.id,
     type: post.type,
@@ -195,6 +209,15 @@ function mapSpacePost(post: Record<string, any>, viewerStudentId: string, canMan
     mediaUrls: Array.isArray(payload.mediaUrls) ? payload.mediaUrls : [],
     mediaEdits: Array.isArray(payload.mediaEdits) ? payload.mediaEdits : [],
     event: payloadObject(payload.event),
+    poll: payloadObject(payload.poll),
+    feeling: payloadObject(payload.feeling),
+    comments,
+    reactionCount: Object.keys(reactions).length,
+    viewerReacted: Boolean(reactions[viewerStudentId]),
+    commentCount: comments.length,
+    repostCount: Number(post.reposts || 0),
+    viewerReshared: Boolean(reshares[viewerStudentId]),
+    viewerReshareCommentary: String(payloadObject(reshares[viewerStudentId]).commentary || ''),
     createdAt: post.createdAt,
     updatedAt: post.updatedAt,
     author: {

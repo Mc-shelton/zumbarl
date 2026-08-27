@@ -185,9 +185,30 @@ async function readCampusVendorWorkspaceService(userId: string | undefined, slug
   if (!userId) forbidden('A vendor manager account is required')
   return await marketplaceOrdersRepository.readCampusVendorWorkspace(userId, slug) ?? notFound('Managed campus vendor')
 }
+async function readCampusVendorProfileService(slug: string, viewerStudentId?: string, viewerUserId?: string) {
+  return await marketplaceOrdersRepository.readCampusVendorProfile(slug, viewerStudentId, viewerUserId) ?? notFound('Campus vendor')
+}
+async function setCampusVendorFollowingService(userId: string | undefined, slug: string, active: boolean) {
+  if (!userId) forbidden('Authentication is required')
+  return await marketplaceOrdersRepository.setCampusVendorFollowing(userId, slug, active) ?? notFound('Campus vendor')
+}
+async function updateCampusVendorAvailabilityService(userId: string | undefined, slug: string, acceptingOrders: boolean) {
+  if (!userId) forbidden('A vendor manager account is required')
+  return await marketplaceOrdersRepository.updateCampusVendorAvailability(userId, slug, acceptingOrders) ?? notFound('Managed campus vendor')
+}
+async function searchCampusVendorManagerCandidatesService(userId: string | undefined, slug: string, query: string) {
+  if (!userId) forbidden('A vendor manager account is required')
+  const candidates = await marketplaceOrdersRepository.searchCampusVendorManagerCandidates(userId, slug, query)
+  if (!candidates) forbidden('Only vendor owners and admins can search for teammates')
+  return { candidates }
+}
 async function createCampusVendorPostService(userId: string | undefined, slug: string, payload: Record<string, any>) {
   if (!userId) forbidden('A vendor manager account is required')
   return await marketplaceOrdersRepository.createCampusVendorPost(userId, slug, payload) ?? notFound('Managed campus vendor')
+}
+async function updateCampusVendorPostService(userId: string | undefined, slug: string, postId: string, payload: Record<string, any>) {
+  if (!userId) forbidden('A vendor manager account is required')
+  return await marketplaceOrdersRepository.updateCampusVendorPost(userId, slug, postId, payload) ?? notFound('Vendor post')
 }
 async function createCampusVendorPromotionService(userId: string | undefined, slug: string, payload: Record<string, any>) {
   if (!userId) forbidden('A vendor manager account is required')
@@ -287,7 +308,11 @@ async function readMarketplaceListingService(id: string, actorUserId?: string) {
   return { listing, shop: await marketplaceOrdersRepository.findShop(listing.shopId), activeOffer }
 }
 async function readCartService(studentId: string | undefined) { return marketplaceOrdersRepository.findOrCreateOpenCart(studentId) }
-async function addCartItemService(studentId: string | undefined, userId: string | undefined, payload: Record<string, any>) { return await marketplaceOrdersRepository.addCartItem(studentId, userId, payload) ?? notFound('Eligible listing or accepted offer') }
+async function addCartItemService(studentId: string | undefined, userId: string | undefined, payload: Record<string, any>) {
+  const listing = await marketplaceOrdersRepository.findListing(payload.listingId) ?? notFound('Listing')
+  if (listing.shop?.entityType === 'campus_vendor' && listing.shop?.acceptingOrders === false) forbidden(`${listing.shop.name} is currently closed and is not accepting new orders`)
+  return await marketplaceOrdersRepository.addCartItem(studentId, userId, payload) ?? notFound('Eligible listing or accepted offer')
+}
 async function removeCartItemService(studentId: string | undefined, listingId: string) { return await marketplaceOrdersRepository.removeCartItem(studentId, listingId) ?? notFound('Cart') }
 async function clearCartService(studentId: string | undefined) { return await marketplaceOrdersRepository.clearCart(studentId) ?? notFound('Cart') }
 async function updateCartItemFulfilmentService(studentId: string | undefined, listingId: string, payload: Record<string, any>) {
@@ -355,6 +380,23 @@ async function updateOrderStatusService(id: string, studentId: string | undefine
   }
   return marketplaceOrdersRepository.updateOrder(id, patch)
 }
+async function updateCampusVendorOrderStatusService(userId: string | undefined, slug: string, id: string, payload: Record<string, any>) {
+  if (!userId) forbidden('A vendor manager account is required')
+  const vendor = await marketplaceOrdersRepository.findOwnedCampusVendor(userId, slug) ?? notFound('Managed campus vendor')
+  const order = await marketplaceOrdersRepository.findShopSellerOrder(id, vendor.id) ?? notFound('Vendor order')
+  const nextByStatus: Record<string, string> = { seller_confirmation: 'confirmed', confirmed: 'packaging', packaging: 'ready', ready: 'in_transit', in_transit: 'delivered' }
+  const next = payload.fulfillmentStatus
+  if (next !== 'cannot_fulfil' && nextByStatus[order.fulfillmentStatus] !== next) forbidden('Order statuses must follow the fulfilment sequence')
+  if (next === 'cannot_fulfil' && !['seller_confirmation', 'confirmed', 'packaging'].includes(order.fulfillmentStatus)) forbidden('This order can no longer be cancelled after it is marked ready')
+  if (next === 'cannot_fulfil') return await marketplaceOrdersRepository.cancelSellerOrder(id) ?? forbidden('This order can no longer be cancelled')
+  const patch: Record<string, any> = { fulfillmentStatus: next }
+  if (next === 'delivered') {
+    const result = await marketplaceOrdersRepository.markDelivered(id)
+    const email = result.recipient ? await sendTransactionalEmail(result.recipient.email, 'Confirm receipt of your Zumbarl order', `<p>Hi ${result.recipient.name || 'there'},</p><p>${vendor.name} marked order ${id} as delivered.</p><p>Please confirm receipt in Zumbarl. If you do not respond, payment will be released automatically after 7 days.</p>`) : null
+    return { ...result.order, notificationEmail: email?.status ?? 'unavailable' }
+  }
+  return marketplaceOrdersRepository.updateOrder(id, patch)
+}
 async function confirmOrderReceivedService(id: string, studentId: string | undefined) {
   if (!studentId) forbidden('A buyer profile is required')
   return await marketplaceOrdersRepository.completeBuyerOrder(id, studentId) ?? forbidden('Only the buyer can confirm an order after the seller marks it delivered')
@@ -382,8 +424,13 @@ export {
   createMarketplaceListingService,
   readMyMarketplaceInventoryService,
   listMyCampusVendorsService,
+  readCampusVendorProfileService,
+  setCampusVendorFollowingService,
   readCampusVendorWorkspaceService,
+  searchCampusVendorManagerCandidatesService,
+  updateCampusVendorAvailabilityService,
   createCampusVendorPostService,
+  updateCampusVendorPostService,
   createCampusVendorPromotionService,
   updateCampusVendorForManagerService,
   addCampusVendorManagerForManagerService,
@@ -406,6 +453,7 @@ export {
   createOrderService,
   listOrdersService,
   updateOrderStatusService,
+  updateCampusVendorOrderStatusService,
   confirmOrderReceivedService,
   cancelBuyerOrderService,
   processMarketplaceDeliveryDeadlinesService,

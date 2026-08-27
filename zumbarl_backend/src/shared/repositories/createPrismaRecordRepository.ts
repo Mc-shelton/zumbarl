@@ -51,6 +51,13 @@ class PrismaRecordRepository {
     return record?.collection === this.collection ? toRecord(record) : null
   }
 
+  async deleteById(id: string) {
+    const existing = await this.prismaClient.workflowRecord.findUnique({ where: { id } })
+    if (!existing || existing.collection !== this.collection) return null
+    await this.prismaClient.workflowRecord.delete({ where: { id } })
+    return toRecord(existing)
+  }
+
   async list(query: Record<string, unknown> = {}, predicate: (record: AnyRecord) => boolean = () => true) {
     return pageEnvelope(await this.listAll(predicate), query)
   }

@@ -80,12 +80,17 @@ const marketplaceOfferSchema = marketplaceContactSchema.extend({
 const marketplaceProfileViewSchema = z.object({
   product: marketplaceProductContextSchema.optional()
 })
-const marketplaceListingUpdateSchema = listingSchema.partial().extend({
+const marketplaceListingUpdateSchema = campusVendorListingSchema.partial().extend({
   status: z.enum(['DRAFT', 'ACTIVE', 'PAUSED', 'RESERVED', 'SOLD', 'ARCHIVED']).optional()
 })
 const marketplaceOfferDecisionSchema = z.object({ decision: z.enum(['accepted', 'declined']) })
 const vendorPostSchema = postSchema.extend({
   type: z.enum(['post', 'image', 'video', 'poll', 'feeling']).default('post'),
+})
+const vendorPostUpdateSchema = z.object({
+  body: z.string().min(1).max(5000),
+  mediaUrls: z.array(z.string()).max(8).optional(),
+  mediaEdits: z.array(z.record(z.any())).max(8).optional()
 })
 const vendorPromotionSchema = z.object({
   headline: z.string().trim().min(2).max(160),
@@ -102,6 +107,7 @@ const managedVendorUpdateSchema = z.object({
   coverImageUrl: z.string().trim().max(2000).nullable().optional()
 })
 const managedVendorManagerSchema = z.object({ email: z.string().email(), role: z.enum(['admin', 'editor']).default('editor') })
+const managedVendorAvailabilitySchema = z.object({ acceptingOrders: z.boolean() })
 
 export {
   shopSchema,
@@ -122,7 +128,9 @@ export {
   marketplaceListingUpdateSchema,
   marketplaceOfferDecisionSchema,
   vendorPostSchema,
+  vendorPostUpdateSchema,
   vendorPromotionSchema,
   managedVendorUpdateSchema,
-  managedVendorManagerSchema
+  managedVendorManagerSchema,
+  managedVendorAvailabilitySchema
 }

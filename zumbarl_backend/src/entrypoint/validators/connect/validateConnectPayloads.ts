@@ -21,9 +21,9 @@ const storySnapshotSchema = z.object({
   caption: z.string().optional(),
   mediaUrl: z.string().optional(),
   media: z.string().optional(),
-  mediaType: z.enum(['image', 'video']).optional(),
+  mediaType: z.enum(['image', 'video', 'text']).optional(),
   poster: z.string().optional(),
-  storyKind: z.enum(['personal', 'product']).optional(),
+  storyKind: z.enum(['personal', 'product', 'text']).optional(),
   product: z.record(z.any()).nullable().optional(),
   creator: z.record(z.any()).optional(),
   visibility: z.enum(['campus', 'group', 'public']).optional()
@@ -33,13 +33,15 @@ const storySchema = z.object({
   title: z.string().min(1),
   text: z.string().min(1),
   mediaUrl: z.string().min(1).optional(),
-  mediaType: z.enum(['image', 'video']).default('image'),
+  mediaType: z.enum(['image', 'video', 'text']).default('image'),
   poster: z.string().optional(),
-  storyKind: z.enum(['personal', 'product']).default('personal'),
+  storyKind: z.enum(['personal', 'product', 'text']).default('personal'),
   product: z.record(z.any()).nullable().optional(),
   visibility: z.enum(['campus', 'group', 'public']).default('campus'),
   context: z.string().optional()
   ,knowledgeSpaceId: z.string().min(1).optional()
+  ,managedProfileId: z.string().min(1).optional()
+  ,vendorSlug: z.string().min(1).optional()
   ,trimStart: z.number().min(0).optional()
   ,trimEnd: z.number().positive().optional()
 })

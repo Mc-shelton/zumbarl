@@ -7,6 +7,7 @@ import { creditStudentWallet, getOrCreateStudentWallet } from '../../../shared/s
 const reviews = createPrismaRecordRepository('reviews')
 const moderationCases = createPrismaRecordRepository('moderationCases')
 const platformConfigurations = createPrismaRecordRepository('platformConfigurations')
+const campusVendorFollowers = createPrismaRecordRepository('campusVendorFollowers')
 
 const DEFAULT_ZUMBARL_DELIVERY_CONFIG = {
   active: true,
@@ -37,20 +38,25 @@ function slugify(value: string) {
 
 function toShopRecord(shop: Record<string, any>): Record<string, any> {
   const { payload, ownerId, campusId, campus, ...record } = shop
+  delete record.managers
+  const shopPayload = payloadObject(payload)
+  const acceptingOrders = shopPayload.acceptingOrders !== false
   return {
-    ...payloadObject(payload),
+    ...shopPayload,
     ...record,
     ownerId,
     studentId: ownerId,
     campusId,
     campus: campus?.name ?? record.locationLabel ?? payloadObject(payload).campus,
     score: record.ratingAverage,
-    status: String(record.status).toLowerCase() === 'active' ? 'open' : String(record.status).toLowerCase()
+    acceptingOrders,
+    status: String(record.status).toLowerCase() === 'active' ? (acceptingOrders ? 'open' : 'closed') : String(record.status).toLowerCase()
   }
 }
 
 function toListingRecord(listing: Record<string, any>): Record<string, any> {
   const { payload, listingType, stockCount, images, seller, shop, ...record } = listing
+  const shopPayload = payloadObject(shop?.payload)
   return {
     ...payloadObject(payload),
     ...record,
@@ -67,7 +73,11 @@ function toListingRecord(listing: Record<string, any>): Record<string, any> {
       tagline: shop.tagline,
       ratingAverage: shop.ratingAverage,
       ratingCount: shop.ratingCount,
-      orderCount: shop.orderCount
+      orderCount: shop.orderCount,
+      entityType: shopPayload.entityType || null,
+      vendorType: shopPayload.vendorType || null,
+      acceptingOrders: shopPayload.acceptingOrders !== false,
+      campusManagedProfileId: shopPayload.campusManagedProfileId || null
     } : null,
     seller: seller ? {
       studentId: seller.id,
@@ -373,10 +383,44 @@ class MarketplaceOrdersRepository {
     return shop && payloadObject(shop.payload).entityType === 'campus_vendor' ? shop : null
   }
 
+  async searchCampusVendorManagerCandidates(userId: string, slug: string, query: string) {
+    const shop = await this.findOwnedCampusVendor(userId, slug, ['owner', 'admin'])
+    if (!shop) return null
+    const term = query.trim()
+    const users = await prisma.user.findMany({
+      where: {
+        isActive: true,
+        OR: [
+          { name: { contains: term, mode: 'insensitive' } },
+          { email: { contains: term, mode: 'insensitive' } },
+          { username: { contains: term, mode: 'insensitive' } },
+          { firstName: { contains: term, mode: 'insensitive' } },
+          { lastName: { contains: term, mode: 'insensitive' } }
+        ]
+      },
+      include: { studentProfile: { include: { campus: true } } },
+      orderBy: [{ name: 'asc' }, { email: 'asc' }],
+      take: 8
+    })
+    const roles = new Map(shop.managers.map((manager) => [manager.user.id, manager.role]))
+    return users
+      .filter((user) => Boolean(user.studentProfile))
+      .map((user) => ({
+        id: user.id,
+        studentId: user.studentProfile?.id,
+        name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username || 'Zumbarl member',
+        username: user.username,
+        email: user.email,
+        avatarUrl: user.studentProfile?.avatarUrl,
+        campus: user.studentProfile?.campus?.name,
+        currentRole: roles.get(user.id) || null
+      }))
+  }
+
   async readCampusVendorWorkspace(userId: string, slug: string) {
     const shop = await this.findOwnedCampusVendor(userId, slug)
     if (!shop) return null
-    const [listings, posts, sellerOrders] = await Promise.all([
+    const [listings, posts, sellerOrders, viewerStudent, followerRecords] = await Promise.all([
       prisma.marketplaceListing.findMany({
         where: { shopId: shop.id, status: { not: 'REMOVED' } },
         include: listingRelations,
@@ -384,9 +428,12 @@ class MarketplaceOrdersRepository {
       }),
       prisma.connectPost.findMany({
         where: { payload: { path: ['vendorShopId'], equals: shop.id }, status: { not: 'removed' } },
+        include: { comments: { where: { status: 'published' }, orderBy: { createdAt: 'asc' } } },
         orderBy: { createdAt: 'desc' }
       }),
-      this.listSellerOrders(shop.ownerId)
+      this.listSellerOrders(shop.ownerId),
+      prisma.studentProfile.findUnique({ where: { userId }, select: { id: true } }),
+      campusVendorFollowers.listAll((record) => record.shopId === shop.id)
     ])
     const listingIds = new Set(listings.map((listing) => listing.id))
     const orders = sellerOrders.filter((order) => order.items.some((item: Record<string, any>) => listingIds.has(item.listingId)))
@@ -395,14 +442,120 @@ class MarketplaceOrdersRepository {
         ...toShopRecord(shop),
         type: payloadObject(shop.payload).vendorType || 'service',
         capabilities: payloadObject(shop.payload).capabilities || ['inventory', 'orders', 'posts', 'promotions'],
+        followerCount: new Set(followerRecords.map((record) => String(record.userId))).size,
         managers: shop.managers,
         viewerRole: shop.managers.find((assignment) => assignment.user.id === userId)?.role || 'editor',
         canManageAssignments: ['owner', 'admin'].includes(shop.managers.find((assignment) => assignment.user.id === userId)?.role || '')
       },
       listings: listings.map(toListingRecord),
       orders,
-      posts: posts.map(toPayloadRecord)
+      posts: posts.map((post) => {
+        const reactions = payloadObject(post.reactions)
+        return {
+          ...toPayloadRecord(post),
+          reactionCount: Object.keys(reactions).length,
+          viewerReacted: Boolean(viewerStudent?.id && reactions[viewerStudent.id]),
+          commentCount: post.comments.length,
+          comments: post.comments.map((comment) => ({
+            id: comment.id,
+            body: comment.body,
+            createdAt: comment.createdAt,
+            author: {
+              name: 'Zumbarl member',
+              handle: '@member',
+              avatarUrl: null
+            }
+          }))
+        }
+      })
     }
+  }
+
+  async readCampusVendorProfile(slug: string, viewerStudentId?: string, viewerUserId?: string) {
+    const shop = await prisma.marketplaceShop.findFirst({
+      where: { slug, status: { notIn: ['ARCHIVED', 'SUSPENDED'] } },
+      include: {
+        campus: true,
+        managers: { where: { userId: viewerUserId || '__anonymous__' }, select: { role: true } },
+        _count: { select: { listings: true } }
+      }
+    })
+    if (!shop || payloadObject(shop.payload).entityType !== 'campus_vendor') return null
+
+    const [listings, posts, followerRecords] = await Promise.all([
+      prisma.marketplaceListing.findMany({
+        where: { shopId: shop.id, status: 'ACTIVE' },
+        include: listingRelations,
+        orderBy: { updatedAt: 'desc' }
+      }),
+      prisma.connectPost.findMany({
+        where: { payload: { path: ['vendorShopId'], equals: shop.id }, status: 'published' },
+        include: { comments: { where: { status: 'published' }, orderBy: { createdAt: 'asc' } } },
+        orderBy: { createdAt: 'desc' }
+      }),
+      campusVendorFollowers.listAll((record) => record.shopId === shop.id)
+    ])
+
+    const followerUserIds = new Set(followerRecords.map((record) => String(record.userId)))
+
+    return {
+      shop: {
+        ...toShopRecord(shop),
+        type: payloadObject(shop.payload).vendorType || 'service',
+        capabilities: payloadObject(shop.payload).capabilities || ['inventory', 'orders', 'posts'],
+        inventoryCount: listings.length,
+        followerCount: followerUserIds.size,
+        isFollowing: Boolean(viewerUserId && followerUserIds.has(viewerUserId)),
+        viewerRole: shop.managers[0]?.role || null,
+        canOpenWorkspace: Boolean(shop.managers[0]?.role)
+      },
+      listings: listings.map(toListingRecord),
+      posts: posts
+        .filter((post) => !payloadObject(post.payload).isPromoted)
+        .map((post) => {
+          const reactions = payloadObject(post.reactions)
+          return {
+            ...toPayloadRecord(post),
+            reactionCount: Object.keys(reactions).length,
+            viewerReacted: Boolean(viewerStudentId && reactions[viewerStudentId]),
+            commentCount: post.comments.length,
+            comments: post.comments.map((comment) => ({
+              id: comment.id,
+              body: comment.body,
+              createdAt: comment.createdAt,
+              author: { name: 'Zumbarl member', handle: '@member', avatarUrl: null }
+            }))
+          }
+        })
+    }
+  }
+
+  async setCampusVendorFollowing(userId: string, slug: string, active: boolean) {
+    const shop = await prisma.marketplaceShop.findFirst({
+      where: { slug, status: { notIn: ['ARCHIVED', 'SUSPENDED'] } }
+    })
+    if (!shop || payloadObject(shop.payload).entityType !== 'campus_vendor') return null
+
+    const existing = await campusVendorFollowers.listAll((record) => record.shopId === shop.id && record.userId === userId)
+    if (active && !existing.length) await campusVendorFollowers.create({ shopId: shop.id, userId })
+    if (!active && existing.length) await Promise.all(existing.map((record) => campusVendorFollowers.deleteById(record.id)))
+
+    const followers = await campusVendorFollowers.listAll((record) => record.shopId === shop.id)
+    return {
+      followerCount: new Set(followers.map((record) => String(record.userId))).size,
+      isFollowing: active
+    }
+  }
+
+  async updateCampusVendorAvailability(userId: string, slug: string, acceptingOrders: boolean) {
+    const shop = await this.findOwnedCampusVendor(userId, slug)
+    if (!shop) return null
+    const currentPayload = payloadObject(shop.payload)
+    await prisma.marketplaceShop.update({
+      where: { id: shop.id },
+      data: { payload: jsonInput({ ...currentPayload, acceptingOrders }) }
+    })
+    return this.readCampusVendorWorkspace(userId, slug)
   }
 
   async createCampusVendorPost(userId: string, slug: string, payload: Record<string, any>, promotion = false) {
@@ -432,6 +585,22 @@ class MarketplaceOrdersRepository {
         status: 'published',
         reactions: {},
         payload: jsonInput(postPayload)
+      }
+    }))
+  }
+
+  async updateCampusVendorPost(userId: string, slug: string, postId: string, payload: Record<string, any>) {
+    const shop = await this.findOwnedCampusVendor(userId, slug)
+    if (!shop) return null
+    const post = await prisma.connectPost.findFirst({
+      where: { id: postId, status: 'published', payload: { path: ['vendorShopId'], equals: shop.id } }
+    })
+    if (!post) return null
+    return toPayloadRecord(await prisma.connectPost.update({
+      where: { id: post.id },
+      data: {
+        body: payload.body,
+        payload: jsonInput({ ...payloadObject(post.payload), ...payload })
       }
     }))
   }
@@ -645,6 +814,14 @@ class MarketplaceOrdersRepository {
     return order.items.some((item: Record<string, any>) => item.sellerId === studentId) || ownedCount > 0 ? order : null
   }
 
+  async findShopSellerOrder(id: string, shopId: string): Promise<Record<string, any> | null> {
+    const order = await this.findOrder(id)
+    if (!order) return null
+    const listingIds = order.items.map((item: Record<string, any>) => item.listingId).filter(Boolean)
+    const shopListingCount = await prisma.marketplaceListing.count({ where: { id: { in: listingIds }, shopId } })
+    return shopListingCount > 0 ? order : null
+  }
+
   async findOrder(id: string) {
     const order = await prisma.marketplaceOrder.findUnique({ where: { id } })
     return order ? toOrderRecord(order) : null
@@ -835,8 +1012,10 @@ class MarketplaceOrdersRepository {
 
   addCartItem(studentId: string | undefined, buyerUserId: string | undefined, payload: Record<string, any>) {
     return prisma.$transaction(async (tx) => {
-      const listing = await tx.marketplaceListing.findUnique({ where: { id: payload.listingId } })
+      const listing = await tx.marketplaceListing.findUnique({ where: { id: payload.listingId }, include: { shop: true } })
       if (!listing) return null
+      const shopPayload = payloadObject(listing.shop?.payload)
+      if (shopPayload.entityType === 'campus_vendor' && shopPayload.acceptingOrders === false) return null
       const acceptedOffer = payload.offerId && buyerUserId
         ? await tx.marketplaceOffer.findFirst({
             where: { id: payload.offerId, listingReference: listing.id, buyerId: buyerUserId, status: 'accepted' }
@@ -916,6 +1095,13 @@ class MarketplaceOrdersRepository {
       if (!cart || cart.status !== 'open' || cart.studentId !== (studentId ?? null)) return null
       const items = Array.isArray(cart.items) ? cart.items as Record<string, any>[] : []
       if (!items.length || items.some((item) => !item.fulfilment?.quoted)) return null
+      const listingIds = items.map((item) => item.listingId).filter(Boolean)
+      const orderListings = await tx.marketplaceListing.findMany({ where: { id: { in: listingIds } }, include: { shop: true } })
+      const closedVendor = orderListings.find((listing) => {
+        const shopPayload = payloadObject(listing.shop?.payload)
+        return shopPayload.entityType === 'campus_vendor' && shopPayload.acceptingOrders === false
+      })
+      if (closedVendor) throw new ApiError(409, `${closedVendor.shop?.name || 'This campus vendor'} is currently closed and is not accepting new orders`, 'VENDOR_NOT_ACCEPTING_ORDERS')
       const buyer = studentId
         ? await tx.studentProfile.findUnique({ where: { id: studentId }, select: { userId: true, firstName: true, lastName: true } })
         : null

@@ -97,7 +97,7 @@ class ConnectCommunityRepository {
         campus: true,
         communityGroup: true,
         company: true,
-        posts: { where: { status: 'published' }, orderBy: { createdAt: 'desc' }, take: 30 },
+        posts: { where: { status: 'published' }, include: { comments: { where: { status: 'published' }, orderBy: { createdAt: 'asc' } } }, orderBy: { createdAt: 'desc' }, take: 30 },
         managers: { select: { role: true, user: { select: { id: true, name: true, username: true } } } },
         _count: { select: { followers: true, posts: true, managers: true } }
       }
@@ -136,8 +136,30 @@ class ConnectCommunityRepository {
           }
         })
       : []
-    const isFollowing = Boolean(viewerUserId && await prisma.managedProfileFollower.findUnique({ where: { managedProfileId_userId: { managedProfileId: profile.id, userId: viewerUserId } } }))
-    return { ...profile, attachedServices, isFollowing }
+    const [followRecord, viewerStudent] = viewerUserId ? await Promise.all([
+      prisma.managedProfileFollower.findUnique({ where: { managedProfileId_userId: { managedProfileId: profile.id, userId: viewerUserId } } }),
+      prisma.studentProfile.findUnique({ where: { userId: viewerUserId }, select: { id: true } })
+    ]) : [null, null]
+    const posts = profile.posts.map((post) => {
+      const reactions = payloadObject(post.reactions)
+      return {
+        ...post,
+        reactionCount: Object.keys(reactions).length,
+        viewerReacted: Boolean(viewerStudent?.id && reactions[viewerStudent.id]),
+        commentCount: post.comments.length,
+        comments: post.comments.map((comment) => ({
+          id: comment.id,
+          body: comment.body,
+          createdAt: comment.createdAt,
+          author: {
+            name: 'Zumbarl member',
+            handle: '@member',
+            avatarUrl: null
+          }
+        }))
+      }
+    })
+    return { ...profile, posts, attachedServices, isFollowing: Boolean(followRecord) }
   }
 
   async setManagedProfileFollow(managedProfileId: string, userId: string, active: boolean) {
@@ -150,6 +172,18 @@ class ConnectCommunityRepository {
     return Boolean(await prisma.managedProfileManager.findUnique({
       where: { managedProfileId_userId: { managedProfileId, userId } }
     }))
+  }
+
+  async findManagedVendorStoryTarget(userId: string, slug: string) {
+    const shop = await prisma.marketplaceShop.findFirst({
+      where: {
+        slug,
+        status: { notIn: ['ARCHIVED', 'SUSPENDED'] },
+        managers: { some: { userId } }
+      },
+      include: { campus: true }
+    })
+    return shop && payloadObject(shop.payload).entityType === 'campus_vendor' ? shop : null
   }
 
   async updateManagedProfile(id: string, patch: Record<string, any>) {
@@ -192,6 +226,18 @@ class ConnectCommunityRepository {
           payload: jsonInput(storedPayload)
         }
       })
+    })
+  }
+
+  async updateManagedProfilePost(managedProfileId: string, postId: string, payload: Record<string, any>) {
+    const post = await prisma.connectPost.findFirst({ where: { id: postId, managedProfileId, status: 'published' } })
+    if (!post) return null
+    return prisma.connectPost.update({
+      where: { id: post.id },
+      data: {
+        body: payload.body,
+        payload: jsonInput({ ...payloadObject(post.payload), ...payload })
+      }
     })
   }
 
@@ -436,18 +482,54 @@ class ConnectCommunityRepository {
       orderBy: { createdAt: 'desc' }
     })
     const storySpaceIds = [...new Set(records.map((record) => record.knowledgeSpaceId).filter(Boolean))] as string[]
+    const storyManagedProfileIds = [...new Set(records.map((record) => String(payloadObject(record.payload).managedProfileId || '')).filter(Boolean))]
     const storySpaces = storySpaceIds.length ? await prisma.knowledgeSpace.findMany({
       where: { id: { in: storySpaceIds }, status: 'ACTIVE' },
       select: { id: true, slug: true, name: true, type: true, avatarUrl: true }
     }) : []
+    const storyManagedProfiles = storyManagedProfileIds.length ? await prisma.managedProfile.findMany({
+      where: { id: { in: storyManagedProfileIds }, status: 'active' },
+      include: { campus: true, communityGroup: true }
+    }) : []
     const storySpaceById = new Map(storySpaces.map((space) => [space.id, space]))
+    const storyManagedProfileById = new Map(storyManagedProfiles.map((profile) => [profile.id, profile]))
     return {
       data: records.map((record) => {
         const { _count, student, ...story } = record
+        const storedPayload = payloadObject(record.payload)
+        const managedProfile = storyManagedProfileById.get(String(storedPayload.managedProfileId || ''))
+        const vendorSnapshot = payloadObject(storedPayload.vendorSnapshot)
+        const creator = vendorSnapshot.id ? {
+          id: vendorSnapshot.id,
+          slug: vendorSnapshot.slug,
+          profileType: 'vendor',
+          name: vendorSnapshot.name,
+          handle: 'Campus vendor',
+          avatarUrl: vendorSnapshot.avatarUrl || null,
+          campus: vendorSnapshot.campus || null,
+          isSameCampus: true
+        } : managedProfile ? {
+          id: managedProfile.id,
+          slug: managedProfile.slug,
+          profileType: managedProfile.type,
+          name: managedProfile.name,
+          handle: `@${managedProfile.handle}`,
+          avatarUrl: managedProfile.avatarUrl,
+          campus: managedProfile.campus?.name || managedProfile.communityGroup?.campus || null,
+          isSameCampus: managedProfile.campusId === viewer?.campusId
+        } : student ? {
+          id: student.id,
+          profileType: 'student',
+          name: [student.firstName, student.lastName].filter(Boolean).join(' '),
+          handle: `@${student.user.username || student.user.email.split('@')[0]}`,
+          avatarUrl: student.avatarUrl,
+          campus: student.campus.name,
+          isSameCampus: student.campusId === viewer?.campusId
+        } : null
         return {
           ...toRecord(story),
           isMine: Boolean(viewerStudentId && record.studentId === viewerStudentId),
-          creator: student ? { id: student.id, name: [student.firstName, student.lastName].filter(Boolean).join(' '), handle: `@${student.user.username || student.user.email.split('@')[0]}`, avatarUrl: student.avatarUrl, campus: student.campus.name, isSameCampus: student.campusId === viewer?.campusId } : null,
+          creator,
           knowledgeSpace: record.knowledgeSpaceId ? storySpaceById.get(record.knowledgeSpaceId) || null : null,
           reactionCount: _count.reactions,
           commentCount: _count.comments

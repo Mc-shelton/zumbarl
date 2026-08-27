@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { campusVendorListingSchema, cartItemSchema, listingSchema, vendorPostSchema } from './validateMarketplacePayloads.js'
+import { campusVendorListingSchema, cartItemSchema, listingSchema, marketplaceListingUpdateSchema, vendorPostSchema } from './validateMarketplacePayloads.js'
 
 describe('marketplace service validation', () => {
   it('accepts an appointment-based campus service listing', () => {
@@ -70,5 +70,26 @@ describe('marketplace service validation', () => {
     })
 
     expect(result.success).toBe(true)
+  })
+
+  it('keeps food details intact when editing an existing menu item', () => {
+    const result = marketplaceListingUpdateSchema.safeParse({
+      title: 'Beef stew and chapati',
+      category: 'Meals',
+      priceAmount: 300,
+      stock: 12,
+      inventoryType: 'food',
+      foodType: 'meal',
+      ingredients: 'Beef, tomatoes, chapati flour',
+      allergens: 'Contains wheat',
+      portionSize: 'Serves 1',
+      preparationMinutes: 20,
+      availableToday: false,
+      campusOnly: true,
+    })
+
+    expect(result.success).toBe(true)
+    expect(result.success && result.data.inventoryType).toBe('food')
+    expect(result.success && result.data.ingredients).toContain('chapati flour')
   })
 })
