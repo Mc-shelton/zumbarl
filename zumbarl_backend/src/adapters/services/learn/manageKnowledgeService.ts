@@ -138,7 +138,8 @@ function mapResource(resource: Record<string, any>, viewerStudentId?: string) {
       dueAt: item.dueAt
     }])),
     circulationCount: resource._count?.accesses || 0,
-    createdAt: resource.createdAt
+    createdAt: resource.createdAt,
+    recommendation: resource.recommendation || { source: 'fallback' }
   }
 }
 

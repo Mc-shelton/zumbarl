@@ -145,7 +145,7 @@ async function recordMarketplaceSellerViewService(actorUserId: string | undefine
 }
 const listMarketplaceShopsService = (query: Record<string, unknown>) => marketplaceOrdersRepository.listShops(query)
 const createMarketplaceShopService = (studentId: string | undefined, payload: Record<string, any>) => marketplaceOrdersRepository.createShop({ ...payload, studentId, status: 'open', score: 0 })
-const listMarketplaceListingsService = (query: Record<string, unknown>) => marketplaceOrdersRepository.listListings(query)
+const listMarketplaceListingsService = (query: Record<string, unknown>, studentId?: string) => marketplaceOrdersRepository.listListings(query, studentId)
 async function createMarketplaceListingService(studentId: string | undefined, userId: string | undefined, shopId: string, payload: Record<string, any>) {
   if (!studentId || !userId) forbidden('A student vendor operator profile is required')
   const shop = await marketplaceOrdersRepository.findShop(shopId) ?? notFound('Shop')

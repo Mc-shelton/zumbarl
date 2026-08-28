@@ -25,6 +25,7 @@ import { registerLearnRoutes } from './entrypoint/api/routes/learn/index.js'
 import { registerMarketplaceRoutes } from './entrypoint/api/routes/marketplace/index.js'
 import { registerMarketingRoutes } from './entrypoint/api/routes/marketing/index.js'
 import { registerProjectRoutes } from './entrypoint/api/routes/projects/index.js'
+import { registerRecommendationRoutes } from './entrypoint/api/routes/recommendations/index.js'
 import { registerSkillRoutes } from './entrypoint/api/routes/skills/index.js'
 import { registerSupportRoutes } from './entrypoint/api/routes/support/index.js'
 import { registerUploadRoutes } from './entrypoint/api/routes/uploads/index.js'
@@ -84,6 +85,7 @@ async function buildApp() {
         { name: 'learn' },
         { name: 'connect' },
         { name: 'marketplace' },
+        { name: 'recommendations' },
         { name: 'finance' },
         { name: 'skills' },
         { name: 'support' },
@@ -134,6 +136,7 @@ async function buildApp() {
   await app.register(registerLearnRoutes, { prefix: '/api/v1/learn' })
   await app.register(registerConnectRoutes, { prefix: '/api/v1/connect' })
   await app.register(registerMarketplaceRoutes, { prefix: '/api/v1/marketplace' })
+  await app.register(registerRecommendationRoutes, { prefix: '/api/v1/recommendations' })
   await app.register(registerFinanceRoutes, { prefix: '/api/v1/finance' })
   await app.register(registerSkillRoutes, { prefix: '/api/v1/skills' })
   await app.register(registerSupportRoutes, { prefix: '/api/v1/support' })

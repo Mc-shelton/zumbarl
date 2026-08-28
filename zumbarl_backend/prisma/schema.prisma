@@ -272,6 +272,8 @@ model StudentProfile {
   connectCommentReactions     ConnectStoryCommentReaction[]
   outgoingRelationships       ConnectRelationship[]         @relation("ConnectRelationshipActor")
   incomingRelationships       ConnectRelationship[]         @relation("ConnectRelationshipTarget")
+  recommendationEvents        RecommendationEvent[]
+  recommendationScores        RecommendationScore[]
 
   @@index([campusId])
   @@index([kycStatus])
@@ -3056,4 +3058,75 @@ model WorkflowRecord {
   @@index([collection])
   @@index([collection, createdAt])
   @@map("workflow_records")
+}
+
+// =============================================================================
+// RECOMMENDATIONS
+// =============================================================================
+
+model RecommendationEvent {
+  id         String   @id @default(cuid())
+  studentId  String
+  surface    String
+  entityType String
+  entityId   String
+  eventType  String
+  reward     Float
+  position   Int?
+  sessionId  String?
+  features   Json?
+  metadata   Json?
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, surface, occurredAt])
+  @@index([surface, entityType, entityId, occurredAt])
+  @@index([eventType, occurredAt])
+  @@map("recommendation_events")
+}
+
+model RecommendationModelArtifact {
+  id            String    @id @default(cuid())
+  surface       String
+  version       String
+  algorithm     String
+  status        String
+  metrics       Json?
+  featureSchema Json?
+  trainedAt     DateTime
+  activatedAt   DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  scores RecommendationScore[]
+
+  @@unique([surface, version])
+  @@index([surface, status, activatedAt])
+  @@map("recommendation_model_artifacts")
+}
+
+model RecommendationScore {
+  id              String   @id @default(cuid())
+  studentId       String
+  surface         String
+  entityType      String
+  entityId        String
+  score           Float
+  rank            Int
+  reason          Json?
+  modelArtifactId String
+  generatedAt     DateTime @default(now())
+  expiresAt       DateTime
+
+  student       StudentProfile              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  modelArtifact RecommendationModelArtifact @relation(fields: [modelArtifactId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, surface, entityType, entityId])
+  @@index([studentId, surface, rank])
+  @@index([surface, entityType, entityId])
+  @@index([expiresAt])
+  @@map("recommendation_scores")
 }

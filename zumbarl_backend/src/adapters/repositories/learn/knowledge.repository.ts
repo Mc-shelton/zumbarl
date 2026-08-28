@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client'
 import { ApiError } from '../../../lib/http.js'
 import { prisma } from '../../../lib/prisma.js'
 import { getOrCreateStudentWallet } from '../../../shared/services/walletLedger.js'
+import { rankWithRecommendations } from '../../services/recommendations/index.js'
 
 const studentSummary = {
   select: {
@@ -136,7 +137,13 @@ class LearnKnowledgeRepository {
       prisma.knowledgeResourceAccess.count({ where: { studentId, action: 'BORROW', status: { in: ['PENDING', 'ACTIVE'] } } }),
       prisma.knowledgeResourceAccess.count({ where: { studentId, action: 'SAVE', status: 'ACTIVE' } })
     ])
-    return { resources, spaces, myBorrowCount, mySavedCount }
+    const rankedResources = await rankWithRecommendations({
+      studentId,
+      surface: 'learning',
+      entityType: 'knowledge_resource',
+      items: resources
+    })
+    return { resources: rankedResources, spaces, myBorrowCount, mySavedCount }
   }
 
   findSpace(id: string, studentId: string) {

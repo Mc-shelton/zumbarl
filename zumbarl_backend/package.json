@@ -19,7 +19,9 @@
     "titles:normalize": "tsx src/data/normalizeStoredTitles.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "prisma:studio": "prisma studio",
+    "recommendations:setup": "sh recommendations/setup.sh",
+    "recommendations:train": "sh recommendations/run.sh"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.114.0",

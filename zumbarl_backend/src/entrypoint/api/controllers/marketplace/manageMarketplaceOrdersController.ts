@@ -8,7 +8,7 @@ const vendorSlugParamSchema = z.object({ slug: z.string().min(1) })
 const vendorOrderParamsSchema = z.object({ slug: z.string().min(1), id: z.string().min(1) })
 async function listMarketplaceShopsController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listMarketplaceShopsService(request.query as Record<string, unknown>)) }
 async function createMarketplaceShopController(request: FastifyRequest, reply: FastifyReply) { return reply.code(201).send(await createMarketplaceShopService(request.authUser?.studentId, requireBody(shopSchema, request))) }
-async function listMarketplaceListingsController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listMarketplaceListingsService(request.query as Record<string, unknown>)) }
+async function listMarketplaceListingsController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listMarketplaceListingsService(request.query as Record<string, unknown>, request.authUser?.studentId)) }
 async function createMarketplaceListingController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await createMarketplaceListingService(request.authUser?.studentId, request.authUser?.id, id, requireBody(campusVendorListingSchema, request))) }
 async function readMyMarketplaceInventoryController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await readMyMarketplaceInventoryService(request.authUser?.studentId)) }
 async function listMyCampusVendorsController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listMyCampusVendorsService(request.authUser?.id)) }

@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client'
 import { pageEnvelope } from '../../../lib/http.js'
 import { prisma } from '../../../lib/prisma.js'
 import { createPrismaRecordRepository } from '../../../shared/repositories/index.js'
+import { rankWithRecommendations } from '../../services/recommendations/index.js'
 
 const moderationCases = createPrismaRecordRepository('moderationCases')
 const legacyProjects = createPrismaRecordRepository('projects')
@@ -398,12 +399,18 @@ class ConnectCommunityRepository {
     })
     const focusedPostId = String(query.postId || query.post || '').trim()
     const priorityRecords = mappedRecords.sort((left, right) => Number(right.isPriorityForViewer) - Number(left.isPriorityForViewer) || new Date(String((right as Record<string, any>).createdAt)).getTime() - new Date(String((left as Record<string, any>).createdAt)).getTime())
+    const rankedRecords = await rankWithRecommendations({
+      studentId: viewerStudentId,
+      surface: 'connect_feed',
+      entityType: 'connect_post',
+      items: priorityRecords
+    })
     const priorityFocusedIndex = focusedPostId
-      ? priorityRecords.findIndex((record) => String((record as Record<string, any>).id || '') === focusedPostId)
+      ? rankedRecords.findIndex((record) => String((record as Record<string, any>).id || '') === focusedPostId)
       : -1
     const orderedRecords = priorityFocusedIndex > 0
-      ? [priorityRecords[priorityFocusedIndex], ...priorityRecords.filter((_, index) => index !== priorityFocusedIndex)]
-      : priorityRecords
+      ? [rankedRecords[priorityFocusedIndex], ...rankedRecords.filter((_, index) => index !== priorityFocusedIndex)]
+      : rankedRecords
     return pageEnvelope(orderedRecords, query)
   }
 
@@ -560,7 +567,13 @@ class ConnectCommunityRepository {
     })
     if (!viewer) return []
     const candidates = await prisma.studentProfile.findMany({
-      where: { id: { not: viewerStudentId }, user: { isActive: true } },
+      where: {
+        id: { not: viewerStudentId },
+        user: { isActive: true },
+        incomingRelationships: {
+          none: { actorStudentId: viewerStudentId, type: 'follow' }
+        }
+      },
       include: { user: true, campus: true },
       orderBy: { updatedAt: 'desc' },
       take: Math.max(24, limit * 3)
@@ -579,13 +592,15 @@ class ConnectCommunityRepository {
     }) : []
     const followedIds = new Set(relationships.filter((relationship) => relationship.type === 'follow').map((relationship) => relationship.targetStudentId))
     const connectedIds = new Set(relationships.filter((relationship) => relationship.type === 'connect').map((relationship) => relationship.actorStudentId === viewerStudentId ? relationship.targetStudentId : relationship.actorStudentId))
-    return candidates
+    const fallbackCandidates = candidates
+      // A follow can be created between the candidate and relationship queries.
+      // Keep this guard so a stale candidate never reaches the suggestion rail.
+      .filter((candidate) => !followedIds.has(candidate.id))
       .sort((left, right) => {
         const campusDifference = Number(right.campusId === viewer.campusId) - Number(left.campusId === viewer.campusId)
         if (campusDifference) return campusDifference
         return right.updatedAt.getTime() - left.updatedAt.getTime()
       })
-      .slice(0, Math.max(1, Math.min(limit, 30)))
       .map((candidate) => ({
         id: candidate.id,
         name: [candidate.firstName, candidate.lastName].filter(Boolean).join(' '),
@@ -593,10 +608,17 @@ class ConnectCommunityRepository {
         avatarUrl: candidate.avatarUrl,
         campus: candidate.campus.name,
         careerPath: candidate.careerPath,
-        isFollowing: followedIds.has(candidate.id),
+        isFollowing: false,
         isConnected: connectedIds.has(candidate.id),
         isOnline: Boolean(candidate.user.lastLoginAt && Date.now() - candidate.user.lastLoginAt.getTime() < 15 * 60 * 1000)
       }))
+    const ranked = await rankWithRecommendations({
+      studentId: viewerStudentId,
+      surface: 'people',
+      entityType: 'student_profile',
+      items: fallbackCandidates
+    })
+    return ranked.slice(0, Math.max(1, Math.min(limit, 30)))
   }
 
   async setRelationship(actorStudentId: string, targetStudentId: string, type: 'follow' | 'connect', active: boolean) {

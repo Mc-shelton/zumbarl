@@ -5,6 +5,7 @@ import { ensureProjectDeliverableReference, isSystemGeneratedDeliverable } from 
 import { OPPORTUNITY_APPLICABLE_STATUSES } from '../../../shared/opportunities/opportunityLifecycle.js'
 import { readMilestoneBudget } from '../../../shared/projects/milestoneBudget.js'
 import { deliverableTasksRepository } from '../projects/deliverableTasks.repository.js'
+import { rankWithRecommendations } from '../../services/recommendations/index.js'
 
 const projects = createPrismaRecordRepository('projects')
 const deliverables = createPrismaRecordRepository('deliverables')
@@ -66,7 +67,7 @@ function toOpportunityCard(opportunity: Record<string, any>) {
 }
 
 class EarnWorkflowsRepository {
-  async listPublishedOpportunities(query: Record<string, unknown>) {
+  async listPublishedOpportunities(query: Record<string, unknown>, viewerStudentId?: string) {
     const items = await prisma.opportunity.findMany({
       where: {
         status: { in: OPPORTUNITY_APPLICABLE_STATUSES },
@@ -80,7 +81,13 @@ class EarnWorkflowsRepository {
       orderBy: { createdAt: 'desc' }
     })
 
-    return pageEnvelope(items.map(toOpportunityCard), query)
+    const ranked = await rankWithRecommendations({
+      studentId: viewerStudentId,
+      surface: 'opportunities',
+      entityType: 'opportunity',
+      items: items.map(toOpportunityCard)
+    })
+    return pageEnvelope(ranked, query)
   }
 
   async readPublishedOpportunity(id: string) {

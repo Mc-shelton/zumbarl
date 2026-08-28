@@ -3,6 +3,7 @@ import { ApiError, pageEnvelope } from '../../../lib/http.js'
 import { prisma } from '../../../lib/prisma.js'
 import { createPrismaRecordRepository } from '../../../shared/repositories/index.js'
 import { creditStudentWallet, getOrCreateStudentWallet } from '../../../shared/services/walletLedger.js'
+import { rankWithRecommendations } from '../../services/recommendations/index.js'
 
 const reviews = createPrismaRecordRepository('reviews')
 const moderationCases = createPrismaRecordRepository('moderationCases')
@@ -303,13 +304,19 @@ class MarketplaceOrdersRepository {
     return toShopRecord(shop)
   }
 
-  async listListings(query: Record<string, unknown>) {
+  async listListings(query: Record<string, unknown>, viewerStudentId?: string) {
     const records = await prisma.marketplaceListing.findMany({
       where: { status: 'ACTIVE' },
       include: listingRelations,
       orderBy: { createdAt: 'desc' }
     })
-    return pageEnvelope(records.map(toListingRecord), query)
+    const ranked = await rankWithRecommendations({
+      studentId: viewerStudentId,
+      surface: 'marketplace',
+      entityType: 'marketplace_listing',
+      items: records.map(toListingRecord)
+    })
+    return pageEnvelope(ranked, query)
   }
 
   async createListing(payload: Record<string, any>) {

@@ -21,7 +21,7 @@ import {
 import { respondToBidCounterOfferSchema, respondToInterviewSchema, saveOpportunityBidDraftSchema, submitOpportunityBidSchema, submitProjectDeliverableSchema } from '../../../validators/earn/index.js'
 
 async function listEarnOpportunitiesController(request: FastifyRequest, reply: FastifyReply) {
-  return reply.send(await listEarnOpportunitiesService(request.query as Record<string, unknown>))
+  return reply.send(await listEarnOpportunitiesService(request.query as Record<string, unknown>, request.authUser?.studentId))
 }
 
 async function listStudentBidsController(request: FastifyRequest, reply: FastifyReply) {

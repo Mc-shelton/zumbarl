@@ -5,8 +5,8 @@ import { businessWorkflowsRepository } from '../../repositories/business/index.j
 import { OPPORTUNITY_APPLICABLE_STATUSES, normalizeOpportunityStatus } from '../../../shared/opportunities/opportunityLifecycle.js'
 import { readStudentScoreSnapshot } from '../scores/index.js'
 
-function listEarnOpportunitiesService(query: Record<string, unknown>) {
-  return earnWorkflowsRepository.listPublishedOpportunities(query)
+function listEarnOpportunitiesService(query: Record<string, unknown>, studentId?: string) {
+  return earnWorkflowsRepository.listPublishedOpportunities(query, studentId)
 }
 
 async function readEarnOpportunityService(id: string) {
