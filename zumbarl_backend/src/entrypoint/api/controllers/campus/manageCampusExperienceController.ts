@@ -13,7 +13,11 @@ import {
 } from '../../../../adapters/services/campus/index.js'
 
 const assistantQuerySchema = z.object({
-  query: z.string().trim().min(1, 'Ask the assistant a question to search.').max(200)
+  query: z.string().trim().min(1, 'Ask the assistant a question to search.').max(200),
+  history: z.array(z.object({
+    role: z.enum(['user', 'assistant']),
+    content: z.string().trim().min(1).max(1000)
+  })).max(8).default([])
 })
 const profileUpdateSchema = z.object({
   firstName: z.string().trim().min(1).max(80),
@@ -23,6 +27,7 @@ const profileUpdateSchema = z.object({
   careerPath: z.string().trim().max(120).default(''),
   bio: z.string().trim().max(500).default(''),
   avatarUrl: z.string().trim().max(2048).default(''),
+  showZumbarlPoints: z.boolean().optional(),
   skills: z.array(z.string().trim().min(1).max(80)).max(12).default([])
 })
 
@@ -61,8 +66,8 @@ async function readStudentProfileScoreController(request: FastifyRequest, reply:
 }
 
 async function runCampusAssistantController(request: FastifyRequest, reply: FastifyReply) {
-  const { query } = requireBody(assistantQuerySchema, request)
-  return reply.send(await runCampusAssistantQueryService(request.authUser?.studentId, query))
+  const { query, history } = requireBody(assistantQuerySchema, request)
+  return reply.send(await runCampusAssistantQueryService(request.authUser?.studentId, query, history))
 }
 
 export {

@@ -36,5 +36,8 @@
 - the campaign creation need a safe exit
 the
 links:
+- page management is by users from anywhere, but now pages from particular campuses should be only managed by users in that campus
+- adding share, play, expand, open as metric on the recommendation system
+- for complete anonymousity, lets encrypt sensitive data using the user's password as the key. that way, mental wellbeing data is technically untracable to the user without their password
 
 https://www.itl.nist.gov/div898/handbook/apr/section2/apr1a.htm

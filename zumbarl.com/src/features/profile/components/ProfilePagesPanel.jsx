@@ -9,7 +9,18 @@ import { listMyCampusVendors } from '../../opportunities/services/marketplaceInt
 import { listMyManagedProfiles } from '../services/managedProfileService'
 
 const EMPTY_SPACE = {
-  type: 'LIBRARY', name: '', description: '', visibility: 'CAMPUS', membershipMode: 'REQUEST', avatarUrl: '',
+  type: 'LIBRARY', groupType: 'STUDY_GROUP', name: '', description: '', visibility: 'CAMPUS', membershipMode: 'REQUEST', avatarUrl: '',
+}
+
+const GROUP_TYPE_OPTIONS = [
+  { value: 'STUDY_GROUP', label: 'Study group' },
+  { value: 'CLUB', label: 'Club' },
+  { value: 'ASSOCIATION', label: 'Association' },
+  { value: 'SOCIETY', label: 'Society' },
+]
+
+function groupTypeLabel(value) {
+  return GROUP_TYPE_OPTIONS.find((option) => option.value.toLowerCase() === String(value || '').toLowerCase())?.label || 'Study group'
 }
 
 function isManager(space) {
@@ -153,7 +164,7 @@ function ProfilePagesPanel({ isOwnProfile = false, onOpenKnowledgeHub, profileNa
               </div>
               <div className="campus-page-card-copy">
                 <div className="campus-page-card-meta">
-                  <span>{space.type === 'library' ? 'Library' : 'Study group'}</span>
+                  <span>{space.type === 'library' ? 'Library' : groupTypeLabel(space.groupType)}</span>
                   <span>{space.visibility === 'private' ? <FiLock /> : <FiGlobe />}{space.visibility || 'campus'}</span>
                 </div>
                 <h3>{space.name}</h3>
@@ -171,8 +182,8 @@ function ProfilePagesPanel({ isOwnProfile = false, onOpenKnowledgeHub, profileNa
             <div className="campus-pages-empty">
               <FiArchive />
               <h3>{isOwnProfile ? 'Create your first page' : 'No published pages yet'}</h3>
-              <p>{isOwnProfile ? 'Create a library or study group, or wait for a campus administrator to assign a page or vendor.' : `${profileName || 'This student'} has not published a managed page.`}</p>
-              {isOwnProfile ? <button type="button" onClick={() => setIsCreateOpen(true)}>Create a library or group</button> : null}
+              <p>{isOwnProfile ? 'Create a library, group or club, or wait for a campus administrator to assign a page or vendor.' : `${profileName || 'This student'} has not published a managed page.`}</p>
+              {isOwnProfile ? <button type="button" onClick={() => setIsCreateOpen(true)}>Create a library, group or club</button> : null}
             </div>
           ) : null}
         </div>
@@ -183,12 +194,13 @@ function ProfilePagesPanel({ isOwnProfile = false, onOpenKnowledgeHub, profileNa
           <form className="campus-pages-dialog" onSubmit={submitSpace}>
             <button type="button" className="campus-pages-dialog-close" onClick={closeCreateDialog} aria-label="Close"><FiX /></button>
             <span className="campus-pages-eyebrow">Create under your account</span>
-            <h2>New library or study group</h2>
-            <p>Libraries and study groups can be created by you. Campus vendors are created by administrators and assigned to operators.</p>
+            <h2>New library, group or club</h2>
+            <p>Create a resource library or give your student community its own page. Mental-health support circles are created separately inside Wellbeing.</p>
             <div className="campus-pages-type-switch">
               <button type="button" className={form.type === 'LIBRARY' ? 'is-active' : ''} onClick={() => setForm({ ...form, type: 'LIBRARY' })}><FiArchive /> Library</button>
-              <button type="button" className={form.type === 'GROUP' ? 'is-active' : ''} onClick={() => setForm({ ...form, type: 'GROUP' })}><FiUsers /> Study group</button>
+              <button type="button" className={form.type === 'GROUP' ? 'is-active' : ''} onClick={() => setForm({ ...form, type: 'GROUP' })}><FiUsers /> Groups & clubs</button>
             </div>
+            {form.type === 'GROUP' ? <label><span>Type</span><select required value={form.groupType} onChange={(event) => setForm({ ...form, groupType: event.target.value })}>{GROUP_TYPE_OPTIONS.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select></label> : null}
             <label><span>Name</span><input required value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} /></label>
             <label><span>Description</span><textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
             <div className="campus-pages-form-row">

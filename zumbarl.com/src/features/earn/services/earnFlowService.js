@@ -14,6 +14,7 @@ import { createPayoutReadinessRecord, resolveProjectPayment } from './earnPaymen
 import { applyReviewToEvidence, createProjectEndorsement, createProjectReview, getReviewedProjectState } from './earnReviewMappers'
 import { resolveEarnTrustSnapshot } from './earnTrustService'
 import { sendZumbarlApiRequest } from '../../../lib/sendZumbarlApiRequest'
+import { recordRecommendationImpressions, withRecommendationEvent } from '../../recommendations/services/recommendationEventService'
 
 const listeners = new Set()
 const SEEN_INVITES_KEY = 'zumbarl.earnFlow.seenInvites'
@@ -76,6 +77,7 @@ export async function hydrateEarnFlowFromBackend() {
     sendZumbarlApiRequest('/earn/invites').catch(() => null),
     sendZumbarlApiRequest('/earn/interviews').catch(() => null),
   ]).then(([opportunitiesPayload, bidsPayload, projectsPayload, invitesPayload, interviewsPayload]) => {
+    recordRecommendationImpressions('opportunities', 'opportunity', readEnvelopeData(opportunitiesPayload))
     setEarnFlowState((state) => ({
       ...state,
       opportunities: opportunitiesPayload ? readEnvelopeData(opportunitiesPayload) : state.opportunities,
@@ -101,7 +103,7 @@ export function refreshEarnFlowFromBackend() {
 
 export async function hydrateEarnOpportunityById(opportunityId) {
   if (!opportunityId) return null
-  const opportunity = await sendZumbarlApiRequest(`/earn/opportunities/${encodeURIComponent(opportunityId)}`)
+  const opportunity = await withRecommendationEvent(sendZumbarlApiRequest(`/earn/opportunities/${encodeURIComponent(opportunityId)}`), { surface: 'opportunities', entityType: 'opportunity', entityId: opportunityId, eventType: 'open' })
   setEarnFlowState((state) => ({
     ...state,
     opportunities: [
@@ -181,7 +183,8 @@ export function markEarnInvitesSeen() {
 }
 
 export async function submitOpportunityBid({ gig, intent, proposal }) {
-  const backendBid = await sendZumbarlApiRequest(`/earn/opportunities/${gig.submissionOpportunityId || gig.id}/bids`, {
+  const opportunityId = gig.submissionOpportunityId || gig.id
+  const backendBid = await withRecommendationEvent(sendZumbarlApiRequest(`/earn/opportunities/${opportunityId}/bids`, {
     method: 'POST',
     body: JSON.stringify({
       amount: Number(String(proposal.price || '').replace(/[^\d.]/g, '')) || 0,
@@ -195,7 +198,7 @@ export async function submitOpportunityBid({ gig, intent, proposal }) {
       proposal: proposal.proposal,
       questionAnswers: proposal.questionAnswers || [],
     }),
-  })
+  }), { surface: 'opportunities', entityType: 'opportunity', entityId: opportunityId, eventType: 'apply' })
   const bid = {
     ...createBid({ gig, intent, proposal }),
     ...backendBid,

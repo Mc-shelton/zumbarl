@@ -18,6 +18,26 @@ async function writeCache(key: string, value: unknown, ttlSeconds: number) {
   await redis.set(key, JSON.stringify(value), 'EX', ttlSeconds)
 }
 
+async function touchPresence(key: string, memberId: string, timestamp: number, ttlSeconds: number) {
+  const cutoff = timestamp - ttlSeconds * 1000
+  const transaction = redis.multi()
+  transaction.zadd(key, timestamp, memberId)
+  transaction.zremrangebyscore(key, 0, cutoff)
+  transaction.expire(key, ttlSeconds)
+  transaction.zcard(key)
+  const results = await transaction.exec()
+  return Number(results?.[3]?.[1] || 0)
+}
+
+async function removePresence(key: string, memberId: string) {
+  await redis.zrem(key, memberId)
+}
+
+async function countPresence(key: string, timestamp: number, ttlSeconds: number) {
+  await redis.zremrangebyscore(key, 0, timestamp - ttlSeconds * 1000)
+  return redis.zcard(key)
+}
+
 async function deleteCache(key: string) {
   await redis.del(key)
 }
@@ -54,6 +74,9 @@ export {
   connectRedisCache,
   readCache,
   writeCache,
+  touchPresence,
+  removePresence,
+  countPresence,
   deleteCache,
   deleteCacheByPattern,
   readRedisHealth,

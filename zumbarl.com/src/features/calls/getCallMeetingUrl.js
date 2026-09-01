@@ -7,7 +7,7 @@ const LOCAL_HOST_PATTERN = /^(localhost|127\.0\.0\.1|10\.|192\.168\.|172\.(1[6-9
 // backend generates room URLs with one fixed host. Serving the room from the
 // same hostname the app is loaded from keeps localhost viewers on a secure
 // origin (WebRTC is disabled on plain http:// for non-localhost hosts).
-function normalizeRoomUrl(roomUrl) {
+export function normalizeRoomUrl(roomUrl) {
   try {
     const url = new URL(roomUrl)
     if (LOCAL_HOST_PATTERN.test(url.hostname) && url.hostname !== window.location.hostname) {
@@ -17,6 +17,32 @@ function normalizeRoomUrl(roomUrl) {
   } catch {
     return roomUrl
   }
+}
+
+export function getSupportCircleMeetingUrl(room) {
+  if (!room?.roomUrl) return ''
+
+  const alias = room.alias || 'Circle member'
+  const toolbarButtons = encodeURIComponent(JSON.stringify([
+    'microphone',
+    'hangup',
+    'participants-pane',
+    'raisehand',
+    'tileview',
+    'settings',
+  ]))
+  const hashParams = [
+    `userInfo.displayName="${encodeURIComponent(alias)}"`,
+    'config.prejoinConfig.enabled=false',
+    'config.prejoinPageEnabled=false',
+    'config.startAudioOnly=true',
+    'config.startWithVideoMuted=true',
+    'config.disableInviteFunctions=true',
+    'config.disableDeepLinking=true',
+    `config.toolbarButtons=${toolbarButtons}`,
+  ]
+
+  return `${normalizeRoomUrl(room.roomUrl)}#${hashParams.join('&')}`
 }
 
 export function getCallMeetingUrl(call) {

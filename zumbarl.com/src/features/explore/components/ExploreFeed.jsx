@@ -1,9 +1,25 @@
-import { FiBookmark, FiBriefcase, FiCalendar, FiEdit3, FiHeart, FiImage, FiMessageCircle, FiRepeat, FiSend, FiShare2, FiShoppingBag, FiSmile, FiTrash2, FiTrendingUp, FiX } from 'react-icons/fi'
+import { FiAward, FiBookmark, FiCalendar, FiCheck, FiEdit3, FiHeart, FiHelpCircle, FiImage, FiMessageCircle, FiRepeat, FiSend, FiShare2, FiShoppingBag, FiTrash2, FiTrendingUp, FiX } from 'react-icons/fi'
 import { BsPinAngleFill } from 'react-icons/bs'
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { creatorProfilePath, postCreatorProfilePath } from '../utils/creatorProfilePath'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
+import { recordRecommendationInteraction } from '../../recommendations/services/recommendationEventService'
+
+function mediaTypeFor(post, index) {
+  return post?.mediaEdits?.[index]?.type === 'video' || post?.tag === 'Video' || post?.type === 'video' ? 'video' : 'image'
+}
+
+function recordPostMediaInteraction(post, index, eventType, location = 'feed') {
+  if (!post?.id) return
+  recordRecommendationInteraction({
+    surface: 'connect_feed',
+    entityType: 'connect_post',
+    entityId: String(post.id),
+    eventType,
+    metadata: { location, mediaIndex: index, mediaType: mediaTypeFor(post, index) },
+  })
+}
 
 function PostComments({ comments, onComment, post }) {
   const [draft, setDraft] = useState('')
@@ -108,6 +124,8 @@ function ResharedPostPreview({ onOpenMediaViewer, post }) {
     campus: creator.campus,
     copy: original.body || '',
     gallery,
+    type: original.type || 'post',
+    tag: original.type === 'video' ? 'Video' : original.type === 'image' ? 'Photo' : 'Update',
     mediaEdits: original.mediaEdits || [],
     stats: {
       likes: Number(original.reactionCount || 0),
@@ -122,7 +140,7 @@ function ResharedPostPreview({ onOpenMediaViewer, post }) {
         {profilePath ? <Link className="explore-reshared-owner-avatar" to={profilePath} aria-label={`View ${mediaPost.author}'s profile`}><img src={normalizeZumbarlFileUrl(mediaPost.avatar) || '/assets/index/bee_nobg.png'} alt="" loading="lazy" /></Link> : <img src={normalizeZumbarlFileUrl(mediaPost.avatar) || '/assets/index/bee_nobg.png'} alt="" loading="lazy" />}
         <div>
           {profilePath ? <Link className="explore-reshared-owner-link" to={profilePath}>{mediaPost.author}</Link> : <strong>{mediaPost.author}</strong>}
-          <span>{mediaPost.handle}{mediaPost.campus ? ` · ${mediaPost.campus}` : ''}</span>
+          <span>{mediaPost.handle}{mediaPost.campus ? ` · ${mediaPost.campus}` : ''}{creator.zumbarlPoints !== null && creator.zumbarlPoints !== undefined ? ` · ${Math.round(Number(creator.zumbarlPoints) || 0)} Buzz` : ''}</span>
         </div>
       </header>
       <p>{mediaPost.copy}</p>
@@ -197,42 +215,130 @@ function ReshareComposer({ onClose, onSubmit, post }) {
   )
 }
 
-function ExploreFeed({ activeFilter, commentsByPost, engagementErrors, engagementPending, focusedPostId = '', onComment, onComposerPost, onEditPost, onLikePost, onOpenEvent, onOpenMediaViewer, onRemoveReshare, onResharePost, onSharePost, onSubmitAnnouncement, onViewProduct, posts }) {
+function formatPollOption(value, type) {
+  const normalized = String(value || '')
+  if (type === 'date') {
+    const parsed = new Date(`${normalized}T00:00:00`)
+    if (!Number.isNaN(parsed.getTime())) return parsed.toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' })
+  }
+  if (type === 'time' && /^\d{2}:\d{2}/.test(normalized)) {
+    const parsed = new Date(`2000-01-01T${normalized}`)
+    if (!Number.isNaN(parsed.getTime())) return parsed.toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit' })
+  }
+  if (type === 'number' && normalized.trim() && Number.isFinite(Number(normalized))) return Number(normalized).toLocaleString('en-KE')
+  return normalized
+}
+
+function pollExpiryLabel(poll) {
+  if (poll.isClosed) return 'Poll closed'
+  if (!poll.expiresAt) return 'No closing date'
+  const expiresAt = new Date(poll.expiresAt)
+  if (Number.isNaN(expiresAt.getTime())) return 'No closing date'
+  return `Closes ${expiresAt.toLocaleString('en-KE', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })}`
+}
+
+function FeedPoll({ error, isPending, onVote, post }) {
+  const poll = post.poll || {}
+  const selectedIds = Array.isArray(poll.viewerOptionIds) ? poll.viewerOptionIds.map(String) : []
+  const showResults = Boolean(poll.hasVoted || poll.isClosed)
+  const options = Array.isArray(poll.options) ? poll.options : []
+
+  function choose(optionId) {
+    if (poll.isClosed || isPending || !onVote) return
+    const normalizedId = String(optionId)
+    const nextIds = poll.selectionMode === 'multiple'
+      ? selectedIds.includes(normalizedId)
+        ? selectedIds.filter((id) => id !== normalizedId)
+        : [...selectedIds, normalizedId]
+      : [normalizedId]
+    onVote(post, nextIds).catch(() => {})
+  }
+
+  return (
+    <section className={`explore-feed-poll${showResults ? ' has-results' : ''}`} aria-label={`Poll: ${poll.question}`}>
+      <header>
+        <div>
+          <small>Campus poll</small>
+          <strong>{poll.question}</strong>
+        </div>
+        <span>{poll.selectionMode === 'multiple' ? 'Choose any' : 'Choose one'}</span>
+      </header>
+      <div className="explore-feed-poll-options">
+        {options.map((option) => {
+          const item = typeof option === 'string' ? { id: option, label: option, value: option } : option
+          const optionId = String(item.id || item.value)
+          const isSelected = selectedIds.includes(optionId)
+          const percentage = Number(item.percentage || 0)
+          return (
+            <button
+              type="button"
+              key={optionId}
+              className={isSelected ? 'is-selected' : ''}
+              style={{ '--poll-result': `${percentage}%` }}
+              aria-pressed={isSelected}
+              disabled={Boolean(poll.isClosed || isPending || !onVote)}
+              onClick={() => choose(optionId)}
+            >
+              <span className="explore-feed-poll-choice">{isSelected ? <FiCheck aria-hidden="true" /> : null}</span>
+              <strong>{formatPollOption(item.label || item.value, poll.optionType)}</strong>
+              {showResults ? <span>{percentage}%</span> : null}
+            </button>
+          )
+        })}
+      </div>
+      <footer>
+        <span>{Number(poll.totalVotes || 0).toLocaleString('en-KE')} {Number(poll.totalVotes || 0) === 1 ? 'vote' : 'votes'}</span>
+        <span>{pollExpiryLabel(poll)}</span>
+        {isPending ? <span>Saving…</span> : null}
+      </footer>
+      {error ? <p role="alert">{error}</p> : null}
+    </section>
+  )
+}
+
+function ExploreFeed({ activeFilter, allowAnnouncementSubmission = true, commentsByPost, engagementErrors, engagementPending, focusedPostId = '', onComment, onComposerPost, onEditPost, onLikePost, onOpenEvent, onOpenMediaViewer, onRemoveReshare, onResharePost, onSharePost, onSubmitAnnouncement, onTakeDownPost = null, onViewProduct, onVotePoll, posts, showComposer = true }) {
   const [openPostMenuId, setOpenPostMenuId] = useState('')
   const [openCommentsByPost, setOpenCommentsByPost] = useState({})
   const [openReshareMenuId, setOpenReshareMenuId] = useState('')
   const [quotePost, setQuotePost] = useState(null)
+
+  function openExpandedMedia(post, index) {
+    recordPostMediaInteraction(post, index, 'media_click')
+    recordPostMediaInteraction(post, index, 'media_expand', 'viewer')
+    onOpenMediaViewer(post, index)
+  }
+
   return (
     <>
-      <section className="explore-campus-composer-card" aria-label="Create a post">
+      {showComposer ? <section className="explore-campus-composer-card" aria-label="Create a post">
         <div className="explore-campus-composer-head">
           <img src="/assets/index/bee_nobg.png" alt="Brian avatar" loading="lazy" />
           <button type="button" className="explore-campus-composer-input" onClick={() => onComposerPost('post')}>
-            What's happening on campus?
+            Share a win, need, idea or campus moment…
           </button>
         </div>
         <div className="explore-campus-composer-actions">
           <button type="button" onClick={() => onComposerPost('media')}>
             <FiImage aria-hidden="true" />
-            Photo/Video
+            Moment
           </button>
           <button type="button" onClick={() => onComposerPost('event')}>
             <FiCalendar aria-hidden="true" />
-            Event
+            Gather
           </button>
           <button type="button" onClick={() => onComposerPost('poll')}>
-            <FiBriefcase aria-hidden="true" />
-            Poll
+            <FiHelpCircle aria-hidden="true" />
+            Ask campus
           </button>
           <button type="button" onClick={() => onComposerPost('feeling')}>
-            <FiSmile aria-hidden="true" />
-            Feeling/Activity
+            <FiAward aria-hidden="true" />
+            Milestone
           </button>
           <button type="button" className="explore-campus-post-btn" onClick={() => onComposerPost('post')}>
-            Post
+            Send signal
           </button>
         </div>
-      </section>
+      </section> : null}
 
       {!posts.length ? <section className="explore-feed-empty" role="status"><strong>No {activeFilter.toLowerCase()} posts yet</strong><p>New posts matching this feed will appear here.</p></section> : null}
 
@@ -262,7 +368,8 @@ function ExploreFeed({ activeFilter, commentsByPost, engagementErrors, engagemen
                   {profilePath ? <Link className="explore-campus-author-link" to={profilePath}>{post.author} <span>{post.handle}</span></Link> : <>{post.author} <span>{post.handle}</span></>}
                 </h3>
                 <p>
-                  <span>{post.time}</span>
+                  {post.campus ? <span className="explore-campus-author-context">{post.campus}</span> : null}
+                  {post.creatorProfileType === 'student' && post.zumbarlPoints !== null && post.zumbarlPoints !== undefined ? <span className="explore-campus-author-points" title="Zumbarl reputation points"><FiAward aria-hidden="true" />{Math.round(Number(post.zumbarlPoints) || 0)} Buzz</span> : null}
                   {post.taggedSpace ? <Link className="explore-campus-tagged-space-chip" to={post.taggedSpace.href}>{post.tag}</Link> : <em>{post.tag}</em>}
                   {(post.taggedAcademic || []).map((tag) => <Link className="explore-campus-tagged-space-chip is-academic" to={tag.href} key={`${tag.type}-${tag.id}`}>{tag.type === 'university' ? 'University' : tag.type === 'course' ? 'Course' : 'Unit'} · {tag.label}</Link>)}
                   {post.shopProductRef ? (
@@ -274,16 +381,20 @@ function ExploreFeed({ activeFilter, commentsByPost, engagementErrors, engagemen
                 </p>
               </div>
             </div>
-            {!post.resharedPost ? <button type="button" className="explore-campus-more-btn" aria-label={`More options for ${post.author}`} aria-expanded={openPostMenuId === post.id} onClick={() => setOpenPostMenuId((current) => current === post.id ? '' : post.id)}>
+            {!post.resharedPost && (post.isMine || post.canEdit || post.canTakeDown) ? <button type="button" className="explore-campus-more-btn" aria-label={`More options for ${post.author}`} aria-expanded={openPostMenuId === post.id} onClick={() => setOpenPostMenuId((current) => current === post.id ? '' : post.id)}>
               ...
             </button> : null}
-            {post.isMine && !post.resharedPost && openPostMenuId === post.id ? <div className="explore-post-menu"><button type="button" onClick={() => { setOpenPostMenuId(''); onEditPost(post) }}>Edit post</button><button type="button" disabled={['pending', 'approved'].includes(post.announcementRequest?.status)} onClick={() => { setOpenPostMenuId(''); onSubmitAnnouncement(post) }}>{post.announcementRequest?.status === 'pending' ? 'Announcement pending' : post.announcementRequest?.status === 'approved' ? 'Approved announcement' : 'Submit as announcement'}</button></div> : null}
+            {!post.resharedPost && openPostMenuId === post.id ? <div className="explore-post-menu">
+              {(post.isMine || post.canEdit) ? <button type="button" onClick={() => { setOpenPostMenuId(''); onEditPost(post) }}>Edit post</button> : null}
+              {post.isMine && allowAnnouncementSubmission ? <button type="button" disabled={['pending', 'approved'].includes(post.announcementRequest?.status)} onClick={() => { setOpenPostMenuId(''); onSubmitAnnouncement(post) }}>{post.announcementRequest?.status === 'pending' ? 'Announcement pending' : post.announcementRequest?.status === 'approved' ? 'Approved announcement' : 'Submit as announcement'}</button> : null}
+              {post.canTakeDown && onTakeDownPost ? <button type="button" className="is-danger" onClick={() => { setOpenPostMenuId(''); onTakeDownPost(post) }}>Take down post</button> : null}
+            </div> : null}
           </header>
 
           {post.copy ? <p className="explore-campus-feed-copy">{post.copy}</p> : null}
-          {post.resharedPost ? <ResharedPostPreview onOpenMediaViewer={onOpenMediaViewer} post={post} /> : null}
+          {post.resharedPost ? <ResharedPostPreview onOpenMediaViewer={openExpandedMedia} post={post} /> : null}
           {post.event ? <button type="button" className="explore-feed-event" onClick={() => onOpenEvent(post)}><FiCalendar /><div><strong>{post.event.title}</strong><span>{new Date(post.event.startsAt).toLocaleString('en-KE')} · {post.event.location}</span><small>View event details</small></div></button> : null}
-          {post.poll ? <div className="explore-feed-poll"><strong>{post.poll.question}</strong>{post.poll.options.map((option) => { const item = typeof option === 'string' ? { id: option, label: option } : option; return <button type="button" key={item.id || item.value}>{item.label}</button> })}</div> : null}
+          {post.poll ? <FeedPoll error={engagementErrors?.[post.id]} isPending={Boolean(engagementPending?.[`${post.id}:poll`])} onVote={onVotePoll} post={post} /> : null}
 
           {post.gallery.length ? <div className={`explore-campus-feed-gallery${post.gallery.length === 1 ? ' is-single' : ''}`}>
             {(post.gallery.length > 3 ? post.gallery.slice(0, 3) : post.gallery).map((image, index) => {
@@ -296,10 +407,10 @@ function ExploreFeed({ activeFilter, commentsByPost, engagementErrors, engagemen
                   key={`${post.id}-${image}`}
                   type="button"
                   className="explore-campus-feed-gallery-item"
-                  onClick={() => onOpenMediaViewer(post, index)}
+                  onClick={() => openExpandedMedia(post, index)}
                   aria-label={`Open image ${index + 1} from ${post.author} post`}
                 >
-                  {post.tag === 'Video' ? <video src={`${image}${videoFragment}`} controls /> : <img src={image} alt={`${post.author} post`} loading="lazy" style={{ objectPosition: `${edit.positionX ?? 50}% ${edit.positionY ?? 50}%`, transform: `scale(${edit.zoom || 1})` }} />}
+                  {post.tag === 'Video' ? <video src={`${image}${videoFragment}`} controls onPlay={() => recordPostMediaInteraction(post, index, 'video_play')} /> : <img src={image} alt={`${post.author} post`} loading="lazy" style={{ objectPosition: `${edit.positionX ?? 50}% ${edit.positionY ?? 50}%`, transform: `scale(${edit.zoom || 1})` }} />}
                   {hiddenCount > 0 && index === 2 ? (
                     <span className="explore-campus-feed-gallery-badge">+{hiddenCount}</span>
                   ) : null}
@@ -368,7 +479,7 @@ function ExploreFeed({ activeFilter, commentsByPost, engagementErrors, engagemen
               <FiBookmark aria-hidden="true" />
             </button>
           </footer>
-          {engagementErrors[post.id] || engagementErrors[resharePost.id] ? <p className="explore-post-engagement-error" role="alert">{engagementErrors[post.id] || engagementErrors[resharePost.id]}</p> : null}
+          {!post.poll && (engagementErrors[post.id] || engagementErrors[resharePost.id]) ? <p className="explore-post-engagement-error" role="alert">{engagementErrors[post.id] || engagementErrors[resharePost.id]}</p> : null}
           {openCommentsByPost[post.id] ? (
             <PostComments
               comments={commentsByPost[post.id] || []}

@@ -51,6 +51,7 @@ function ExplorePostComposer({
   onClose,
   onPublish,
   eyebrow = "Zumbarl Connect",
+  fixedOrganizer = null,
   placeholder = "What's happening on campus?",
   publishLabel = "Post",
   requiredTag = null,
@@ -61,6 +62,11 @@ function ExplorePostComposer({
   const requiredTagId = requiredTag?.id || "";
   const requiredTagLabel = requiredTag?.label || "";
   const requiredTagType = requiredTag?.type || "";
+  const fixedOrganizerId = fixedOrganizer?.id || "";
+  const fixedOrganizerName = fixedOrganizer?.name || "";
+  const fixedOrganizerType = fixedOrganizer?.type || "";
+  const fixedOrganizerHandle = fixedOrganizer?.handle || "";
+  const fixedOrganizerAvatarUrl = fixedOrganizer?.avatarUrl || null;
   const [type, setType] = useState(initialType);
   const [body, setBody] = useState("");
   const [files, setFiles] = useState([]);
@@ -86,6 +92,7 @@ function ExplorePostComposer({
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptionType, setPollOptionType] = useState("text");
   const [pollSelectionMode, setPollSelectionMode] = useState("single");
+  const [pollDurationDays, setPollDurationDays] = useState("7");
   const [options, setOptions] = useState([
     { label: "", value: "" },
     { label: "", value: "" },
@@ -113,10 +120,11 @@ function ExplorePostComposer({
         longitude: "",
       });
       setLocationResults([]);
-      setOrganizer(null); setOrganizerQuery(""); setOrganizerResults([]); setOrganizerDefaultResolved(false);
+      setOrganizer(fixedOrganizerId ? { id: fixedOrganizerId, name: fixedOrganizerName, type: fixedOrganizerType, handle: fixedOrganizerHandle, avatarUrl: fixedOrganizerAvatarUrl } : null); setOrganizerQuery(""); setOrganizerResults([]); setOrganizerDefaultResolved(Boolean(fixedOrganizerId));
       setPollQuestion("");
       setPollOptionType("text");
       setPollSelectionMode("single");
+      setPollDurationDays("7");
       setOptions([
         { label: "", value: "" },
         { label: "", value: "" },
@@ -126,7 +134,7 @@ function ExplorePostComposer({
       setSelectedTags(requiredTagId ? [{ id: requiredTagId, label: requiredTagLabel, type: requiredTagType, locked: true }] : []);
       setError("");
     }
-  }, [initialType, isOpen, requiredTagId, requiredTagLabel, requiredTagType]);
+  }, [fixedOrganizerAvatarUrl, fixedOrganizerHandle, fixedOrganizerId, fixedOrganizerName, fixedOrganizerType, initialType, isOpen, requiredTagId, requiredTagLabel, requiredTagType]);
   useEffect(() => {
     if (!isOpen) return;
     Promise.allSettled([readKnowledgeHub(), listMarketplaceListings(), allowSpaceTags ? searchPostTagTargets("") : Promise.resolve({ data: [] })])
@@ -185,11 +193,11 @@ function ExplorePostComposer({
     return () => window.clearTimeout(timer);
   }, [event.latitude, event.location, type]);
   useEffect(() => {
-    if (!isOpen || type !== "event" || organizer) return undefined;
+    if (!isOpen || type !== "event" || organizer || fixedOrganizerId) return undefined;
     const requestId = ++organizerRequestRef.current; setIsSearchingOrganizers(true);
     const timer = window.setTimeout(() => searchEventOrganizers(organizerQuery.trim()).then((response) => { if (requestId !== organizerRequestRef.current) return; const results = response.data || []; setOrganizerResults(results); if (!organizerQuery.trim() && !organizerDefaultResolved) { setOrganizer(results.find((item) => item.isSelf) || null); setOrganizerDefaultResolved(true) } }).catch(() => { if (requestId === organizerRequestRef.current) setOrganizerResults([]) }).finally(() => { if (requestId === organizerRequestRef.current) setIsSearchingOrganizers(false) }), organizerQuery.trim() ? 350 : 0);
     return () => window.clearTimeout(timer);
-  }, [isOpen, organizer, organizerDefaultResolved, organizerQuery, type]);
+  }, [fixedOrganizerId, isOpen, organizer, organizerDefaultResolved, organizerQuery, type]);
   useEffect(() => {
     const urls = files.map((file) => URL.createObjectURL(file));
     setMediaEdits(
@@ -278,6 +286,7 @@ function ExplorePostComposer({
                 question: pollQuestion,
                 optionType: pollOptionType,
                 selectionMode: pollSelectionMode,
+                ...(pollDurationDays !== "never" ? { expiresAt: new Date(Date.now() + Number(pollDurationDays) * 86400000).toISOString() } : {}),
                 options: validPollOptions.map((item, index) => ({
                   id: `option-${index + 1}`,
                   label: item.label.trim() || String(item.value),
@@ -672,11 +681,14 @@ function ExplorePostComposer({
                 {locationResults.length ? <div className="explore-event-location-results" role="listbox">{locationResults.map((result) => <button key={result.id} type="button" role="option" onClick={() => { setEvent({ ...event, location: result.label, latitude: result.latitude, longitude: result.longitude }); setLocationResults([]) }}><FiMapPin /><span><strong>{result.label.split(",")[0]}</strong><small>{result.label}</small></span></button>)}</div> : null}
                 <small>{event.latitude !== "" ? "Exact pin selected." : "Select a search result to attach an exact map pin."}</small>
               </div>
-              <div className="explore-event-organizer-field">
+              {fixedOrganizerId ? <div className="explore-event-organizer-field">
+                <label>Organizer<div className="explore-event-organizer-input is-selected"><div className="explore-event-organizer-selected"><img src={fixedOrganizerAvatarUrl || "/assets/index/bee_nobg.png"} alt="" /><span><strong>{fixedOrganizerName}</strong><small>{fixedOrganizerHandle || 'Support circle'}</small></span></div></div></label>
+                <small>This event is published under the circle’s identity.</small>
+              </div> : <div className="explore-event-organizer-field">
                 <label>Organizer<div className={`explore-event-organizer-input${organizer ? " is-selected" : ""}`}><FiSearch />{organizer ? <div className="explore-event-organizer-selected"><img src={organizer.avatarUrl || "/assets/index/bee_nobg.png"} alt="" /><span><strong>{organizer.name}</strong><small>{organizer.handle || organizer.type}</small></span><button type="button" onClick={() => { setOrganizerDefaultResolved(true); setOrganizer(null); setOrganizerQuery(""); setOrganizerResults([]) }} aria-label="Change organizer"><FiX /></button></div> : <input autoFocus value={organizerQuery} onChange={(e) => setOrganizerQuery(e.target.value)} placeholder="Search people, businesses or campus entities" />}{isSearchingOrganizers && !organizer ? <span>Searching…</span> : null}</div></label>
                 {!organizer && organizerResults.length ? <div className="explore-event-organizer-results">{organizerResults.map((result) => <button type="button" key={`${result.type}-${result.id}`} onClick={() => { setOrganizer(result); setOrganizerResults([]) }}><img src={result.avatarUrl || "/assets/index/bee_nobg.png"} alt="" /><span><strong>{result.name}{result.isSelf ? " (You)" : ""}</strong><small>{result.handle || result.type}</small></span></button>)}</div> : null}
                 <small>{organizer ? `This event will show ${organizer.name} as organizer.` : "You are the organizer by default."}</small>
-              </div>
+              </div>}
             </section>
           ) : null}
           {type === "poll" ? (
@@ -691,6 +703,7 @@ function ExplorePostComposer({
               <div className="explore-poll-settings">
                 <label>Answer type<select value={pollOptionType} onChange={(e) => { setPollOptionType(e.target.value); setOptions([{ label: "", value: "" }, { label: "", value: "" }]) }}><option value="text">Text</option><option value="number">Number</option><option value="date">Date</option><option value="time">Time</option></select></label>
                 <label>People can choose<select value={pollSelectionMode} onChange={(e) => setPollSelectionMode(e.target.value)}><option value="single">One option</option><option value="multiple">Multiple options</option></select></label>
+                <label>Poll duration<select value={pollDurationDays} onChange={(e) => setPollDurationDays(e.target.value)}><option value="1">1 day</option><option value="3">3 days</option><option value="7">7 days</option><option value="14">14 days</option><option value="never">No closing date</option></select></label>
               </div>
               {options.map((option, index) => (
                 <div className="explore-poll-option" key={index}>

@@ -23,9 +23,9 @@ function MarketplaceListingStudioPage() {
             <header className="marketplace-studio-header">
               <div className="marketplace-studio-header-copy">
                 <Breadcrumb items={[{ label: 'Marketplace', href: '/campus/opportunities/buy-sell' }, { label: studio.isEdit ? 'Edit listing' : 'Create listing' }]} />
-                <div className="marketplace-studio-kicker"><FiShoppingBag aria-hidden="true" /><span>{studio.vendorMode ? 'Vendor inventory studio' : 'Marketplace seller studio'}</span></div>
-                <h1>{studio.isEdit ? 'Edit your listing' : studio.vendorMode ? 'Add vendor inventory' : 'Create a marketplace listing'}</h1>
-                <p>Give campus buyers everything they need to discover, trust, and order your {studio.vendorMode ? 'vendor offering' : 'listing'}.</p>
+                <div className="marketplace-studio-kicker"><FiShoppingBag aria-hidden="true" /><span>{studio.foodMode ? 'Campus menu studio' : studio.vendorMode ? 'Vendor inventory studio' : 'Marketplace seller studio'}</span></div>
+                <h1>{studio.isEdit ? 'Edit your listing' : studio.foodMode ? 'Add a menu item' : studio.vendorMode ? 'Add vendor inventory' : 'Create a marketplace listing'}</h1>
+                <p>{studio.foodMode ? 'List today’s food and edibles for campus pickup — students order ahead and collect from your spot.' : `Give campus buyers everything they need to discover, trust, and order your ${studio.vendorMode ? 'vendor offering' : 'listing'}.`}</p>
                 <div className="marketplace-studio-trust-row"><span><FiShield /> Protected transactions</span><span><FiCheckCircle /> Campus-ready publishing</span></div>
               </div>
               <aside className="marketplace-studio-header-side">

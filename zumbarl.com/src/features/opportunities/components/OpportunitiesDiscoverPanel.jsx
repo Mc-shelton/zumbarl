@@ -1,8 +1,36 @@
+import { useEffect, useRef, useState } from 'react'
+import { FiArrowUpRight, FiBriefcase, FiCheck, FiChevronDown, FiClock, FiMoreHorizontal, FiTrendingUp } from 'react-icons/fi'
+
 function handleKeyboardActivation(event, onActivate) {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
     onActivate()
   }
+}
+
+function OpportunityTypePill({ activeTypeId, onSelect, option }) {
+  const { id, label, description, count, Icon } = option
+
+  return (
+    <button
+      type="button"
+      className={`opportunities-type-card${activeTypeId === id ? ' is-active' : ''}`}
+      aria-pressed={activeTypeId === id}
+      aria-label={`Filter by ${label}, ${Number(count || 0).toLocaleString()} available`}
+      onClick={() => onSelect(id)}
+    >
+      <span className="opportunities-type-icon">
+        <Icon aria-hidden="true" />
+      </span>
+      <span className="opportunities-type-copy">
+        <strong>{label}</strong>
+        <small>{description}</small>
+      </span>
+      <span className="opportunities-type-count" aria-hidden="true">
+        {Number(count || 0).toLocaleString()}
+      </span>
+    </button>
+  )
 }
 
 function OpportunitiesDiscoverPanel({
@@ -15,27 +43,95 @@ function OpportunitiesDiscoverPanel({
   opportunityTypeOptions = [],
   selectedOpportunityUuid,
 }) {
+  const [isMoreOpen, setIsMoreOpen] = useState(false)
+  const moreMenuRef = useRef(null)
+  const orderedOpportunityTypes = [...opportunityTypeOptions].sort((left, right) => {
+    if (left.id === 'all') return -1
+    if (right.id === 'all') return 1
+    return Number(right.count || 0) - Number(left.count || 0)
+  })
+  const allOpportunityType = orderedOpportunityTypes.find((option) => option.id === 'all')
+  const additionalOpportunityTypes = orderedOpportunityTypes.filter((option) => option.id !== 'all')
+
+  useEffect(() => {
+    if (!isMoreOpen) return undefined
+
+    function closeOnOutsideClick(event) {
+      if (!moreMenuRef.current?.contains(event.target)) setIsMoreOpen(false)
+    }
+
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') setIsMoreOpen(false)
+    }
+
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [isMoreOpen])
+
+  function selectOpportunityType(typeId) {
+    onOpportunityTypeChange(typeId)
+    setIsMoreOpen(false)
+  }
+
   return (
     <>
       <section className="opportunities-types" aria-label="Opportunity categories">
-        {opportunityTypeOptions.map(({ id, label, count, Icon }) => (
-          <article
-            key={id}
-            className={`opportunities-type-card${activeOpportunityTypeId === id ? ' is-active' : ''}`}
-            role="button"
-            tabIndex={0}
-            aria-pressed={activeOpportunityTypeId === id}
-            aria-label={`Filter by ${label}`}
-            onClick={() => onOpportunityTypeChange(id)}
-            onKeyDown={(event) => handleKeyboardActivation(event, () => onOpportunityTypeChange(id))}
+        {allOpportunityType ? (
+          <OpportunityTypePill
+            activeTypeId={activeOpportunityTypeId}
+            onSelect={selectOpportunityType}
+            option={allOpportunityType}
+          />
+        ) : null}
+
+        <div className="opportunities-types-more" ref={moreMenuRef}>
+          <button
+            type="button"
+            className={`opportunities-types-more-trigger${activeOpportunityTypeId !== 'all' ? ' has-selection' : ''}`}
+            aria-expanded={isMoreOpen}
+            aria-haspopup="menu"
+            onClick={() => setIsMoreOpen((current) => !current)}
           >
-            <div className="opportunities-type-icon">
-              <Icon aria-hidden="true" />
+            <FiMoreHorizontal aria-hidden="true" />
+            <strong>More</strong>
+            <FiChevronDown aria-hidden="true" />
+          </button>
+
+          {isMoreOpen ? (
+            <div className="opportunities-types-more-menu" role="menu" aria-label="More opportunity categories">
+              {additionalOpportunityTypes.map(({ id, label, description, count, Icon }) => (
+                <button
+                  type="button"
+                  key={id}
+                  role="menuitemradio"
+                  aria-checked={activeOpportunityTypeId === id}
+                  className={activeOpportunityTypeId === id ? 'is-active' : ''}
+                  onClick={() => selectOpportunityType(id)}
+                >
+                  <span className="opportunities-types-more-icon"><Icon aria-hidden="true" /></span>
+                  <span><strong>{label}</strong><small>{description}</small></span>
+                  <em>{Number(count || 0).toLocaleString()}</em>
+                  {activeOpportunityTypeId === id ? <FiCheck aria-hidden="true" /> : null}
+                </button>
+              ))}
             </div>
-            <h3>{label}</h3>
-            <p>{Number(count || 0).toLocaleString()}</p>
-          </article>
-        ))}
+          ) : null}
+        </div>
+
+        <div className="opportunities-types-track">
+          {additionalOpportunityTypes.map((option) => (
+            <OpportunityTypePill
+              key={option.id}
+              activeTypeId={activeOpportunityTypeId}
+              onSelect={selectOpportunityType}
+              option={option}
+            />
+          ))}
+        </div>
       </section>
 
       <section className="opportunities-list-section" aria-label="Recommended opportunities">
@@ -77,10 +173,16 @@ function OpportunitiesDiscoverPanel({
                   <span>{item.intentFit[activeOpportunityIntentId] || ''}</span>
                 </div>
                 <p className="opportunities-job-meta">
-                  {item.company} · {item.meta}
+                  <FiBriefcase aria-hidden="true" />
+                  <span>{item.company}</span>
+                  <i aria-hidden="true" />
+                  <span>{item.meta}</span>
                 </p>
                 <p className="opportunities-job-description">{item.description}</p>
-                <p className="opportunities-job-outcome">{item.progressionOutcome}</p>
+                <p className="opportunities-job-outcome">
+                  <FiTrendingUp aria-hidden="true" />
+                  <span>{item.progressionOutcome}</span>
+                </p>
                 <div className="opportunities-tag-row">
                   {item.tags.map((tag) => (
                     <span key={`${item.title}-${tag}`}>{tag}</span>
@@ -90,10 +192,14 @@ function OpportunitiesDiscoverPanel({
 
               <div className="opportunities-job-side">
                 <p className="opportunities-job-pay">
+                  <small>Opportunity value</small>
                   <strong>{item.pay}</strong>
                   <span>{item.unit}</span>
                 </p>
-                <p className="opportunities-job-posted">{item.posted}</p>
+                <div className="opportunities-job-side-footer">
+                  <p className="opportunities-job-posted"><FiClock aria-hidden="true" />{item.posted}</p>
+                  <span className="opportunities-job-open">View opportunity <FiArrowUpRight aria-hidden="true" /></span>
+                </div>
               </div>
             </article>
           ))}

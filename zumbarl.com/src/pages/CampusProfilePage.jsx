@@ -344,7 +344,7 @@ function CampusProfilePage({ viewContext = 'campus' }) {
               <ProfileTopBar activeTab={profileState.activeTab} />
             )}
             <ProfileHero activeTab={profileState.activeTab} canRelate={!isBusinessView && Boolean(studentId) && !isOwnProfile} isOwnProfile={isOwnProfile} onEditShop={() => setIsShopEditorOpen(true)} onSaveProfile={handleSaveProfile} onToggleRelationship={handleToggleRelationship} profileHeader={profileExperience?.header} relationship={relationship} relationshipPending={relationshipPending} />
-            {!viewModel.isShopTab && !viewModel.isMarketingTab ? <ProfileMetrics metrics={profileExperience?.metrics} /> : null}
+          {profileState.activeTab === 'Overview' ? <ProfileMetrics metrics={profileExperience?.metrics} /> : null}
             <ProfileTabs
               activeTab={profileState.activeTab}
               onTabChange={profileState.setActiveTab}

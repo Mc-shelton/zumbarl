@@ -20,6 +20,7 @@ function toProfileHeader(student: Record<string, any> | null) {
         : '@student',
     avatar: student.avatarUrl,
     bio: student.bio,
+    showZumbarlPoints: student.showZumbarlPoints !== false,
     tags: student.skillLevels?.slice(0, 4).map((skill: Record<string, any>) => skill.skillName) ?? []
   }
 }
@@ -69,6 +70,75 @@ function jsonObject(value: unknown) {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? value as Record<string, unknown>
     : {}
+}
+
+const ASSISTANT_STOP_WORDS = new Set([
+  'a', 'am', 'an', 'and', 'are', 'around', 'at', 'be', 'can', 'do', 'find', 'for',
+  'campus', 'from', 'get', 'give', 'i', 'in', 'is', 'it', 'kes', 'ksh', 'me', 'my',
+  'looking', 'near', 'of', 'on', 'please', 'show', 'some', 'something', 'the', 'to',
+  'under', 'want', 'what', 'with', 'you'
+])
+
+function normalizeAssistantText(value: unknown) {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function assistantSearchTerms(query: string) {
+  return [...new Set(
+    normalizeAssistantText(query)
+      .split(' ')
+      .filter((term) => term.length > 1 && !/^\d+$/.test(term) && !ASSISTANT_STOP_WORDS.has(term))
+  )]
+}
+
+function assistantIntent(query: string) {
+  const normalized = normalizeAssistantText(query)
+  const includesAny = (terms: string[]) => terms.some((term) => normalized.includes(term))
+  if (includesAny(['gig', 'job', 'work', 'paid', 'freelance', 'opportunity'])) return 'gig'
+  if (includesAny(['event', 'happening', 'weekend', 'workshop', 'meetup'])) return 'event'
+  if (includesAny(['mentor', 'person', 'people', 'student', 'designer', 'developer', 'creator', 'tutor'])) return 'person'
+  if (includesAny(['service', 'food', 'laundry', 'print', 'delivery', 'barber', 'hotel', 'hostel'])) return 'service'
+  if (includesAny(['book', 'notes', 'paper', 'study', 'learn', 'revision', 'roadmap', 'course'])) return 'resource'
+  if (includesAny(['product', 'buy', 'sell', 'market', 'laptop', 'phone', 'used'])) return 'product'
+  return null
+}
+
+function assistantBudgetCeiling(query: string) {
+  const normalized = query.replace(/,/g, '')
+  const match = normalized.match(/(?:under|below|less than|max(?:imum)?|kes|ksh)\s*(?:kes|ksh)?\s*(\d+(?:\.\d+)?)(k)?/i)
+  if (!match) return null
+  const value = Number(match[1]) * (match[2]?.toLowerCase() === 'k' ? 1000 : 1)
+  return Number.isFinite(value) ? value : null
+}
+
+function isPlaceholderCatalogueTitle(value: unknown) {
+  const title = normalizeAssistantText(value)
+  return title === 'some opportunity' ||
+    title === 'item something' ||
+    title.startsWith('test ') ||
+    title.startsWith('e2e ')
+}
+
+function rankAssistantResult(
+  result: { kind: string; title: string; summary?: string | null; meta?: string | null },
+  terms: string[],
+  intent: string | null
+) {
+  const title = normalizeAssistantText(result.title)
+  const supportingText = normalizeAssistantText(`${result.summary ?? ''} ${result.meta ?? ''}`)
+  const termScore = terms.reduce((score, term) => (
+    score + (title.includes(term) ? 6 : 0) + (supportingText.includes(term) ? 2 : 0)
+  ), 0)
+  const intentScore = intent && (
+    result.kind === intent ||
+    (intent === 'resource' && result.kind === 'resource') ||
+    (intent === 'product' && result.kind === 'product')
+  ) ? 12 : 0
+  return termScore + intentScore
 }
 
 function mapOpportunity(opportunity: Record<string, any>) {
@@ -217,7 +287,10 @@ class CampusExperienceRepository {
           locationCity: payload.location,
           careerPath: payload.careerPath || null,
           bio: payload.bio || null,
-          avatarUrl: payload.avatarUrl || null
+          avatarUrl: payload.avatarUrl || null,
+          ...(payload.showZumbarlPoints !== undefined
+            ? { showZumbarlPoints: payload.showZumbarlPoints }
+            : {})
         }
       })
       if (payload.username) await tx.user.update({ where: { id: existing.userId }, data: { username: payload.username } })
@@ -365,14 +438,33 @@ class CampusExperienceRepository {
       })
     ])
     const grouped = groupContentSections(items)
-    const marketplaceItems = listings.filter((listing) => listing.listingType !== 'SERVICE').map(mapMarketplaceListing)
-    const serviceItems = listings.filter((listing) => listing.listingType === 'SERVICE').map(mapMarketplaceListing)
+    const marketplaceItems = listings
+      .filter((listing) => listing.listingType !== 'SERVICE' && !isPlaceholderCatalogueTitle(listing.title))
+      .map(mapMarketplaceListing)
+    const serviceItems = listings
+      .filter((listing) => listing.listingType === 'SERVICE' && !isPlaceholderCatalogueTitle(listing.title))
+      .map(mapMarketplaceListing)
+    const mappedOpportunities = opportunities.filter((opportunity) => !isPlaceholderCatalogueTitle(opportunity.title)).map(mapOpportunity)
+    const mappedRoadmaps = roadmaps.map(mapCareerRoadmap)
     const assistantConfig = grouped.get('assistant')?.[0] ?? {}
     const score = student?.zumbarl
     const mainWallet = student?.wallets.find((wallet) => wallet.type === 'MAIN') ?? student?.wallets[0]
     const currentYear = new Date().getFullYear()
     const yearOfStudy = student ? Math.max(currentYear - student.yearJoined + 1, 1) : null
     const mappedEvents = events.map(mapCampusEvent)
+    const quickActions = (grouped.get('quick_actions') ?? []).map((action) => ({
+      ...action,
+      href: ['/campus/events', '/campus/community'].includes(String(action.href))
+        ? '/campus/explore'
+        : action.href
+    }))
+    const liveDiscovery = [
+      ...mappedOpportunities.slice(0, 2),
+      ...marketplaceItems.slice(0, 2),
+      ...serviceItems.slice(0, 1),
+      ...mappedEvents.slice(0, 2),
+      ...mappedRoadmaps.slice(0, 1)
+    ]
     return {
       viewer: student ? {
         name: `${student.firstName} ${student.lastName}`.trim(),
@@ -383,19 +475,19 @@ class CampusExperienceRepository {
         city: student.locationCity
       } : null,
       hero: grouped.get('hero')?.[0] ?? null,
-      quickActions: grouped.get('quick_actions') ?? [],
+      quickActions,
       recommendationSections: [
         { id: 'stories', title: 'Stories', subtitle: 'Fresh updates from students around campus', items: stories.map(mapStudentStory) },
         { id: 'posts', title: 'Posts', subtitle: 'Campus ideas, questions and showcases', items: posts.map(mapCampusPost) },
-        { id: 'gigs', title: 'Recommended for you', subtitle: 'Gigs and paid work matched to your campus activity', items: opportunities.map(mapOpportunity) },
+        { id: 'gigs', title: 'Recommended for you', subtitle: 'Gigs and paid work matched to your campus activity', items: mappedOpportunities },
         { id: 'marketplace', title: 'Marketplace picks', subtitle: 'Student shops, products and useful campus items', items: marketplaceItems },
         { id: 'communities', title: 'Communities', subtitle: 'Groups and chamas you may want to join', items: grouped.get('communities') ?? [] },
         { id: 'events', title: 'Events', subtitle: 'Campus activity worth showing up for', items: mappedEvents },
-        { id: 'roadmaps', title: 'Career roadmaps', subtitle: 'Skill paths that connect learning to portfolio proof', items: roadmaps.map(mapCareerRoadmap) },
+        { id: 'roadmaps', title: 'Career roadmaps', subtitle: 'Skill paths that connect learning to portfolio proof', items: mappedRoadmaps },
         { id: 'services', title: 'Services', subtitle: 'Student services available near you', items: serviceItems }
       ],
       trustPoints: grouped.get('trust') ?? [],
-      discoveryLibrary: grouped.get('discovery') ?? [],
+      discoveryLibrary: liveDiscovery,
       assistant: assistantConfig,
       rail: student ? {
         wallet: {
@@ -408,12 +500,16 @@ class CampusExperienceRepository {
           meta: [student.campus?.name, yearOfStudy ? `Year ${yearOfStudy}` : null, student.careerPath ?? student.course?.name].filter(Boolean).join(' · '),
           stats: [
             {
-              label: 'Zumbarl Score',
+              label: 'Buzz',
               value: score?.confidence === 'PROVISIONAL' ? 'Provisional' : Math.round(score?.currentScore ?? 0),
               detail: score?.confidence === 'PROVISIONAL' ? 'Building confidence' : score?.tier ?? 'BRONZE',
               trend: score?.confidence === 'PROVISIONAL'
                 ? `${Number(score?.effectiveEngagements ?? 0).toFixed(1)} of 3 effective engagements`
-                : score?.trendDirection ?? 'Building profile'
+                : score?.trendDirection === 'UP'
+                  ? 'Trending up'
+                  : score?.trendDirection === 'DOWN'
+                    ? 'Needs attention'
+                    : 'Steady'
             },
             { label: 'Gigs Completed', value: score?.totalGigsCompleted ?? 0, detail: `${score?.endorsementCount ?? 0} endorsements`, trend: `${student.portfolioItems.length} portfolio pieces` }
           ],
@@ -606,7 +702,9 @@ class CampusExperienceRepository {
     const query = rawQuery.trim().slice(0, 200)
     if (!query) return []
 
-    const contains = { contains: query, mode: 'insensitive' as const }
+    const terms = assistantSearchTerms(query)
+    const intent = assistantIntent(query)
+    const budgetCeiling = assistantBudgetCeiling(query)
     const student = studentId
       ? await prisma.studentProfile.findUnique({ where: { id: studentId }, select: { campusId: true } })
       : null
@@ -619,58 +717,63 @@ class CampusExperienceRepository {
         where: {
           status: { in: OPPORTUNITY_APPLICABLE_STATUSES },
           visibility: 'public',
-          publishedAt: { not: null },
-          OR: [{ title: contains }, { summary: contains }, { category: contains }, { skills: { has: query } }]
+          publishedAt: { not: null }
         },
         include: { company: true },
         orderBy: { createdAt: 'desc' },
-        take: 5
+        take: 30
       }),
       prisma.marketplaceListing.findMany({
         where: {
           status: 'ACTIVE',
-          ...campusScope,
-          OR: [{ title: contains }, { description: contains }, { category: contains }]
+          ...campusScope
         },
-        include: { seller: true },
+        include: { seller: true, shop: true },
         orderBy: { createdAt: 'desc' },
-        take: 5
+        take: 30
       }),
       prisma.studentProfile.findMany({
         where: {
-          isOpenToHire: true,
-          OR: [{ firstName: contains }, { lastName: contains }, { careerPath: contains }, { bio: contains }]
+          isOpenToHire: true
         },
         include: { campus: true, course: true },
         orderBy: { updatedAt: 'desc' },
-        take: 5
+        take: 30
       }),
       prisma.campusEvent.findMany({
         where: {
           status: 'PUBLISHED',
           startsAt: { gte: new Date() },
-          ...campusScope,
-          OR: [{ title: contains }, { description: contains }, { category: contains }, { tags: { has: query } }]
+          ...campusScope
         },
         orderBy: { startsAt: 'asc' },
-        take: 5
+        take: 30
       }),
       prisma.campusContentItem.findMany({
         where: {
           isActive: true,
-          OR: [{ title: contains }, { subtitle: contains }, { description: contains }, { tags: { has: query } }]
+          section: { in: ['discovery', 'resources', 'learning', 'roadmaps'] }
         },
         orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
-        take: 5
+        take: 30
       })
     ])
 
-    const results = [
+    const results: Array<{
+      id: string
+      kind: string
+      title: string
+      summary: string | null
+      meta: string | null
+      href: string | null
+      priceAmount?: number
+      relevance?: number
+    }> = [
       ...gigs.map((gig) => ({
         id: gig.id,
         kind: 'gig',
         title: gig.title,
-        summary: gig.summary,
+        summary: gig.summary ?? gig.description,
         meta: [gig.company?.name, gig.budgetLabel ?? (gig.budgetAmount ? `${gig.currency} ${gig.budgetAmount.toLocaleString()}` : null)].filter(Boolean).join(' · ') || null,
         href: `/campus/opportunities?opportunity=${gig.id}`
       })),
@@ -679,8 +782,9 @@ class CampusExperienceRepository {
         kind: listing.listingType === 'SERVICE' ? 'service' : 'product',
         title: listing.title,
         summary: listing.description,
-        meta: [`${listing.currency} ${listing.priceAmount.toLocaleString()}`, listing.locationLabel].filter(Boolean).join(' · ') || null,
-        href: '/campus/opportunities/buy-sell'
+        meta: [listing.shop?.name, `${listing.currency} ${listing.priceAmount.toLocaleString()}`, listing.locationLabel].filter(Boolean).join(' · ') || null,
+        href: `/campus/opportunities/buy-sell/${listing.id}`,
+        priceAmount: listing.priceAmount
       })),
       ...people.map((person) => ({
         id: person.id,
@@ -695,20 +799,50 @@ class CampusExperienceRepository {
         kind: 'event',
         title: event.title,
         summary: event.description,
-        meta: [event.locationName, event.startsAt.toISOString()].filter(Boolean).join(' · ') || null,
-        href: '/campus/opportunities?tab=Ongoing'
+        meta: [event.locationName, formatEventDate(event.startsAt)].filter(Boolean).join(' · ') || null,
+        href: '/campus/explore'
       })),
-      ...resources.map((item) => ({
+      ...resources
+        .filter((item) => {
+          const resourceTerms = ['book', 'books', 'learn', 'notes', 'revision', 'study', 'tutor']
+          return item.tags.some((tag) => resourceTerms.includes(normalizeAssistantText(tag))) || normalizeAssistantText(item.meta) === 'book'
+        })
+        .map((item) => ({
         id: item.id,
         kind: 'resource',
         title: item.title,
         summary: item.description ?? item.subtitle ?? null,
         meta: item.org ?? item.meta ?? null,
-        href: item.href ?? null
+        href: item.href === '/campus/finance' ? '/campus/profile?tab=Activity' : item.href ?? '/campus/learn'
       }))
     ]
 
+    const seenResults = new Set<string>()
     return results
+      .map((result) => ({
+        ...result,
+        relevance: rankAssistantResult(result, terms, intent)
+      }))
+      .filter((result) => {
+        const matchesIntent = !intent || result.kind === intent || (intent === 'resource' && result.kind === 'product')
+        return result.relevance > 0 && matchesIntent
+      })
+      .filter((result) => (
+        budgetCeiling === null ||
+        result.kind !== 'product' ||
+        result.priceAmount === undefined ||
+        result.priceAmount <= budgetCeiling
+      ))
+      .filter((result) => !isPlaceholderCatalogueTitle(result.title))
+      .sort((left, right) => (right.relevance ?? 0) - (left.relevance ?? 0))
+      .filter((result) => {
+        const key = `${result.kind}:${normalizeAssistantText(result.title)}`
+        if (seenResults.has(key)) return false
+        seenResults.add(key)
+        return true
+      })
+      .slice(0, 8)
+      .map(({ relevance: _relevance, priceAmount: _priceAmount, ...result }) => result)
   }
 }
 

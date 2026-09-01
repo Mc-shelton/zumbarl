@@ -41,7 +41,7 @@ function ExploreSearchSummary({ activeQuery, hints, tabs }) {
       </section>
 
       <section className="explore-campus-tabs-row">
-        <nav className="explore-campus-tabs" aria-label="Search result categories">
+        <nav className="explore-campus-tabs zumbarl-segmented-tabs" aria-label="Search result categories">
           {tabs.map((tab) => (
             <button key={tab.label} type="button" className={tab.active ? 'is-active' : ''}>
               {tab.label} ({tab.count})

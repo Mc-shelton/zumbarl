@@ -2,6 +2,7 @@ import { FiPlus, FiSearch, FiX } from 'react-icons/fi'
 import CampusTopActions from '../../../components/layout/CampusTopActions'
 
 function ExploreTopBar({
+  onCreate,
   onClearSearch,
   onSearchInputChange,
   onSearchSubmit,
@@ -17,7 +18,7 @@ function ExploreTopBar({
           type="search"
           value={searchInput}
           onChange={onSearchInputChange}
-          placeholder="Search for people, posts, events, and more..."
+          placeholder="Search people, posts, communities, work and more..."
           aria-label="Search explore campus"
         />
         {searchInput ? (
@@ -29,9 +30,9 @@ function ExploreTopBar({
         )}
       </form>
 
-      <button type="button" className="explore-campus-discover-btn">
+      <button type="button" className="explore-campus-discover-btn" onClick={onCreate}>
         <FiPlus aria-hidden="true" />
-        Explore
+        Create
       </button>
 
       <CampusTopActions

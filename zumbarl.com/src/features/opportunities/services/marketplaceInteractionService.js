@@ -1,4 +1,5 @@
 import { sendZumbarlApiRequest } from '../../../lib/sendZumbarlApiRequest'
+import { recordRecommendationImpressions, withRecommendationEvent } from '../../recommendations/services/recommendationEventService'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 
 const FALLBACK_PRODUCT_IMAGE = '/assets/index/business_page_images/optimized/product-school-XZkk5xT8Xrk-unsplash.webp'
@@ -41,11 +42,14 @@ function mapMarketplaceApiListing(listing) {
 }
 
 function listMarketplaceListings() {
-  return sendZumbarlApiRequest('/marketplace/listings')
+  return sendZumbarlApiRequest('/marketplace/listings').then((response) => {
+    recordRecommendationImpressions('marketplace', 'marketplace_listing', response?.data)
+    return response
+  })
 }
 
 function readMarketplaceListing(id) {
-  return sendZumbarlApiRequest(`/marketplace/listings/${encodeURIComponent(id)}`)
+  return withRecommendationEvent(sendZumbarlApiRequest(`/marketplace/listings/${encodeURIComponent(id)}`), { surface: 'marketplace', entityType: 'marketplace_listing', entityId: id, eventType: 'open' })
 }
 
 function readMyMarketplaceInventory() {
@@ -60,9 +64,24 @@ function readCampusVendorWorkspace(slug) {
   return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/workspace`)
 }
 
+function readCampusVendorProfile(slug) {
+  return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}`)
+}
+
+function setCampusVendorFollowing(slug, active) {
+  return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/follow`, { method: active ? 'POST' : 'DELETE' })
+}
+
 function createCampusVendorPost(slug, payload) {
   return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/posts`, {
     method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+function updateCampusVendorPost(slug, postId, payload) {
+  return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/posts/${encodeURIComponent(postId)}`, {
+    method: 'PATCH',
     body: JSON.stringify(payload),
   })
 }
@@ -78,8 +97,16 @@ function updateManagedCampusVendor(slug, payload) {
   return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}`, { method: 'PATCH', body: JSON.stringify(payload) })
 }
 
+function updateCampusVendorAvailability(slug, acceptingOrders) {
+  return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/availability`, { method: 'PATCH', body: JSON.stringify({ acceptingOrders }) })
+}
+
 function addManagedCampusVendorManager(slug, payload) {
   return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/managers`, { method: 'POST', body: JSON.stringify(payload) })
+}
+
+function searchManagedCampusVendorManagerCandidates(slug, query) {
+  return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/manager-candidates?q=${encodeURIComponent(query.trim())}`)
 }
 
 function removeManagedCampusVendorManager(slug, userId) {
@@ -113,6 +140,13 @@ function updateMarketplaceSaleStatus(id, fulfillmentStatus) {
   })
 }
 
+function updateCampusVendorOrderStatus(slug, orderId, fulfillmentStatus) {
+  return sendZumbarlApiRequest(`/marketplace/vendors/${encodeURIComponent(slug)}/orders/${encodeURIComponent(orderId)}/status`, {
+    method: 'POST',
+    body: JSON.stringify({ fulfillmentStatus }),
+  })
+}
+
 function confirmMarketplaceOrderReceived(id) {
   return sendZumbarlApiRequest(`/marketplace/orders/${encodeURIComponent(id)}/received`, { method: 'POST' })
 }
@@ -129,17 +163,17 @@ function decideMarketplaceOffer(id, decision) {
 }
 
 function addAcceptedOfferToCart(listingId, offerId) {
-  return sendZumbarlApiRequest('/marketplace/cart/items', {
+  return withRecommendationEvent(sendZumbarlApiRequest('/marketplace/cart/items', {
     method: 'POST',
     body: JSON.stringify({ listingId, offerId, quantity: 1 }),
-  })
+  }), { surface: 'marketplace', entityType: 'marketplace_listing', entityId: listingId, eventType: 'add_to_cart' })
 }
 
 function addMarketplaceListingToCart(listingId, quantity = 1, serviceRequest) {
-  return sendZumbarlApiRequest('/marketplace/cart/items', {
+  return withRecommendationEvent(sendZumbarlApiRequest('/marketplace/cart/items', {
     method: 'POST',
     body: JSON.stringify({ listingId, quantity, ...(serviceRequest ? { serviceRequest } : {}) }),
-  })
+  }), { surface: 'marketplace', entityType: 'marketplace_listing', entityId: listingId, eventType: 'add_to_cart' })
 }
 
 function readMarketplaceCart() {
@@ -216,10 +250,10 @@ function startMarketplaceChat(listingReference, payload) {
 }
 
 function sendMarketplaceOffer(listingReference, payload) {
-  return sendZumbarlApiRequest(`/marketplace/listings/${encodeURIComponent(listingReference)}/offers`, {
+  return withRecommendationEvent(sendZumbarlApiRequest(`/marketplace/listings/${encodeURIComponent(listingReference)}/offers`, {
     method: 'POST',
     body: JSON.stringify(payload),
-  })
+  }), { surface: 'marketplace', entityType: 'marketplace_listing', entityId: listingReference, eventType: 'offer' })
 }
 
 function recordMarketplaceSellerView(username, product) {
@@ -233,9 +267,12 @@ export {
   createMarketplaceListing,
   createMarketplaceListingForShop,
   createCampusVendorPost,
+  updateCampusVendorPost,
   createCampusVendorPromotion,
   updateManagedCampusVendor,
+  updateCampusVendorAvailability,
   addManagedCampusVendorManager,
+  searchManagedCampusVendorManagerCandidates,
   removeManagedCampusVendorManager,
   createMarketplaceOrder,
   addAcceptedOfferToCart,
@@ -254,6 +291,8 @@ export {
   removeMarketplaceCartItem,
   readMarketplaceSeller,
   readMyMarketplaceInventory,
+  readCampusVendorProfile,
+  setCampusVendorFollowing,
   readCampusVendorWorkspace,
   updateMyMarketplaceShop,
   searchMarketplaceLocations,
@@ -265,6 +304,7 @@ export {
   startMarketplaceChat,
   updateMarketplaceListing,
   updateMarketplaceSaleStatus,
+  updateCampusVendorOrderStatus,
   updateMarketplaceCartItemFulfilment,
   quoteZumbarlDelivery,
 }

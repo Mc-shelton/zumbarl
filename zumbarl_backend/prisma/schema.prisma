@@ -127,6 +127,126 @@ enum PlacementType {
   CONTRACT
 }
 
+enum EvergreenProgramStatus {
+  DRAFT
+  PENDING_REVIEW
+  CHANGES_REQUESTED
+  ACTIVE
+  PAUSED
+  SUSPENDED
+  ARCHIVED
+}
+
+enum EvergreenCohortStatus {
+  SCHEDULED
+  OPEN
+  MATCHING
+  INTERVIEWING
+  FILLED
+  PARTIALLY_FILLED
+  IN_PROGRESS
+  COMPLETED
+  PAUSED
+  CANCELLED
+}
+
+enum EvergreenCandidateStatus {
+  MATCHED
+  INVITED
+  APPLIED
+  SHORTLISTED
+  INTERVIEWING
+  OFFERED
+  ACCEPTED
+  STARTED
+  COMPLETED
+  DECLINED
+  WITHDRAWN
+  REJECTED
+  OFFER_EXPIRED
+  TERMINATED
+}
+
+enum EvergreenOfferStatus {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  WITHDRAWN
+}
+
+enum PlacementStatus {
+  PENDING_ONBOARDING
+  READY
+  ACTIVE
+  COMPLETION_REVIEW
+  COMPLETED
+  DEFERRED
+  CANCELLED_BEFORE_START
+  TERMINATED
+  DISPUTED
+}
+
+enum EvergreenWorkMode {
+  ONSITE
+  HYBRID
+  REMOTE
+}
+
+enum EvergreenRecurrenceType {
+  NONE
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  CUSTOM
+}
+
+enum EvergreenEntitlementStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  EXPIRED
+  REFUNDED
+  CANCELLED
+}
+
+enum EvergreenInvoiceStatus {
+  DRAFT
+  ISSUED
+  CONFIRMED
+  REFUNDED
+  VOID
+}
+
+enum EvergreenOverrideStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum EvergreenMatchRunStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum PlacementEvidenceStatus {
+  SUBMITTED
+  VERIFIED
+  REJECTED
+}
+
+enum OutboxEventStatus {
+  PENDING
+  PROCESSING
+  DELIVERED
+  FAILED
+  DEAD_LETTER
+}
+
 // =============================================================================
 // USERS & AUTH
 // =============================================================================
@@ -214,8 +334,9 @@ model StudentProfile {
   studentIdNumber    String?
 
   // Career
-  careerPath  String? // e.g. "Marketing & Design"
-  currentMode String  @default("EARN") // EARN | CAREER
+  careerPath        String? // e.g. "Marketing & Design"
+  currentMode       String  @default("EARN") // EARN | CAREER
+  showZumbarlPoints Boolean @default(true)
 
   // Transition
   transitionUnlockedAt  DateTime?
@@ -230,15 +351,15 @@ model StudentProfile {
   updatedAt DateTime @updatedAt
 
   // Relations
-  user                        User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  campus                      Campus                        @relation(fields: [campusId], references: [id])
-  course                      Course                        @relation(fields: [courseId], references: [id])
+  user                        User                             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  campus                      Campus                           @relation(fields: [campusId], references: [id])
+  course                      Course                           @relation(fields: [courseId], references: [id])
   kycDocuments                KycDocument[]
   zumbarl                     ZumbarlScore?
   skillLevels                 SkillLevel_[]
   bids                        Bid[]
   pipelineRelationships       PipelineRelationship[]
-  endorsementsReceived        Endorsement[]                 @relation("EndorsementsReceived")
+  endorsementsReceived        Endorsement[]                    @relation("EndorsementsReceived")
   achievements                Achievement[]
   portfolioItems              PortfolioItem[]
   stories                     StudentStory[]
@@ -257,23 +378,33 @@ model StudentProfile {
   wallets                     Wallet[]
   certificates                Certificate[]
   chamaMembers                ChamaMember[]
-  deliverableTasks            DeliverableTask[]             @relation("DeliverableTaskOwner")
+  deliverableTasks            DeliverableTask[]                @relation("DeliverableTaskOwner")
   connectStoryReactions       ConnectStoryReaction[]
   connectStoryComments        ConnectStoryComment[]
   connectStories              ConnectStory[]
-  knowledgeResources          KnowledgeResource[]           @relation("KnowledgeResourceOwner")
-  knowledgeSpaces             KnowledgeSpace[]              @relation("KnowledgeSpaceOwner")
+  knowledgeResources          KnowledgeResource[]              @relation("KnowledgeResourceOwner")
+  knowledgeSpaces             KnowledgeSpace[]                 @relation("KnowledgeSpaceOwner")
   knowledgeMemberships        KnowledgeSpaceMembership[]
   knowledgeFollows            KnowledgeSpaceFollower[]
   knowledgeAccesses           KnowledgeResourceAccess[]
-  knowledgeRoomsCreated       KnowledgeRoom[]               @relation("KnowledgeRoomCreator")
+  knowledgeRoomsCreated       KnowledgeRoom[]                  @relation("KnowledgeRoomCreator")
   knowledgeRoomMemberships    KnowledgeRoomMembership[]
-  knowledgeRoomMessages       KnowledgeRoomMessage[]        @relation("KnowledgeRoomMessageAuthor")
+  knowledgeRoomMessages       KnowledgeRoomMessage[]           @relation("KnowledgeRoomMessageAuthor")
   connectCommentReactions     ConnectStoryCommentReaction[]
-  outgoingRelationships       ConnectRelationship[]         @relation("ConnectRelationshipActor")
-  incomingRelationships       ConnectRelationship[]         @relation("ConnectRelationshipTarget")
+  outgoingRelationships       ConnectRelationship[]            @relation("ConnectRelationshipActor")
+  incomingRelationships       ConnectRelationship[]            @relation("ConnectRelationshipTarget")
   recommendationEvents        RecommendationEvent[]
   recommendationScores        RecommendationScore[]
+  wellbeingPreference         WellbeingPreference?
+  wellbeingCheckIns           WellbeingCheckIn[]
+  wellbeingResetSessions      WellbeingResetSession[]
+  wellbeingConversations      WellbeingConversation[]
+  placementAvailability       PlacementAvailability?
+  evergreenCandidates         EvergreenCandidate[]
+  evergreenOffers             PlacementOffer[]
+  placements                  Placement[]
+  activePlacementLock         ActivePlacementLock?
+  evergreenMentorships        EvergreenMentorshipAlternative[]
 
   @@index([campusId])
   @@index([kycStatus])
@@ -301,6 +432,7 @@ model Campus {
   events              CampusEvent[]
   careerRoadmaps      CareerRoadmap[]
   managedProfile      ManagedProfile?
+  wellbeingResources  CampusWellbeingResource[]
 
   @@map("campuses")
 }
@@ -451,8 +583,8 @@ model MarketplaceShop {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  owner    StudentProfile       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  campus   Campus?              @relation(fields: [campusId], references: [id])
+  owner    StudentProfile           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  campus   Campus?                  @relation(fields: [campusId], references: [id])
   listings MarketplaceListing[]
   managers MarketplaceShopManager[]
 
@@ -773,6 +905,7 @@ model ConnectPost {
   studentId        String?
   managedProfileId String?
   knowledgeSpaceId String?
+  communityGroupId String?
   type             String   @default("post")
   body             String
   tags             Json?
@@ -787,10 +920,12 @@ model ConnectPost {
 
   comments       ConnectComment[]
   managedProfile ManagedProfile?  @relation(fields: [managedProfileId], references: [id], onDelete: SetNull)
+  communityGroup CommunityGroup?  @relation(fields: [communityGroupId], references: [id], onDelete: Cascade)
 
   @@index([studentId])
   @@index([managedProfileId])
   @@index([knowledgeSpaceId, status, createdAt])
+  @@index([communityGroupId, status, createdAt])
   @@index([status, createdAt])
   @@map("connect_posts")
 }
@@ -829,6 +964,9 @@ model CommunityGroup {
   updatedAt           DateTime @updatedAt
 
   memberships    CommunityGroupMembership[]
+  messages       CommunityGroupMessage[]
+  schedules      CommunityGroupSchedule[]
+  posts          ConnectPost[]
   contributions  CommunityChamaContribution[]
   managedProfile ManagedProfile?
 
@@ -917,6 +1055,45 @@ model CommunityGroupMembership {
   @@map("community_group_memberships")
 }
 
+model CommunityGroupMessage {
+  id        String   @id @default(cuid())
+  groupId   String
+  studentId String
+  body      String
+  type      String   @default("message")
+  payload   Json?
+  status    String   @default("published")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  group CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, createdAt])
+  @@index([studentId])
+  @@map("community_group_messages")
+}
+
+model CommunityGroupSchedule {
+  id                 String    @id @default(cuid())
+  groupId            String
+  createdByStudentId String
+  title              String
+  description        String?
+  kind               String    @default("audio_circle")
+  startsAt           DateTime
+  endsAt             DateTime?
+  status             String    @default("scheduled")
+  payload            Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  group CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@index([groupId, startsAt])
+  @@index([createdByStudentId])
+  @@map("community_group_schedules")
+}
+
 model CommunityChamaContribution {
   id        String   @id @default(cuid())
   groupId   String
@@ -967,6 +1144,107 @@ model CounselorBooking {
   @@index([studentId, scheduledAt])
   @@index([counselorId, status])
   @@map("counselor_bookings")
+}
+
+model WellbeingPreference {
+  id              String   @id @default(cuid())
+  studentId       String   @unique
+  insightsEnabled Boolean  @default(true)
+  reminderEnabled Boolean  @default(false)
+  reminderTime    String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("wellbeing_preferences")
+}
+
+model WellbeingCheckIn {
+  id        String   @id @default(cuid())
+  studentId String
+  mood      String
+  stressors String[] @default([])
+  sleep     String?
+  note      String?
+  source    String   @default("daily")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, createdAt])
+  @@map("wellbeing_check_ins")
+}
+
+model WellbeingResetSession {
+  id               String    @id @default(cuid())
+  studentId        String
+  breathingSeconds Int       @default(0)
+  groundingCount   Int       @default(0)
+  focus            String?
+  durationSeconds  Int       @default(0)
+  status           String    @default("completed")
+  completedAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, createdAt])
+  @@map("wellbeing_reset_sessions")
+}
+
+model WellbeingConversation {
+  id        String   @id @default(cuid())
+  studentId String
+  title     String?
+  status    String   @default("active")
+  riskLevel String   @default("none")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student  StudentProfile     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  messages WellbeingMessage[]
+
+  @@index([studentId, updatedAt])
+  @@map("wellbeing_conversations")
+}
+
+model WellbeingMessage {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String
+  body           String
+  riskLevel      String   @default("none")
+  actions        Json?
+  createdAt      DateTime @default(now())
+
+  conversation WellbeingConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("wellbeing_messages")
+}
+
+model CampusWellbeingResource {
+  id           String   @id @default(cuid())
+  campusId     String?
+  resourceType String
+  name         String
+  description  String
+  contactLabel String?
+  href         String?
+  availability String?
+  isEmergency  Boolean  @default(false)
+  sortOrder    Int      @default(0)
+  status       String   @default("active")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  campus Campus? @relation(fields: [campusId], references: [id], onDelete: Cascade)
+
+  @@index([campusId, status, sortOrder])
+  @@map("campus_wellbeing_resources")
 }
 
 model MarketplaceCart {
@@ -1113,11 +1391,16 @@ model Company {
   kycProfile            BusinessKyc?
   opportunities         Opportunity[]
   pipelineRelationships PipelineRelationship[]
-  endorsementsGiven     Endorsement[]          @relation("EndorsementsGiven")
+  endorsementsGiven     Endorsement[]                    @relation("EndorsementsGiven")
   placements            Placement[]
   wallet                CompanyWallet?
   managedProfile        ManagedProfile?
   engagementOutcomes    EngagementOutcome[]
+  evergreenPrograms     EvergreenProgram[]
+  evergreenOffers       PlacementOffer[]
+  evergreenEntitlements EvergreenEntitlement[]
+  evergreenInvoices     EvergreenInvoice[]
+  evergreenMentorships  EvergreenMentorshipAlternative[]
 
   @@index([kycStatus])
   @@index([sector])
@@ -1184,9 +1467,12 @@ model CompanyContact {
   isOwner   Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  user                User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  company             Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  postedOpportunities Opportunity[]
+  user                 User                         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company              Company                      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  postedOpportunities  Opportunity[]
+  evergreenPrograms    EvergreenProgramSupervisor[]
+  supervisedOffers     PlacementOffer[]
+  supervisedPlacements Placement[]
 
   @@index([companyId])
   @@map("company_contacts")
@@ -1975,13 +2261,14 @@ model Skill {
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
-  category          SkillCategory?     @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  mergedIntoSkill   Skill?             @relation("MergedSkills", fields: [mergedIntoSkillId], references: [id], onDelete: SetNull)
-  mergedSkills      Skill[]            @relation("MergedSkills")
+  category          SkillCategory?          @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  mergedIntoSkill   Skill?                  @relation("MergedSkills", fields: [mergedIntoSkillId], references: [id], onDelete: SetNull)
+  mergedSkills      Skill[]                 @relation("MergedSkills")
   aliases           SkillAlias[]
   opportunitySkills OpportunitySkill[]
   studentSkills     StudentSkill[]
   competencies      Competency[]
+  evergreenPrograms EvergreenProgramSkill[]
 
   @@index([categoryId])
   @@index([status])
@@ -2206,12 +2493,15 @@ model Competency {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  skill            Skill?                        @relation(fields: [skillId], references: [id], onDelete: SetNull)
-  roadmapSteps     CareerRoadmapStepCompetency[]
-  opportunityLinks OpportunityCompetency[]
-  resourceLinks    LearningResourceCompetency[]
-  studentStates    StudentCompetencyState[]
-  evidence         RoadmapEvidence[]
+  skill             Skill?                        @relation(fields: [skillId], references: [id], onDelete: SetNull)
+  roadmapSteps      CareerRoadmapStepCompetency[]
+  opportunityLinks  OpportunityCompetency[]
+  resourceLinks     LearningResourceCompetency[]
+  studentStates     StudentCompetencyState[]
+  evidence          RoadmapEvidence[]
+  evergreenPrograms EvergreenProgramCompetency[]
+  placementGoals    PlacementGoal[]
+  placementEvidence PlacementEvidence[]
 
   @@index([skillId])
   @@index([status])
@@ -2274,6 +2564,7 @@ model KnowledgeSpace {
   id             String   @id @default(cuid())
   ownerStudentId String?
   type           String // LIBRARY | GROUP
+  groupType      String? // STUDY_GROUP | CLUB | ASSOCIATION | SOCIETY | CHAMA
   name           String
   slug           String   @unique
   description    String?
@@ -2414,12 +2705,12 @@ model KnowledgeResource {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  owner    StudentProfile            @relation("KnowledgeResourceOwner", fields: [ownerStudentId], references: [id], onDelete: Cascade)
-  space    KnowledgeSpace?           @relation(fields: [spaceId], references: [id], onDelete: SetNull)
-  sourceMessage KnowledgeRoomMessage? @relation("KnowledgeMessageResources", fields: [sourceMessageId], references: [id], onDelete: SetNull)
-  unit     KnowledgeUnit?            @relation(fields: [unitId], references: [id], onDelete: SetNull)
-  accesses KnowledgeResourceAccess[]
-  rooms    KnowledgeRoom[]
+  owner         StudentProfile            @relation("KnowledgeResourceOwner", fields: [ownerStudentId], references: [id], onDelete: Cascade)
+  space         KnowledgeSpace?           @relation(fields: [spaceId], references: [id], onDelete: SetNull)
+  sourceMessage KnowledgeRoomMessage?     @relation("KnowledgeMessageResources", fields: [sourceMessageId], references: [id], onDelete: SetNull)
+  unit          KnowledgeUnit?            @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  accesses      KnowledgeResourceAccess[]
+  rooms         KnowledgeRoom[]
 
   @@index([resourceType, status])
   @@index([spaceId, createdAt])
@@ -2657,27 +2948,662 @@ model PortfolioItem {
   @@map("portfolio_items")
 }
 
+model EvergreenProgram {
+  id               String                  @id @default(cuid())
+  companyId        String
+  createdById      String
+  approvedById     String?
+  title            String
+  description      String
+  placementType    PlacementType
+  workMode         EvergreenWorkMode
+  location         String?
+  durationWeeks    Int
+  defaultSeatCount Int
+  stipendAmount    Decimal?                @db.Decimal(14, 2)
+  currency         String                  @default("KES") @db.VarChar(3)
+  stipendFrequency String?
+  supervisionPlan  String
+  learningOutcomes String[]                @default([])
+  recurrenceType   EvergreenRecurrenceType @default(NONE)
+  recurrenceRule   Json?
+  timezone         String                  @default("Africa/Nairobi")
+  status           EvergreenProgramStatus  @default(DRAFT)
+  riskLevel        String                  @default("STANDARD")
+  pipelineOptIn    Boolean                 @default(true)
+  version          Int                     @default(1)
+  approvedAt       DateTime?
+  archivedAt       DateTime?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+
+  company      Company                      @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  skills       EvergreenProgramSkill[]
+  competencies EvergreenProgramCompetency[]
+  supervisors  EvergreenProgramSupervisor[]
+  cohorts      EvergreenCohort[]
+  placements   Placement[]
+
+  @@index([companyId, status])
+  @@index([status, createdAt])
+  @@map("evergreen_programs")
+}
+
+model EvergreenProgramSkill {
+  id        String  @id @default(cuid())
+  programId String
+  skillId   String
+  required  Boolean @default(true)
+  weight    Int     @default(1)
+
+  program EvergreenProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  skill   Skill            @relation(fields: [skillId], references: [id], onDelete: Restrict)
+
+  @@unique([programId, skillId])
+  @@index([skillId])
+  @@map("evergreen_program_skills")
+}
+
+model EvergreenProgramCompetency {
+  id           String  @id @default(cuid())
+  programId    String
+  competencyId String
+  required     Boolean @default(true)
+  minimumScore Int     @default(70)
+  weight       Int     @default(1)
+
+  program    EvergreenProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  competency Competency       @relation(fields: [competencyId], references: [id], onDelete: Restrict)
+
+  @@unique([programId, competencyId])
+  @@index([competencyId])
+  @@map("evergreen_program_competencies")
+}
+
+model EvergreenProgramSupervisor {
+  id           String   @id @default(cuid())
+  programId    String
+  supervisorId String
+  isPrimary    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  program    EvergreenProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  supervisor CompanyContact   @relation(fields: [supervisorId], references: [id], onDelete: Restrict)
+
+  @@unique([programId, supervisorId])
+  @@index([supervisorId])
+  @@map("evergreen_program_supervisors")
+}
+
+model EvergreenCohort {
+  id                  String                @id @default(cuid())
+  programId           String
+  sequenceNumber      Int
+  applicationOpensAt  DateTime
+  applicationClosesAt DateTime
+  interviewStartsAt   DateTime?
+  interviewEndsAt     DateTime?
+  offerDeadlineAt     DateTime?
+  placementStartsAt   DateTime
+  placementEndsAt     DateTime
+  seatCount           Int
+  reservedSeats       Int                   @default(0)
+  filledSeats         Int                   @default(0)
+  status              EvergreenCohortStatus @default(SCHEDULED)
+  recurrenceSource    String?
+  openedAt            DateTime?
+  closedAt            DateTime?
+  version             Int                   @default(1)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  program    EvergreenProgram     @relation(fields: [programId], references: [id], onDelete: Restrict)
+  candidates EvergreenCandidate[]
+  placements Placement[]
+  matchRuns  EvergreenMatchRun[]
+
+  @@unique([programId, sequenceNumber])
+  @@index([status, applicationOpensAt])
+  @@index([programId, status])
+  @@map("evergreen_cohorts")
+}
+
+model EvergreenCandidate {
+  id                  String                   @id @default(cuid())
+  cohortId            String
+  studentId           String
+  source              String
+  status              EvergreenCandidateStatus @default(MATCHED)
+  matchScore          Decimal?                 @db.Decimal(6, 3)
+  matchVersion        String?
+  matchReasons        Json?
+  eligibilitySnapshot Json?
+  consentSnapshot     Json
+  privateNotes        String?
+  lastActorId         String?
+  version             Int                      @default(1)
+  createdAt           DateTime                 @default(now())
+  updatedAt           DateTime                 @updatedAt
+
+  cohort    EvergreenCohort  @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+  student   StudentProfile   @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  offers    PlacementOffer[]
+  placement Placement?
+
+  @@unique([cohortId, studentId])
+  @@index([cohortId, status, createdAt])
+  @@index([studentId, status])
+  @@map("evergreen_candidates")
+}
+
+model PlacementAvailability {
+  id                   String              @id @default(cuid())
+  studentId            String              @unique
+  isSeeking            Boolean             @default(false)
+  placementTypes       PlacementType[]
+  earliestStartDate    DateTime?
+  latestStartDate      DateTime?
+  locations            String[]            @default([])
+  workModes            EvergreenWorkMode[]
+  roleInterests        String[]            @default([])
+  weeklyAvailability   Json?
+  consentVersion       String
+  companyVisibleFields String[]            @default([])
+  consentedAt          DateTime
+  visibleFrom          DateTime?
+  pausedAt             DateTime?
+  expiresAt            DateTime
+  version              Int                 @default(1)
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Restrict)
+
+  @@index([isSeeking, expiresAt])
+  @@map("placement_availability")
+}
+
+model PlacementOffer {
+  id                 String               @id @default(cuid())
+  candidateId        String
+  companyId          String
+  studentId          String
+  createdById        String
+  supervisorId       String
+  version            Int                  @default(1)
+  role               String
+  duties             String
+  placementType      PlacementType
+  workMode           EvergreenWorkMode
+  location           String?
+  stipendAmount      Decimal?             @db.Decimal(14, 2)
+  currency           String               @default("KES") @db.VarChar(3)
+  stipendFrequency   String?
+  startDate          DateTime
+  endDate            DateTime
+  termsSnapshot      Json
+  status             EvergreenOfferStatus @default(DRAFT)
+  sentAt             DateTime?
+  viewedAt           DateTime?
+  respondBy          DateTime
+  respondedAt        DateTime?
+  withdrawalReason   String?
+  declineReason      String?
+  replacementOfferId String?
+  idempotencyKey     String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  candidate         EvergreenCandidate   @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  company           Company              @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  student           StudentProfile       @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  supervisor        CompanyContact       @relation(fields: [supervisorId], references: [id], onDelete: Restrict)
+  replacementOffer  PlacementOffer?      @relation("OfferReplacement", fields: [replacementOfferId], references: [id], onDelete: Restrict)
+  replaces          PlacementOffer[]     @relation("OfferReplacement")
+  acceptedPlacement Placement?
+  activeLock        ActivePlacementLock?
+
+  @@unique([companyId, idempotencyKey])
+  @@index([candidateId, status])
+  @@index([studentId, status, respondBy])
+  @@index([companyId, status])
+  @@map("placement_offers")
+}
+
 model Placement {
-  id            String        @id @default(cuid())
-  studentId     String
-  companyId     String
-  type          PlacementType
-  role          String
-  startDate     DateTime
-  endDate       DateTime?
-  salaryOffered Float?
-  isLocked      Boolean       @default(true) // student can't seek other placements
-  offeredAt     DateTime      @default(now())
-  acceptedAt    DateTime?
-  declinedAt    DateTime?
-  completedAt   DateTime?
-  platformFee   Float?
+  id                    String             @id @default(cuid())
+  studentId             String
+  companyId             String
+  programId             String?
+  cohortId              String?
+  candidateId           String?            @unique
+  offerId               String?            @unique
+  supervisorId          String?
+  projectId             String?
+  type                  PlacementType
+  role                  String
+  duties                String?
+  status                PlacementStatus    @default(PENDING_ONBOARDING)
+  workMode              EvergreenWorkMode?
+  location              String?
+  startDate             DateTime
+  endDate               DateTime?
+  salaryOffered         Float?
+  stipendAmount         Decimal?           @db.Decimal(14, 2)
+  currency              String             @default("KES") @db.VarChar(3)
+  stipendFrequency      String?
+  termsSnapshot         Json?
+  isLocked              Boolean            @default(true)
+  offeredAt             DateTime           @default(now())
+  acceptedAt            DateTime?
+  declinedAt            DateTime?
+  readyAt               DateTime?
+  startedAt             DateTime?
+  completionSubmittedAt DateTime?
+  completedAt           DateTime?
+  terminatedAt          DateTime?
+  terminationReason     String?
+  lockReleasedAt        DateTime?
+  platformFee           Float?
+  version               Int                @default(1)
+  updatedAt             DateTime           @updatedAt
 
-  company Company @relation(fields: [companyId], references: [id])
+  student         StudentProfile            @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  company         Company                   @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  program         EvergreenProgram?         @relation(fields: [programId], references: [id], onDelete: Restrict)
+  cohort          EvergreenCohort?          @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+  candidate       EvergreenCandidate?       @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+  acceptedOffer   PlacementOffer?           @relation(fields: [offerId], references: [id], onDelete: Restrict)
+  supervisor      CompanyContact?           @relation(fields: [supervisorId], references: [id], onDelete: Restrict)
+  activeLock      ActivePlacementLock?
+  goals           PlacementGoal[]
+  checkIns        PlacementCheckIn[]
+  evidence        PlacementEvidence[]
+  evaluations     PlacementEvaluation[]
+  amendments      PlacementAmendment[]
+  onboardingItems PlacementOnboardingItem[]
+  statusEvents    PlacementStatusEvent[]
+  supportRequests PlacementSupportRequest[]
 
-  @@index([studentId])
-  @@index([companyId])
+  @@index([studentId, status])
+  @@index([companyId, status])
+  @@index([cohortId, status])
   @@map("placements")
+}
+
+model ActivePlacementLock {
+  id                  String   @id @default(cuid())
+  studentId           String   @unique
+  placementId         String   @unique
+  acquiredFromOfferId String   @unique
+  acquiredAt          DateTime @default(now())
+
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Restrict)
+  placement Placement      @relation(fields: [placementId], references: [id], onDelete: Restrict)
+  offer     PlacementOffer @relation(fields: [acquiredFromOfferId], references: [id], onDelete: Restrict)
+
+  @@map("active_placement_locks")
+}
+
+model PlacementOnboardingItem {
+  id          String    @id @default(cuid())
+  placementId String
+  ownerType   String
+  label       String
+  required    Boolean   @default(true)
+  completedAt DateTime?
+  completedBy String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  placement Placement @relation(fields: [placementId], references: [id], onDelete: Restrict)
+
+  @@index([placementId, completedAt])
+  @@map("placement_onboarding_items")
+}
+
+model PlacementGoal {
+  id           String    @id @default(cuid())
+  placementId  String
+  competencyId String?
+  title        String
+  description  String
+  dueAt        DateTime?
+  status       String    @default("OPEN")
+  completedAt  DateTime?
+  createdById  String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  placement  Placement   @relation(fields: [placementId], references: [id], onDelete: Restrict)
+  competency Competency? @relation(fields: [competencyId], references: [id], onDelete: Restrict)
+
+  @@index([placementId, status])
+  @@index([competencyId])
+  @@map("placement_goals")
+}
+
+model PlacementCheckIn {
+  id                    String    @id @default(cuid())
+  placementId           String
+  periodStartsAt        DateTime
+  periodEndsAt          DateTime
+  dueAt                 DateTime
+  studentReflection     String?
+  studentSubmittedAt    DateTime?
+  supervisorResponse    String?
+  supervisorRespondedAt DateTime?
+  riskFlag              Boolean   @default(false)
+  status                String    @default("DUE")
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  placement Placement @relation(fields: [placementId], references: [id], onDelete: Restrict)
+
+  @@unique([placementId, periodStartsAt])
+  @@index([status, dueAt])
+  @@map("placement_check_ins")
+}
+
+model PlacementEvidence {
+  id                String                  @id @default(cuid())
+  placementId       String
+  goalId            String?
+  competencyId      String?
+  submittedById     String
+  evidenceType      String
+  title             String
+  description       String?
+  artifactReference String
+  status            PlacementEvidenceStatus @default(SUBMITTED)
+  verifiedById      String?
+  verifiedAt        DateTime?
+  rejectionReason   String?
+  roadmapEvidenceId String?
+  portfolioItemId   String?
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+
+  placement  Placement   @relation(fields: [placementId], references: [id], onDelete: Restrict)
+  competency Competency? @relation(fields: [competencyId], references: [id], onDelete: Restrict)
+
+  @@index([placementId, status])
+  @@index([competencyId])
+  @@map("placement_evidence")
+}
+
+model PlacementEvaluation {
+  id             String   @id @default(cuid())
+  placementId    String
+  evaluatorId    String
+  evaluatorType  String
+  rubricScores   Json
+  narrative      String
+  recommendation String?
+  visibility     String   @default("SHARED")
+  submittedAt    DateTime @default(now())
+
+  placement Placement @relation(fields: [placementId], references: [id], onDelete: Restrict)
+
+  @@unique([placementId, evaluatorId, evaluatorType])
+  @@index([placementId])
+  @@map("placement_evaluations")
+}
+
+model PlacementAmendment {
+  id                String    @id @default(cuid())
+  placementId       String
+  version           Int
+  proposedById      String
+  reason            String
+  changes           Json
+  status            String    @default("PROPOSED")
+  studentAcceptedAt DateTime?
+  companyAcceptedAt DateTime?
+  appliedAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  placement Placement @relation(fields: [placementId], references: [id], onDelete: Restrict)
+
+  @@unique([placementId, version])
+  @@index([placementId, status])
+  @@map("placement_amendments")
+}
+
+model PlacementStatusEvent {
+  id          String           @id @default(cuid())
+  placementId String
+  fromStatus  PlacementStatus?
+  toStatus    PlacementStatus
+  actorId     String
+  reason      String?
+  metadata    Json?
+  createdAt   DateTime         @default(now())
+
+  placement Placement @relation(fields: [placementId], references: [id], onDelete: Restrict)
+
+  @@index([placementId, createdAt])
+  @@map("placement_status_events")
+}
+
+model PlacementSupportRequest {
+  id             String    @id @default(cuid())
+  placementId    String
+  requestedById  String
+  category       String
+  summary        String
+  privateDetails String?
+  status         String    @default("OPEN")
+  assignedToId   String?
+  resolution     String?
+  resolvedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  placement Placement @relation(fields: [placementId], references: [id], onDelete: Restrict)
+
+  @@index([placementId, status])
+  @@index([status, createdAt])
+  @@map("placement_support_requests")
+}
+
+model EvergreenEntitlement {
+  id              String                     @id @default(cuid())
+  companyId       String
+  sourceInvoiceId String?                    @unique
+  planCode        String
+  status          EvergreenEntitlementStatus @default(PENDING)
+  programLimit    Int
+  seatLimit       Int
+  validFrom       DateTime
+  validUntil      DateTime
+  sourceType      String
+  sourceReference String
+  confirmedById   String?
+  confirmedAt     DateTime?
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  company       Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  sourceInvoice EvergreenInvoice? @relation("InvoiceEntitlement", fields: [sourceInvoiceId], references: [id], onDelete: Restrict)
+
+  @@index([companyId, status, validUntil])
+  @@map("evergreen_entitlements")
+}
+
+model EvergreenInvoice {
+  id                String                 @id @default(cuid())
+  companyId         String
+  invoiceNumber     String                 @unique
+  amount            Decimal                @db.Decimal(14, 2)
+  currency          String                 @default("KES") @db.VarChar(3)
+  status            EvergreenInvoiceStatus @default(DRAFT)
+  externalReference String?
+  issuedAt          DateTime?
+  dueAt             DateTime?
+  confirmedAt       DateTime?
+  confirmedById     String?
+  refundedAt        DateTime?
+  refundReason      String?
+  idempotencyKey    String?                @unique
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  company     Company               @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  entitlement EvergreenEntitlement? @relation("InvoiceEntitlement")
+
+  @@index([companyId, status])
+  @@map("evergreen_invoices")
+}
+
+model EvergreenOverride {
+  id           String                  @id @default(cuid())
+  subjectType  String
+  subjectId    String
+  policy       String
+  reason       String
+  approvedById String
+  status       EvergreenOverrideStatus @default(ACTIVE)
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  revokedById  String?
+  createdAt    DateTime                @default(now())
+
+  @@index([subjectType, subjectId, policy, status, expiresAt])
+  @@map("evergreen_overrides")
+}
+
+model EvergreenMatchRun {
+  id               String                  @id @default(cuid())
+  cohortId         String
+  algorithmVersion String
+  inputSnapshot    Json
+  status           EvergreenMatchRunStatus @default(PENDING)
+  eligibleCount    Int                     @default(0)
+  matchedCount     Int                     @default(0)
+  failureReason    String?
+  startedAt        DateTime?
+  completedAt      DateTime?
+  createdAt        DateTime                @default(now())
+
+  cohort EvergreenCohort @relation(fields: [cohortId], references: [id], onDelete: Restrict)
+
+  @@index([cohortId, createdAt])
+  @@index([status, createdAt])
+  @@map("evergreen_match_runs")
+}
+
+model EvergreenMentorshipAlternative {
+  id           String   @id @default(cuid())
+  companyId    String
+  studentId    String
+  type         String
+  description  String
+  completedAt  DateTime
+  evidence     Json?
+  approvedById String
+  approvedAt   DateTime @default(now())
+
+  company Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Restrict)
+
+  @@index([companyId, studentId, completedAt])
+  @@map("evergreen_mentorship_alternatives")
+}
+
+model OutboxEvent {
+  id             String                  @id @default(cuid())
+  aggregateType  String
+  aggregateId    String
+  eventType      String
+  payload        Json
+  status         OutboxEventStatus       @default(PENDING)
+  idempotencyKey String                  @unique
+  availableAt    DateTime                @default(now())
+  claimedAt      DateTime?
+  claimedBy      String?
+  deliveredAt    DateTime?
+  attemptCount   Int                     @default(0)
+  lastError      String?
+  createdAt      DateTime                @default(now())
+  receipts       OutboxConsumerReceipt[]
+
+  @@index([status, availableAt])
+  @@index([aggregateType, aggregateId, createdAt])
+  @@map("outbox_events")
+}
+
+model OutboxConsumerReceipt {
+  id          String   @id @default(cuid())
+  eventId     String
+  consumer    String
+  processedAt DateTime @default(now())
+  result      Json?
+
+  event OutboxEvent @relation(fields: [eventId], references: [id], onDelete: Restrict)
+
+  @@unique([eventId, consumer])
+  @@index([consumer, processedAt])
+  @@map("outbox_consumer_receipts")
+}
+
+model EvergreenIdempotencyKey {
+  id           String    @id @default(cuid())
+  actorId      String
+  operation    String
+  key          String
+  requestHash  String
+  responseCode Int?
+  responseBody Json?
+  resourceId   String?
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime?
+
+  @@unique([actorId, operation, key])
+  @@index([expiresAt])
+  @@map("evergreen_idempotency_keys")
+}
+
+model EvergreenWorkerLease {
+  name        String   @id
+  ownerId     String
+  lockedUntil DateTime
+  heartbeatAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([lockedUntil])
+  @@map("evergreen_worker_leases")
+}
+
+model EvergreenJobRun {
+  id            String    @id @default(cuid())
+  jobName       String
+  replayOfId    String?
+  status        String    @default("RUNNING")
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  attemptCount  Int       @default(1)
+  result        Json?
+  failureReason String?
+  requestedById String?
+
+  @@index([jobName, startedAt])
+  @@index([status, startedAt])
+  @@map("evergreen_job_runs")
+}
+
+model FeatureFlag {
+  key         String   @id
+  enabled     Boolean  @default(false)
+  description String?
+  config      Json?
+  updatedById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("feature_flags")
 }
 
 model Certificate {

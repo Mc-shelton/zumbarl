@@ -480,6 +480,11 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
                 onLoadedMetadata={(event) => { event.currentTarget.currentTime = activeItem.trimStart || 0 }}
                 onTimeUpdate={(event) => { if (activeItem.trimEnd && event.currentTarget.currentTime >= activeItem.trimEnd) step(1) }}
               />
+            ) : activeItem.type === 'text' || !activeItem.media ? (
+              <div className="explore-story-text-media" key={activeItem.id}>
+                <span>Zumbarl story</span>
+                <strong>{activeItem.caption || activeItem.title}</strong>
+              </div>
             ) : <img key={activeItem.id} src={activeItem.media} alt={mediaAlt} />}
           </button>
 
@@ -488,7 +493,7 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
           <section className="explore-story-caption" aria-live="polite">
             <span>{activeCreator.campus}</span>
             <h2>{activeItem.title}</h2>
-            <p>{activeItem.caption}</p>
+            {activeItem.type !== 'text' ? <p>{activeItem.caption}</p> : null}
           </section>
 
           <nav className="explore-story-actions" aria-label="Story actions">

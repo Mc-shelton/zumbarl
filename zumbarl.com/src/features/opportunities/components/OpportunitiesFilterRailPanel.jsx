@@ -1,3 +1,4 @@
+import { FiAward, FiBriefcase, FiDollarSign, FiMapPin, FiSliders } from 'react-icons/fi'
 import { FILTER_MODES, FILTER_TYPES } from '../constants'
 
 function OpportunitiesFilterRailPanel({
@@ -13,6 +14,14 @@ function OpportunitiesFilterRailPanel({
   railFilters,
   skillOptions = [],
 }) {
+  const activeFilterCount = (
+    railFilters.types.length +
+    railFilters.workModes.length +
+    (railFilters.budgetMin ? 1 : 0) +
+    (railFilters.budgetMax ? 1 : 0) +
+    (railFilters.skill !== 'all' ? 1 : 0)
+  )
+
   return (
     <section
       className={
@@ -22,11 +31,17 @@ function OpportunitiesFilterRailPanel({
       }
     >
       <header>
-        <h3>Filter Opportunities</h3>
+        <div className="opportunities-filter-heading">
+          <span><FiSliders aria-hidden="true" /></span>
+          <div>
+            <small>Refine your match</small>
+            <h3>Filter opportunities</h3>
+          </div>
+        </div>
         {isDetailOpen && isFilterExpanded ? (
           <button
             type="button"
-            className="campus-link-btn opportunities-filter-toggle"
+            className="opportunities-filter-action opportunities-filter-toggle"
             onClick={onBackToDetail}
           >
             Back to gig
@@ -34,13 +49,16 @@ function OpportunitiesFilterRailPanel({
         ) : isDetailOpen ? (
           <button
             type="button"
-            className="campus-link-btn opportunities-filter-toggle"
+            className="opportunities-filter-action opportunities-filter-toggle"
             onClick={onEditFilters}
           >
             Edit filters
           </button>
         ) : (
-          <button type="button" className="campus-link-btn" onClick={onClearFilters}>Clear all</button>
+          <button type="button" className="opportunities-filter-action" onClick={onClearFilters}>
+            Clear all
+            {activeFilterCount > 0 ? <span>{activeFilterCount}</span> : null}
+          </button>
         )}
       </header>
 
@@ -51,10 +69,10 @@ function OpportunitiesFilterRailPanel({
       ) : (
         <div className="opportunities-filter-body">
           <div className="opportunities-filter-group">
-            <h4>Type</h4>
+            <h4><FiBriefcase aria-hidden="true" />Type</h4>
             <div className="opportunities-checklist">
               {FILTER_TYPES.filter((item) => item !== 'All Types').map((item) => (
-                <label key={item} className="opportunities-check-item">
+                <label key={item} className={`opportunities-check-item${railFilters.types.includes(item) ? ' is-selected' : ''}`}>
                   <input
                     type="checkbox"
                     checked={railFilters.types.includes(item)}
@@ -67,10 +85,10 @@ function OpportunitiesFilterRailPanel({
           </div>
 
           <div className="opportunities-filter-group">
-            <h4>Work Mode</h4>
+            <h4><FiMapPin aria-hidden="true" />Work mode</h4>
             <div className="opportunities-checklist">
               {FILTER_MODES.filter((item) => item !== 'All').map((item) => (
-                <label key={item} className="opportunities-check-item">
+                <label key={item} className={`opportunities-check-item${railFilters.workModes.includes(item) ? ' is-selected' : ''}`}>
                   <input
                     type="checkbox"
                     checked={railFilters.workModes.includes(item)}
@@ -83,40 +101,35 @@ function OpportunitiesFilterRailPanel({
           </div>
 
           <div className="opportunities-filter-group">
-            <h4>Budget / Pay (KES)</h4>
+            <h4><FiDollarSign aria-hidden="true" />Budget / pay</h4>
             <div className="opportunities-budget-row">
-              <input
-                type="number"
-                min="0"
-                placeholder="Min"
-                aria-label="Minimum budget"
-                value={railFilters.budgetMin}
-                onChange={(event) => onRailFilterChange({ budgetMin: event.target.value })}
-              />
-              <input
-                type="number"
-                min="0"
-                placeholder="Max"
-                aria-label="Maximum budget"
-                value={railFilters.budgetMax}
-                onChange={(event) => onRailFilterChange({ budgetMax: event.target.value })}
-              />
+              <label>
+                <span>Minimum</span>
+                <div><b>KES</b><input type="number" min="0" placeholder="0" aria-label="Minimum budget" value={railFilters.budgetMin} onChange={(event) => onRailFilterChange({ budgetMin: event.target.value })} /></div>
+              </label>
+              <label>
+                <span>Maximum</span>
+                <div><b>KES</b><input type="number" min="0" placeholder="Any" aria-label="Maximum budget" value={railFilters.budgetMax} onChange={(event) => onRailFilterChange({ budgetMax: event.target.value })} /></div>
+              </label>
             </div>
           </div>
 
           <div className="opportunities-filter-group">
-            <h4>Skills</h4>
-            <select
-              className="opportunities-select"
-              aria-label="Filter by skill"
-              value={railFilters.skill}
-              onChange={(event) => onRailFilterChange({ skill: event.target.value })}
-            >
-              <option value="all">All skills</option>
-              {skillOptions.map((skill) => (
-                <option key={skill} value={skill}>{skill}</option>
-              ))}
-            </select>
+            <h4><FiAward aria-hidden="true" />Skills</h4>
+            <div className="opportunities-select-wrap">
+              <FiAward aria-hidden="true" />
+              <select
+                className="opportunities-select"
+                aria-label="Filter by skill"
+                value={railFilters.skill}
+                onChange={(event) => onRailFilterChange({ skill: event.target.value })}
+              >
+                <option value="all">All skills</option>
+                {skillOptions.map((skill) => (
+                  <option key={skill} value={skill}>{skill}</option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
       )}

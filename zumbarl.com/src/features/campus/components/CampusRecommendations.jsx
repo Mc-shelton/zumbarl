@@ -1,3 +1,17 @@
+import { Link } from 'react-router-dom'
+import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
+
+const SECTION_LINKS = {
+  stories: '/campus/explore',
+  posts: '/campus/explore',
+  gigs: '/campus/opportunities',
+  marketplace: '/campus/opportunities/buy-sell',
+  communities: '/campus/explore',
+  events: '/campus/explore',
+  roadmaps: '/campus/learn',
+  services: '/campus/opportunities/buy-sell?mode=services',
+}
+
 function handleKeyboardActivation(event, onActivate) {
   if (event.key === 'Enter' || event.key === ' ') {
     event.preventDefault()
@@ -133,9 +147,11 @@ function CampusRecommendations({
   onOpenRecommendedGig,
   recommendationSections = [],
 }) {
+  const populatedSections = recommendationSections.filter((section) => Array.isArray(section.items) && section.items.length)
+
   return (
     <>
-      {recommendationSections.map((section, index) => (
+      {populatedSections.map((section, index) => (
         <section key={section.id} className="campus-section">
           {index === 0 ? (
             <div className="campus-section-head">
@@ -143,23 +159,23 @@ function CampusRecommendations({
                 <h3>{section.title}</h3>
                 <p>{section.subtitle}</p>
               </div>
-              <button type="button" className="campus-link-btn">
+              <Link to={SECTION_LINKS[section.id] || '/campus/explore'} className="campus-link-btn">
                 View all
-              </button>
+              </Link>
             </div>
           ) : (
             <div className="campus-reco-strip">
               <p>{section.subtitle}</p>
-              <button type="button" className="campus-link-btn">
+              <Link to={SECTION_LINKS[section.id] || '/campus/explore'} className="campus-link-btn">
                 View all
-              </button>
+              </Link>
             </div>
           )}
 
           <div className={`campus-gigs-grid campus-gigs-grid-${section.id}`}>
-            {section.items.map((item) => (
+            {section.items.map((item, itemIndex) => (
               <RecommendationCard
-                key={`${section.id}-${item.title}`}
+                key={`${section.id}-${item.id || item.opportunityUuid || item.title}-${itemIndex}`}
                 activeMarketplaceHover={activeMarketplaceHover}
                 activeMarketplaceSlide={activeMarketplaceSlide}
                 item={item}
@@ -177,5 +193,3 @@ function CampusRecommendations({
 }
 
 export default CampusRecommendations
-import { Link } from 'react-router-dom'
-import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'

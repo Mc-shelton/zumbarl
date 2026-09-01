@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   FiBarChart2,
   FiCalendar,
+  FiCamera,
   FiCheck,
   FiCheckCircle,
   FiEdit3,
@@ -10,11 +11,9 @@ import {
   FiGlobe,
   FiMail,
   FiMapPin,
-  FiMessageCircle,
   FiPhone,
   FiPlus,
   FiShare2,
-  FiThumbsUp,
   FiTrash2,
   FiUsers,
   FiX,
@@ -22,14 +21,21 @@ import {
 import { Link, useParams } from "react-router-dom";
 import CampusSidebar from "../components/layout/CampusSidebar";
 import Seo from "../components/Seo";
+import { uploadZumbarlFile } from "../lib/uploadZumbarlFile";
+import ExplorePostComposer from "../features/explore/components/ExplorePostComposer";
+import ExploreStoryComposer from "../features/explore/components/ExploreStoryComposer";
+import ManagedEntityFeed from "../features/explore/components/ManagedEntityFeed";
+import { createStory } from "../features/explore/services/storyService";
 import {
   createManagedProfilePost,
   listMyManagedProfiles,
   readManagedProfile,
   setManagedProfileFollow,
   updateManagedProfile,
+  updateManagedProfilePost,
 } from "../features/profile/services/managedProfileService";
 import "../styles/campus.css";
+import "../styles/explore-campus.css";
 import "../styles/managed-profile.css";
 import "../styles/managed-profile-about.css";
 import "../styles/managed-profile-social.css";
@@ -55,6 +61,12 @@ const TYPE_META = {
     primary: "View opportunities",
     tabs: ["home", "about", "posts", "opportunities", "people"],
   },
+};
+
+const MANAGED_PROFILE_ROLE_COPY = {
+  owner: "Owns the page and oversees its identity, access, and direction.",
+  admin: "Manages the page team, information, events, and published updates.",
+  editor: "Keeps page information current and publishes community content.",
 };
 const LABELS = {
   studentLife: "Student life",
@@ -168,6 +180,7 @@ function buildDraft(record) {
     email: record.email || "",
     phone: record.phone || "",
     locationLabel: record.locationLabel || "",
+    coverImageUrl: record.coverImageUrl || "",
     detailsEntries: Object.entries(details)
       .filter(([key]) => key !== "tagline")
       .map(([key, value]) => ({
@@ -189,9 +202,12 @@ export default function ManagedProfilePage() {
   );
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState({});
-  const [postBody, setPostBody] = useState("");
-  const [saving, setSaving] = useState(false);
+  const [isPostComposerOpen, setIsPostComposerOpen] = useState(false);
+  const [composerInitialType, setComposerInitialType] = useState("post");
+  const [isStoryComposerOpen, setIsStoryComposerOpen] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+  const [coverError, setCoverError] = useState("");
   const [editorError, setEditorError] = useState("");
   const load = () => {
     setLoadError("");
@@ -251,6 +267,9 @@ export default function ManagedProfilePage() {
       <main className="managed-profile-loading">Loading organization…</main>
     );
   const posts = profile.posts || [];
+  const eventPosts = posts.filter(
+    (post) => String(post.type || post.payload?.type || "").toLowerCase() === "event",
+  );
   const followerCount = profile._count?.followers || 0;
   const attachedServices = profile.attachedServices || [];
   const foundedYear = profile.foundedAt
@@ -297,6 +316,10 @@ export default function ManagedProfilePage() {
     setActiveTab(tab);
     window.history.replaceState(null, "", `#${tab}`);
   }
+  function openPageComposer(type = "post") {
+    setComposerInitialType(type);
+    setIsPostComposerOpen(true);
+  }
   async function follow() {
     const result = await setManagedProfileFollow(
       profile.id,
@@ -308,22 +331,51 @@ export default function ManagedProfilePage() {
       _count: { ...profile._count, followers: result.followerCount },
     });
   }
-  async function publish(event) {
-    event.preventDefault();
-    if (!postBody.trim()) return;
-    setSaving(true);
+  async function changeCover(file) {
+    if (!file) return;
+    setUploadingCover(true);
+    setCoverError("");
     try {
-      await createManagedProfilePost(profile.id, {
-        body: postBody,
-        type: "post",
-        visibility: "public",
+      const upload = await uploadZumbarlFile(file, {
+        scope: "managed-profile",
+        metadata: { managedProfileId: profile.id, purpose: "profile-cover" },
       });
-      setPostBody("");
-      await load();
-      setActiveTab("posts");
+      const coverImageUrl = upload.url || upload.previewUrl;
+      if (!coverImageUrl) throw new Error("The uploaded cover could not be read.");
+      const updated = await updateManagedProfile(profile.id, { coverImageUrl });
+      setProfile((current) => ({ ...current, ...updated, coverImageUrl }));
+      setDraft((current) => ({ ...current, coverImageUrl }));
+    } catch (error) {
+      setCoverError(error.message || "The cover image could not be updated.");
     } finally {
-      setSaving(false);
+      setUploadingCover(false);
     }
+  }
+  async function publishPost(payload) {
+    await createManagedProfilePost(profile.id, payload);
+    await load();
+    switchTab(payload.type === "event" ? "events" : "posts");
+    setIsPostComposerOpen(false);
+  }
+  async function publishStory(story) {
+    await createStory({
+      title: story.title,
+      text: story.caption,
+      mediaUrl: story.media,
+      mediaType: story.type,
+      poster: story.poster,
+      storyKind: story.storyKind,
+      visibility: "campus",
+      context: "managed-page",
+      managedProfileId: profile.id,
+      trimStart: story.trimStart,
+      trimEnd: story.trimEnd,
+    });
+    setIsStoryComposerOpen(false);
+  }
+  async function editPost(postId, payload) {
+    await updateManagedProfilePost(profile.id, postId, payload);
+    await load();
   }
   function updateDetailEntry(id, patch) {
     setDraft((current) => ({
@@ -388,76 +440,25 @@ export default function ManagedProfilePage() {
     }
   }
   const activity = (
-    <div className="managed-profile-feed">
-      {canManage ? (
-        <form className="managed-profile-composer" onSubmit={publish}>
-          <img
-            width="46"
-            height="46"
-            src={profile.avatarUrl || "/assets/index/bee_nobg.png"}
-            alt=""
-          />
-          <textarea
-            value={postBody}
-            onChange={(event) => setPostBody(event.target.value)}
-            placeholder={`Post an update as ${profile.name}`}
-          />
-          <footer>
-            <span>
-              <FiFileText /> Share news, events or opportunities
-            </span>
-            <button disabled={saving || !postBody.trim()}>
-              {saving ? "Posting…" : "Post"}
-            </button>
-          </footer>
-        </form>
-      ) : null}
+    <section className={`managed-profile-feed managed-profile-connect-feed${activeTab === "posts" ? " is-posts-tab" : ""}`}>
+      <header className="managed-profile-connect-head">
+        <div><span>Explore Campus</span><h2>Posts & stories</h2><p>Updates published here use {profile.name}’s page identity and appear across Explore Campus.</p></div>
+        {canManage ? <div className="managed-profile-connect-actions"><button type="button" onClick={() => setIsStoryComposerOpen(true)}>Create story</button><button type="button" onClick={() => openPageComposer("post")}><FiPlus /> Create post</button></div> : null}
+      </header>
       {posts.length ? (
-        posts.map((post) => (
-          <article className="managed-profile-post" key={post.id}>
-            {post.payload?.isPinnedAnnouncement ||
-            post.payload?.announcementRequest?.status === "approved" ? (
-              <b className="managed-profile-featured">
-                <FiCheckCircle /> Featured announcement
-              </b>
-            ) : null}
-            <header>
-              <img
-                width="46"
-                height="46"
-                src={profile.avatarUrl || "/assets/index/bee_nobg.png"}
-                alt=""
-              />
-              <div>
-                <strong>{profile.name}</strong>
-                <span>
-                  @{profile.handle} ·{" "}
-                  {new Date(post.createdAt).toLocaleDateString("en-KE")}
-                </span>
-              </div>
-            </header>
-            <p>{post.body}</p>
-            <footer>
-              <button>
-                <FiThumbsUp /> Like
-              </button>
-              <button>
-                <FiMessageCircle /> Comment
-              </button>
-              <button>
-                <FiShare2 /> Share
-              </button>
-            </footer>
-          </article>
-        ))
+        <ManagedEntityFeed
+          identity={{ id: profile.id, slug: profile.slug, profileType: profile.type, name: profile.name, handle: `@${profile.handle}`, avatar: profile.avatarUrl, campus: profile.campus?.name || profile.locationLabel }}
+          onEditPost={canManage ? editPost : null}
+          posts={posts}
+        />
       ) : (
         <div className="managed-profile-empty">
           <FiFileText />
           <h3>No updates yet</h3>
-          <p>Updates published by this page will appear here.</p>
+          <p>{canManage ? `Share ${profile.name}’s first post or story.` : "Updates published by this page will appear here."}</p>
         </div>
       )}
-    </div>
+    </section>
   );
   return (
     <main className="campus-page managed-profile-page">
@@ -474,13 +475,31 @@ export default function ManagedProfilePage() {
               className="managed-profile-cover"
               style={
                 profile.coverImageUrl
-                  ? { backgroundImage: `url(${profile.coverImageUrl})` }
+                  ? { backgroundImage: `linear-gradient(105deg, rgba(28, 45, 82, .34), rgba(27, 122, 117, .14)), url(${profile.coverImageUrl})` }
                   : undefined
               }
             >
-              <button aria-label="Share page">
-                <FiShare2 />
-              </button>
+              <div className="managed-profile-cover-actions">
+                {canManage ? (
+                  <label className="managed-profile-cover-upload">
+                    <FiCamera />
+                    <span>{uploadingCover ? "Uploading…" : "Change cover"}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={uploadingCover}
+                      onChange={(event) => {
+                        changeCover(event.target.files?.[0]);
+                        event.target.value = "";
+                      }}
+                    />
+                  </label>
+                ) : null}
+                <button type="button" aria-label="Share page">
+                  <FiShare2 />
+                </button>
+              </div>
+              {coverError ? <p className="managed-profile-cover-error">{coverError}</p> : null}
             </div>
             <header className="managed-profile-hero">
               <img
@@ -498,11 +517,13 @@ export default function ManagedProfilePage() {
                     <FiCheckCircle aria-label="Verified" />
                   ) : null}
                 </h1>
-                <p>{profile.details?.tagline || profile.bio}</p>
+                {profile.details?.tagline ? <p>{profile.details.tagline}</p> : null}
                 <small>
-                  {profile.locationLabel || profile.campus?.city} ·{" "}
-                  {followerCount.toLocaleString()} followers ·{" "}
-                  {profile._count?.posts || 0} updates
+                  {[
+                    profile.locationLabel || profile.campus?.city,
+                    `${followerCount.toLocaleString()} followers`,
+                    `${profile._count?.posts || 0} updates`,
+                  ].filter(Boolean).join(" · ")}
                 </small>
               </div>
               <aside>
@@ -543,17 +564,19 @@ export default function ManagedProfilePage() {
                 ) : null}
               </aside>
             </header>
-            <nav className="managed-profile-tabs">
-              {meta.tabs.map((tab) => (
-                <button
-                  key={tab}
-                  className={activeTab === tab ? "is-active" : ""}
-                  onClick={() => switchTab(tab)}
-                >
-                  {tab}
-                </button>
-              ))}
-            </nav>
+            <div className="managed-profile-tabs-wrap">
+              <nav className="managed-profile-tabs zumbarl-segmented-tabs">
+                {meta.tabs.map((tab) => (
+                  <button
+                    key={tab}
+                    className={activeTab === tab ? "is-active" : ""}
+                    onClick={() => switchTab(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </nav>
+            </div>
             {activeTab === "home" ? (
               <div className="managed-profile-layout">
                 <section>
@@ -637,14 +660,6 @@ export default function ManagedProfilePage() {
             ) : null}
             {activeTab === "about" ? (
               <div className="managed-profile-about-layout">
-                <section className="managed-profile-about-overview">
-                  <header><span>Campus overview</span><h2>Everything happening around {profile.name}</h2><p>{profile.bio || "Your campus hub for services, facilities, student life, and official updates."}</p></header>
-                  <div className="managed-profile-about-facts">
-                    <article><FiMapPin /><span><small>Location</small><strong>{profile.locationLabel || profile.campus?.city || "Campus"}</strong></span></article>
-                    <article><FiUsers /><span><small>Followers</small><strong>{followerCount.toLocaleString()}</strong></span></article>
-                    <article><FiCheckCircle /><span><small>Trust status</small><strong>{profile.isVerified ? "Verified campus" : "Campus page"}</strong></span></article>
-                  </div>
-                </section>
                 <section className="managed-profile-about-bio">
                   <header className="managed-profile-about-head">
                     <div>
@@ -669,10 +684,7 @@ export default function ManagedProfilePage() {
                 </section>
                 <section className="managed-profile-about-contact">
                   <header className="managed-profile-about-head">
-                    <div>
-                      <span>Contact info</span>
-                      <h2>Contact & links</h2>
-                    </div>
+                    <h2>Contact info</h2>
                     {canManage ? (
                       <button
                         className="managed-profile-about-edit"
@@ -816,23 +828,65 @@ export default function ManagedProfilePage() {
               </div>
             ) : null}
             {activeTab === "posts" ? activity : null}
-            {activeTab === "people" ? (
-              <section className="managed-profile-people">
-                <h2>People who manage and represent this page</h2>
-                {(profile.managers || []).map((manager) => (
-                  <article key={manager.user.id}>
-                    <span>{manager.user.name?.slice(0, 1) || "Z"}</span>
-                    <div>
-                      <strong>{manager.user.name}</strong>
-                      <p>
-                        @{manager.user.username || "member"} · {manager.role}
-                      </p>
+            {activeTab === "events" ? (
+              <section className="managed-profile-feed managed-profile-connect-feed is-posts-tab">
+                <header className="managed-profile-connect-head">
+                  <div>
+                    <span>Campus calendar</span>
+                    <h2>Events</h2>
+                    <p>Publish gatherings, talks, deadlines, and campus moments from {profile.name}.</p>
+                  </div>
+                  {canManage ? (
+                    <div className="managed-profile-connect-actions">
+                      <button type="button" onClick={() => openPageComposer("event")}>
+                        <FiCalendar /> Create event
+                      </button>
                     </div>
-                  </article>
-                ))}
+                  ) : null}
+                </header>
+                {eventPosts.length ? (
+                  <ManagedEntityFeed
+                    identity={{ id: profile.id, slug: profile.slug, profileType: profile.type, name: profile.name, handle: `@${profile.handle}`, avatar: profile.avatarUrl, campus: profile.campus?.name || profile.locationLabel }}
+                    onEditPost={canManage ? editPost : null}
+                    posts={eventPosts}
+                  />
+                ) : (
+                  <div className="managed-profile-empty">
+                    <FiCalendar />
+                    <h3>No events yet</h3>
+                    <p>{canManage ? "Create the first event for this page." : "Events published by this page will appear here."}</p>
+                  </div>
+                )}
               </section>
             ) : null}
-            {!["home", "about", "posts", "people"].includes(activeTab) ? (
+            {activeTab === "people" ? (
+              <section className="managed-profile-people">
+                <header className="managed-profile-people-head">
+                  <div>
+                    <span>Page team</span>
+                    <h2>People behind this page</h2>
+                    <p>The team trusted to represent {profile.name} across Zumbarl.</p>
+                  </div>
+                  <strong>{profile.managers?.length || 0} members</strong>
+                </header>
+                <div className="managed-profile-people-grid">
+                  {(profile.managers || []).map((manager) => (
+                    <article className={`is-${manager.role}`} key={manager.user.id}>
+                      <span className="managed-profile-people-avatar">
+                        {manager.user.avatarUrl ? <img src={manager.user.avatarUrl} alt="" /> : manager.user.name?.slice(0, 1) || "Z"}
+                      </span>
+                      <div className="managed-profile-people-identity">
+                        <strong>{manager.user.name}</strong>
+                        <small>@{manager.user.username || "member"}</small>
+                      </div>
+                      <em>{manager.role}</em>
+                      <p>{MANAGED_PROFILE_ROLE_COPY[manager.role] || "Helps maintain and represent this page."}</p>
+                    </article>
+                  ))}
+                </div>
+              </section>
+            ) : null}
+            {!["home", "about", "posts", "events", "people"].includes(activeTab) ? (
               <section className="managed-profile-empty">
                 <h2>{activeTab[0].toUpperCase() + activeTab.slice(1)}</h2>
                 <p>This page has not published any {activeTab} yet.</p>
@@ -877,17 +931,19 @@ export default function ManagedProfilePage() {
                       />
                     </label>
                     <label>
-                      Tagline
+                      Page tagline
                       <input
                         value={draft.tagline}
-                        placeholder="A short line shown under the page name"
+                        maxLength={160}
+                        placeholder="A short identity line shown beneath the page name"
                         onChange={(event) =>
                           setDraft({ ...draft, tagline: event.target.value })
                         }
                       />
+                      <small>Keep this concise. It is separate from the longer About description.</small>
                     </label>
                     <label>
-                      Bio
+                      About description
                       <textarea
                         rows={4}
                         maxLength={1000}
@@ -900,7 +956,7 @@ export default function ManagedProfilePage() {
                     </label>
                   </section>
                   <section>
-                    <h3>Contact & links</h3>
+                    <h3>Contact info</h3>
                     <label>
                       Website
                       <input
@@ -1018,6 +1074,24 @@ export default function ManagedProfilePage() {
           </section>
         </div>
       </div>
+      {canManage ? <ExplorePostComposer
+        eyebrow="Page voice"
+        identity={{ name: profile.name, avatarUrl: profile.avatarUrl }}
+        initialType={composerInitialType}
+        isOpen={isPostComposerOpen}
+        onClose={() => setIsPostComposerOpen(false)}
+        onPublish={publishPost}
+        placeholder={composerInitialType === "event" ? `Tell people what to expect at this ${profile.name} event…` : `Share an update from ${profile.name} with Explore Campus…`}
+        publishLabel={composerInitialType === "event" ? "Publish event" : "Publish as page"}
+        title={composerInitialType === "event" ? `Create an event as ${profile.name}` : `Post as ${profile.name}`}
+      /> : null}
+      {canManage ? <ExploreStoryComposer
+        allowProductStories={false}
+        isOpen={isStoryComposerOpen}
+        onClose={() => setIsStoryComposerOpen(false)}
+        onPublish={publishStory}
+        publishingAs={{ name: profile.name }}
+      /> : null}
     </main>
   );
 }

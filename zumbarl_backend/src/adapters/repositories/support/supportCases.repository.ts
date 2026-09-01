@@ -40,6 +40,8 @@ class SupportCasesRepository {
 
   async listCases(query: Record<string, unknown>) {
     const reports = await prisma.wellnessReport.findMany({ orderBy: { createdAt: 'desc' } })
+    const urgencyOrder: Record<string, number> = { high: 0, normal: 1, low: 2 }
+    reports.sort((left, right) => (urgencyOrder[left.urgency] ?? 1) - (urgencyOrder[right.urgency] ?? 1))
     return { wellness: pageEnvelope(reports, query), moderation: await moderation.list(query) }
   }
 

@@ -1750,3 +1750,20 @@
   .call-overlay { padding: 0; }
   .call-overlay-panel { border-radius: 0; }
 }
+.campus-landing-loading {
+  min-height: 100vh;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  background: #f8f8fb;
+  color: #343342;
+}
+
+.campus-landing-loading .app-route-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid #e4deea;
+  border-top-color: #79506f;
+  border-radius: 50%;
+}

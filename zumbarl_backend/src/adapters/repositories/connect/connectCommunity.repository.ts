@@ -1,4 +1,5 @@
 import type { Prisma } from '@prisma/client'
+import { randomUUID } from 'node:crypto'
 import { pageEnvelope } from '../../../lib/http.js'
 import { prisma } from '../../../lib/prisma.js'
 import { createPrismaRecordRepository } from '../../../shared/repositories/index.js'
@@ -13,6 +14,38 @@ function jsonInput(value: unknown): Prisma.InputJsonValue {
 
 function payloadObject(value: unknown) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {}
+}
+
+function pollForViewer(value: unknown, viewerStudentId?: string) {
+  const storedPoll = payloadObject(value)
+  if (!Object.keys(storedPoll).length) return null
+  const options = Array.isArray(storedPoll.options) ? storedPoll.options.map((option) => payloadObject(option)) : []
+  const votes = payloadObject(storedPoll.votes)
+  const voterSelections = Object.values(votes).map((selection) => (
+    Array.isArray(selection) ? selection.map(String) : typeof selection === 'string' ? [selection] : []
+  ))
+  const viewerOptionIds = viewerStudentId
+    ? (Array.isArray(votes[viewerStudentId]) ? votes[viewerStudentId].map(String) : typeof votes[viewerStudentId] === 'string' ? [String(votes[viewerStudentId])] : [])
+    : []
+  const totalVotes = voterSelections.length
+  const expiresAt = storedPoll.expiresAt ? validDate(storedPoll.expiresAt, new Date(0)) : null
+  const publicPoll = { ...storedPoll }
+  delete publicPoll.votes
+  return {
+    ...publicPoll,
+    options: options.map((option) => {
+      const voteCount = voterSelections.filter((selection) => selection.includes(String(option.id))).length
+      return {
+        ...option,
+        voteCount,
+        percentage: totalVotes ? Math.round((voteCount / totalVotes) * 100) : 0
+      }
+    }),
+    totalVotes,
+    viewerOptionIds,
+    hasVoted: viewerOptionIds.length > 0,
+    isClosed: Boolean(expiresAt && expiresAt.getTime() <= Date.now())
+  }
 }
 
 function validDate(value: unknown, fallback = new Date()) {
@@ -143,8 +176,11 @@ class ConnectCommunityRepository {
     ]) : [null, null]
     const posts = profile.posts.map((post) => {
       const reactions = payloadObject(post.reactions)
+      const storedPayload = payloadObject(post.payload)
       return {
         ...post,
+        payload: { ...storedPayload, poll: pollForViewer(storedPayload.poll, viewerStudent?.id) },
+        poll: pollForViewer(storedPayload.poll, viewerStudent?.id),
         reactionCount: Object.keys(reactions).length,
         viewerReacted: Boolean(viewerStudent?.id && reactions[viewerStudent.id]),
         commentCount: post.comments.length,
@@ -249,9 +285,19 @@ class ConnectCommunityRepository {
       orderBy: { createdAt: 'desc' }
     })
     const studentIds = [...new Set(records.flatMap((record) => [record.studentId, ...record.comments.map((comment) => comment.studentId)]).filter(Boolean))] as string[]
-    const students = await prisma.studentProfile.findMany({ where: { id: { in: studentIds } }, include: { user: true, campus: true } })
+    const students = await prisma.studentProfile.findMany({ where: { id: { in: studentIds } }, include: { user: true, campus: true, zumbarl: true } })
     const managedProfileIds = [...new Set(records.map((record) => record.managedProfileId).filter(Boolean))] as string[]
     const managedProfiles = await prisma.managedProfile.findMany({ where: { id: { in: managedProfileIds } }, include: { campus: true, communityGroup: true } })
+    const communityGroupIds = [...new Set(records.map((record) => record.communityGroupId).filter(Boolean))] as string[]
+    const communityGroups = communityGroupIds.length ? await prisma.communityGroup.findMany({ where: { id: { in: communityGroupIds } } }) : []
+    const vendorShopIds = [...new Set(records.map((record) => {
+      const storedPayload = payloadObject(record.payload)
+      return String(storedPayload.vendorShopId || payloadObject(storedPayload.vendorSnapshot).id || '')
+    }).filter(Boolean))]
+    const vendorShops = vendorShopIds.length ? await prisma.marketplaceShop.findMany({
+      where: { id: { in: vendorShopIds } },
+      include: { campus: true }
+    }) : []
     const knowledgeSpaceIds = [...new Set(records.map((record) => record.knowledgeSpaceId).filter(Boolean))] as string[]
     const knowledgeSpaces = knowledgeSpaceIds.length ? await prisma.knowledgeSpace.findMany({
       where: { id: { in: knowledgeSpaceIds }, status: 'ACTIVE' },
@@ -289,22 +335,35 @@ class ConnectCommunityRepository {
     const priorityKnowledgeSpaceIds = new Set([...viewerKnowledgeMemberships, ...viewerKnowledgeFollows].map((entry) => entry.spaceId))
     const studentById = new Map(students.map((student) => [student.id, student]))
     const managedProfileById = new Map(managedProfiles.map((profile) => [profile.id, profile]))
+    const communityGroupById = new Map(communityGroups.map((group) => [group.id, group]))
+    const vendorShopById = new Map(vendorShops.map((shop) => [shop.id, shop]))
     const knowledgeSpaceById = new Map(knowledgeSpaces.map((space) => [space.id, space]))
     const recordById = new Map(records.map((record) => [record.id, record]))
     const creatorFor = (candidate: typeof records[number]) => {
       const candidateKnowledgeSpace = candidate.knowledgeSpaceId ? knowledgeSpaceById.get(candidate.knowledgeSpaceId) : null
       const candidateStudent = candidate.studentId ? studentById.get(candidate.studentId) : null
       const candidateManagedProfile = candidate.managedProfileId ? managedProfileById.get(candidate.managedProfileId) : null
+      const candidateCommunityGroup = candidate.communityGroupId ? communityGroupById.get(candidate.communityGroupId) : null
       const candidateSnapshot = payloadObject(payloadObject(candidate.payload).sourceSnapshot)
-      const vendorSnapshot = payloadObject(payloadObject(candidate.payload).vendorSnapshot)
-      return vendorSnapshot.id ? {
-        id: vendorSnapshot.id,
+      const candidatePayload = payloadObject(candidate.payload)
+      const vendorSnapshot = payloadObject(candidatePayload.vendorSnapshot)
+      const liveVendor = vendorShopById.get(String(candidatePayload.vendorShopId || vendorSnapshot.id || ''))
+      return candidateCommunityGroup ? {
+        id: candidateCommunityGroup.id,
+        profileType: candidateCommunityGroup.category === 'support-circle' ? 'support-circle' : 'community-group',
+        name: candidateCommunityGroup.name,
+        handle: candidateCommunityGroup.category === 'support-circle' ? 'Support circle' : 'Campus group',
+        avatarUrl: candidateCommunityGroup.category === 'support-circle' ? payloadObject(candidateCommunityGroup.payload).splashImageUrl || null : null,
+        campus: candidateCommunityGroup.campus || null,
+        isVerified: candidateCommunityGroup.category === 'support-circle',
+      } : liveVendor || vendorSnapshot.id ? {
+        id: liveVendor?.id || vendorSnapshot.id,
         profileType: 'vendor',
-        slug: vendorSnapshot.slug,
-        name: vendorSnapshot.name,
+        slug: liveVendor?.slug || vendorSnapshot.slug,
+        name: liveVendor?.name || vendorSnapshot.name,
         handle: 'Campus vendor',
-        avatarUrl: vendorSnapshot.avatarUrl || null,
-        campus: vendorSnapshot.campus || null,
+        avatarUrl: liveVendor?.logoUrl || vendorSnapshot.avatarUrl || null,
+        campus: liveVendor?.campus?.name || liveVendor?.locationLabel || vendorSnapshot.campus || null,
         isVerified: vendorSnapshot.isVerified !== false
       } : candidateKnowledgeSpace ? {
         id: candidateKnowledgeSpace.id,
@@ -330,10 +389,23 @@ class ConnectCommunityRepository {
         name: [candidateStudent.firstName, candidateStudent.lastName].filter(Boolean).join(' '),
         handle: `@${candidateStudent.user?.username || candidateStudent.user?.email?.split('@')[0] || 'student'}`,
         avatarUrl: candidateStudent.avatarUrl,
-        campus: candidateStudent.campus?.name || null
+        campus: candidateStudent.campus?.name || null,
+        ...(candidateStudent.showZumbarlPoints !== false ? {
+          zumbarlPoints: Math.round(candidateStudent.zumbarl?.currentScore || 0),
+          zumbarlTier: candidateStudent.zumbarl?.tier || null
+        } : {})
       } : candidateSnapshot.creator ? payloadObject(candidateSnapshot.creator) : null
     }
-    const mappedRecords = records.map((record) => {
+    const mappedRecords = records.filter((record) => {
+      if (!record.communityGroupId) return true
+      const postGroup = communityGroupById.get(record.communityGroupId)
+      if (postGroup?.category === 'support-circle') {
+        return record.visibility !== 'circle' || viewerGroupIds.has(record.communityGroupId)
+      }
+      return viewerGroupIds.has(record.communityGroupId)
+    }).map((record) => {
+      const publicRecord = toRecord(record)
+      if (record.communityGroupId) delete publicRecord.studentId
       const comments = record.comments.map((comment) => {
         const author = comment.studentId ? studentById.get(comment.studentId) : null
         return {
@@ -361,7 +433,7 @@ class ConnectCommunityRepository {
       const baseCommentCount = Number(sourceSnapshot.commentCount || 0)
       const announcementVisible = Boolean(payloadObject(record.payload).isPinnedAnnouncement) || (announcement?.status === 'approved' && ((announcement.targetType === 'campus' && announcement.targetId === viewer?.campusId) || (announcement.targetType === 'group' && viewerGroupIds.has(announcement.targetId))))
       return {
-        ...toRecord(record),
+        ...publicRecord,
         comments,
         reactionCount: baseReactionCount + Object.keys(reactions).length,
         viewerReacted: Boolean(viewerStudentId && reactions[viewerStudentId]),
@@ -370,6 +442,7 @@ class ConnectCommunityRepository {
         viewerReshared: Boolean(viewerStudentId && reshares[viewerStudentId]),
         viewerReshareCommentary: viewerStudentId ? String(payloadObject(reshares[viewerStudentId]).commentary || '') : '',
         creator: creatorFor(record),
+        poll: pollForViewer(storedRecord.poll, viewerStudentId),
         knowledgeSpace: record.knowledgeSpaceId ? knowledgeSpaceById.get(record.knowledgeSpaceId) || null : null,
         event: Object.keys(storedEvent).length ? {
           ...storedEvent,
@@ -387,8 +460,8 @@ class ConnectCommunityRepository {
             isMine: Boolean(viewerStudentId && originalRecord?.studentId === viewerStudentId)
           }
         } : {}),
-        isMine: Boolean(viewerStudentId && record.studentId === viewerStudentId),
-        isFollowing: Boolean(record.studentId && followedIds.has(record.studentId))
+        isMine: Boolean(viewerStudentId && !record.communityGroupId && record.studentId === viewerStudentId),
+        isFollowing: Boolean(!record.communityGroupId && record.studentId && followedIds.has(record.studentId))
         ,isPriorityForViewer: Boolean(record.knowledgeSpaceId && priorityKnowledgeSpaceIds.has(record.knowledgeSpaceId)) || (Array.isArray(record.tags) && record.tags.some((tag) => {
           const candidate = payloadObject(tag)
           return String(candidate.type || '').startsWith('knowledge-') && priorityKnowledgeSpaceIds.has(String(candidate.id || ''))
@@ -782,6 +855,7 @@ class ConnectCommunityRepository {
         data: {
           studentId: payload.studentId ?? null,
           knowledgeSpaceId: payload.knowledgeSpaceId ?? null,
+          communityGroupId: payload.communityGroupId ?? null,
           type: payload.type ?? 'post',
           body: payload.body,
           tags: jsonInput(payload.tags ?? []),
@@ -844,6 +918,34 @@ class ConnectCommunityRepository {
         interestedCount,
         responseCount: goingCount + interestedCount
       }
+    })
+  }
+
+  async setPollVote(postId: string, studentId: string, optionIds: string[]) {
+    return prisma.$transaction(async (tx) => {
+      // Serialize votes on the same JSON-backed poll so simultaneous voters do
+      // not overwrite one another's selections.
+      await tx.$queryRaw`SELECT id FROM connect_posts WHERE id = ${postId} FOR UPDATE`
+      const post = await tx.connectPost.findUnique({ where: { id: postId } })
+      if (!post) return null
+      const payload = payloadObject(post.payload)
+      const poll = payloadObject(payload.poll)
+      const options = Array.isArray(poll.options) ? poll.options.map((option) => payloadObject(option)) : []
+      if (post.type !== 'poll' || options.length < 2) return { invalidPoll: true as const }
+      if (poll.expiresAt && validDate(poll.expiresAt, new Date(0)).getTime() <= Date.now()) return { pollClosed: true as const }
+      if (poll.selectionMode !== 'multiple' && optionIds.length > 1) return { tooManyOptions: true as const }
+      const allowedOptionIds = new Set(options.map((option) => String(option.id)))
+      if (optionIds.some((optionId) => !allowedOptionIds.has(optionId))) return { invalidOptions: true as const }
+
+      const votes = payloadObject(poll.votes)
+      if (optionIds.length) votes[studentId] = optionIds
+      else delete votes[studentId]
+      const storedPoll = { ...poll, votes }
+      await tx.connectPost.update({
+        where: { id: postId },
+        data: { payload: jsonInput({ ...payload, poll: storedPoll }) }
+      })
+      return { postId, poll: pollForViewer(storedPoll, studentId) }
     })
   }
 
@@ -1091,14 +1193,499 @@ class ConnectCommunityRepository {
     }))
   }
 
-  async listGroups(query: Record<string, unknown>) {
-    const groups = await prisma.communityGroup.findMany({ orderBy: { createdAt: 'desc' } })
-    return pageEnvelope(groups.map(toRecord), query)
+  async listGroups(query: Record<string, unknown>, viewerStudentId?: string) {
+    const groups = await prisma.communityGroup.findMany({
+      where: { status: { in: ['active', 'pending-review'] } },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        _count: { select: { memberships: true } },
+        memberships: viewerStudentId
+          ? { where: { studentId: viewerStudentId, status: 'active' }, take: 1 }
+          : { where: { id: '__none__' }, take: 0 },
+      },
+    })
+    return pageEnvelope(groups.map(({ _count, memberships, ...group }) => ({
+      ...toRecord(group),
+      memberCount: _count.memberships,
+      viewerMembership: memberships[0] ? toRecord(memberships[0]) : null,
+    })), query)
   }
 
   async findGroup(id: string) {
     const group = await prisma.communityGroup.findUnique({ where: { id } })
     return group ? toRecord(group) : null
+  }
+
+  async findGroupForViewer(id: string, viewerStudentId: string) {
+    const group = await prisma.communityGroup.findUnique({
+      where: { id },
+      include: {
+        _count: { select: { memberships: true, messages: true } },
+        memberships: { where: { studentId: viewerStudentId, status: 'active' }, take: 1 },
+      },
+    })
+    if (!group) return null
+    const { _count, memberships, ...record } = group
+    return {
+      ...toRecord(record),
+      memberCount: _count.memberships,
+      messageCount: _count.messages,
+      viewerMembership: memberships[0] ? toRecord(memberships[0]) : null,
+    }
+  }
+
+  async listGroupMessages(groupId: string, viewerStudentId: string) {
+    const messages = await prisma.communityGroupMessage.findMany({
+      where: { groupId, status: 'published' },
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+    })
+    const studentIds = [...new Set(messages.map((message) => message.studentId))]
+    const memberships = await prisma.communityGroupMembership.findMany({
+      where: { groupId, studentId: { in: studentIds }, status: 'active' },
+      select: { studentId: true, payload: true },
+    })
+    const students = await prisma.studentProfile.findMany({
+      where: { id: { in: studentIds } },
+      select: { id: true, firstName: true, lastName: true },
+    })
+    const names = new Map(students.map((student) => [student.id, [student.firstName, student.lastName].filter(Boolean).join(' ')]))
+    const labels = new Map(memberships.map((membership) => {
+      const membershipPayload = payloadObject(membership.payload)
+      return [membership.studentId, membershipPayload.participationMode === 'named'
+        ? (names.get(String(membership.studentId)) || 'Circle member')
+        : String(membershipPayload.alias || 'Circle member')]
+    }))
+    return messages.map((message) => {
+      const record = toRecord(message)
+      delete record.studentId
+      return {
+        ...record,
+        authorAlias: labels.get(message.studentId) || 'Circle member',
+        isViewer: message.studentId === viewerStudentId,
+      }
+    })
+  }
+
+  async createGroupMessage(groupId: string, studentId: string, body: string, type = 'message', payload: Record<string, any> = {}) {
+    const [message, membership] = await prisma.$transaction([
+      prisma.communityGroupMessage.create({ data: { groupId, studentId, body, type, payload: jsonInput(payload) } }),
+      prisma.communityGroupMembership.findUnique({ where: { groupId_studentId: { groupId, studentId } } }),
+    ])
+    const membershipPayload = payloadObject(membership?.payload)
+    const student = membershipPayload.participationMode === 'named'
+      ? await prisma.studentProfile.findUnique({ where: { id: studentId }, select: { firstName: true, lastName: true } })
+      : null
+    const record = toRecord(message)
+    delete record.studentId
+    return {
+      ...record,
+      authorAlias: membershipPayload.participationMode === 'named'
+        ? ([student?.firstName, student?.lastName].filter(Boolean).join(' ') || 'Circle member')
+        : String(membershipPayload.alias || 'Circle member'),
+      isViewer: true,
+    }
+  }
+
+  async listGroupRealtimeRecipients(groupId: string) {
+    const memberships = await prisma.communityGroupMembership.findMany({
+      where: { groupId, status: 'active', studentId: { not: null } },
+      select: { studentId: true },
+    })
+    const studentIds = memberships.map((membership) => String(membership.studentId))
+    return prisma.studentProfile.findMany({
+      where: { id: { in: studentIds }, user: { isActive: true } },
+      select: { id: true, userId: true },
+    })
+  }
+
+  async listGroupSchedules(groupId: string, viewerStudentId?: string, includeAdmissionRequests = false) {
+    const schedules = await prisma.communityGroupSchedule.findMany({
+      where: { groupId, status: { in: ['scheduled', 'active', 'completed'] } },
+      orderBy: { startsAt: 'asc' },
+      take: 100,
+    })
+    const eventIds = [...new Set(schedules.map((schedule) => String(payloadObject(schedule.payload).eventId || '')).filter(Boolean))]
+    const [responseGroups, viewerResponses] = await Promise.all([
+      eventIds.length ? prisma.campusEventRsvp.groupBy({
+        by: ['eventId', 'status'],
+        where: { eventId: { in: eventIds }, status: { in: ['GOING', 'INTERESTED'] } },
+        _count: { _all: true },
+      }) : [],
+      eventIds.length && viewerStudentId ? prisma.campusEventRsvp.findMany({
+        where: { eventId: { in: eventIds }, studentId: viewerStudentId, status: { in: ['GOING', 'INTERESTED'] } },
+        select: { eventId: true, status: true },
+      }) : [],
+    ])
+    const countsByEvent = new Map<string, { goingCount: number, interestedCount: number }>()
+    responseGroups.forEach((response) => {
+      const counts = countsByEvent.get(response.eventId) ?? { goingCount: 0, interestedCount: 0 }
+      if (response.status === 'GOING') counts.goingCount = response._count._all
+      if (response.status === 'INTERESTED') counts.interestedCount = response._count._all
+      countsByEvent.set(response.eventId, counts)
+    })
+    const viewerResponseByEvent = new Map(viewerResponses.map((response) => [response.eventId, response.status]))
+    return schedules.map((schedule) => {
+      const storedPayload = payloadObject(schedule.payload)
+      const admissions = payloadObject(storedPayload.admissions)
+      const record = toRecord(schedule)
+      delete record.admissions
+      delete record.meetingCode
+      const eventId = String(record.eventId || '')
+      const counts = countsByEvent.get(eventId) ?? { goingCount: 0, interestedCount: 0 }
+      const viewerAdmission = viewerStudentId ? payloadObject(admissions[viewerStudentId]) : {}
+      const admissionRequests = includeAdmissionRequests ? Object.entries(admissions).flatMap(([studentId, value]) => {
+        const admission = payloadObject(value)
+        return admission.status === 'pending' ? [{ studentId, displayName: String(admission.displayName || 'Circle guest'), requestedAt: admission.requestedAt || null }] : []
+      }) : undefined
+      return {
+        ...record,
+        ...counts,
+        responseCount: counts.goingCount + counts.interestedCount,
+        viewerResponse: viewerResponseByEvent.get(eventId) ?? null,
+        viewerAdmission: String(viewerAdmission.status || '') || null,
+        ...(includeAdmissionRequests ? { admissionRequests } : {}),
+      }
+    })
+  }
+
+  async listGroupPosts(groupId: string, groupName: string, viewerStudentId: string, campus?: string | null, avatarUrl?: string | null) {
+    const posts = await prisma.connectPost.findMany({
+      where: { communityGroupId: groupId, status: 'published' },
+      include: { comments: { where: { status: 'published' }, orderBy: { createdAt: 'asc' } } },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    })
+    const commenterIds = [...new Set(posts.flatMap((post) => post.comments.map((comment) => comment.studentId)).filter(Boolean))] as string[]
+    const commenters = commenterIds.length ? await prisma.studentProfile.findMany({
+      where: { id: { in: commenterIds } },
+      include: { user: true },
+    }) : []
+    const commenterById = new Map(commenters.map((student) => [student.id, student]))
+    return posts.map((post) => {
+      const record = toRecord(post)
+      delete record.studentId
+      delete record.comments
+      const reactions = payloadObject(post.reactions)
+      const storedPayload = payloadObject(post.payload)
+      const reshares = payloadObject(storedPayload.reshares)
+      return {
+        ...record,
+        author: { id: groupId, name: groupName, handle: 'Support circle', profileType: 'support-circle', avatarUrl: avatarUrl || null, campus: campus || null },
+        comments: post.comments.map((comment) => {
+          const author = comment.studentId ? commenterById.get(comment.studentId) : null
+          return {
+            id: comment.id,
+            body: comment.body,
+            createdAt: comment.createdAt,
+            author: {
+              name: author ? [author.firstName, author.lastName].filter(Boolean).join(' ') : 'Zumbarl member',
+              handle: author ? `@${author.user.username || author.user.email.split('@')[0]}` : '@member',
+              avatarUrl: author?.avatarUrl || null,
+            },
+          }
+        }),
+        reactionCount: Object.keys(reactions).length,
+        viewerReacted: Boolean(reactions[viewerStudentId]),
+        commentCount: post.comments.length,
+        repostCount: post.reposts,
+        viewerReshared: Boolean(reshares[viewerStudentId]),
+        viewerReshareCommentary: String(payloadObject(reshares[viewerStudentId]).commentary || ''),
+        poll: pollForViewer(storedPayload.poll, viewerStudentId),
+      }
+    })
+  }
+
+  async createGroupPost(groupId: string, studentId: string, groupName: string, payload: Record<string, any>, campus?: string | null, avatarUrl?: string | null) {
+    const post = await prisma.$transaction(async (tx) => {
+      let storedPayload: Record<string, any> = { ...payload, visibility: 'campus', publishedAs: 'circle' }
+      if (payload.type === 'event' && Object.keys(payloadObject(payload.event)).length) {
+        const student = await tx.studentProfile.findUnique({ where: { id: studentId }, select: { campusId: true } })
+        const event = await tx.campusEvent.create({ data: campusEventData(payload, student?.campusId ?? null) })
+        storedPayload = { ...storedPayload, event: { ...payloadObject(payload.event), id: event.id, goingCount: 0, interestedCount: 0, responseCount: 0, viewerResponse: null } }
+      }
+      return tx.connectPost.create({
+        data: {
+          studentId,
+          communityGroupId: groupId,
+          type: payload.type || 'post',
+          body: payload.body,
+          tags: jsonInput(payload.tags || []),
+          visibility: 'campus',
+          status: 'published',
+          reactions: jsonInput({}),
+          saves: 0,
+          reposts: 0,
+          payload: jsonInput(storedPayload),
+        },
+      })
+    })
+    const record = toRecord(post)
+    delete record.studentId
+    return {
+      ...record,
+      author: { id: groupId, name: groupName, handle: 'Support circle', profileType: 'support-circle', avatarUrl: avatarUrl || null, campus: campus || null },
+      comments: [],
+      reactionCount: 0,
+      viewerReacted: false,
+      commentCount: 0,
+      repostCount: 0,
+      viewerReshared: false,
+      viewerReshareCommentary: '',
+      poll: pollForViewer(payload.poll, studentId),
+    }
+  }
+
+  async removeGroupPost(groupId: string, postId: string) {
+    const result = await prisma.connectPost.updateMany({ where: { id: postId, communityGroupId: groupId, status: 'published' }, data: { status: 'removed' } })
+    return result.count > 0
+  }
+
+  async createGroupSchedule(groupId: string, studentId: string, groupName: string, payload: Record<string, any>, avatarUrl?: string | null) {
+    return prisma.$transaction(async (tx) => {
+      const student = await tx.studentProfile.findUnique({ where: { id: studentId }, select: { campusId: true } })
+      const membersOnly = payload.membersOnly !== false
+      const publishToExplore = payload.publishToExplore === true
+      const createZumbarlLink = payload.kind === 'audio_circle' && payload.createZumbarlLink === true
+      const joinPolicy = payload.joinPolicy === 'host_approval' ? 'host_approval' : 'open'
+      const thumbnailUrl = publishToExplore ? String(payload.thumbnailUrl || avatarUrl || '') || null : null
+      const eventPayload = {
+        title: payload.title,
+        startsAt: payload.startsAt,
+        endsAt: payload.endsAt,
+        location: payload.location || (payload.kind === 'audio_circle' ? 'Online audio circle' : 'Support circle'),
+        category: 'Wellness',
+        thumbnailUrl,
+        organizer: { name: groupName, type: 'group' },
+        membersOnly,
+        joinPolicy,
+      }
+      const event = await tx.campusEvent.create({
+        data: {
+          ...campusEventData({ ...payload, body: payload.description || payload.title, event: eventPayload }, student?.campusId ?? null),
+          status: publishToExplore ? 'PUBLISHED' : 'DRAFT',
+        },
+      })
+      let schedulePayload: Record<string, any> = { membersOnly, publishToExplore, createZumbarlLink, joinPolicy, thumbnailUrl, location: eventPayload.location, eventId: event.id, admissions: {} }
+      let schedule = await tx.communityGroupSchedule.create({
+        data: {
+          groupId,
+          createdByStudentId: studentId,
+          title: payload.title,
+          description: payload.description || null,
+          kind: payload.kind || 'audio_circle',
+          startsAt: new Date(payload.startsAt),
+          endsAt: payload.endsAt ? new Date(payload.endsAt) : null,
+          status: 'scheduled',
+          payload: jsonInput(schedulePayload),
+        },
+      })
+      if (createZumbarlLink) {
+        schedulePayload = {
+          ...schedulePayload,
+          meetingCode: randomUUID(),
+          meetingPath: `/campus/wellbeing/circles/${encodeURIComponent(groupId)}?join=${encodeURIComponent(schedule.id)}`,
+        }
+        schedule = await tx.communityGroupSchedule.update({ where: { id: schedule.id }, data: { payload: jsonInput(schedulePayload) } })
+      }
+      if (publishToExplore) {
+        const storedPayload = {
+          type: 'event',
+          body: payload.description || `${payload.title} hosted by ${groupName}.`,
+          tags: [],
+          mediaUrls: thumbnailUrl ? [thumbnailUrl] : [],
+          visibility: 'campus',
+          publishedAs: 'circle',
+          scheduleId: schedule.id,
+          membersOnly,
+          joinPolicy,
+          meetingPath: schedulePayload.meetingPath || null,
+          event: { ...eventPayload, meetingPath: schedulePayload.meetingPath || null, id: event.id, goingCount: 0, interestedCount: 0, responseCount: 0, viewerResponse: null },
+        }
+        const post = await tx.connectPost.create({
+          data: {
+            studentId,
+            communityGroupId: groupId,
+            type: 'event',
+            body: storedPayload.body,
+            tags: jsonInput([]),
+            visibility: 'campus',
+            status: 'published',
+            reactions: jsonInput({}),
+            saves: 0,
+            reposts: 0,
+            payload: jsonInput(storedPayload),
+          },
+        })
+        schedule = await tx.communityGroupSchedule.update({
+          where: { id: schedule.id },
+          data: { payload: jsonInput({ ...schedulePayload, explorePostId: post.id }) },
+        })
+      }
+      const record = toRecord(schedule)
+      delete record.admissions
+      delete record.meetingCode
+      return { ...record, goingCount: 0, interestedCount: 0, responseCount: 0, viewerResponse: null, viewerAdmission: null, admissionRequests: [] }
+    })
+  }
+
+  async findGroupSchedule(groupId: string, scheduleId: string) {
+    const schedule = await prisma.communityGroupSchedule.findFirst({ where: { id: scheduleId, groupId, status: { not: 'cancelled' } } })
+    return schedule ? toRecord(schedule) : null
+  }
+
+  async findEventResponse(eventId: string, studentId: string) {
+    return prisma.campusEventRsvp.findUnique({ where: { eventId_studentId: { eventId, studentId } }, select: { status: true } })
+  }
+
+  async requestScheduleAdmission(groupId: string, scheduleId: string, studentId: string, displayName: string) {
+    return prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM community_group_schedules WHERE id = ${scheduleId} FOR UPDATE`
+      const schedule = await tx.communityGroupSchedule.findFirst({ where: { id: scheduleId, groupId, status: { not: 'cancelled' } } })
+      if (!schedule) return null
+      const storedPayload = payloadObject(schedule.payload)
+      const admissions = payloadObject(storedPayload.admissions)
+      const existing = payloadObject(admissions[studentId])
+      if (existing.status === 'admitted' || existing.status === 'denied') return existing
+      const admission = Object.keys(existing).length ? existing : { status: 'pending', displayName, requestedAt: new Date().toISOString() }
+      admissions[studentId] = admission
+      await tx.communityGroupSchedule.update({ where: { id: schedule.id }, data: { payload: jsonInput({ ...storedPayload, admissions }) } })
+      return admission
+    })
+  }
+
+  async decideScheduleAdmission(groupId: string, scheduleId: string, studentId: string, status: 'admitted' | 'denied', decidedByStudentId: string) {
+    return prisma.$transaction(async (tx) => {
+      await tx.$queryRaw`SELECT id FROM community_group_schedules WHERE id = ${scheduleId} FOR UPDATE`
+      const schedule = await tx.communityGroupSchedule.findFirst({ where: { id: scheduleId, groupId, status: { not: 'cancelled' } } })
+      if (!schedule) return null
+      const storedPayload = payloadObject(schedule.payload)
+      const admissions = payloadObject(storedPayload.admissions)
+      const existing = payloadObject(admissions[studentId])
+      if (!Object.keys(existing).length) return { missingRequest: true as const }
+      const admission = { ...existing, status, decidedAt: new Date().toISOString(), decidedByStudentId }
+      admissions[studentId] = admission
+      await tx.communityGroupSchedule.update({ where: { id: schedule.id }, data: { payload: jsonInput({ ...storedPayload, admissions }) } })
+      return { studentId, status }
+    })
+  }
+
+  async setGroupScheduleResponse(groupId: string, scheduleId: string, studentId: string, status: 'GOING' | 'INTERESTED' | 'CANCELLED') {
+    return prisma.$transaction(async (tx) => {
+      const schedule = await tx.communityGroupSchedule.findFirst({ where: { id: scheduleId, groupId, status: { not: 'cancelled' } } })
+      if (!schedule) return null
+      const schedulePayload = payloadObject(schedule.payload)
+      let eventId = String(schedulePayload.eventId || '')
+      let event = eventId ? await tx.campusEvent.findUnique({ where: { id: eventId }, select: { id: true } }) : null
+      if (!event) {
+        const [group, student] = await Promise.all([
+          tx.communityGroup.findUnique({ where: { id: groupId }, select: { name: true } }),
+          tx.studentProfile.findUnique({ where: { id: studentId }, select: { campusId: true } }),
+        ])
+        event = await tx.campusEvent.create({
+          data: {
+            campusId: student?.campusId ?? null,
+            title: schedule.title,
+            description: schedule.description || schedule.title,
+            category: 'Wellness',
+            organizerName: group?.name || 'Support circle',
+            organizerType: 'CAMPUS',
+            locationName: String(schedulePayload.location || (schedule.kind === 'audio_circle' ? 'Online audio circle' : 'Support circle')),
+            locationAddress: String(schedulePayload.location || ''),
+            startsAt: schedule.startsAt,
+            endsAt: schedule.endsAt,
+            status: 'DRAFT',
+          },
+        })
+        eventId = event.id
+        await tx.communityGroupSchedule.update({
+          where: { id: schedule.id },
+          data: { payload: jsonInput({ ...schedulePayload, membersOnly: schedulePayload.membersOnly !== false, publishToExplore: false, eventId }) },
+        })
+      }
+      await tx.campusEventRsvp.upsert({
+        where: { eventId_studentId: { eventId, studentId } },
+        update: { status },
+        create: { eventId, studentId, status },
+      })
+      const [goingCount, interestedCount] = await Promise.all([
+        tx.campusEventRsvp.count({ where: { eventId, status: 'GOING' } }),
+        tx.campusEventRsvp.count({ where: { eventId, status: 'INTERESTED' } }),
+      ])
+      return {
+        scheduleId,
+        eventId,
+        viewerResponse: status === 'CANCELLED' ? null : status,
+        goingCount,
+        interestedCount,
+        responseCount: goingCount + interestedCount,
+      }
+    })
+  }
+
+  async findStudentPublicName(studentId: string) {
+    const student = await prisma.studentProfile.findUnique({
+      where: { id: studentId },
+      select: { firstName: true, lastName: true },
+    })
+    return student ? [student.firstName, student.lastName].filter(Boolean).join(' ') : null
+  }
+
+  async listGroupMembersForManagement(groupId: string, viewerStudentId: string, ownerStudentId?: string | null) {
+    const memberships = await prisma.communityGroupMembership.findMany({
+      where: { groupId, status: 'active', studentId: { not: null } },
+      orderBy: [{ role: 'asc' }, { createdAt: 'asc' }],
+    })
+    const studentIds = memberships.map((membership) => String(membership.studentId))
+    const students = await prisma.studentProfile.findMany({
+      where: { id: { in: studentIds } },
+      select: { id: true, firstName: true, lastName: true },
+    })
+    const names = new Map(students.map((student) => [student.id, [student.firstName, student.lastName].filter(Boolean).join(' ')]))
+    return memberships.map((membership) => {
+      const membershipPayload = payloadObject(membership.payload)
+      const participationMode = membershipPayload.participationMode === 'named' ? 'named' : 'alias'
+      return {
+        id: membership.id,
+        role: membership.role,
+        participationMode,
+        displayName: participationMode === 'named'
+          ? (names.get(String(membership.studentId)) || 'Circle member')
+          : String(membershipPayload.alias || 'Circle member'),
+        joinedAt: membership.createdAt,
+        isViewer: membership.studentId === viewerStudentId,
+        isOwner: Boolean(ownerStudentId && membership.studentId === ownerStudentId),
+      }
+    })
+  }
+
+  async findGroupMembershipById(groupId: string, membershipId: string) {
+    const membership = await prisma.communityGroupMembership.findFirst({ where: { id: membershipId, groupId, status: 'active' } })
+    return membership ? toRecord(membership) : null
+  }
+
+  async countGroupAdmins(groupId: string) {
+    return prisma.communityGroupMembership.count({ where: { groupId, status: 'active', role: 'admin' } })
+  }
+
+  async updateGroupMembershipRole(groupId: string, membershipId: string, role: 'member' | 'admin') {
+    const result = await prisma.communityGroupMembership.updateMany({ where: { id: membershipId, groupId, status: 'active' }, data: { role } })
+    return result.count > 0
+  }
+
+  async removeGroupMembership(groupId: string, membershipId: string) {
+    const result = await prisma.communityGroupMembership.updateMany({ where: { id: membershipId, groupId, status: 'active' }, data: { status: 'removed' } })
+    return result.count > 0
+  }
+
+  async removeGroupMessage(groupId: string, messageId: string) {
+    const result = await prisma.communityGroupMessage.updateMany({ where: { id: messageId, groupId, status: 'published' }, data: { status: 'removed' } })
+    return result.count > 0
+  }
+
+  async findGroupMessage(groupId: string, messageId: string) {
+    const message = await prisma.communityGroupMessage.findFirst({ where: { id: messageId, groupId, status: 'published' } })
+    return message ? toRecord(message) : null
   }
 
   async updateGroup(id: string, patch: Record<string, any>) {
@@ -1115,15 +1702,19 @@ class ConnectCommunityRepository {
   }
 
   async createMembership(payload: Record<string, any>) {
+    const membershipPayload = {
+      participationMode: payload.participationMode ?? 'named',
+      ...(payload.alias ? { alias: payload.alias } : {}),
+    }
     if (!payload.studentId) {
       return toRecord(await prisma.communityGroupMembership.create({
-        data: { groupId: payload.groupId, studentId: null, status: payload.status ?? 'active', role: payload.role ?? 'member', payload: jsonInput(payload) }
+        data: { groupId: payload.groupId, studentId: null, status: payload.status ?? 'active', role: payload.role ?? 'member', payload: jsonInput(membershipPayload) }
       }))
     }
     return toRecord(await prisma.communityGroupMembership.upsert({
       where: { groupId_studentId: { groupId: payload.groupId, studentId: payload.studentId } },
-      update: { status: payload.status ?? 'active', role: payload.role ?? 'member', payload: jsonInput(payload) },
-      create: { groupId: payload.groupId, studentId: payload.studentId, status: payload.status ?? 'active', role: payload.role ?? 'member', payload: jsonInput(payload) }
+      update: { status: payload.status ?? 'active', role: payload.role ?? 'member', payload: jsonInput(membershipPayload) },
+      create: { groupId: payload.groupId, studentId: payload.studentId, status: payload.status ?? 'active', role: payload.role ?? 'member', payload: jsonInput(membershipPayload) }
     }))
   }
 
@@ -1155,25 +1746,42 @@ class ConnectCommunityRepository {
 
   async upsertProfile(studentId: string | undefined, payload: Record<string, any>) {
     if (!studentId) return this.createProfile({ ...payload, studentId })
-    const existing = await prisma.connectProfile.findUnique({ where: { studentId } })
-    const mergedPayload = { ...payloadObject(existing?.payload), ...payload }
-    const profile = await prisma.connectProfile.upsert({
-      where: { studentId },
-      update: {
-        interests: payload.interests ?? [],
-        safetyPreferences: jsonInput(payload.safetyPreferences ?? {}),
-        visibility: payload.visibility ?? 'campus',
-        payload: jsonInput(mergedPayload)
-      },
-      create: {
-        studentId,
-        interests: payload.interests ?? [],
-        safetyPreferences: jsonInput(payload.safetyPreferences ?? {}),
-        visibility: payload.visibility ?? 'campus',
-        payload: jsonInput(mergedPayload)
+    return prisma.$transaction(async (tx) => {
+      const existing = await tx.connectProfile.findUnique({ where: { studentId } })
+      const connectPayload = { ...payload }
+      delete connectPayload.showZumbarlPoints
+      const mergedPayload = { ...payloadObject(existing?.payload), ...connectPayload }
+      const student = payload.showZumbarlPoints !== undefined
+        ? await tx.studentProfile.update({
+          where: { id: studentId },
+          data: { showZumbarlPoints: payload.showZumbarlPoints },
+          select: { showZumbarlPoints: true }
+        })
+        : await tx.studentProfile.findUnique({
+          where: { id: studentId },
+          select: { showZumbarlPoints: true }
+        })
+      const profile = await tx.connectProfile.upsert({
+        where: { studentId },
+        update: {
+          interests: payload.interests ?? [],
+          safetyPreferences: jsonInput(payload.safetyPreferences ?? {}),
+          visibility: payload.visibility ?? 'campus',
+          payload: jsonInput(mergedPayload)
+        },
+        create: {
+          studentId,
+          interests: payload.interests ?? [],
+          safetyPreferences: jsonInput(payload.safetyPreferences ?? {}),
+          visibility: payload.visibility ?? 'campus',
+          payload: jsonInput(mergedPayload)
+        }
+      })
+      return {
+        ...toRecord(profile),
+        showZumbarlPoints: student?.showZumbarlPoints !== false
       }
     })
-    return toRecord(profile)
   }
 
   async upsertSocialAccount(studentId: string, account: Record<string, any>) {
@@ -1217,10 +1825,16 @@ class ConnectCommunityRepository {
     return toRecord(profile)
   }
 
-  async readProfile(studentId: string | undefined) {
+  async readProfile(studentId: string | undefined): Promise<Record<string, any> | null> {
     if (!studentId) return null
-    const profile = await prisma.connectProfile.findUnique({ where: { studentId } })
-    return profile ? toRecord(profile) : null
+    const [profile, student] = await Promise.all([
+      prisma.connectProfile.findUnique({ where: { studentId } }),
+      prisma.studentProfile.findUnique({ where: { id: studentId }, select: { showZumbarlPoints: true } })
+    ])
+    return profile || student ? {
+      ...(profile ? toRecord(profile) : {}),
+      showZumbarlPoints: student?.showZumbarlPoints !== false
+    } : null
   }
 
   contributeToChama(id: string, studentId: string | undefined, payload: Record<string, any>) {

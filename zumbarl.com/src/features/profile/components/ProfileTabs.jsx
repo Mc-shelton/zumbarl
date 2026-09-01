@@ -9,6 +9,7 @@ function ProfileTabs({ activeTab, onTabChange, tabs }) {
         className="campus-profile-tabs"
         items={tabs.map((tab) => ({ id: tab, label: tab }))}
         onChange={onTabChange}
+        segmented={false}
       />
     </section>
   )

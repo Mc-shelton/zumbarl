@@ -13,6 +13,13 @@ export default defineConfig({
     proxy: {
       '/api': { target: 'http://localhost:4100', changeOrigin: true },
       '/files': { target: 'http://localhost:4100', changeOrigin: true },
+      '/jitsi': {
+        target: 'https://localhost:18443',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+        rewrite: (path) => path.replace(/^\/jitsi/, ''),
+      },
     },
   },
 })

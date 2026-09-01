@@ -19,6 +19,7 @@ import { registerBusinessRoutes } from './entrypoint/api/routes/business/index.j
 import { registerCampusRoutes } from './entrypoint/api/routes/campus/index.js'
 import { registerConnectRoutes } from './entrypoint/api/routes/connect/index.js'
 import { registerEarnRoutes } from './entrypoint/api/routes/earn/index.js'
+import { registerEvergreenRoutes } from './entrypoint/api/routes/evergreen/index.js'
 import { registerFinanceRoutes } from './entrypoint/api/routes/finance/index.js'
 import { registerHealthRoutes } from './entrypoint/api/routes/health/index.js'
 import { registerLearnRoutes } from './entrypoint/api/routes/learn/index.js'
@@ -80,6 +81,7 @@ async function buildApp() {
         { name: 'business' },
         { name: 'campus' },
         { name: 'earn' },
+        { name: 'evergreen' },
         { name: 'projects' },
         { name: 'marketing' },
         { name: 'learn' },
@@ -131,6 +133,7 @@ async function buildApp() {
   await app.register(registerBusinessRoutes, { prefix: '/api/v1/business' })
   await app.register(registerCampusRoutes, { prefix: '/api/v1/campus' })
   await app.register(registerEarnRoutes, { prefix: '/api/v1/earn' })
+  await app.register(registerEvergreenRoutes, { prefix: '/api/v1/evergreen' })
   await app.register(registerProjectRoutes, { prefix: '/api/v1/projects' })
   await app.register(registerMarketingRoutes, { prefix: '/api/v1/marketing' })
   await app.register(registerLearnRoutes, { prefix: '/api/v1/learn' })

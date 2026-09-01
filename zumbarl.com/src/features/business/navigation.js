@@ -44,6 +44,7 @@ export const BUSINESS_NAV_ITEMS = [
     id: "pipeline",
     label: "Pipeline",
     icon: "trending",
+    href: "/business/evergreen",
     requiredAccess: [
       ACCESS_KEYS.business.pipelineBasic,
       ACCESS_KEYS.business.pipelineFull,

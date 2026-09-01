@@ -1,26 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { FiCheck, FiShield, FiUser, FiX } from 'react-icons/fi'
 
 const SUGGESTED_INTERESTS = ['Career opportunities', 'Entrepreneurship', 'Technology', 'Creative work', 'Campus events', 'Learning groups']
 
+function profileDraft(profile) {
+  return {
+    interests: profile?.interests || [],
+    visibility: profile?.visibility || 'campus',
+    storyFeedScope: profile?.storyFeedScope || 'all',
+    showZumbarlPoints: profile?.showZumbarlPoints !== false,
+    safetyPreferences: {
+      allowMessages: profile?.safetyPreferences?.allowMessages !== false,
+      showActivity: profile?.safetyPreferences?.showActivity !== false,
+    },
+  }
+}
+
 function ConnectProfileModal({ isOpen, onClose, onSave, profile }) {
-  const [draft, setDraft] = useState({ interests: [], visibility: 'campus', storyFeedScope: 'all', safetyPreferences: { allowMessages: true, showActivity: true } })
+  const [draft, setDraft] = useState(() => profileDraft(profile))
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState('')
-
-  useEffect(() => {
-    if (!isOpen) return
-    setDraft({
-      interests: profile?.interests || [],
-      visibility: profile?.visibility || 'campus',
-      storyFeedScope: profile?.storyFeedScope || 'all',
-      safetyPreferences: {
-        allowMessages: profile?.safetyPreferences?.allowMessages !== false,
-        showActivity: profile?.safetyPreferences?.showActivity !== false,
-      },
-    })
-    setError('')
-  }, [isOpen, profile])
 
   if (!isOpen) return null
   const toggleInterest = (interest) => setDraft((current) => ({
@@ -61,12 +60,16 @@ function ConnectProfileModal({ isOpen, onClose, onSave, profile }) {
           <label className="connect-profile-select">Story feed<select value={draft.storyFeedScope} onChange={(event) => setDraft({ ...draft, storyFeedScope: event.target.value })}><option value="all">All campuses</option><option value="campus">My campus only</option><option value="connections">My connects only</option></select></label>
         </section>
         <section>
+          <h3>Your post identity</h3>
+          <label className="connect-profile-toggle"><span><strong>Show Buzz on my posts</strong><small>Display your Buzz beside your university on posts and reshares.</small></span><input type="checkbox" checked={draft.showZumbarlPoints} onChange={(event) => setDraft({ ...draft, showZumbarlPoints: event.target.checked })} /></label>
+        </section>
+        <section>
           <h3><FiShield /> Safety preferences</h3>
           <label className="connect-profile-toggle"><span><strong>Allow direct messages</strong><small>Students on your campus can start a conversation.</small></span><input type="checkbox" checked={draft.safetyPreferences.allowMessages} onChange={(event) => setDraft({ ...draft, safetyPreferences: { ...draft.safetyPreferences, allowMessages: event.target.checked } })} /></label>
           <label className="connect-profile-toggle"><span><strong>Show my activity</strong><small>Let others see your public posts and group participation.</small></span><input type="checkbox" checked={draft.safetyPreferences.showActivity} onChange={(event) => setDraft({ ...draft, safetyPreferences: { ...draft.safetyPreferences, showActivity: event.target.checked } })} /></label>
         </section>
         {error ? <p className="connect-profile-error" role="alert">{error}</p> : null}
-        <footer><button type="button" onClick={onClose} disabled={isSaving}>Cancel</button><button type="submit" disabled={isSaving}>{isSaving ? 'Saving…' : profile ? 'Save changes' : 'Complete setup'}</button></footer>
+        <footer><button type="button" onClick={onClose} disabled={isSaving}>Cancel</button><button type="submit" disabled={isSaving}>{isSaving ? 'Saving…' : profile?.id ? 'Save changes' : 'Complete setup'}</button></footer>
       </form>
     </div>
   )

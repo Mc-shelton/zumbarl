@@ -26,6 +26,7 @@ function OpportunitiesTabContent({
   onOpenMessages,
   onOpenPlaceBid,
   onOpenProject,
+  onRefreshServiceOrders,
   onResumeBidDraft,
   onRespondCounterOffer,
   onViewBidOpportunity,
@@ -34,6 +35,9 @@ function OpportunitiesTabContent({
   onViewBooking,
   opportunityTypeOptions,
   projects,
+  serviceOrders,
+  serviceOrdersError,
+  serviceOrdersLoading,
   projectTeamInvites,
   projectTeamInviteState,
   onRespondProjectTeamInvite,
@@ -115,7 +119,11 @@ function OpportunitiesTabContent({
         confirmedServiceOrdersCount={confirmedServiceOrdersCount}
         onCreateBooking={onCreateBooking}
         onOpenMessages={onOpenMessages}
+        onRefresh={onRefreshServiceOrders}
         onViewBooking={onViewBooking}
+        orders={serviceOrders}
+        error={serviceOrdersError}
+        isLoading={serviceOrdersLoading}
       />
     )
   }

@@ -37,6 +37,7 @@ class RecommendationsRepository {
             version: true,
             algorithm: true,
             status: true,
+            trainedAt: true,
             expiresAt: true
           }
         }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { FiBell, FiChevronDown, FiMessageCircle } from 'react-icons/fi'
+import { FiBell, FiCheck, FiChevronDown, FiMessageCircle } from 'react-icons/fi'
 import { Link, useNavigate } from 'react-router-dom'
 import { ACCESS_KEYS, AUTH_ROLE_STORAGE_KEY, hasAccess } from '../../features/auth/roleConfig'
 import { AUTH_TOKEN_KEY } from '../../lib/sendZumbarlApiRequest'
@@ -27,6 +27,20 @@ const ACTION_ACCESS_KEYS = {
   },
 }
 
+function formatNotificationTime(value) {
+  const timestamp = new Date(value).getTime()
+  if (!Number.isFinite(timestamp)) return ''
+
+  const elapsedMinutes = Math.max(0, Math.floor((Date.now() - timestamp) / 60000))
+  if (elapsedMinutes < 1) return 'Now'
+  if (elapsedMinutes < 60) return `${elapsedMinutes}m`
+  const elapsedHours = Math.floor(elapsedMinutes / 60)
+  if (elapsedHours < 24) return `${elapsedHours}h`
+  const elapsedDays = Math.floor(elapsedHours / 24)
+  if (elapsedDays < 7) return `${elapsedDays}d`
+  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' }).format(timestamp)
+}
+
 function CampusTopActions({
   as: Component = 'div',
   className = '',
@@ -36,7 +50,7 @@ function CampusTopActions({
   onLogout,
   primaryAction = null,
   scope = 'campus',
-  showMenu = false,
+  showMenu = true,
   showUserButton = true,
   userButtonClassName = 'opportunities-user-btn',
   showUserChevron = false,
@@ -48,12 +62,34 @@ function CampusTopActions({
   const [notifications, setNotifications] = useState([])
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0)
   const [unreadMessageCount, setUnreadMessageCount] = useState(0)
+  const actionsRef = useRef(null)
   const latestNotificationIdRef = useRef(null)
   const accessKeys = ACTION_ACCESS_KEYS[scope] || ACTION_ACCESS_KEYS.campus
   const currentViewer = useViewerProfile(viewer)
   const canOpenMessages = hasAccess(accessKeys.messages)
   const canOpenNotifications = hasAccess(accessKeys.notifications)
   const canViewProfile = !accessKeys.profile || hasAccess(accessKeys.profile)
+  const resolvedMenuItems = menuItems.length
+    ? menuItems
+    : [{ label: 'View profile', href: scope === 'business' ? '/business/company-profile' : '/campus/profile' }]
+
+  useEffect(() => {
+    if (!isMenuOpen && !isNotificationsOpen) return undefined
+
+    const closeMenus = (event) => {
+      if (event.type === 'keydown' && event.key !== 'Escape') return
+      if (event.type === 'pointerdown' && actionsRef.current?.contains(event.target)) return
+      setIsMenuOpen(false)
+      setIsNotificationsOpen(false)
+    }
+
+    window.addEventListener('keydown', closeMenus)
+    document.addEventListener('pointerdown', closeMenus)
+    return () => {
+      window.removeEventListener('keydown', closeMenus)
+      document.removeEventListener('pointerdown', closeMenus)
+    }
+  }, [isMenuOpen, isNotificationsOpen])
 
   const sendBrowserNotice = useCallback((notification) => {
     if (
@@ -178,7 +214,7 @@ function CampusTopActions({
   }
 
   return (
-    <Component className={`app-top-actions ${className}`.trim()} aria-label={label}>
+    <Component ref={actionsRef} className={`app-top-actions ${className}`.trim()} aria-label={label}>
       {primaryAction}
       {canOpenMessages ? (
         <button type="button" className={iconButtonClassName} aria-label="Open messages" onClick={() => navigate('/messages')}>
@@ -203,9 +239,15 @@ function CampusTopActions({
           {isNotificationsOpen ? (
             <div className="app-notification-menu" role="menu" aria-label="Notifications">
               <header>
-                <strong>Notifications</strong>
+                <div className="app-notification-heading">
+                  <span><FiBell aria-hidden="true" /></span>
+                  <div>
+                    <strong>Notifications</strong>
+                    <small>{unreadNotificationCount ? `${unreadNotificationCount} new` : 'You’re all caught up'}</small>
+                  </div>
+                </div>
                 {unreadNotificationCount ? (
-                  <button type="button" onClick={markAllNotificationsRead}>Mark all read</button>
+                  <button type="button" onClick={markAllNotificationsRead}><FiCheck aria-hidden="true" /> Mark all read</button>
                 ) : null}
               </header>
               <div className="app-notification-list">
@@ -217,11 +259,18 @@ function CampusTopActions({
                     role="menuitem"
                     onClick={() => openNotification(notification)}
                   >
-                    <span>{notification.title}</span>
-                    <small>{notification.body}</small>
+                    <span className="app-notification-icon"><FiBell aria-hidden="true" /></span>
+                    <span className="app-notification-copy">
+                      <strong>{notification.title}</strong>
+                      <small>{notification.body}</small>
+                    </span>
+                    <span className="app-notification-meta">
+                      <time dateTime={notification.createdAt}>{formatNotificationTime(notification.createdAt)}</time>
+                      {!notification.isRead ? <i aria-label="Unread" /> : null}
+                    </span>
                   </button>
                 )) : (
-                  <p>No notifications yet.</p>
+                  <p><FiBell aria-hidden="true" /><strong>No notifications yet</strong><span>Updates about your campus activity will appear here.</span></p>
                 )}
               </div>
             </div>
@@ -250,24 +299,12 @@ function CampusTopActions({
           </button>
           {showMenu ? (
             <>
-              <button
-                type="button"
-                className="business-profile-chevron-btn"
-                aria-expanded={isMenuOpen}
-                aria-label="Expand user menu"
-                onClick={() => {
-                  setIsMenuOpen((current) => !current)
-                  setIsNotificationsOpen(false)
-                }}
-              >
-                <FiChevronDown aria-hidden="true" />
-              </button>
               {isMenuOpen ? (
                 <div className="business-profile-menu" role="menu">
-                  {menuItems.map((item) => (
-                    <Link key={item.href} to={item.href} role="menuitem">{item.label}</Link>
+                  {resolvedMenuItems.map((item) => (
+                    <Link key={item.href} to={item.href} role="menuitem" onClick={() => setIsMenuOpen(false)}>{item.label}</Link>
                   ))}
-                  <button type="button" role="menuitem" onClick={handleLogout}>Logout</button>
+                  <button type="button" className="app-logout-menu-item" role="menuitem" onClick={handleLogout}>Log out</button>
                 </div>
               ) : null}
             </>

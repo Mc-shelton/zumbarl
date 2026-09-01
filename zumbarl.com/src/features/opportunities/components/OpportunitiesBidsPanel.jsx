@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { FiClock, FiMoreVertical } from 'react-icons/fi'
+import { FiArrowUpRight, FiCheckCircle, FiClock, FiEdit3, FiMessageCircle, FiMoreVertical } from 'react-icons/fi'
 import {
   BID_PROGRESS_POINT_COUNT,
   getBidProgressPointIndex,
@@ -19,6 +19,15 @@ const BID_STATUS_FILTERS = [
   { id: 'awarded', label: 'Awarded', matches: (bid) => bid.status === 'Awarded' },
   { id: 'declined', label: 'Declined', matches: (bid) => bid.status === 'Declined' },
 ]
+
+const BID_FALLBACK_IMAGE = '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp'
+
+function bidStatusNotice(bid) {
+  if (bid.status === 'Awarded') return { tone: 'is-awarded', text: 'You won this bid. Continue the work from your project workspace.', Icon: FiCheckCircle }
+  if (bid.status === 'Draft') return { tone: 'is-draft', text: 'This application has not been submitted yet.', Icon: FiEdit3 }
+  if (bid.status === 'Declined') return { tone: 'is-declined', text: 'This application did not move forward. Your bid history remains saved.', Icon: FiClock }
+  return { tone: 'is-active', text: bid.progressNote || 'Your proposal is moving through the client review process.', Icon: FiClock }
+}
 
 function BidActionsMenu({ bid, onOpenMessages, onOpenProject, onResumeBidDraft, onViewBidOpportunity }) {
   const [isOpen, setIsOpen] = useState(false)
@@ -110,9 +119,10 @@ function OpportunitiesBidsPanel({
   return (
     <section className="opportunities-list-section opportunities-bids-section" aria-label="My bids">
       <div className="opportunities-section-head">
-        <div>
+        <div className="opportunities-bids-heading-copy">
+          <span>Application tracker</span>
           <h2>My Bids</h2>
-          <p>Track bid progress, client activity and response timelines.</p>
+          <p>See every proposal, its current stage and the next useful action.</p>
         </div>
         <div className="opportunities-bid-status-filters" role="tablist" aria-label="Filter bids by status">
           {BID_STATUS_FILTERS.map((filter) => (
@@ -132,18 +142,27 @@ function OpportunitiesBidsPanel({
       </div>
 
       {visibleBids.length === 0 ? (
-        <p className="opportunities-list-empty">
-          {bids.length === 0
-            ? 'No bids yet. Apply to an opportunity from the Discover tab and your bids will show up here.'
-            : 'No bids match this status yet.'}
-        </p>
+        <div className="opportunities-bids-empty">
+          <FiEdit3 aria-hidden="true" />
+          <div><h3>{bids.length === 0 ? 'Your applications will live here' : 'Nothing in this view'}</h3><p>{bids.length === 0
+            ? 'Apply to an opportunity from Discover and track every response here.'
+            : 'Choose another status to see the rest of your bid history.'}</p></div>
+        </div>
       ) : null}
 
       <div className="opportunities-bid-grid">
         {visibleBids.map((bid) => {
           const activeProgressPoint = getBidProgressPointIndex(bid.progress)
           const activeProgressWidth = (activeProgressPoint / (BID_PROGRESS_POINT_COUNT - 1)) * 100
-          const isAwarded = bid.status === 'Awarded'
+          const statusNotice = bidStatusNotice(bid)
+          const StatusNoticeIcon = statusNotice.Icon
+          const progressCaption = bid.status === 'Awarded'
+            ? 'Your accepted bid is now active in the project workspace.'
+            : bid.status === 'Draft'
+              ? 'Finish the remaining details and submit when you are ready.'
+              : bid.progressNote
+          const clientActivity = bid.status === 'Awarded' ? 'Bid accepted by client' : bid.lastSeen
+          const responseTiming = bid.status === 'Awarded' ? 'Project workspace ready' : bid.responseEta
 
           return (
             <article
@@ -165,7 +184,7 @@ function OpportunitiesBidsPanel({
                   onResumeBidDraft={onResumeBidDraft}
                   onViewBidOpportunity={onViewBidOpportunity}
                 />
-                <img src={bid.image} alt={`${bid.title} cover`} loading="lazy" />
+                <img src={bid.image || BID_FALLBACK_IMAGE} alt={`${bid.title} cover`} loading="lazy" onError={(event) => { event.currentTarget.src = BID_FALLBACK_IMAGE }} />
               </div>
 
               <div className="opportunities-bid-body">
@@ -176,12 +195,9 @@ function OpportunitiesBidsPanel({
                 <h3>{bid.title}</h3>
                 <p className="opportunities-bid-description">{bid.description}</p>
 
-                {isAwarded ? (
-                  <p className="opportunities-bid-ongoing-note">
-                    <span className="opportunities-bid-ongoing-dot" aria-hidden="true" />
-                    You won this bid — it&apos;s now tracked under <strong>Ongoing</strong>.
-                  </p>
-                ) : null}
+                <div className={`opportunities-bid-stage-note ${statusNotice.tone}`}>
+                  <StatusNoticeIcon aria-hidden="true" /><p>{statusNotice.text}</p>
+                </div>
 
                 <div className="opportunities-bid-meta-grid">
                   <article>
@@ -257,7 +273,7 @@ function OpportunitiesBidsPanel({
                       ))}
                     </div>
                   </div>
-                  <p>{bid.progressNote}</p>
+                  <p>{progressCaption}</p>
                 </div>
 
                 <footer className="opportunities-bid-foot">
@@ -271,36 +287,30 @@ function OpportunitiesBidsPanel({
                   <div className="opportunities-bid-presence">
                     <p>
                       <FiClock aria-hidden="true" />
-                      {bid.lastSeen}
+                      {clientActivity}
                     </p>
-                    <span>{bid.responseEta}</span>
+                    <span>{responseTiming}</span>
                   </div>
                 </footer>
 
-                {bid.projectId ? (
-                  <button
-                    type="button"
-                    className="campus-link-btn opportunities-bid-project-link"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      onOpenProject({ id: bid.projectId })
-                    }}
-                  >
-                    Open Project Workspace
+                <div className="opportunities-bid-quick-actions">
+                  <button type="button" className="is-secondary" onClick={(event) => { event.stopPropagation(); onViewBidOpportunity(bid) }}>
+                    View opportunity <FiArrowUpRight aria-hidden="true" />
                   </button>
-                ) : null}
-                {bid.isDraft ? (
-                  <button
-                    type="button"
-                    className="opportunities-detail-bid-btn opportunities-bid-resume-btn"
-                    onClick={(event) => {
-                      event.stopPropagation()
-                      onResumeBidDraft(bid)
-                    }}
-                  >
-                    Continue application
-                  </button>
-                ) : null}
+                  {bid.projectId ? (
+                    <button type="button" className="is-primary" onClick={(event) => { event.stopPropagation(); onOpenProject({ id: bid.projectId }) }}>
+                      Open project <FiArrowUpRight aria-hidden="true" />
+                    </button>
+                  ) : bid.isDraft ? (
+                    <button type="button" className="is-primary" onClick={(event) => { event.stopPropagation(); onResumeBidDraft(bid) }}>
+                      Continue <FiEdit3 aria-hidden="true" />
+                    </button>
+                  ) : (
+                    <button type="button" className="is-primary" onClick={(event) => { event.stopPropagation(); onOpenMessages() }}>
+                      Message <FiMessageCircle aria-hidden="true" />
+                    </button>
+                  )}
+                </div>
               </div>
             </article>
           )

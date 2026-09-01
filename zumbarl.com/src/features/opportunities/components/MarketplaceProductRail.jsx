@@ -22,7 +22,7 @@ function MarketplaceProductRail({
   suggestedItems,
 }) {
   const canBuy = hasAccess(ACCESS_KEYS.marketplace.buy)
-  const acceptsBuyerActions = !item.status || ['published', 'active'].includes(String(item.status).toLowerCase())
+  const acceptsBuyerActions = (!item.status || ['published', 'active'].includes(String(item.status).toLowerCase())) && item.shop?.acceptingOrders !== false
   const isService = String(item.kind || item.listingType || '').toLowerCase() === 'service'
   const isQuoteService = isService && item.serviceMode === 'request_quote'
   const ServiceActionIcon = item.serviceMode === 'order_ahead' ? FiCoffee : FiCalendar
@@ -77,7 +77,7 @@ function MarketplaceProductRail({
               <button type="button" className="opportunities-marketplace-product-secondary-btn" disabled={isActionPending} onClick={onMakeOffer}>Make an Offer</button>
             ) : null}
           </>
-        ) : canBuy ? <span className="opportunities-marketplace-owner-label">Currently unavailable</span> : null}
+        ) : canBuy ? <span className="opportunities-marketplace-owner-label">{item.shop?.acceptingOrders === false ? `${item.shop.name || 'This campus service'} is currently closed` : 'Currently unavailable'}</span> : null}
         {actionStatus ? <p className="opportunities-marketplace-action-status" role="status">{actionStatus}</p> : null}
 
         {isOwner ? (

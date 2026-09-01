@@ -27,6 +27,13 @@ const roles = [
 ] as const
 type Role = (typeof roles)[number]
 
+const publicRegistrationRoles = [
+  'student',
+  'business',
+  'STUDENT_STANDARD',
+  'COMPANY_STANDARD'
+] as const satisfies readonly Role[]
+
 type AuthUser = {
   id: string
   email: string
@@ -108,6 +115,7 @@ const roleGroups = {
 
 export {
   roles,
+  publicRegistrationRoles,
   hashPassword,
   verifyPassword,
   hasAnyRole,

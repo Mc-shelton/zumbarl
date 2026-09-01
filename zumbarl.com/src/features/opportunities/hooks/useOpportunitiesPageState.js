@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 import {
@@ -45,6 +45,56 @@ import {
   listMyProjectTeamInvites,
   respondToProjectTeamInvite,
 } from '../../projects/services/projectTeamInviteService'
+import { readMyMarketplaceOrders } from '../services/marketplaceInteractionService'
+import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
+
+const SERVICE_ORDER_STATUS = {
+  seller_confirmation: { label: 'Awaiting seller', tone: 'is-awaiting', progress: 12 },
+  confirmed: { label: 'Confirmed', tone: 'is-confirmed', progress: 28 },
+  packaging: { label: 'Being prepared', tone: 'is-scheduled', progress: 46 },
+  ready: { label: 'Ready', tone: 'is-confirmed', progress: 68 },
+  in_transit: { label: 'On the way', tone: 'is-scheduled', progress: 82 },
+  delivered: { label: 'Delivered', tone: 'is-awaiting', progress: 94 },
+  completed: { label: 'Completed', tone: 'is-completed', progress: 100 },
+  cannot_fulfil: { label: 'Unavailable', tone: 'is-cancelled', progress: 100 },
+  cancelled: { label: 'Cancelled', tone: 'is-cancelled', progress: 100 },
+}
+
+function serviceOrderLabel(value = '') {
+  return String(value).replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase())
+}
+
+function toServiceOrderCard(order) {
+  const item = order.items?.[0] || {}
+  const status = SERVICE_ORDER_STATUS[order.fulfillmentStatus] || SERVICE_ORDER_STATUS.seller_confirmation
+  const request = item.serviceRequest || {}
+  const extraItems = Math.max(0, Number(order.items?.length || 0) - 1)
+
+  return {
+    ...order,
+    service: `${item.title || 'Campus service'}${extraItems ? ` +${extraItems} more` : ''}`,
+    provider: item.sellerName || order.sellerName || 'Campus provider',
+    category: serviceOrderLabel(item.serviceMode || item.kind || 'Service'),
+    image: normalizeZumbarlFileUrl(item.image) || '/assets/index/bee_nobg.png',
+    status: status.label,
+    statusTone: status.tone,
+    progress: status.progress,
+    schedule: request.time ? `Requested for ${request.time}` : 'Schedule with provider',
+    location: order.handoffSpot || item.locationLabel || 'Campus handoff',
+    contact: order.handoffType === 'delivery' ? 'Delivery' : 'Campus pickup',
+    note: request.notes || (order.fulfillmentStatus === 'ready'
+      ? 'Your order is ready. Message the provider before collection.'
+      : 'Track updates here as the provider fulfils your booking.'),
+    amount: new Intl.NumberFormat('en-KE', {
+      style: 'currency',
+      currency: order.currency || item.currency || 'KES',
+      maximumFractionDigits: 0,
+    }).format(Number(order.totalAmount || item.unitAmount || 0)),
+    placedAt: order.createdAt
+      ? new Date(order.createdAt).toLocaleDateString('en-KE', { dateStyle: 'medium' })
+      : 'Recently',
+  }
+}
 
 function splitSkills(skills) {
   return String(skills || '')
@@ -181,6 +231,9 @@ function useOpportunitiesPageState() {
   const [activeLocation, setActiveLocation] = useState('all')
   const [projectTeamInvites, setProjectTeamInvites] = useState([])
   const [projectTeamInviteState, setProjectTeamInviteState] = useState({ error: '', pendingId: '' })
+  const [serviceOrders, setServiceOrders] = useState([])
+  const [serviceOrdersError, setServiceOrdersError] = useState('')
+  const [serviceOrdersLoading, setServiceOrdersLoading] = useState(false)
   const [railFilters, setRailFilters] = useState(INITIAL_OPPORTUNITY_RAIL_FILTERS)
   const bidSelection = useOpportunityBidSelection({
     bids: earnFlow.bids,
@@ -211,6 +264,27 @@ function useOpportunitiesPageState() {
   const activeOpportunityTab = resolveOpportunityTab(tabQueryParam)
   const activeOpportunityIntent = resolveOpportunityIntent(intentQueryParam || getPreferredOpportunityIntentId())
   const activeOpportunityTypeId = resolveOpportunityTypeId(typeQueryParam)
+
+  const loadServiceOrders = useCallback(async () => {
+    setServiceOrdersLoading(true)
+    setServiceOrdersError('')
+    try {
+      const response = await readMyMarketplaceOrders()
+      setServiceOrders((response?.data || [])
+        .filter((order) => order.items?.some((item) => String(item.kind || '').toLowerCase() === 'service'))
+        .map(toServiceOrderCard))
+    } catch (error) {
+      setServiceOrdersError(error?.message || 'We could not load your service orders.')
+    } finally {
+      setServiceOrdersLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (activeOpportunityTab !== 'Service Orders') return undefined
+    const frame = window.requestAnimationFrame(() => loadServiceOrders())
+    return () => window.cancelAnimationFrame(frame)
+  }, [activeOpportunityTab, loadServiceOrders])
   const rawInvites = useMemo(() => earnFlow.invites || [], [earnFlow.invites])
   // Cross-reference the student's own bids so an invite reflects their real
   // progress: applied once a non-draft bid exists, accepted once it is awarded
@@ -268,7 +342,7 @@ function useOpportunitiesPageState() {
     allOpportunityListings.filter((opportunity) => !opportunity.applicationsClosed)
   ), [allOpportunityListings])
   const interviews = earnFlow.interviews || []
-  const dashboardStats = useOpportunityDashboardStats({ invites: visibleInvites, interviews })
+  const dashboardStats = useOpportunityDashboardStats({ invites: visibleInvites, interviews, serviceOrders })
   const intentOpportunities = filterOpportunitiesByIntent(discoverableOpportunities, activeOpportunityIntent.id)
   const opportunityTypeCounts = useMemo(
     () => getOpportunityTypeCounts(intentOpportunities),
@@ -559,7 +633,7 @@ function useOpportunitiesPageState() {
     onOpportunitySelect: handleOpportunitySelect,
     onOpportunityTypeChange: handleOpportunityTypeChange,
     onTabChange: handleOpportunityTabChange,
-    onViewBooking: () => navigate('/campus/opportunities?tab=ongoing'),
+    onViewBooking: () => navigate('/campus/opportunities/buy-sell?view=orders'),
     opportunitySearchRef,
     opportunityIntentOptions: OPPORTUNITY_INTENT_OPTIONS,
     opportunityTypeOptions,
@@ -575,8 +649,12 @@ function useOpportunitiesPageState() {
     selectedOpportunityBid,
     selectedOpportunityProject,
     selectedProjectId: searchParams.get('project'),
+    serviceOrders,
+    serviceOrdersError,
+    serviceOrdersLoading,
     selectedOpportunityThumbnail,
     selectedOpportunityUuid,
+    onRefreshServiceOrders: loadServiceOrders,
     upcomingInterviewsCount: dashboardStats.upcomingInterviewsCount,
     visibleOpportunities,
     visibleBids: earnFlow.bids,

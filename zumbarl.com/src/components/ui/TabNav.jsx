@@ -14,10 +14,13 @@ function TabNav({
   items = [],
   onChange,
   renderTab = null,
+  segmented = true,
   tabClassName = '',
 }) {
+  const navClassName = [segmented ? 'zumbarl-segmented-tabs' : '', className].filter(Boolean).join(' ')
+
   return (
-    <nav className={className} role="tablist" aria-label={ariaLabel}>
+    <nav className={navClassName} role="tablist" aria-label={ariaLabel}>
       {items.map((item) => {
         const isActive = item.id === activeId
 

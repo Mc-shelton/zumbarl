@@ -35,6 +35,7 @@ const resourceLocationSchema = z.string().trim().refine(
 
 const createKnowledgeSpaceSchema = z.object({
   type: z.enum(['LIBRARY', 'GROUP']),
+  groupType: z.enum(['STUDY_GROUP', 'CLUB', 'ASSOCIATION', 'SOCIETY', 'CHAMA']).optional(),
   name: z.string().trim().min(3).max(100),
   description: z.string().trim().max(600).optional(),
   visibility: z.enum(['PUBLIC', 'CAMPUS', 'PRIVATE']).default('CAMPUS'),

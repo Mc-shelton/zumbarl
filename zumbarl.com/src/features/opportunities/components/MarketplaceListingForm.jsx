@@ -1,9 +1,18 @@
 import { useState } from 'react'
-import { FiArrowLeft, FiArrowRight, FiBox, FiCalendar, FiCheck, FiCoffee, FiImage, FiMapPin, FiMessageCircle, FiPackage, FiSave, FiSend, FiTool, FiTruck, FiUploadCloud, FiX } from 'react-icons/fi'
+import { FiArrowLeft, FiArrowRight, FiBox, FiCalendar, FiCheck, FiCoffee, FiDroplet, FiImage, FiMapPin, FiMessageCircle, FiPackage, FiSave, FiSend, FiShoppingBag, FiShoppingCart, FiTag, FiTool, FiTruck, FiUploadCloud, FiX } from 'react-icons/fi'
 
 const PRODUCT_CATEGORIES = ['Electronics', 'Books & Notes', 'Furniture', 'Fashion', 'Sports', 'Digital products', 'Other']
 const SERVICE_CATEGORIES = ['Food & Drink', 'Beauty & Care', 'Academic Help', 'Tech & Print', 'Creative Services', 'Repairs', 'Wellness', 'Other Services']
+const FOOD_CATEGORIES = ['Meals', 'Snacks', 'Drinks', 'Baked goods', 'Fresh food', 'Other food']
 const CONDITIONS = ['New', 'Like New', 'Used - Like New', 'Used - Good', 'Used - Fair']
+const FOOD_TYPES = [
+  { id: 'meal', label: 'Meal', copy: 'Full plates and combos prepared to order.', Icon: FiCoffee },
+  { id: 'snack', label: 'Snack', copy: 'Quick bites students grab between classes.', Icon: FiShoppingBag },
+  { id: 'drink', label: 'Drink', copy: 'Juices, smoothies, sodas and hot drinks.', Icon: FiDroplet },
+  { id: 'baked_good', label: 'Baked good', copy: 'Breads, cakes, cookies and pastries.', Icon: FiPackage },
+  { id: 'fresh_food', label: 'Fresh food', copy: 'Fruit, salads and other fresh edibles.', Icon: FiShoppingCart },
+  { id: 'other', label: 'Other edible', copy: 'Any other food or edible item.', Icon: FiTag },
+]
 const SERVICE_MODES = [
   { id: 'appointment', label: 'Appointment', copy: 'Customer chooses a date and time.', Icon: FiCalendar },
   { id: 'order_ahead', label: 'Order ahead', copy: 'Best for eateries and prepared orders.', Icon: FiCoffee },
@@ -15,33 +24,43 @@ const DELIVERY_OPTIONS = [
   { id: 'Digital delivery', label: 'Digital delivery', copy: 'Send files or access details through Zumbarl.', Icon: FiSend },
 ]
 
-function ListingBasicsStep({ form, updateField }) {
+function ListingBasicsStep({ form, foodMode, updateField }) {
   return (
     <section className="marketplace-studio-step-panel">
-      <header><span>01</span><div><h2>Tell buyers what you’re offering</h2><p>Start with the information people use to decide whether to open a listing.</p></div></header>
-      <div className="marketplace-studio-type-grid">
-        {[{ id: 'product', label: 'Physical or digital product', copy: 'An item with inventory, condition and a handoff.', Icon: FiPackage }, { id: 'service', label: 'Service', copy: 'A skill, booking or outcome you deliver.', Icon: FiTool }].map(({ id, label, copy, Icon }) => (
-          <button key={id} type="button" className={form.kind === id ? 'is-selected' : ''} onClick={() => { updateField('kind', id); updateField('category', id === 'service' ? 'Food & Drink' : 'Electronics') }}><Icon aria-hidden="true" /><span><strong>{label}</strong><small>{copy}</small></span>{form.kind === id ? <FiCheck aria-hidden="true" /> : null}</button>
-        ))}
-      </div>
-      {form.kind === 'service' ? (
-        <div className="marketplace-studio-service-modes" aria-label="Service fulfilment type">
-          {SERVICE_MODES.map(({ id, label, copy, Icon }) => <button key={id} type="button" className={form.serviceMode === id ? 'is-selected' : ''} onClick={() => updateField('serviceMode', id)}><Icon aria-hidden="true" /><span><strong>{label}</strong><small>{copy}</small></span>{form.serviceMode === id ? <FiCheck aria-hidden="true" /> : null}</button>)}
+      <header><span>01</span><div><h2>{foodMode ? 'What is on the menu?' : 'Tell buyers what you’re offering'}</h2><p>{foodMode ? 'Students decide from the item name, food type and a short description.' : 'Start with the information people use to decide whether to open a listing.'}</p></div></header>
+      {foodMode ? (
+        <div className="marketplace-studio-type-grid" aria-label="Food type">
+          {FOOD_TYPES.map(({ id, label, copy, Icon }) => (
+            <button key={id} type="button" className={form.foodType === id ? 'is-selected' : ''} onClick={() => updateField('foodType', id)}><Icon aria-hidden="true" /><span><strong>{label}</strong><small>{copy}</small></span>{form.foodType === id ? <FiCheck aria-hidden="true" /> : null}</button>
+          ))}
         </div>
-      ) : null}
+      ) : (
+        <>
+          <div className="marketplace-studio-type-grid">
+            {[{ id: 'product', label: 'Physical or digital product', copy: 'An item with inventory, condition and a handoff.', Icon: FiPackage }, { id: 'service', label: 'Service', copy: 'A skill, booking or outcome you deliver.', Icon: FiTool }].map(({ id, label, copy, Icon }) => (
+              <button key={id} type="button" className={form.kind === id ? 'is-selected' : ''} onClick={() => { updateField('kind', id); updateField('category', id === 'service' ? 'Food & Drink' : 'Electronics') }}><Icon aria-hidden="true" /><span><strong>{label}</strong><small>{copy}</small></span>{form.kind === id ? <FiCheck aria-hidden="true" /> : null}</button>
+            ))}
+          </div>
+          {form.kind === 'service' ? (
+            <div className="marketplace-studio-service-modes" aria-label="Service fulfilment type">
+              {SERVICE_MODES.map(({ id, label, copy, Icon }) => <button key={id} type="button" className={form.serviceMode === id ? 'is-selected' : ''} onClick={() => updateField('serviceMode', id)}><Icon aria-hidden="true" /><span><strong>{label}</strong><small>{copy}</small></span>{form.serviceMode === id ? <FiCheck aria-hidden="true" /> : null}</button>)}
+            </div>
+          ) : null}
+        </>
+      )}
       <div className="marketplace-studio-form-grid">
-        <label className="is-wide">Listing title<span><input value={form.title} onChange={(event) => updateField('title', event.target.value)} placeholder="e.g. MacBook Air M1, 256GB" maxLength="80" /><small>{form.title.length}/80</small></span></label>
-        <label className="is-wide">Short selling line<span><input value={form.subtitle} onChange={(event) => updateField('subtitle', event.target.value)} placeholder="One sentence that makes the value clear" maxLength="120" /><small>{form.subtitle.length}/120</small></span></label>
-        <label>Category<select value={form.category} onChange={(event) => updateField('category', event.target.value)}>{(form.kind === 'service' ? SERVICE_CATEGORIES : PRODUCT_CATEGORIES).map((category) => <option key={category}>{category}</option>)}</select></label>
-        {form.kind === 'product' ? <label>Condition<select value={form.condition} onChange={(event) => updateField('condition', event.target.value)}>{CONDITIONS.map((condition) => <option key={condition}>{condition}</option>)}</select></label> : <label>Typical duration<input value={form.duration} onChange={(event) => updateField('duration', event.target.value)} placeholder="e.g. 45 minutes" /></label>}
-        {form.kind === 'service' ? <label className="is-wide">When are you available?<input value={form.availabilityText} onChange={(event) => updateField('availabilityText', event.target.value)} placeholder="e.g. Mon–Fri, 8 AM–6 PM or pickup in 20 minutes" /></label> : null}
-        <label className="is-wide">Full description<textarea rows="7" value={form.description} onChange={(event) => updateField('description', event.target.value)} placeholder="Describe condition, age, defects, what is included, and why you’re selling…" /><small>{form.description.trim().length} characters · aim for at least 30</small></label>
+        <label className="is-wide">{foodMode ? 'Menu item name' : 'Listing title'}<span><input value={form.title} onChange={(event) => updateField('title', event.target.value)} placeholder={foodMode ? 'e.g. Beef biryani with soda' : 'e.g. MacBook Air M1, 256GB'} maxLength="80" /><small>{form.title.length}/80</small></span></label>
+        <label className="is-wide">{foodMode ? 'Short appetizing line' : 'Short selling line'}<span><input value={form.subtitle} onChange={(event) => updateField('subtitle', event.target.value)} placeholder={foodMode ? 'One sentence that makes the item irresistible' : 'One sentence that makes the value clear'} maxLength="120" /><small>{form.subtitle.length}/120</small></span></label>
+        <label>Category<select value={form.category} onChange={(event) => updateField('category', event.target.value)}>{(foodMode ? FOOD_CATEGORIES : form.kind === 'service' ? SERVICE_CATEGORIES : PRODUCT_CATEGORIES).map((category) => <option key={category}>{category}</option>)}</select></label>
+        {foodMode ? null : form.kind === 'product' ? <label>Condition<select value={form.condition} onChange={(event) => updateField('condition', event.target.value)}>{CONDITIONS.map((condition) => <option key={condition}>{condition}</option>)}</select></label> : <label>Typical duration<input value={form.duration} onChange={(event) => updateField('duration', event.target.value)} placeholder="e.g. 45 minutes" /></label>}
+        {!foodMode && form.kind === 'service' ? <label className="is-wide">When are you available?<input value={form.availabilityText} onChange={(event) => updateField('availabilityText', event.target.value)} placeholder="e.g. Mon–Fri, 8 AM–6 PM or pickup in 20 minutes" /></label> : null}
+        <label className="is-wide">Full description<textarea rows="7" value={form.description} onChange={(event) => updateField('description', event.target.value)} placeholder={foodMode ? 'Describe the taste, portion, what it is served with, and how spicy it is…' : 'Describe condition, age, defects, what is included, and why you’re selling…'} /><small>{form.description.trim().length} characters · aim for at least {foodMode ? 15 : 30}</small></label>
       </div>
     </section>
   )
 }
 
-function ListingMediaStep({ addImageUrl, form, isUploading, removeImage, setCoverImage, updateField, uploadImages }) {
+function ListingMediaStep({ addImageUrl, form, foodMode, isUploading, removeImage, setCoverImage, updateField, uploadImages }) {
   const [imageUrl, setImageUrl] = useState('')
 
   function handleAddUrl() {
@@ -50,10 +69,10 @@ function ListingMediaStep({ addImageUrl, form, isUploading, removeImage, setCove
 
   return (
     <section className="marketplace-studio-step-panel">
-      <header><span>02</span><div><h2>Show the {form.kind === 'service' ? 'service' : 'product'} clearly</h2><p>Add up to eight images, then capture the details customers usually ask about.</p></div></header>
+      <header><span>02</span><div><h2>{foodMode ? 'Show the food at its best' : `Show the ${form.kind === 'service' ? 'service' : 'product'} clearly`}</h2><p>{foodMode ? 'One clear photo sells the plate. Then capture the details students ask about.' : 'Add up to eight images, then capture the details customers usually ask about.'}</p></div></header>
       <label className="marketplace-studio-upload-zone">
         <FiUploadCloud aria-hidden="true" />
-        <strong>{isUploading ? 'Uploading images…' : `Choose ${form.kind === 'service' ? 'service' : 'product'} images`}</strong>
+        <strong>{isUploading ? 'Uploading images…' : foodMode ? 'Choose food photos' : `Choose ${form.kind === 'service' ? 'service' : 'product'} images`}</strong>
         <span>PNG, JPG or WEBP · up to 8 gallery images</span>
         <input type="file" accept="image/*" multiple disabled={isUploading || form.gallery.length >= 8} onChange={(event) => uploadImages(event.target.files)} />
       </label>
@@ -63,28 +82,46 @@ function ListingMediaStep({ addImageUrl, form, isUploading, removeImage, setCove
           {form.gallery.map((image, index) => <article key={`${image}-${index}`} className={index === 0 ? 'is-cover' : ''}><img src={image} alt={`Listing preview ${index + 1}`} /><button type="button" className="marketplace-studio-cover-action" disabled={index === 0} onClick={() => setCoverImage(index)}>{index === 0 ? 'Cover' : 'Set as cover'}</button><button type="button" className="marketplace-studio-remove-image" aria-label={`Remove image ${index + 1}`} onClick={() => removeImage(index)}><FiX aria-hidden="true" /></button></article>)}
         </div>
       ) : <div className="marketplace-studio-empty-media"><FiImage aria-hidden="true" /><p>Your cover image and gallery will appear here.</p></div>}
-      <div className="marketplace-studio-form-grid">
-        <label>{form.kind === 'service' ? 'Provider or brand' : 'Brand'}<input value={form.brand} onChange={(event) => updateField('brand', event.target.value)} placeholder={form.kind === 'service' ? 'Your shop or provider name' : 'Apple, Nike, IKEA…'} /></label>
-        <label>{form.kind === 'service' ? 'Service format' : 'Model or edition'}<input value={form.model} onChange={(event) => updateField('model', event.target.value)} placeholder={form.kind === 'service' ? 'In person, online, at customer location…' : 'M1 2020, Air Force 1…'} /></label>
-        {form.kind === 'product' ? <label>Colour<input value={form.color} onChange={(event) => updateField('color', event.target.value)} placeholder="Space Grey" /></label> : null}
-        <label>What’s included<input value={form.included} onChange={(event) => updateField('included', event.target.value)} placeholder={form.kind === 'service' ? 'Consultation, materials, one revision…' : 'Charger, box, receipt…'} /></label>
-      </div>
+      {foodMode ? (
+        <div className="marketplace-studio-form-grid">
+          <label>Portion size<input value={form.portionSize} onChange={(event) => updateField('portionSize', event.target.value)} placeholder="e.g. Serves 1, 500ml cup…" /></label>
+          <label>Preparation time (minutes)<input type="number" min="0" step="1" value={form.preparationMinutes} onChange={(event) => updateField('preparationMinutes', event.target.value)} placeholder="15" /></label>
+          <label className="is-wide">Ingredients<textarea rows="3" value={form.ingredients} onChange={(event) => updateField('ingredients', event.target.value)} placeholder="e.g. Rice, beef, tomatoes, cooking oil, spices…" /></label>
+          <label className="is-wide">Allergens<textarea rows="2" value={form.allergens} onChange={(event) => updateField('allergens', event.target.value)} placeholder="e.g. Contains wheat and dairy; may contain nuts…" /><small>Helps students with allergies choose safely.</small></label>
+        </div>
+      ) : (
+        <div className="marketplace-studio-form-grid">
+          <label>{form.kind === 'service' ? 'Provider or brand' : 'Brand'}<input value={form.brand} onChange={(event) => updateField('brand', event.target.value)} placeholder={form.kind === 'service' ? 'Your shop or provider name' : 'Apple, Nike, IKEA…'} /></label>
+          <label>{form.kind === 'service' ? 'Service format' : 'Model or edition'}<input value={form.model} onChange={(event) => updateField('model', event.target.value)} placeholder={form.kind === 'service' ? 'In person, online, at customer location…' : 'M1 2020, Air Force 1…'} /></label>
+          {form.kind === 'product' ? <label>Colour<input value={form.color} onChange={(event) => updateField('color', event.target.value)} placeholder="Space Grey" /></label> : null}
+          <label>What’s included<input value={form.included} onChange={(event) => updateField('included', event.target.value)} placeholder={form.kind === 'service' ? 'Consultation, materials, one revision…' : 'Charger, box, receipt…'} /></label>
+        </div>
+      )}
     </section>
   )
 }
 
-function ListingPricingStep({ form, updateField }) {
+function ListingPricingStep({ form, foodMode, updateField }) {
   return (
     <section className="marketplace-studio-step-panel">
-      <header><span>03</span><div><h2>Set price and availability</h2><p>Control how the listing is priced, negotiated and taken out of stock.</p></div></header>
+      <header><span>03</span><div><h2>Set price and availability</h2><p>{foodMode ? 'Price the item and tell students how many servings you have today.' : 'Control how the listing is priced, negotiated and taken out of stock.'}</p></div></header>
       <div className="marketplace-studio-price-card">
         <label>Price<span><b>KSh</b><input type="number" min="0" step="1" value={form.priceAmount} onChange={(event) => updateField('priceAmount', event.target.value)} placeholder="0" /></span></label>
-        <label>{form.kind === 'service' ? 'Available slots' : 'Units in stock'}<input type="number" min="0" step="1" value={form.stock} onChange={(event) => updateField('stock', event.target.value)} /></label>
+        <label>{foodMode ? 'Servings available today' : form.kind === 'service' ? 'Available slots' : 'Units in stock'}<input type="number" min="0" step="1" value={form.stock} onChange={(event) => updateField('stock', event.target.value)} /></label>
       </div>
-      <article className="marketplace-studio-toggle-row"><div><strong>Allow buyers to make offers</strong><p>Buyers can propose another price; you still decide whether to accept.</p></div><button type="button" role="switch" aria-checked={form.negotiable} className={form.negotiable ? 'is-on' : ''} onClick={() => updateField('negotiable', !form.negotiable)}><span /></button></article>
-      {form.negotiable ? <label className="marketplace-studio-minimum-offer">Minimum offer you want to consider <span><b>KSh</b><input type="number" min="0" step="1" value={form.minimumOffer} onChange={(event) => updateField('minimumOffer', event.target.value)} placeholder="Optional" /></span><small>Buyers will not see this threshold.</small></label> : null}
-      <label className="marketplace-studio-variants">Variants or options<input value={form.variantsText} onChange={(event) => updateField('variantsText', event.target.value)} placeholder="e.g. Small, Medium, Large or Black, Blue" /><small>Separate options with commas.</small></label>
-      <div className="marketplace-studio-pricing-note"><FiBox aria-hidden="true" /><p><strong>Inventory stays under your control.</strong> Pause a listing at any time, mark it reserved while agreeing a handoff, or mark it sold when the transaction completes.</p></div>
+      {foodMode ? (
+        <>
+          <article className="marketplace-studio-toggle-row"><div><strong>Available to order today</strong><p>Turn this off when today’s servings run out — students will see the item as unavailable.</p></div><button type="button" role="switch" aria-checked={form.availableToday} className={form.availableToday ? 'is-on' : ''} onClick={() => updateField('availableToday', !form.availableToday)}><span /></button></article>
+          <div className="marketplace-studio-pricing-note"><FiBox aria-hidden="true" /><p><strong>Campus pickup only.</strong> Food orders are collected from your campus spot, so there is nothing to configure here — buyers are told where to find you automatically.</p></div>
+        </>
+      ) : (
+        <>
+          <article className="marketplace-studio-toggle-row"><div><strong>Allow buyers to make offers</strong><p>Buyers can propose another price; you still decide whether to accept.</p></div><button type="button" role="switch" aria-checked={form.negotiable} className={form.negotiable ? 'is-on' : ''} onClick={() => updateField('negotiable', !form.negotiable)}><span /></button></article>
+          {form.negotiable ? <label className="marketplace-studio-minimum-offer">Minimum offer you want to consider <span><b>KSh</b><input type="number" min="0" step="1" value={form.minimumOffer} onChange={(event) => updateField('minimumOffer', event.target.value)} placeholder="Optional" /></span><small>Buyers will not see this threshold.</small></label> : null}
+          <label className="marketplace-studio-variants">Variants or options<input value={form.variantsText} onChange={(event) => updateField('variantsText', event.target.value)} placeholder="e.g. Small, Medium, Large or Black, Blue" /><small>Separate options with commas.</small></label>
+          <div className="marketplace-studio-pricing-note"><FiBox aria-hidden="true" /><p><strong>Inventory stays under your control.</strong> Pause a listing at any time, mark it reserved while agreeing a handoff, or mark it sold when the transaction completes.</p></div>
+        </>
+      )}
     </section>
   )
 }
@@ -167,17 +204,29 @@ function ListingFulfilmentStep({ form, toggleDeliveryOption, updateField }) {
   )
 }
 
-function ListingReviewStep({ form, goToStep }) {
+function ListingReviewStep({ activeStep, form, foodMode, goToStep }) {
   const cover = form.gallery[0] || '/assets/index/business_page_images/optimized/product-school-XZkk5xT8Xrk-unsplash.webp'
+  const priceText = new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', maximumFractionDigits: 0 }).format(Number(form.priceAmount) || 0)
   return (
     <section className="marketplace-studio-step-panel marketplace-studio-review">
-      <header><span>05</span><div><h2>Review your listing</h2><p>Check the buyer-facing preview and the operational details before publishing.</p></div></header>
-      <article className="marketplace-studio-review-preview"><img src={cover} alt="Listing cover preview" /><div><span>{form.category}{form.kind === 'product' ? ` · ${form.condition}` : ` · ${form.serviceMode.replace('_', ' ')}`}</span><h3>{form.title || 'Your listing title'}</h3><p>{form.subtitle || form.description || 'Your listing description will appear here.'}</p><strong>{new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', maximumFractionDigits: 0 }).format(Number(form.priceAmount) || 0)}</strong><small>{form.stock} {form.kind === 'service' ? 'slots available' : 'in stock'} · {form.locationLabel || 'Location not set'}</small></div></article>
+      <header><span>{String(activeStep).padStart(2, '0')}</span><div><h2>Review your {foodMode ? 'menu item' : 'listing'}</h2><p>Check the buyer-facing preview and the operational details before publishing.</p></div></header>
+      <article className="marketplace-studio-review-preview"><img src={cover} alt={foodMode ? 'Menu item cover preview' : 'Listing cover preview'} /><div><span>{foodMode ? `${(FOOD_TYPES.find((type) => type.id === form.foodType) || FOOD_TYPES[0]).label} · ${form.category}` : `${form.category}${form.kind === 'product' ? ` · ${form.condition}` : ` · ${form.serviceMode.replace('_', ' ')}`}`}</span><h3>{form.title || (foodMode ? 'Your menu item name' : 'Your listing title')}</h3><p>{form.subtitle || form.description || 'Your listing description will appear here.'}</p><strong>{priceText}</strong><small>{form.stock} {foodMode ? 'servings today · Pickup on campus' : form.kind === 'service' ? 'slots available' : 'in stock'}{foodMode ? '' : ` · ${form.locationLabel || 'Location not set'}`}</small></div></article>
       <div className="marketplace-studio-review-sections">
-        <article><header><h3>Listing information</h3><button type="button" onClick={() => goToStep(1)}>Edit</button></header><dl><div><dt>Type</dt><dd>{form.kind}</dd></div><div><dt>Category</dt><dd>{form.category}</dd></div><div><dt>{form.kind === 'service' ? 'Customer flow' : 'Condition'}</dt><dd>{form.kind === 'service' ? form.serviceMode.replace('_', ' ') : form.condition}</dd></div><div><dt>Description</dt><dd>{form.description || 'Not provided'}</dd></div></dl></article>
-        <article><header><h3>Media and specifications</h3><button type="button" onClick={() => goToStep(2)}>Edit</button></header><dl><div><dt>Images</dt><dd>{form.gallery.length}</dd></div><div><dt>Brand</dt><dd>{form.brand || 'Not specified'}</dd></div><div><dt>Model</dt><dd>{form.model || 'Not specified'}</dd></div><div><dt>Included</dt><dd>{form.included || 'Item only'}</dd></div></dl></article>
-        <article><header><h3>Sale settings</h3><button type="button" onClick={() => goToStep(3)}>Edit</button></header><dl><div><dt>Offers</dt><dd>{form.negotiable ? 'Accepted' : 'Fixed price'}</dd></div><div><dt>Stock</dt><dd>{form.stock}</dd></div><div><dt>Options</dt><dd>{form.variantsText || 'None'}</dd></div></dl></article>
-        <article><header><h3>Fulfilment</h3><button type="button" onClick={() => goToStep(4)}>Edit</button></header><dl><div><dt>Methods</dt><dd>{form.deliveryOptions.join(', ') || 'Not selected'}</dd></div><div><dt>Delivery areas</dt><dd>{form.deliveryZones.map((zone) => `${zone.location} (KSh ${zone.fee || 0})`).join(', ') || 'Pickup only'}</dd></div><div><dt>Location</dt><dd>{form.locationLabel || 'Not provided'}</dd></div><div><dt>Returns</dt><dd>{form.returnPolicy || 'Discuss with buyer'}</dd></div></dl></article>
+        {foodMode ? (
+          <>
+            <article><header><h3>Menu information</h3><button type="button" onClick={() => goToStep(1)}>Edit</button></header><dl><div><dt>Food type</dt><dd>{(FOOD_TYPES.find((type) => type.id === form.foodType) || FOOD_TYPES[0]).label}</dd></div><div><dt>Category</dt><dd>{form.category}</dd></div><div><dt>Description</dt><dd>{form.description || 'Not provided'}</dd></div></dl></article>
+            <article><header><h3>Food details</h3><button type="button" onClick={() => goToStep(2)}>Edit</button></header><dl><div><dt>Images</dt><dd>{form.gallery.length}</dd></div><div><dt>Portion size</dt><dd>{form.portionSize || 'Not specified'}</dd></div><div><dt>Preparation time</dt><dd>{form.preparationMinutes} minutes</dd></div><div><dt>Ingredients</dt><dd>{form.ingredients || 'Not listed'}</dd></div><div><dt>Allergens</dt><dd>{form.allergens || 'None listed'}</dd></div></dl></article>
+            <article><header><h3>Price &amp; availability</h3><button type="button" onClick={() => goToStep(3)}>Edit</button></header><dl><div><dt>Price</dt><dd>{priceText}</dd></div><div><dt>Servings today</dt><dd>{form.stock}</dd></div><div><dt>Offers</dt><dd>Fixed price</dd></div><div><dt>Available today</dt><dd>{form.availableToday ? 'Yes' : 'No — shown as unavailable'}</dd></div></dl></article>
+            <article><header><h3>Campus pickup</h3><button type="button" onClick={() => goToStep(3)}>Edit</button></header><dl><div><dt>Handoff</dt><dd>Campus pickup only — no delivery setup needed</dd></div><div><dt>Pickup spot</dt><dd>{form.locationLabel || 'Your campus location'}</dd></div><div><dt>Cancellation</dt><dd>{form.returnPolicy || 'Food orders can only be cancelled before preparation begins.'}</dd></div></dl></article>
+          </>
+        ) : (
+          <>
+            <article><header><h3>Listing information</h3><button type="button" onClick={() => goToStep(1)}>Edit</button></header><dl><div><dt>Type</dt><dd>{form.kind}</dd></div><div><dt>Category</dt><dd>{form.category}</dd></div><div><dt>{form.kind === 'service' ? 'Customer flow' : 'Condition'}</dt><dd>{form.kind === 'service' ? form.serviceMode.replace('_', ' ') : form.condition}</dd></div><div><dt>Description</dt><dd>{form.description || 'Not provided'}</dd></div></dl></article>
+            <article><header><h3>Media and specifications</h3><button type="button" onClick={() => goToStep(2)}>Edit</button></header><dl><div><dt>Images</dt><dd>{form.gallery.length}</dd></div><div><dt>Brand</dt><dd>{form.brand || 'Not specified'}</dd></div><div><dt>Model</dt><dd>{form.model || 'Not specified'}</dd></div><div><dt>Included</dt><dd>{form.included || 'Item only'}</dd></div></dl></article>
+            <article><header><h3>Sale settings</h3><button type="button" onClick={() => goToStep(3)}>Edit</button></header><dl><div><dt>Offers</dt><dd>{form.negotiable ? 'Accepted' : 'Fixed price'}</dd></div><div><dt>Stock</dt><dd>{form.stock}</dd></div><div><dt>Options</dt><dd>{form.variantsText || 'None'}</dd></div></dl></article>
+            <article><header><h3>Fulfilment</h3><button type="button" onClick={() => goToStep(4)}>Edit</button></header><dl><div><dt>Methods</dt><dd>{form.deliveryOptions.join(', ') || 'Not selected'}</dd></div><div><dt>Delivery areas</dt><dd>{form.deliveryZones.map((zone) => `${zone.location} (KSh ${zone.fee || 0})`).join(', ') || 'Pickup only'}</dd></div><div><dt>Location</dt><dd>{form.locationLabel || 'Not provided'}</dd></div><div><dt>Returns</dt><dd>{form.returnPolicy || 'Discuss with buyer'}</dd></div></dl></article>
+          </>
+        )}
       </div>
     </section>
   )
@@ -185,11 +234,12 @@ function ListingReviewStep({ form, goToStep }) {
 
 function MarketplaceListingForm({ studio }) {
   const stepProps = { ...studio, updateField: studio.updateField }
+  const activeStepId = studio.steps[studio.activeStep - 1]?.id
   let content = <ListingBasicsStep {...stepProps} />
-  if (studio.activeStep === 2) content = <ListingMediaStep {...stepProps} />
-  if (studio.activeStep === 3) content = <ListingPricingStep {...stepProps} />
-  if (studio.activeStep === 4) content = <ListingFulfilmentStep {...stepProps} />
-  if (studio.activeStep === 5) content = <ListingReviewStep {...stepProps} />
+  if (activeStepId === 'media') content = <ListingMediaStep {...stepProps} />
+  if (activeStepId === 'pricing') content = <ListingPricingStep {...stepProps} />
+  if (activeStepId === 'fulfilment') content = <ListingFulfilmentStep {...stepProps} />
+  if (activeStepId === 'review') content = <ListingReviewStep {...stepProps} />
 
   return (
     <section className="marketplace-studio-form-card">

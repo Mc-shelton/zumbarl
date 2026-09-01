@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events'
 
 type RealtimeEvent = {
-  type: 'message.created' | 'message.delivered' | 'message.read' | 'notification.created' | 'call.created'
+  type: 'message.created' | 'message.delivered' | 'message.read' | 'notification.created' | 'call.created' | 'circle.message.created' | 'circle.message.removed'
   data: unknown
 }
 

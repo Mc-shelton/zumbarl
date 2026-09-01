@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { FiCheck, FiChevronLeft, FiClock, FiMapPin, FiMessageCircle, FiPackage, FiTruck, FiX } from 'react-icons/fi'
+import './ProfileShopOrders.css'
 
 const FILTERS = [
   ['active', 'Active'], ['seller_confirmation', 'New'], ['packaging', 'Preparing'],
@@ -49,19 +50,21 @@ function label(value = '') {
   return value.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase())
 }
 
-function ProfileShopOrders({ error = '', isLoading, orders, onBack, onMessageBuyer, onRefresh, onUpdateStatus, updatingOrderId }) {
+function ProfileShopOrders({ backLabel = 'Shop', description = 'Confirm paid orders, prepare items and coordinate every handoff.', error = '', eyebrow = 'Seller workspace', isLoading, orders, onBack, onMessageBuyer, onRefresh, onUpdateStatus, title = 'Orders & fulfilment', updatingOrderId }) {
   const [filter, setFilter] = useState('active')
   const [selectedId, setSelectedId] = useState('')
   const filtered = useMemo(() => orders.filter((order) => matchesFilter(order, filter)), [filter, orders])
-  const selected = orders.find((order) => order.id === selectedId) || filtered[0] || null
+  const selected = filtered.find((order) => order.id === selectedId) || filtered[0] || null
   const counts = useMemo(() => Object.fromEntries(FILTERS.map(([key]) => [key, orders.filter((order) => matchesFilter(order, key)).length])), [orders])
 
   return (
     <section className="campus-shop-orders" aria-label="Seller order fulfilment">
       <header className="campus-shop-orders-head">
-        <button type="button" onClick={onBack}><FiChevronLeft aria-hidden="true" /> Shop</button>
-        <div><span>Seller workspace</span><h2>Orders &amp; fulfilment</h2><p>Confirm paid orders, prepare items and coordinate every handoff.</p></div>
-        <button type="button" onClick={onRefresh}>Refresh</button>
+        <nav className="campus-shop-orders-head-actions" aria-label="Order workspace actions">
+          <button type="button" onClick={onBack}><FiChevronLeft aria-hidden="true" /> {backLabel}</button>
+          <button type="button" onClick={onRefresh}>Refresh</button>
+        </nav>
+        <div><span>{eyebrow}</span><h2>{title}</h2><p>{description}</p></div>
       </header>
 
       <div className="campus-shop-order-summary">

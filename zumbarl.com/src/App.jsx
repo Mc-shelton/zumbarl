@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider, useRouteError } from 'react-router
 import './App.css'
 import AccessRoute from './features/auth/components/AccessRoute'
 import RealtimeCallAgent from './features/calls/components/RealtimeCallAgent'
+import CampusPreferenceObserver from './features/navigation/components/CampusPreferenceObserver'
 import { APP_ROUTES } from './features/navigation/routeConfig'
 
 const DYNAMIC_IMPORT_RELOAD_KEY = 'zumbarl.dynamicImportReloaded'
@@ -28,9 +29,10 @@ function AppLoading() {
 }
 
 function renderRouteElement(route) {
+  const observedPage = <><CampusPreferenceObserver />{route.element}</>
   const page = route.access
-    ? <AccessRoute access={route.access}>{route.element}</AccessRoute>
-    : route.element
+    ? <AccessRoute access={route.access}>{observedPage}</AccessRoute>
+    : observedPage
   return <><RealtimeCallAgent />{page}</>
 }
 

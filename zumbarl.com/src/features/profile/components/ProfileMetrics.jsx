@@ -1,9 +1,11 @@
 import { PROFILE_METRICS } from '../constants'
 
 function ProfileMetrics({ metrics = PROFILE_METRICS }) {
+  const resolvedMetrics = metrics?.length ? metrics : PROFILE_METRICS
+
   return (
     <section className="campus-profile-metrics" aria-label="Profile metrics">
-      {metrics.map(({ label, value, meta, Icon, tone = 'purple' }) => (
+      {resolvedMetrics.map(({ label, value, meta, Icon, tone = 'purple' }) => (
         <article key={label} className={`campus-profile-surface campus-profile-metric-card is-${tone}`}>
           {Icon ? (
             <div className="campus-profile-metric-icon">

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { FaFacebookF, FaLinkedinIn, FaTwitter, FaWhatsapp } from 'react-icons/fa'
 import { FiCopy, FiShare2, FiX } from 'react-icons/fi'
 import { useDialog } from '../../../components/ui'
+import { recordRecommendationInteraction } from '../../recommendations/services/recommendationEventService'
 
 function ExploreShareModal({ onClose, target }) {
   const isOpen = Boolean(target?.url)
@@ -24,10 +25,23 @@ function ExploreShareModal({ onClose, target }) {
     { label: 'LinkedIn', icon: FaLinkedinIn, href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}` },
   ]
 
+  function recordShare(channel) {
+    if (!target.id) return
+    const isStory = target.kind === 'story'
+    recordRecommendationInteraction({
+      surface: isStory ? 'stories' : 'connect_feed',
+      entityType: isStory ? 'connect_story' : 'connect_post',
+      entityId: String(target.id),
+      eventType: 'share',
+      metadata: { channel },
+    })
+  }
+
   async function copyLink() {
     try {
       await navigator.clipboard.writeText(target.url)
       setCopyState('Link copied')
+      recordShare('copy_link')
     } catch {
       setCopyState('Copy the link from the field below')
     }
@@ -40,6 +54,7 @@ function ExploreShareModal({ onClose, target }) {
     }
     try {
       await navigator.share({ title: target.title || 'Zumbarl', text: shareText, url: target.url })
+      recordShare('device')
     } catch (error) {
       if (error?.name !== 'AbortError') setCopyState('Could not open your share apps')
     }
@@ -62,7 +77,7 @@ function ExploreShareModal({ onClose, target }) {
 
         <div className="explore-share-networks" aria-label="Social networks">
           {networks.map(({ label, icon: Icon, href }) => (
-            <a key={label} href={href} target="_blank" rel="noreferrer" aria-label={`Share on ${label}`}>
+            <a key={label} href={href} target="_blank" rel="noreferrer" aria-label={`Share on ${label}`} onClick={() => recordShare(label.toLowerCase())}>
               <Icon aria-hidden="true" />
               <span>{label}</span>
             </a>

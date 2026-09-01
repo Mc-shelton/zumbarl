@@ -192,7 +192,7 @@ export default function BusinessCompanyProfilePage() {
             </section>
 
             <nav
-              className="business-company-tabs"
+              className="business-company-tabs zumbarl-segmented-tabs"
               aria-label="Company profile sections"
             >
               {TABS.map((tab) => (

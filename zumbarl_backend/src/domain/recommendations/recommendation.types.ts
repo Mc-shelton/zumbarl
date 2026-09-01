@@ -32,7 +32,8 @@ export const recommendationEventTypes = [
   'add_to_cart',
   'purchase',
   'apply',
-  'rsvp'
+  'rsvp',
+  'poll_vote'
 ] as const
 
 export type RecommendationSurface = typeof recommendationSurfaces[number]
@@ -81,5 +82,6 @@ export const recommendationRewards: Record<RecommendationEventType, number> = {
   add_to_cart: 3,
   purchase: 5,
   apply: 5,
-  rsvp: 3
+  rsvp: 3,
+  poll_vote: 1.5
 }

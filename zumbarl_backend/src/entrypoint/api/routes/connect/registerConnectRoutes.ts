@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { requireRoles, roleGroups } from '../../../../lib/security.js'
-import { cancelCallController, commentOnPostController, commentOnStoryController, connectProfileController, contributeToChamaController, createCallController, createGroupController, createManagedProfilePostController, createMessageController, createPostController, createProjectGroupMessageController, createStoryController, decideAnnouncementRequestController, endCallController, followProfileController, heartbeatController, joinGroupController, listAnnouncementRequestsController, listConnectFeedController, listConversationsController, listGroupsController, listIncomingCallsController, listMessagesController, listMyManagedProfilesController, listProjectGroupMessagesController, listStoriesController, listSuggestedProfilesController, reactToPostController, reactToStoryCommentController, reactToStoryController, readAnnouncementTargetsController, readCallController, readConnectProfileController, readManagedProfileController, readRelationshipController, readStoryEngagementController, readTagContextController, realtimeEventsController, removePostReshareController, reportPostController, resharePostController, respondToCallController, respondToEventController, searchEventOrganizersController, searchPostTagTargetsController, submitPostForAnnouncementController, updateManagedProfileController, updateManagedProfilePostController, updateOwnedPostController, upsertConnectProfileController } from '../../controllers/connect/index.js'
+import { cancelCallController, commentOnPostController, commentOnStoryController, connectProfileController, contributeToChamaController, createCallController, createGroupController, createManagedProfilePostController, createMessageController, createPostController, createProjectGroupMessageController, createStoryController, createSupportCircleMessageController, createSupportCirclePostController, createSupportCircleScheduleController, decideAnnouncementRequestController, decideSupportCircleScheduleAdmissionController, endCallController, followProfileController, heartbeatController, joinGroupController, joinSupportCircleAudioRoomController, listAnnouncementRequestsController, listConnectFeedController, listConversationsController, listGroupsController, listIncomingCallsController, listMessagesController, listMyManagedProfilesController, listProjectGroupMessagesController, listStoriesController, listSuggestedProfilesController, reactToPostController, reactToStoryCommentController, reactToStoryController, readAnnouncementTargetsController, readCallController, readConnectProfileController, readManagedProfileController, readRelationshipController, readStoryEngagementController, readSupportCircleController, readTagContextController, realtimeEventsController, removePostReshareController, removeSupportCircleMemberController, removeSupportCircleMessageController, removeSupportCirclePostController, reportPostController, resharePostController, respondToCallController, respondToEventController, respondToSupportCircleScheduleController, voteOnPollController, searchEventOrganizersController, searchPostTagTargetsController, submitPostForAnnouncementController, updateManagedProfileController, updateManagedProfilePostController, updateOwnedPostController, updateSupportCircleAudioPresenceController, updateSupportCircleMemberRoleController, upsertConnectProfileController } from '../../controllers/connect/index.js'
 import { extractSocialMetricsController, readSocialMarketingProfileController, saveSocialMetricsController } from '../../controllers/connect/index.js'
 import { addManagedProfileManagerController, createManagedProfileController, removeManagedProfileManagerController } from '../../controllers/connect/index.js'
 import { followManagedProfileController } from '../../controllers/connect/index.js'
@@ -58,6 +58,7 @@ async function registerConnectRoutes(app: FastifyInstance) {
   app.post('/posts/:id/reshares', { preHandler: students }, resharePostController)
   app.delete('/posts/:id/reshares', { preHandler: students }, removePostReshareController)
   app.put('/posts/:id/event-response', { preHandler: students }, respondToEventController)
+  app.put('/posts/:id/poll-vote', { preHandler: students }, voteOnPollController)
   app.post('/posts/:id/report', { preHandler: students }, reportPostController)
   app.get('/announcements/targets', { preHandler: students }, readAnnouncementTargetsController)
   app.post('/posts/:id/announcement-submissions', { preHandler: students }, submitPostForAnnouncementController)
@@ -66,6 +67,18 @@ async function registerConnectRoutes(app: FastifyInstance) {
   app.get('/tags/:type/:id/context', { preHandler: students }, readTagContextController)
   app.post('/groups', { preHandler: students }, createGroupController)
   app.get('/groups', { preHandler: students }, listGroupsController)
+  app.get('/groups/:id/support-circle', { preHandler: students }, readSupportCircleController)
+  app.post('/groups/:id/support-circle/messages', { preHandler: students }, createSupportCircleMessageController)
+  app.post('/groups/:id/support-circle/schedules', { preHandler: students }, createSupportCircleScheduleController)
+  app.put('/groups/:id/support-circle/schedules/:scheduleId/rsvp', { preHandler: students }, respondToSupportCircleScheduleController)
+  app.patch('/groups/:id/support-circle/schedules/:scheduleId/admissions/:studentId', { preHandler: students }, decideSupportCircleScheduleAdmissionController)
+  app.post('/groups/:id/support-circle/audio-room', { preHandler: students }, joinSupportCircleAudioRoomController)
+  app.post('/groups/:id/support-circle/audio-room/presence', { preHandler: students }, updateSupportCircleAudioPresenceController)
+  app.patch('/groups/:id/support-circle/members/:membershipId', { preHandler: students }, updateSupportCircleMemberRoleController)
+  app.delete('/groups/:id/support-circle/members/:membershipId', { preHandler: students }, removeSupportCircleMemberController)
+  app.delete('/groups/:id/support-circle/messages/:messageId', { preHandler: students }, removeSupportCircleMessageController)
+  app.post('/groups/:id/support-circle/posts', { preHandler: students }, createSupportCirclePostController)
+  app.delete('/groups/:id/support-circle/posts/:postId', { preHandler: students }, removeSupportCirclePostController)
   app.post('/groups/:id/join', { preHandler: students }, joinGroupController)
   app.post('/groups/:id/chama-contributions', { preHandler: students }, contributeToChamaController)
 }

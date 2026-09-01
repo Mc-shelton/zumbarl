@@ -61,6 +61,8 @@ Micro-advance bridge for delayed disbursements.
 2. Zumbarl Evergreen  
 Continuous internship/attachment recruitment loops with SMEs.
 
+Implementation plan: [Zumbarl Evergreen — End-to-End Implementation Plan and Roadmap](zumbarl_evergreen_implementation_plan.md)
+
 3. Classrooms & Assignments  
 Lecturer/student coordination for schedules, announcements, and submissions.
 

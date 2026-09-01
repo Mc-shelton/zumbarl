@@ -91,7 +91,7 @@ function ProjectTopBar({ activeProject, activeTab, isBusinessViewer = false, onT
         </span>
       </section>
 
-      <nav className="project-workspace-tabs" aria-label="Project tabs">
+      <nav className="project-workspace-tabs zumbarl-segmented-tabs" aria-label="Project tabs">
         {tabs.map((tab) => (
           <button
             key={tab}

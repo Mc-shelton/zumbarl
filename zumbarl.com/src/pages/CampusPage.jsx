@@ -4,18 +4,15 @@ import CampusHeroPanel from '../features/campus/components/CampusHeroPanel'
 import CampusHomeHeader from '../features/campus/components/CampusHomeHeader'
 import CampusHomeRail from '../features/campus/components/CampusHomeRail'
 import CampusProjectInvites from '../features/campus/components/CampusProjectInvites'
-import CampusQuickActions from '../features/campus/components/CampusQuickActions'
-import CampusRecommendations from '../features/campus/components/CampusRecommendations'
 import CampusSearchForm from '../features/campus/components/CampusSearchForm'
-import CampusTrustStrip from '../features/campus/components/CampusTrustStrip'
 import useCampusHomeState from '../features/campus/hooks/useCampusHomeState'
 import { CAMPUS_SEO } from '../features/seo/constants'
 import '../styles/campus.css'
 
 function CampusPage() {
   const {
-    activeMarketplaceHover,
-    activeMarketplaceSlide,
+    assistantPrompts,
+    assistantSource,
     chatMessages,
     chatMode,
     discoveryChips,
@@ -23,23 +20,22 @@ function CampusPage() {
     focusPromptInput,
     handleBackToAi,
     handleMainScroll,
-    handleMarketplaceHoverEnd,
-    handleMarketplaceHoverStart,
     handlePromptSubmit,
     hero,
     heroCardRef,
+    homeError,
+    isAssistantThinking,
+    isHomeLoading,
     mainScrollRef,
-    openRecommendedGig,
     prompt,
     promptInputRef,
     promptPlaceholder,
-    quickActions,
     rail,
-    recommendationSections,
+    reloadHomeExperience,
     resetChatSurface,
+    runAssistantPrompt,
     setPrompt,
     showBackToAiButton,
-    trustPoints,
     viewer,
   } = useCampusHomeState()
 
@@ -55,10 +51,10 @@ function CampusPage() {
 
       <div className="campus-stage">
         <div className="campus-shell">
-          <CampusSidebar activeItemId="home" />
+          <CampusSidebar activeItemId="workspace" />
 
           <section
-            className="campus-main"
+            className="campus-main campus-workspace-main"
             onScroll={handleMainScroll}
             ref={mainScrollRef}
           >
@@ -67,38 +63,49 @@ function CampusPage() {
               showBackToAiButton={showBackToAiButton}
               viewer={viewer}
             />
-            <CampusProjectInvites />
-            <CampusHeroPanel
-              chatMessages={chatMessages}
-              chatMode={chatMode}
-              discoveryChips={discoveryChips}
-              discoverySuggestions={discoverySuggestions}
-              hero={hero}
-              heroCardRef={heroCardRef}
-              onResetChat={resetChatSurface}
-            />
-            <CampusSearchForm
-              chatMode={chatMode}
-              onFocusPrompt={focusPromptInput}
-              onPromptChange={setPrompt}
-              onSubmit={handlePromptSubmit}
-              prompt={prompt}
-              promptInputRef={promptInputRef}
-              promptPlaceholder={promptPlaceholder}
-            />
-            <CampusQuickActions actions={quickActions} />
-            <CampusRecommendations
-              activeMarketplaceHover={activeMarketplaceHover}
-              activeMarketplaceSlide={activeMarketplaceSlide}
-              onMarketplaceHoverEnd={handleMarketplaceHoverEnd}
-              onMarketplaceHoverStart={handleMarketplaceHoverStart}
-              onOpenRecommendedGig={openRecommendedGig}
-              recommendationSections={recommendationSections}
-            />
-            <CampusTrustStrip trustPoints={trustPoints} />
+            {isHomeLoading ? (
+              <section className="campus-workspace-state" aria-live="polite">
+                <span className="campus-workspace-loader" />
+                <h2>Bringing your campus together…</h2>
+                <p>Loading live gigs, events, people and marketplace picks.</p>
+              </section>
+            ) : homeError ? (
+              <section className="campus-workspace-state is-error" role="alert">
+                <img src="/assets/index/bee_nobg.png" alt="" />
+                <h2>Your workspace did not load</h2>
+                <p>{homeError}</p>
+                <button type="button" className="campus-cta-btn" onClick={reloadHomeExperience}>Try again</button>
+              </section>
+            ) : (
+              <>
+                <CampusProjectInvites />
+                <CampusHeroPanel
+                  assistantPrompts={assistantPrompts}
+                  assistantSource={assistantSource}
+                  chatMessages={chatMessages}
+                  chatMode={chatMode}
+                  discoveryChips={discoveryChips}
+                  discoverySuggestions={discoverySuggestions}
+                  hero={hero}
+                  heroCardRef={heroCardRef}
+                  onResetChat={resetChatSurface}
+                  onRunSuggestion={runAssistantPrompt}
+                />
+                <CampusSearchForm
+                  chatMode={chatMode}
+                  isThinking={isAssistantThinking}
+                  onFocusPrompt={focusPromptInput}
+                  onPromptChange={setPrompt}
+                  onSubmit={handlePromptSubmit}
+                  prompt={prompt}
+                  promptInputRef={promptInputRef}
+                  promptPlaceholder={promptPlaceholder}
+                />
+              </>
+            )}
           </section>
 
-          <CampusHomeRail rail={rail} />
+          {!isHomeLoading && !homeError ? <CampusHomeRail rail={rail} /> : <aside className="campus-rail campus-rail-placeholder" />}
         </div>
       </div>
     </main>

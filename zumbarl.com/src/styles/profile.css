@@ -317,7 +317,7 @@
 .campus-profile-tag-row span {
   border: 1px solid #dce2f2;
   background: #f8f9ff;
-  border-radius: 10px;
+  border-radius: 999px;
   padding: 6px 10px;
   font-size: var(--text-small);
   font-weight: 700;
@@ -5682,6 +5682,11 @@
 .campus-profile-editor-fields label { display: grid; gap: 6px; color: #5f6478; font-size: var(--text-micro); font-weight: 800; }
 .campus-profile-editor-fields input, .campus-profile-editor-fields textarea { width: 100%; box-sizing: border-box; border: 1px solid #dfe2ec; border-radius: 10px; padding: 10px 11px; color: #171b3a; background: #fff; font: inherit; font-size: var(--text-caption); outline: 0; }
 .campus-profile-editor-fields input:focus, .campus-profile-editor-fields textarea:focus { border-color: #7652e8; box-shadow: 0 0 0 3px rgba(118,82,232,.1); }
+.campus-profile-editor-fields .campus-profile-visibility-toggle { grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 18px; border: 1px solid #e4e2ed; border-radius: 12px; padding: 12px 14px; background: #faf9fd; cursor: pointer; }
+.campus-profile-visibility-toggle > span { display: grid; gap: 3px; }
+.campus-profile-visibility-toggle strong { color: #252940; font-size: var(--text-caption); font-weight: 750; }
+.campus-profile-visibility-toggle small { color: #73788d; font-size: var(--text-micro); font-weight: 500; line-height: 1.45; }
+.campus-profile-editor-fields .campus-profile-visibility-toggle input { width: 40px; height: 22px; margin: 0; padding: 0; border: 0; border-radius: 999px; accent-color: #7652e8; box-shadow: none; cursor: pointer; }
 .campus-profile-edit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .campus-profile-username-field { border: 1px solid #dfe2ec; border-radius: 10px; display: flex; align-items: center; overflow: hidden; background: #fff; }
 .campus-profile-username-field span { padding-left: 11px; color: #8a8ea0; }
@@ -6372,7 +6377,7 @@
 
 .campus-page-card-stats strong { color: var(--theme-dark); font-size: var(--text-body); }
 
-.campus-page-card.has-vendors { grid-column: span 2; min-height: 0; }
+.campus-page-card.has-vendors { grid-column: auto; min-height: 290px; }
 .campus-page-vendors { display: grid; gap: 8px; padding: 12px; border: 1px solid #e5e1ee; border-radius: 13px; background: #f8f7fb; }
 .campus-page-vendors > header { display: flex; align-items: center; justify-content: space-between; color: var(--campus-muted); font-size: var(--text-micro); font-weight: 900; letter-spacing: .06em; text-transform: uppercase; }
 .campus-page-vendors > header strong { display: grid; width: 24px; height: 24px; place-items: center; border-radius: 999px; background: #ece7f5; color: var(--theme-purple); }
@@ -6457,7 +6462,7 @@
 
 @media (max-width: 1260px) {
   .campus-pages-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .campus-page-card.has-vendors { grid-column: 1 / -1; }
+  .campus-page-card.has-vendors { grid-column: auto; }
 }
 
 @media (max-width: 760px) {
@@ -6471,4 +6476,237 @@
   .campus-page-vendor-row > img { width: 38px; height: 38px; }
   .campus-page-vendor-role { display: none; }
   .campus-pages-actions > button { width: 100%; }
+}
+
+/* Compact profile density ------------------------------------------------- */
+
+.campus-profile-hero {
+  padding: 13px 14px;
+  gap: 12px;
+}
+
+.campus-profile-identity {
+  grid-template-columns: 104px minmax(0, 1fr);
+  gap: 14px;
+}
+
+.campus-profile-photo-wrap {
+  width: 104px;
+  height: 104px;
+}
+
+.campus-profile-photo-wrap span {
+  right: 7px;
+  width: 22px;
+  height: 22px;
+  border-width: 4px;
+}
+
+.campus-profile-identity-copy h1 {
+  font-size: 30px;
+}
+
+.campus-profile-identity-copy > p {
+  margin-top: 6px;
+  font-size: 16px;
+}
+
+.campus-profile-identity-meta {
+  margin-top: 8px;
+}
+
+.campus-profile-tag-row {
+  margin-top: 9px;
+  gap: 6px;
+}
+
+.campus-profile-tag-row span {
+  padding: 5px 9px;
+  font-size: 12px;
+}
+
+.campus-profile-metrics {
+  gap: 8px;
+}
+
+.campus-profile-metric-card {
+  min-height: 84px;
+  padding: 10px 11px;
+}
+
+.campus-profile-metric-card p {
+  font-size: 13px;
+}
+
+.campus-profile-metric-card h3 {
+  margin-top: 1px;
+  font-size: 34px;
+}
+
+.campus-profile-metric-card span {
+  font-size: 11px;
+}
+
+.campus-profile-tabs button {
+  padding: 7px 10px 9px;
+  font-size: 13px;
+}
+
+.campus-profile-rail {
+  gap: 10px;
+}
+
+.campus-profile-side-card {
+  padding: 12px;
+  gap: 8px;
+}
+
+.campus-profile-card-head h2 {
+  font-size: 17px;
+}
+
+.campus-profile-card-head p {
+  margin-top: 4px;
+  font-size: 13px;
+}
+
+.campus-profile-social-stats > div {
+  padding: 9px 8px;
+}
+
+.campus-profile-pipeline-list,
+.campus-profile-activity-list,
+.campus-profile-achievement-list,
+.campus-profile-quick-list {
+  gap: 8px;
+}
+
+.campus-profile-score-card {
+  padding: 12px;
+  gap: 12px;
+}
+
+.campus-profile-endorsement-card {
+  padding: 11px;
+  gap: 8px;
+}
+
+.campus-profile-endorsement-list {
+  gap: 7px;
+}
+
+.campus-profile-endorsement-item {
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 7px;
+  border-radius: 10px;
+}
+
+.campus-profile-endorsement-item > img {
+  width: 36px;
+  height: 36px;
+}
+
+.campus-profile-endorsement-item h3 {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.campus-profile-endorsement-item p,
+.campus-profile-endorsement-item blockquote {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.campus-profile-endorsement-item blockquote {
+  font-size: 12px;
+}
+
+.campus-profile-endorsement-item strong {
+  font-size: 12px;
+}
+
+.campus-profile-endorsement-foot {
+  padding-top: 8px;
+  gap: 6px;
+}
+
+.campus-profile-endorsement-foot p {
+  font-size: 11px;
+}
+
+.campus-profile-endorsement-foot div {
+  height: 6px;
+}
+
+.campus-profile-pipeline-list article {
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 8px;
+  padding-bottom: 8px;
+}
+
+.campus-profile-pipeline-list img {
+  width: 34px;
+  height: 34px;
+}
+
+.campus-profile-pipeline-note {
+  padding: 7px 8px;
+  font-size: 10px;
+}
+
+.campus-profile-activity-list article {
+  gap: 7px;
+  padding-bottom: 8px;
+}
+
+.campus-profile-activity-list h3 {
+  font-size: 13px;
+  line-height: 1.25;
+}
+
+.campus-profile-activity-list p {
+  margin-top: 2px;
+  font-size: 11px;
+  line-height: 1.35;
+  -webkit-line-clamp: 2;
+}
+
+.campus-profile-activity-list span {
+  font-size: 9px;
+}
+
+.campus-profile-quick-list button {
+  padding: 5px 0;
+}
+
+.campus-profile-quick-list button span {
+  font-size: 13px;
+}
+
+.campus-profile-dual-grid .campus-profile-card-head h2 {
+  font-weight: 650;
+}
+
+.campus-profile-dual-grid .campus-link-btn {
+  font-weight: 600;
+}
+
+.campus-profile-achievement-list h3 {
+  font-weight: 600;
+}
+
+.campus-profile-earnings-list p {
+  font-weight: 500;
+}
+
+.campus-profile-earnings-list strong {
+  font-weight: 600;
+}
+
+@media (min-width: 981px) {
+  .campus-profile-metrics {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
 }

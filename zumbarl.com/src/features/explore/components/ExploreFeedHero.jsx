@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { FiUsers } from 'react-icons/fi'
+import { FiSliders } from 'react-icons/fi'
 import { Breadcrumb } from '../../../components/ui'
 
 function ExploreFeedHero({
   activeFilter,
   areStoriesVisible,
   filters,
+  isHome = false,
   onOpenStory,
   onSelectFilter,
   onPrepareProfile,
@@ -23,31 +24,31 @@ function ExploreFeedHero({
   })
 
   return (
-    <section className="explore-campus-feed-hero" aria-label="Explore campus feed">
-      <Breadcrumb
-        className="explore-campus-breadcrumb"
-        items={[
-          { label: 'Campus' },
-          { label: 'Explore Campus' },
-          { label: 'Connect' },
-        ]}
-      />
+    <section className="explore-campus-feed-hero" aria-label={isHome ? 'Zumbarl home feed' : 'Explore campus feed'}>
+      {!isHome ? (
+        <Breadcrumb
+          className="explore-campus-breadcrumb"
+          items={[
+            { label: 'Campus' },
+            { label: 'Explore Campus' },
+            { label: 'Connect' },
+          ]}
+        />
+      ) : null}
 
       <header className="explore-campus-feed-hero-head">
         <div>
           <h1>Explore Campus</h1>
           <p>
-            Zumbarl Connect lives here: stories, tagged posts, groups, and chamas that route into work, learning, and marketplace actions.
+            {isHome
+              ? 'Catch up with your people, discover what is happening, and turn campus connections into real opportunities.'
+              : 'Discover stories, people, groups, and campus moments beyond the accounts you already follow.'}
           </p>
         </div>
         <div className="explore-campus-feed-hero-actions">
-          <button type="button" className="explore-campus-ghost-btn" onClick={onPublishStory}>
-            <FiUsers aria-hidden="true" />
-            Add story
-          </button>
           <button type="button" className="explore-campus-ghost-btn" onClick={onPrepareProfile}>
-            <FiUsers aria-hidden="true" />
-            Connect settings
+            <FiSliders aria-hidden="true" />
+            Tune my feed
           </button>
         </div>
       </header>
@@ -61,9 +62,9 @@ function ExploreFeedHero({
       </nav>
 
       <section className={`explore-campus-stories${areStoriesVisible ? '' : ' is-hidden'}`} aria-label="Stories">
-        <header className="explore-story-directory-head"><h2>Stories</h2><nav aria-label="Story categories">{[['all', 'All'], ['people', 'People'], ['groups', 'Groups'], ['libraries', 'Libraries']].map(([id, label]) => <button type="button" key={id} className={storyFilter === id ? 'is-active' : ''} onClick={() => setStoryFilter(id)}>{label}</button>)}</nav></header>
+        <header className="explore-story-directory-head"><h2>Stories</h2><nav aria-label="Story categories">{[['all', 'All'], ['people', 'People'], ['pages', 'Pages'], ['groups', 'Groups'], ['libraries', 'Libraries']].map(([id, label]) => <button type="button" key={id} className={storyFilter === id ? 'is-active' : ''} onClick={() => setStoryFilter(id)}>{label}</button>)}</nav></header>
         <div className="explore-campus-stories-row">
-          <button type="button" className="explore-campus-story-item explore-campus-story-add" onClick={onPublishStory} aria-label="Add another story">
+          <button type="button" className="explore-campus-story-item explore-campus-story-add" onClick={onPublishStory} aria-label="Add a story">
             <div className="explore-campus-story-avatar is-own"><span className="explore-campus-story-add-icon">+</span><span className="explore-campus-story-plus">+</span></div>
             <p>Add story</p>
           </button>

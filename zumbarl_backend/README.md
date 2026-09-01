@@ -12,6 +12,7 @@ Fastify + TypeScript API for the current Zumbarl frontend and process docs. The 
 - Marketplace shop setup, listings, cart, checkout, fulfillment statuses, reviews, disputes, and score inputs.
 - Finance wallets, ledgers, escrows, payouts, and release operations.
 - Wellness/support cases, counselor bookings, uploads, moderation, and admin metrics.
+- Evergreen recurring internships/attachments, consented matching, formal offers, exclusive placement locks, supervision, completion, billing entitlements, and recurrence.
 
 ## Run Locally
 
@@ -25,6 +26,30 @@ npm run dev
 ```
 
 The API runs on `http://localhost:4100`. Swagger UI is available at `http://localhost:4100/docs`.
+
+### Zumbarl Evergreen
+
+Evergreen is exposed under `/api/v1/evergreen` and is guarded by the database-backed `evergreen.enabled` feature flag. Its API groups are:
+
+- company eligibility, programs, cohorts, consented candidates and formal offers;
+- student readiness, placement availability, explained matches, applications, offers and placement history;
+- shared placement onboarding, goals, scheduled check-ins, evidence, evaluations and mutually accepted amendments;
+- protected student support, operations review/resolution, failed-job/event visibility and idempotent replay;
+- finance-issued invoices, verified settlement confirmation, dated entitlements, suspension and refunds.
+
+Evergreen maintenance runs once at API startup and every 15 minutes. Each job uses a database lease and records its result in `evergreen_job_runs`. Operations can replay a named job with `POST /api/v1/evergreen/admin/jobs/:name/replay`; failed outbox events are visible at `GET /api/v1/evergreen/admin/failures` and can be requeued through `POST /api/v1/evergreen/admin/events/:id/replay`.
+
+Use forward migrations for Evergreen rather than `db push`:
+
+```bash
+npx prisma migrate deploy
+npx prisma migrate status
+npx prisma db execute --file prisma/migrations/20260831190000_add_evergreen/verify.sql
+```
+
+The verification SQL is read-only and every query must return zero rows. Local defaults remain `http://localhost:4100` for the API, PostgreSQL on `localhost:55432`, and Redis on `localhost:56379`.
+
+`EVERGREEN_QUALIFICATION_GIGS` controls the verified-gig qualification threshold and defaults to `3`; `EVERGREEN_REPEAT_HIRE_LIMIT` controls repeat placements with one company and also defaults to `3` unless an approved mentorship alternative exists.
 
 ### Local road-distance routing
 
@@ -81,5 +106,6 @@ For 120,000 students and 30,000 businesses, keep these deployment assumptions:
 | Marketplace | `/api/v1/marketplace` |
 | Finance | `/api/v1/finance` |
 | Support/Wellness | `/api/v1/support` |
+| Evergreen | `/api/v1/evergreen` |
 | Uploads | `/api/v1/uploads` |
 | Admin | `/api/v1/admin` |

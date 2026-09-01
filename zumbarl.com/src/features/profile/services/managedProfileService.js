@@ -8,5 +8,6 @@ const addManagedProfileManager = (id, payload) => sendZumbarlApiRequest(`/connec
 const removeManagedProfileManager = (id, userId) => sendZumbarlApiRequest(`/connect/managed-profiles/${encodeURIComponent(id)}/managers/${encodeURIComponent(userId)}`, { method: 'DELETE' })
 const setManagedProfileFollow = (id, active) => sendZumbarlApiRequest(`/connect/managed-profiles/${encodeURIComponent(id)}/follow`, { method: active ? 'POST' : 'DELETE' })
 const createManagedProfilePost = (id, payload) => sendZumbarlApiRequest(`/connect/managed-profiles/${encodeURIComponent(id)}/posts`, { method: 'POST', body: JSON.stringify(payload) })
+const updateManagedProfilePost = (id, postId, payload) => sendZumbarlApiRequest(`/connect/managed-profiles/${encodeURIComponent(id)}/posts/${encodeURIComponent(postId)}`, { method: 'PATCH', body: JSON.stringify(payload) })
 
-export { addManagedProfileManager, createManagedProfile, createManagedProfilePost, listMyManagedProfiles, readManagedProfile, removeManagedProfileManager, setManagedProfileFollow, updateManagedProfile }
+export { addManagedProfileManager, createManagedProfile, createManagedProfilePost, listMyManagedProfiles, readManagedProfile, removeManagedProfileManager, setManagedProfileFollow, updateManagedProfile, updateManagedProfilePost }

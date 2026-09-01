@@ -1,4 +1,17 @@
 import { sendZumbarlApiRequest } from '../../../lib/sendZumbarlApiRequest'
+import {
+  recordRecommendationEventsBestEffort,
+  recordRecommendationImpressions,
+  recordRecommendationInteraction,
+} from '../../recommendations/services/recommendationEventService'
+
+const learningResourceEvent = (resourceId, eventType, metadata) => ({
+  surface: 'learning',
+  entityType: 'knowledge_resource',
+  entityId: String(resourceId),
+  eventType,
+  ...(metadata ? { metadata } : {}),
+})
 
 function readLearnExperience() {
   return Promise.all([
@@ -60,7 +73,48 @@ function readRoadmapRecommendations(enrollmentId) {
 
 function readKnowledgeHub(filters = {}) {
   const params = new URLSearchParams(Object.entries(filters).filter(([, value]) => value && value !== 'all'))
-  return sendZumbarlApiRequest(`/learn/knowledge${params.size ? `?${params}` : ''}`)
+  return sendZumbarlApiRequest(`/learn/knowledge${params.size ? `?${params}` : ''}`).then((response) => {
+    recordRecommendationImpressions('learning', 'knowledge_resource', response?.resources, 80)
+    return response
+  })
+}
+
+function recordKnowledgeResourceOpen(resourceId) {
+  if (!resourceId) return
+  recordRecommendationInteraction(learningResourceEvent(resourceId, 'open'))
+}
+
+function recordKnowledgeResourceDwell(resourceId, durationSeconds) {
+  if (!resourceId) return
+  const duration = Math.min(3600, Math.max(0, Math.round(Number(durationSeconds) || 0)))
+  if (duration < 10) return
+  recordRecommendationEventsBestEffort([learningResourceEvent(resourceId, 'dwell', { durationSeconds: duration })])
+}
+
+function recordKnowledgeResourceDownload(resourceId, source = 'attachment') {
+  if (!resourceId) return
+  recordRecommendationInteraction(learningResourceEvent(resourceId, 'download', { source }))
+}
+
+function recordKnowledgeResourceVideoPlay(resourceId, source = 'attachment') {
+  if (!resourceId) return
+  recordRecommendationInteraction(learningResourceEvent(resourceId, 'video_play', { source }))
+}
+
+function recordKnowledgeResourceProgress(resourceId, progressPercent) {
+  if (!resourceId) return
+  const progress = Math.min(100, Math.max(0, Math.round(Number(progressPercent) || 0)))
+  const milestone = [25, 50, 75, 100].findLast((value) => progress >= value)
+  if (!milestone) return
+  recordRecommendationInteraction(
+    learningResourceEvent(resourceId, 'progress', { progressPercent: milestone }),
+    { dedupeKey: `progress-${milestone}` },
+  )
+}
+
+function recordKnowledgeResourceComplete(resourceId, source = 'attachment') {
+  if (!resourceId) return
+  recordRecommendationInteraction(learningResourceEvent(resourceId, 'complete', { source }))
 }
 
 function readKnowledgeSpace(spaceSlug) {
@@ -192,6 +246,14 @@ function setKnowledgeSpaceFollowing(spaceId, active) {
 function accessKnowledgeResource(resourceId, action) {
   return sendZumbarlApiRequest(`/learn/knowledge/resources/${encodeURIComponent(resourceId)}/access`, {
     method: 'POST', body: JSON.stringify({ action }),
+  }).then((resource) => {
+    const normalizedAction = String(action).toLowerCase()
+    const eventType = { read: 'start', save: 'save', borrow: 'borrow' }[normalizedAction]
+    const status = resource?.viewerActions?.[normalizedAction]?.status
+    if (eventType && status !== 'cancelled') {
+      recordRecommendationInteraction(learningResourceEvent(resourceId, eventType))
+    }
+    return resource
   })
 }
 
@@ -202,6 +264,9 @@ function readKnowledgeResourceCheckout(resourceId) {
 function purchaseKnowledgeResource(resourceId) {
   return sendZumbarlApiRequest(`/learn/knowledge/resources/${encodeURIComponent(resourceId)}/purchase`, {
     method: 'POST', body: JSON.stringify({ paymentMethod: 'WALLET' }),
+  }).then((resource) => {
+    recordRecommendationInteraction(learningResourceEvent(resourceId, 'purchase'))
+    return resource
   })
 }
 
@@ -230,6 +295,12 @@ export {
   readRoadmapRecommendations,
   removeKnowledgeManager,
   purchaseKnowledgeResource,
+  recordKnowledgeResourceDownload,
+  recordKnowledgeResourceDwell,
+  recordKnowledgeResourceComplete,
+  recordKnowledgeResourceOpen,
+  recordKnowledgeResourceProgress,
+  recordKnowledgeResourceVideoPlay,
   sendKnowledgeRoomMessage,
   searchKnowledgeUnits,
   submitLearningPractice,

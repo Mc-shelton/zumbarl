@@ -8,6 +8,13 @@ function rankedEntityId(item: RankedEntity) {
   return String((item as { id?: unknown }).id ?? '')
 }
 
+function rankedEntityCreatedAt(item: RankedEntity) {
+  const value = (item as { createdAt?: unknown }).createdAt
+  if (!value) return null
+  const date = value instanceof Date ? value : new Date(String(value))
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
 function fallbackRanking<T extends RankedEntity>(items: T[]): RankedResult<T>[] {
   return items.map((item) => ({
     ...item,
@@ -36,7 +43,21 @@ async function rankWithRecommendations<T extends RankedEntity>(input: {
 
     const fallbackPosition = new Map(items.map((item, index) => [rankedEntityId(item), index]))
     const scoreByEntity = new Map(usableScores.map((value) => [value.entityId, value]))
-    return [...items]
+    const latestTrainingTime = usableScores.reduce((latest, value) => {
+      const trainedAt = value.modelArtifact.trainedAt?.getTime() ?? 0
+      return Math.max(latest, trainedAt)
+    }, 0)
+    const liveItems: T[] = []
+    const rankableItems: T[] = []
+    items.forEach((item) => {
+      const createdAt = rankedEntityCreatedAt(item)
+      if (!scoreByEntity.has(rankedEntityId(item)) && createdAt && createdAt.getTime() > latestTrainingTime) {
+        liveItems.push(item)
+      } else {
+        rankableItems.push(item)
+      }
+    })
+    const learnedItems = rankableItems
       .sort((left, right) => {
         const leftId = rankedEntityId(left)
         const rightId = rankedEntityId(right)
@@ -60,6 +81,10 @@ async function rankWithRecommendations<T extends RankedEntity>(input: {
           }
         }
       })
+    // Cached model scores are a ranking aid, not an eligibility gate. Items
+    // published after the active model was trained (including reshares) keep
+    // the application's live order until the next training run scores them.
+    return [...fallbackRanking(liveItems), ...learnedItems]
   } catch {
     // A missing table, stale deployment, or temporary database/model failure must
     // never take down a user-facing listing.

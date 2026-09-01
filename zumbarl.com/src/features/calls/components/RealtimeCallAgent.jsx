@@ -93,6 +93,10 @@ function RealtimeCallAgent() {
         window.dispatchEvent(new CustomEvent('zumbarl:message-created', { detail: event.data }))
       } else if (event.type === 'message.delivered' || event.type === 'message.read') {
         window.dispatchEvent(new CustomEvent('zumbarl:message-receipt', { detail: event.data }))
+      } else if (event.type === 'circle.message.created') {
+        window.dispatchEvent(new CustomEvent('zumbarl:circle-message-created', { detail: event.data }))
+      } else if (event.type === 'circle.message.removed') {
+        window.dispatchEvent(new CustomEvent('zumbarl:circle-message-removed', { detail: event.data }))
       }
     }, controller.signal).catch(() => {})
     return () => controller.abort()

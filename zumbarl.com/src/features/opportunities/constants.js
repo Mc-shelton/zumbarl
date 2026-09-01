@@ -28,12 +28,12 @@ export function resolveOpportunityIntent(value) {
 }
 
 export const OPPORTUNITY_TYPES = [
-  { id: 'all', label: 'All Opportunities', Icon: FiBriefcase },
-  { id: 'part-time', label: 'Part-time Jobs', Icon: FiCalendar },
-  { id: 'gigs', label: 'Gigs & Freelance', Icon: FiShoppingBag },
-  { id: 'internships', label: 'Internships', Icon: FiBookOpen },
-  { id: 'remote', label: 'Remote', Icon: FiUsers },
-  { id: 'on-campus', label: 'On-campus', Icon: FiHome },
+  { id: 'all', label: 'All opportunities', description: 'Everything available', Icon: FiBriefcase },
+  { id: 'part-time', label: 'Part-time jobs', description: 'Flexible paid work', Icon: FiCalendar },
+  { id: 'gigs', label: 'Gigs & freelance', description: 'Projects and tasks', Icon: FiShoppingBag },
+  { id: 'internships', label: 'Internships', description: 'Build work experience', Icon: FiBookOpen },
+  { id: 'remote', label: 'Remote', description: 'Work from anywhere', Icon: FiUsers },
+  { id: 'on-campus', label: 'On-campus', description: 'Opportunities near you', Icon: FiHome },
 ]
 export const DEFAULT_OPPORTUNITY_TYPE_ID = 'all'
 

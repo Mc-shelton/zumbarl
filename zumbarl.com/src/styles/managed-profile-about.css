@@ -195,6 +195,10 @@
   font-size: var(--text-title-md);
 }
 
+.managed-profile-about-head > h2 {
+  margin-top: 0;
+}
+
 .managed-profile-about-edit {
   display: inline-flex;
   align-items: center;
@@ -261,7 +265,8 @@
   color: #81516f;
 }
 
-.managed-profile-contact-list span > span {
+.managed-profile-contact-list a > span,
+.managed-profile-contact-list > span > span {
   display: grid;
   gap: 2px;
   min-width: 0;
@@ -361,6 +366,14 @@
   border-radius: 9px;
   font: inherit;
   resize: vertical;
+}
+
+.managed-profile-editor label > small {
+  color: #7e87a2;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+  text-transform: none;
 }
 
 .managed-profile-detail-row {

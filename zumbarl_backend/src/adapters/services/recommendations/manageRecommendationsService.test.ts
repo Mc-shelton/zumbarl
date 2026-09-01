@@ -11,7 +11,7 @@ describe('rankWithRecommendations', () => {
     vi.spyOn(recommendationsRepository, 'listScores').mockResolvedValue([
       {
         entityId: 'best', score: 0.91, rank: 1, reason: { retriever: 'lightfm-warp' },
-        modelArtifact: { version: 'v1', algorithm: 'lightfm-warp', status: 'ACTIVE', expiresAt: null }
+        modelArtifact: { version: 'v1', algorithm: 'lightfm-warp', status: 'ACTIVE', trainedAt: new Date('2026-08-20'), expiresAt: null }
       }
     ] as never)
 
@@ -22,6 +22,30 @@ describe('rankWithRecommendations', () => {
     expect(result.map(({ id }) => id)).toEqual(['best', 'recent', 'unscored'])
     expect(result[0].recommendation).toMatchObject({ source: 'ml', modelVersion: 'v1', score: 0.91 })
     expect(result[1].recommendation).toEqual({ source: 'fallback' })
+  })
+
+  it('places posts published after training into the live feed without retraining', async () => {
+    vi.spyOn(recommendationsRepository, 'listScores').mockResolvedValue([
+      {
+        entityId: 'learned', score: 0.99, rank: 1, reason: null,
+        modelArtifact: { version: 'v1', algorithm: 'lightfm-warp', status: 'ACTIVE', trainedAt: new Date('2026-08-20'), expiresAt: null }
+      }
+    ] as never)
+
+    const result = await rankWithRecommendations({
+      studentId: 'brian',
+      surface: 'connect_feed',
+      entityType: 'connect_post',
+      items: [
+        { id: 'new-post', createdAt: new Date('2026-08-21') },
+        { id: 'new-reshare', createdAt: new Date('2026-08-20T12:00:00Z') },
+        { id: 'learned', createdAt: new Date('2026-08-10') },
+      ],
+    })
+
+    expect(result.map(({ id }) => id)).toEqual(['new-post', 'new-reshare', 'learned'])
+    expect(result.slice(0, 2).every(({ recommendation }) => recommendation.source === 'fallback')).toBe(true)
+    expect(result[2].recommendation.source).toBe('ml')
   })
 
   it('keeps the original order when the model store is unavailable', async () => {
@@ -39,7 +63,7 @@ describe('rankWithRecommendations', () => {
     vi.spyOn(recommendationsRepository, 'listScores').mockResolvedValue([
       {
         entityId: 'best', score: 1, rank: 1, reason: null,
-        modelArtifact: { version: 'old', algorithm: 'lightfm-warp', status: 'ACTIVE', expiresAt: new Date('2026-01-01') }
+        modelArtifact: { version: 'old', algorithm: 'lightfm-warp', status: 'ACTIVE', trainedAt: new Date('2025-12-31'), expiresAt: new Date('2026-01-01') }
       }
     ] as never)
 

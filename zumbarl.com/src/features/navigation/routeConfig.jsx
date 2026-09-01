@@ -1,5 +1,6 @@
 import { Navigate } from "react-router-dom";
 import { ACCESS_KEYS } from "../auth/roleConfig";
+import CampusLandingRedirect from "./components/CampusLandingRedirect";
 import {
   AuthPage,
   BusinessApplicantsBrowsePage,
@@ -23,6 +24,7 @@ import {
   CallRoomPage,
   CampusPage,
   CampusProfilePage,
+  CampusVendorProfilePage,
   CampusVendorWorkspacePage,
   ExploreCampusPage,
   HelpPage,
@@ -42,11 +44,20 @@ import {
   StudentMarketingCampaignPage,
   StudentInterviewPage,
   SuperAdminPage,
+  SupportCirclePage,
+  WellbeingPage,
+  EvergreenWorkspacePage,
 } from "./routePages";
 
 export const APP_ROUTES = [
   { path: "/", element: <HomePage /> },
-  { path: "/campus", access: ACCESS_KEYS.campus.home, element: <CampusPage /> },
+  { path: "/campus/landing", access: ACCESS_KEYS.campus.home, element: <CampusLandingRedirect /> },
+  { path: "/campus", access: ACCESS_KEYS.campus.home, element: <ExploreCampusPage /> },
+  {
+    path: "/campus/workspace",
+    access: ACCESS_KEYS.campus.home,
+    element: <CampusPage />,
+  },
   {
     path: "/campus/cart",
     access: ACCESS_KEYS.cart.view,
@@ -88,13 +99,56 @@ export const APP_ROUTES = [
     element: <ExploreCampusPage />,
   },
   {
-    path: "/campus/community",
-    element: <Navigate to="/campus/explore" replace />,
+    path: "/campus/wellbeing",
+    access: ACCESS_KEYS.campus.wellness,
+    element: <WellbeingPage />,
   },
+  {
+    path: "/campus/wellbeing/circles/:groupId",
+    access: ACCESS_KEYS.campus.wellness,
+    element: <SupportCirclePage />,
+  },
+  { path: "/campus/community", element: <Navigate to="/campus/wellbeing" replace /> },
+  { path: "/campus/community/wellbeing", element: <Navigate to="/campus/wellbeing" replace /> },
   {
     path: "/campus/learn",
     access: ACCESS_KEYS.campus.learn,
     element: <LearnPage />,
+  },
+  {
+    path: "/campus/career/evergreen",
+    access: ACCESS_KEYS.campus.learn,
+    element: <EvergreenWorkspacePage surface="student" view="readiness" />,
+  },
+  {
+    path: "/campus/career/evergreen/readiness",
+    access: ACCESS_KEYS.campus.learn,
+    element: <EvergreenWorkspacePage surface="student" view="readiness" />,
+  },
+  {
+    path: "/campus/career/evergreen/matches",
+    access: ACCESS_KEYS.opportunities.placementAvailability,
+    element: <EvergreenWorkspacePage surface="student" view="matches" />,
+  },
+  {
+    path: "/campus/career/evergreen/offers",
+    access: ACCESS_KEYS.opportunities.formalOffers,
+    element: <EvergreenWorkspacePage surface="student" view="offers" />,
+  },
+  {
+    path: "/campus/career/evergreen/offers/:offerId",
+    access: ACCESS_KEYS.opportunities.formalOffers,
+    element: <EvergreenWorkspacePage surface="student" view="offers" />,
+  },
+  {
+    path: "/campus/career/evergreen/placements",
+    access: ACCESS_KEYS.opportunities.ownPipeline,
+    element: <EvergreenWorkspacePage surface="student" view="placements" />,
+  },
+  {
+    path: "/campus/career/evergreen/placements/:placementId",
+    access: ACCESS_KEYS.opportunities.ownPipeline,
+    element: <EvergreenWorkspacePage surface="student" view="placement" />,
   },
   {
     path: "/campus/learn/spaces/:spaceSlug",
@@ -130,6 +184,11 @@ export const APP_ROUTES = [
     path: "/campus/marketplace/listings/new",
     access: ACCESS_KEYS.marketplace.sell,
     element: <MarketplaceListingStudioPage />,
+  },
+  {
+    path: "/campus/vendors/:vendorSlug",
+    access: ACCESS_KEYS.marketplace.view,
+    element: <CampusVendorProfilePage />,
   },
   {
     path: "/campus/vendors/:vendorSlug/manage",
@@ -179,6 +238,31 @@ export const APP_ROUTES = [
     path: "/business/projects",
     access: ACCESS_KEYS.projects.view,
     element: <BusinessProjectsPage />,
+  },
+  {
+    path: "/business/evergreen",
+    access: [ACCESS_KEYS.business.pipelineBasic, ACCESS_KEYS.business.pipelineFull, ACCESS_KEYS.business.pipelineRead],
+    element: <EvergreenWorkspacePage surface="company" view="overview" />,
+  },
+  {
+    path: "/business/evergreen/programs/new",
+    access: ACCESS_KEYS.business.pipelineFull,
+    element: <EvergreenWorkspacePage surface="company" view="new-program" />,
+  },
+  {
+    path: "/business/evergreen/programs/:programId",
+    access: [ACCESS_KEYS.business.pipelineBasic, ACCESS_KEYS.business.pipelineFull, ACCESS_KEYS.business.pipelineRead],
+    element: <EvergreenWorkspacePage surface="company" view="program" />,
+  },
+  {
+    path: "/business/evergreen/cohorts/:cohortId",
+    access: [ACCESS_KEYS.business.pipelineFull, ACCESS_KEYS.business.pipelineRead],
+    element: <EvergreenWorkspacePage surface="company" view="cohort" />,
+  },
+  {
+    path: "/business/evergreen/placements/:placementId",
+    access: [ACCESS_KEYS.business.pipelineFull, ACCESS_KEYS.business.pipelineRead],
+    element: <EvergreenWorkspacePage surface="company" view="placement" />,
   },
   { path: "/business", element: <BusinessPage /> },
   { path: "/calls/:callId", element: <CallRoomPage /> },
@@ -271,6 +355,31 @@ export const APP_ROUTES = [
     path: "/admin/super-admin",
     access: ACCESS_KEYS.platform.all,
     element: <SuperAdminPage />,
+  },
+  {
+    path: "/admin/evergreen/reviews",
+    access: ACCESS_KEYS.platform.gigOversight,
+    element: <EvergreenWorkspacePage surface="operations" view="reviews" />,
+  },
+  {
+    path: "/admin/evergreen/cohorts",
+    access: ACCESS_KEYS.platform.gigOversight,
+    element: <EvergreenWorkspacePage surface="operations" view="reviews" />,
+  },
+  {
+    path: "/admin/evergreen/placements",
+    access: ACCESS_KEYS.platform.gigOversight,
+    element: <EvergreenWorkspacePage surface="operations" view="placements" />,
+  },
+  {
+    path: "/admin/evergreen/exceptions",
+    access: ACCESS_KEYS.platform.gigOversight,
+    element: <EvergreenWorkspacePage surface="operations" view="exceptions" />,
+  },
+  {
+    path: "/admin/evergreen/billing",
+    access: ACCESS_KEYS.finance.billing,
+    element: <EvergreenWorkspacePage surface="operations" view="billing" />,
   },
   { path: "/login", element: <AuthPage defaultMode="login" /> },
   { path: "/register", element: <AuthPage defaultMode="register" /> },

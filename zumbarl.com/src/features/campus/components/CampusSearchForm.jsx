@@ -1,4 +1,4 @@
-import { FiArrowRight, FiSearch } from 'react-icons/fi'
+import { FiArrowRight, FiZap } from 'react-icons/fi'
 
 function CampusSearchForm({
   chatMode,
@@ -8,16 +8,19 @@ function CampusSearchForm({
   prompt,
   promptInputRef,
   promptPlaceholder,
+  isThinking,
 }) {
   return (
-    <form className="campus-search" onSubmit={onSubmit}>
-      <FiSearch aria-hidden="true" />
+    <form className="campus-search campus-copilot-search" onSubmit={onSubmit} aria-busy={isThinking}>
+      <FiZap aria-hidden="true" />
       <input
         ref={promptInputRef}
         type="search"
         placeholder={promptPlaceholder}
         value={prompt}
         onChange={(event) => onPromptChange(event.target.value)}
+        disabled={isThinking}
+        aria-label="Ask Zumbarl about your campus"
       />
       <div className="campus-search-actions">
         {!chatMode && (
@@ -25,7 +28,8 @@ function CampusSearchForm({
             Cmd /
           </button>
         )}
-        <button type="submit" className="campus-search-send" aria-label="Send prompt">
+        <button type="submit" className="campus-search-send" aria-label="Ask Zumbarl" disabled={isThinking || !prompt.trim()}>
+          <span>{isThinking ? 'Searching' : 'Ask Zumbarl'}</span>
           <FiArrowRight aria-hidden="true" />
         </button>
       </div>

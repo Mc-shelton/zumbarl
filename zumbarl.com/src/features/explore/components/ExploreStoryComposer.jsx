@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FiBookOpen, FiImage, FiSearch, FiShoppingBag, FiUploadCloud, FiUsers, FiX } from 'react-icons/fi'
+import { FiBookOpen, FiImage, FiSearch, FiShoppingBag, FiType, FiUploadCloud, FiUsers, FiX } from 'react-icons/fi'
 import { useDialog } from '../../../components/ui'
 import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
@@ -11,7 +11,15 @@ const FALLBACK_MEDIA = {
   product: '/assets/index/business_page_images/optimized/sable-flow-T74mVg__F_k-unsplash.webp',
 }
 
-function ExploreStoryComposer({ isOpen, onClose, onPublish }) {
+function ExploreStoryComposer({
+  allowProductStories = true,
+  fixedKnowledgeSpace = null,
+  isOpen,
+  onClose,
+  onPublish,
+  productsOverride = null,
+  publishingAs = null,
+}) {
   const dialogRef = useDialog({ isOpen, onClose })
   const [storyKind, setStoryKind] = useState('personal')
   const [title, setTitle] = useState('')
@@ -25,12 +33,13 @@ function ExploreStoryComposer({ isOpen, onClose, onPublish }) {
   const [error, setError] = useState('')
   const [knowledgeSpaces, setKnowledgeSpaces] = useState([])
   const [knowledgeSpaceId, setKnowledgeSpaceId] = useState('')
-  const selectedProduct = useMemo(() => products.find((item) => item.id === selectedProductId) || null, [products, selectedProductId])
+  const availableProducts = useMemo(() => (productsOverride || products).filter((item) => ['ACTIVE', 'PUBLISHED'].includes(String(item.status).toUpperCase())), [products, productsOverride])
+  const selectedProduct = useMemo(() => availableProducts.find((item) => item.id === selectedProductId) || null, [availableProducts, selectedProductId])
   const visibleProducts = useMemo(() => {
     const query = productQuery.trim().toLowerCase()
-    if (!query) return products
-    return products.filter((product) => `${product.title || ''} ${product.category || ''} ${product.description || ''} ${product.priceAmount || ''}`.toLowerCase().includes(query))
-  }, [productQuery, products])
+    if (!query) return availableProducts
+    return availableProducts.filter((product) => `${product.title || ''} ${product.category || ''} ${product.description || ''} ${product.priceAmount || ''}`.toLowerCase().includes(query))
+  }, [availableProducts, productQuery])
   const [mediaPreviewUrl, setMediaPreviewUrl] = useState('')
   const previewVideoRef = useRef(null)
   const [videoDuration, setVideoDuration] = useState(0)
@@ -39,15 +48,15 @@ function ExploreStoryComposer({ isOpen, onClose, onPublish }) {
 
   useEffect(() => {
     if (!isOpen) return
-    setStoryKind('personal'); setTitle(''); setCaption(''); setMediaFile(null); setSelectedProductId(''); setProductQuery(''); setVideoDuration(0); setTrimStart(0); setTrimEnd(0); setKnowledgeSpaceId(''); setError('')
-  }, [isOpen])
+    setStoryKind('personal'); setTitle(''); setCaption(''); setMediaFile(null); setSelectedProductId(''); setProductQuery(''); setVideoDuration(0); setTrimStart(0); setTrimEnd(0); setKnowledgeSpaceId(fixedKnowledgeSpace?.id || ''); setError('')
+  }, [fixedKnowledgeSpace?.id, isOpen])
 
   useEffect(() => {
-    if (!isOpen) return
+    if (!isOpen || fixedKnowledgeSpace) return
     readKnowledgeHub()
       .then((response) => setKnowledgeSpaces([...(response.libraries || []), ...(response.groups || [])].filter((space) => space.membership?.status === 'active')))
       .catch(() => setKnowledgeSpaces([]))
-  }, [isOpen])
+  }, [fixedKnowledgeSpace, isOpen])
 
   useEffect(() => {
     if (!mediaFile) { setMediaPreviewUrl(''); return undefined }
@@ -58,12 +67,13 @@ function ExploreStoryComposer({ isOpen, onClose, onPublish }) {
 
   useEffect(() => {
     if (!isOpen || storyKind !== 'product') return
+    if (productsOverride) return
     setIsLoadingProducts(true)
     readMyMarketplaceInventory()
       .then((response) => setProducts((response?.listings || []).filter((item) => ['ACTIVE', 'PUBLISHED'].includes(String(item.status).toUpperCase()))))
       .catch((requestError) => setError(requestError.message || 'Could not load your products.'))
       .finally(() => setIsLoadingProducts(false))
-  }, [isOpen, storyKind])
+  }, [isOpen, productsOverride, storyKind])
 
   if (!isOpen) return null
 
@@ -72,12 +82,15 @@ function ExploreStoryComposer({ isOpen, onClose, onPublish }) {
     setIsPublishing(true)
     setError('')
     try {
+      const isTextStory = storyKind === 'text'
       const upload = mediaFile
         ? await uploadZumbarlFile(mediaFile, { scope: 'connect-story', metadata: { storyKind } })
         : null
       const productImages = (selectedProduct?.images || selectedProduct?.gallery || []).map(normalizeZumbarlFileUrl).filter(Boolean)
-      const media = normalizeZumbarlFileUrl(upload?.url || upload?.previewUrl) || productImages[0] || FALLBACK_MEDIA[storyKind]
-      const mediaType = mediaFile?.type?.startsWith('video/') ? 'video' : 'image'
+      const media = isTextStory ? undefined : normalizeZumbarlFileUrl(upload?.url || upload?.previewUrl) || productImages[0] || FALLBACK_MEDIA[storyKind]
+      const mediaType = isTextStory ? 'text' : mediaFile?.type?.startsWith('video/') ? 'video' : 'image'
+      const storyTitle = title.trim() || (isTextStory ? caption.trim().slice(0, 60) : selectedProduct?.title) || 'New story'
+      const storyCaption = caption.trim() || (isTextStory ? title.trim() : storyKind === 'product' ? selectedProduct?.description || 'See product details.' : 'Shared a new story.')
       const product = storyKind === 'product'
         ? {
           id: selectedProduct.id,
@@ -101,8 +114,8 @@ function ExploreStoryComposer({ isOpen, onClose, onPublish }) {
         media,
         poster: mediaType === 'video' ? FALLBACK_MEDIA[storyKind] : undefined,
         storyKind,
-        title: title.trim() || selectedProduct?.title || 'New story',
-        caption: caption.trim() || (storyKind === 'product' ? selectedProduct?.description || 'See product details.' : 'Shared a new story.'),
+        title: storyTitle,
+        caption: storyCaption,
         time: 'Just now',
         likes: 0,
         comments: 0,
@@ -118,13 +131,13 @@ function ExploreStoryComposer({ isOpen, onClose, onPublish }) {
     }
   }
 
-  const canPublish = storyKind && (storyKind === 'product' ? selectedProduct : mediaFile) && !isPublishing
+  const canPublish = storyKind && (storyKind === 'product' ? selectedProduct : storyKind === 'text' ? title.trim() || caption.trim() : mediaFile) && !isPublishing
 
   return (
     <section ref={dialogRef} className="explore-story-composer-backdrop" role="dialog" aria-modal="true" aria-label="Add a story" onClick={onClose}>
       <form className="explore-story-composer" onSubmit={submitStory} onClick={(event) => event.stopPropagation()}>
         <header>
-          <div><span>Stories disappear after 24 hours</span><h2>Add story</h2></div>
+          <div><span>Stories disappear after 24 hours</span><h2>{publishingAs ? `Add ${publishingAs.name} story` : 'Add story'}</h2></div>
           <button type="button" onClick={onClose} aria-label="Close story composer"><FiX aria-hidden="true" /></button>
         </header>
 
@@ -133,45 +146,49 @@ function ExploreStoryComposer({ isOpen, onClose, onPublish }) {
           <button type="button" className={storyKind === 'personal' ? 'is-active' : ''} onClick={() => setStoryKind('personal')}>
             <FiImage aria-hidden="true" /><span><strong>Your story</strong><small>Photo or video</small></span>
           </button>
-          <button type="button" className={storyKind === 'product' ? 'is-active' : ''} onClick={() => setStoryKind('product')}>
-            <FiShoppingBag aria-hidden="true" /><span><strong>Product story</strong><small>Live marketplace listing</small></span>
+          <button type="button" className={storyKind === 'text' ? 'is-active' : ''} onClick={() => { setStoryKind('text'); setMediaFile(null); setSelectedProductId('') }}>
+            <FiType aria-hidden="true" /><span><strong>Words</strong><small>Share a text story</small></span>
           </button>
+          {allowProductStories ? <button type="button" className={storyKind === 'product' ? 'is-active' : ''} onClick={() => setStoryKind('product')}>
+            <FiShoppingBag aria-hidden="true" /><span><strong>Product story</strong><small>Live marketplace listing</small></span>
+          </button> : null}
         </fieldset>
 
         <div className="explore-story-composer-fields">
-            {(mediaPreviewUrl || selectedProduct) ? <div className="explore-story-composer-preview">{mediaFile?.type?.startsWith('video/') ? <video ref={previewVideoRef} src={mediaPreviewUrl} controls muted onLoadedMetadata={(event) => { const duration = event.currentTarget.duration || 0; setVideoDuration(duration); setTrimStart(0); setTrimEnd(Math.min(duration, 30)) }} onTimeUpdate={(event) => { if (trimEnd && event.currentTarget.currentTime >= trimEnd) { event.currentTarget.currentTime = trimStart; event.currentTarget.pause() } }} /> : <img src={mediaPreviewUrl || normalizeZumbarlFileUrl((selectedProduct.images || selectedProduct.gallery || [])[0])} alt="Story preview" />}<span>{storyKind === 'product' ? 'Product story' : 'Your story'}</span></div> : null}
+            {storyKind === 'text' ? <div className="explore-story-composer-preview is-text"><strong>{caption.trim() || title.trim() || 'Your words will appear here'}</strong><span>Words story</span></div> : (mediaPreviewUrl || selectedProduct) ? <div className="explore-story-composer-preview">{mediaFile?.type?.startsWith('video/') ? <video ref={previewVideoRef} src={mediaPreviewUrl} controls muted onLoadedMetadata={(event) => { const duration = event.currentTarget.duration || 0; setVideoDuration(duration); setTrimStart(0); setTrimEnd(Math.min(duration, 30)) }} onTimeUpdate={(event) => { if (trimEnd && event.currentTarget.currentTime >= trimEnd) { event.currentTarget.currentTime = trimStart; event.currentTarget.pause() } }} /> : <img src={mediaPreviewUrl || normalizeZumbarlFileUrl((selectedProduct.images || selectedProduct.gallery || [])[0])} alt="Story preview" />}<span>{storyKind === 'product' ? 'Product story' : 'Your story'}</span></div> : null}
             {mediaFile?.type?.startsWith('video/') && videoDuration ? <section className="explore-story-video-trimmer"><header><strong>Trim video</strong><span>{trimStart.toFixed(1)}s – {trimEnd.toFixed(1)}s · {(trimEnd - trimStart).toFixed(1)}s</span></header><label>Start<input type="range" min="0" max={Math.max(0, videoDuration - .5)} step=".1" value={trimStart} onChange={(event) => { const value = Number(event.target.value); setTrimStart(value); setTrimEnd((current) => Math.min(videoDuration, Math.max(value + .5, Math.min(current, value + 30)))); if (previewVideoRef.current) previewVideoRef.current.currentTime = value }} /></label><label>End<input type="range" min={Math.min(videoDuration, trimStart + .5)} max={Math.min(videoDuration, trimStart + 30)} step=".1" value={trimEnd} onChange={(event) => setTrimEnd(Number(event.target.value))} /></label><button type="button" onClick={() => { if (previewVideoRef.current) { previewVideoRef.current.currentTime = trimStart; previewVideoRef.current.play() } }}>Preview trimmed clip</button><small>Stories can use up to 30 seconds from this video.</small></section> : null}
-            <label>
+            {publishingAs && !fixedKnowledgeSpace ? <div className="explore-story-space-note"><FiUsers /> Posting as {publishingAs.name}</div> : null}
+            {fixedKnowledgeSpace ? <div className="explore-story-space-note">{fixedKnowledgeSpace.type === 'library' ? <FiBookOpen /> : <FiUsers />} Posting for {fixedKnowledgeSpace.name}</div> : !publishingAs ? <label>
               Post story to
               <select value={knowledgeSpaceId} onChange={(event) => setKnowledgeSpaceId(event.target.value)}>
                 <option value="">Your personal story</option>
                 {knowledgeSpaces.map((space) => <option value={space.id} key={space.id}>{space.type === 'library' ? 'Library' : 'Group'} · {space.name}</option>)}
               </select>
               <small>{knowledgeSpaceId ? 'This story appears under that community in Explore Campus.' : 'Visible in the People stories tab.'}</small>
-            </label>
-            {knowledgeSpaceId ? <div className="explore-story-space-note">{knowledgeSpaces.find((space) => space.id === knowledgeSpaceId)?.type === 'library' ? <FiBookOpen /> : <FiUsers />} Posting for {knowledgeSpaces.find((space) => space.id === knowledgeSpaceId)?.name}</div> : null}
+            </label> : null}
+            {!fixedKnowledgeSpace && !publishingAs && knowledgeSpaceId ? <div className="explore-story-space-note">{knowledgeSpaces.find((space) => space.id === knowledgeSpaceId)?.type === 'library' ? <FiBookOpen /> : <FiUsers />} Posting for {knowledgeSpaces.find((space) => space.id === knowledgeSpaceId)?.name}</div> : null}
             <label>
               Story title <small>Optional</small>
-              <input value={title} placeholder={storyKind === 'product' ? 'Meet my latest product' : 'What is happening?'} onChange={(event) => setTitle(event.target.value)} />
+              <input value={title} placeholder={storyKind === 'product' ? 'Meet my latest product' : storyKind === 'text' ? 'Add a short heading' : 'What is happening?'} onChange={(event) => setTitle(event.target.value)} />
             </label>
             <label>
-              Caption <small>Optional</small>
-              <textarea value={caption} placeholder="Add a caption…" onChange={(event) => setCaption(event.target.value)} />
+              {storyKind === 'text' ? 'Story text' : 'Caption'} <small>{storyKind === 'text' ? 'Required if there is no title' : 'Optional'}</small>
+              <textarea value={caption} placeholder={storyKind === 'text' ? 'What would you like to share?' : 'Add a caption…'} onChange={(event) => setCaption(event.target.value)} />
             </label>
 
             {storyKind === 'product' ? (
               <section className="explore-story-product-picker">
                 <h3>Select a product</h3>
-                {products.length ? <label className="explore-story-product-search"><FiSearch aria-hidden="true" /><input type="search" value={productQuery} onChange={(event) => setProductQuery(event.target.value)} placeholder="Search your products" aria-label="Search your products" />{productQuery ? <button type="button" onClick={() => setProductQuery('')} aria-label="Clear product search"><FiX /></button> : null}</label> : null}
-                {isLoadingProducts ? <p>Loading your products…</p> : products.length && visibleProducts.length ? <div>{visibleProducts.map((product) => { const image = normalizeZumbarlFileUrl((product.images || product.gallery || [])[0]); return <button type="button" key={product.id} className={selectedProductId === product.id ? 'is-selected' : ''} onClick={() => setSelectedProductId(product.id)}>{image ? <img src={image} alt="" /> : <FiShoppingBag />}<span><strong>{product.title}</strong><small>{new Intl.NumberFormat('en-KE', { style: 'currency', currency: product.currency || 'KES', maximumFractionDigits: 0 }).format(Number(product.priceAmount || 0))}</small></span></button> })}</div> : products.length ? <p>No products match “{productQuery}”.</p> : <p>You have no live products. Publish a marketplace listing first.</p>}
+                {availableProducts.length ? <label className="explore-story-product-search"><FiSearch aria-hidden="true" /><input type="search" value={productQuery} onChange={(event) => setProductQuery(event.target.value)} placeholder="Search your products" aria-label="Search your products" />{productQuery ? <button type="button" onClick={() => setProductQuery('')} aria-label="Clear product search"><FiX /></button> : null}</label> : null}
+                {isLoadingProducts ? <p>Loading your products…</p> : availableProducts.length && visibleProducts.length ? <div>{visibleProducts.map((product) => { const image = normalizeZumbarlFileUrl((product.images || product.gallery || [])[0]); return <button type="button" key={product.id} className={selectedProductId === product.id ? 'is-selected' : ''} onClick={() => setSelectedProductId(product.id)}>{image ? <img src={image} alt="" /> : <FiShoppingBag />}<span><strong>{product.title}</strong><small>{new Intl.NumberFormat('en-KE', { style: 'currency', currency: product.currency || 'KES', maximumFractionDigits: 0 }).format(Number(product.priceAmount || 0))}</small></span></button> })}</div> : availableProducts.length ? <p>No products match “{productQuery}”.</p> : <p>You have no live products. Publish a marketplace listing first.</p>}
               </section>
             ) : null}
 
-            <label className="explore-story-upload">
+            {storyKind !== 'text' ? <label className="explore-story-upload">
               <FiUploadCloud aria-hidden="true" />
               <span><strong>{mediaFile ? mediaFile.name : storyKind === 'product' ? 'Use a different story cover' : 'Choose photo or video'}</strong><small>{mediaFile ? 'Click to replace it' : storyKind === 'product' ? 'Optional—the product cover is used by default' : 'Required for a normal story'}</small></span>
               <input type="file" accept="image/*,video/*" onChange={(event) => setMediaFile(event.target.files?.[0] || null)} />
-            </label>
+            </label> : null}
         </div>
 
         {error ? <p className="explore-story-composer-error" role="alert">{error}</p> : null}

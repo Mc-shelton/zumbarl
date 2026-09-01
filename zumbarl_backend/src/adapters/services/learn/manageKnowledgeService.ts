@@ -90,6 +90,7 @@ function mapSpace(space: Record<string, any>) {
   return {
     id: space.id,
     type: space.type.toLowerCase(),
+    groupType: space.groupType?.toLowerCase() || (space.type === 'GROUP' ? 'study_group' : null),
     name: space.name,
     slug: space.slug,
     description: space.description,

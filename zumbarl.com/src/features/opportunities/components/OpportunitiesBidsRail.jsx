@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiCalendar, FiClock, FiMessageCircle } from 'react-icons/fi'
+import { FiBriefcase, FiCalendar, FiClock, FiMessageCircle } from 'react-icons/fi'
 
 function getCurrentWeekDays(interviews) {
   const now = new Date()
@@ -50,7 +50,7 @@ function OpportunitiesBidsRail({
     <aside className="campus-rail opportunities-rail opportunities-bids-rail" aria-label="Bid planning tools">
       <section className="campus-rail-card opportunities-bids-rail-card opportunities-bids-calendar-card">
         <header>
-          <h3>Interview Calendar</h3>
+          <div className="opportunities-bids-rail-title"><span><FiCalendar aria-hidden="true" /></span><div><small>Planning</small><h3>Interview calendar</h3></div></div>
           <button type="button" className="campus-link-btn" onClick={handleSync} disabled={isSyncing}>
             {isSyncing ? 'Syncing…' : 'Sync'}
           </button>
@@ -67,13 +67,14 @@ function OpportunitiesBidsRail({
             >
               <span>{item.day}</span>
               <strong>{item.date}</strong>
+              {item.interviews ? <em>{item.interviews}</em> : null}
             </article>
           ))}
         </div>
 
         {selectedBid ? (
           <article className="opportunities-bids-focus-card">
-            <p className="opportunities-bids-focus-label">Focused bid</p>
+            <p className="opportunities-bids-focus-label"><FiBriefcase aria-hidden="true" /> Focused bid</p>
             <h4>{selectedBid.title}</h4>
             <p>{selectedBid.company} · {selectedBid.stage}</p>
 
@@ -93,36 +94,24 @@ function OpportunitiesBidsRail({
             )}
           </article>
         ) : null}
-      </section>
-
-      <section className="campus-rail-card opportunities-bids-rail-card">
-        <header>
-          <h3>Upcoming Interviews</h3>
-        </header>
-
-        <div className="opportunities-bids-interview-list">
-          {interviews.length === 0 ? (
-            <p className="opportunities-bids-no-interview">
-              No interviews scheduled yet. When a client books an interview for one of your bids, it will appear here.
-            </p>
-          ) : null}
-          {interviews.map((item) => (
-            <article
-              key={item.id}
-              className={`opportunities-bids-interview-item${selectedBidInterview?.id === item.id ? ' is-selected' : ''}`}
-            >
-              <h4>{item.title}</h4>
-              <p>
-                <FiClock aria-hidden="true" />
-                {item.time}
-              </p>
-              <p>
-                <FiMessageCircle aria-hidden="true" />
-                {item.mode} · {item.contact}
-              </p>
-              {item.note ? <span>{item.note}</span> : null}
-            </article>
-          ))}
+        <div className="opportunities-bids-upcoming-block">
+          <header><h3>Upcoming interviews</h3><span>{interviews.length}</span></header>
+          <div className="opportunities-bids-interview-list">
+            {interviews.length === 0 ? (
+              <div className="opportunities-bids-interview-empty"><FiCalendar aria-hidden="true" /><p>No interviews scheduled. New bookings will appear here automatically.</p></div>
+            ) : null}
+            {interviews.map((item) => (
+              <article
+                key={item.id}
+                className={`opportunities-bids-interview-item${selectedBidInterview?.id === item.id ? ' is-selected' : ''}`}
+              >
+                <h4>{item.title}</h4>
+                <p><FiClock aria-hidden="true" />{item.time}</p>
+                <p><FiMessageCircle aria-hidden="true" />{item.mode} · {item.contact}</p>
+                {item.note ? <span>{item.note}</span> : null}
+              </article>
+            ))}
+          </div>
         </div>
       </section>
     </aside>

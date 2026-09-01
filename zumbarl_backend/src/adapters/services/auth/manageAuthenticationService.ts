@@ -4,6 +4,7 @@ import { hashPassword, verifyPassword, type AuthUser } from '../../../lib/securi
 import {
   createSessionRecord,
   createUserRecord,
+  createUserWithBusinessProfile,
   createUserWithStudentProfile,
   findBusinessProfileById,
   findStudentProfileById,
@@ -67,7 +68,7 @@ async function registerUserService(app: FastifyInstance, payload: Record<string,
   }
 
   if (String(payload.role).startsWith('COMPANY') || payload.role === 'business') {
-    const user = await createUserRecord(userPayload)
+    const { user } = await createUserWithBusinessProfile(userPayload, payload.businessName)
     const token = app.jwt.sign(toTokenPayload(user))
     await createSessionRecord({ userId: user.id })
     return { user: removePasswordHash(user), token }

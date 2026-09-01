@@ -92,7 +92,10 @@ function toStudentProfile(student: Record<string, any> | null) {
     avatarUrl: student.avatarUrl,
     campus: student.campus?.name ?? student.campus ?? 'Unassigned campus',
     headline: student.careerPath ?? student.headline ?? 'New Zumbarl student',
-    score: 0,
+    score: Math.round(student.zumbarl?.currentScore ?? student.score ?? 0),
+    zumbarlPoints: Math.round(student.zumbarl?.currentScore ?? student.score ?? 0),
+    zumbarlTier: student.zumbarl?.tier ?? null,
+    showZumbarlPoints: student.showZumbarlPoints !== false,
     skills: [],
     verificationTier: String(student.kycStatus ?? '').toLowerCase(),
     createdAt: student.createdAt instanceof Date ? student.createdAt.toISOString() : student.createdAt,
@@ -265,7 +268,7 @@ class AuthUsersRepository {
 
   async findStudentProfileById(id?: string) {
     if (!id) return null
-    const student = await prisma.studentProfile.findUnique({ where: { id }, include: { campus: true } })
+    const student = await prisma.studentProfile.findUnique({ where: { id }, include: { campus: true, zumbarl: true } })
     return student ? toStudentProfile(student) : null
   }
 

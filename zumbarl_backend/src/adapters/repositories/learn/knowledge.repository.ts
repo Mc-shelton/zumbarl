@@ -490,6 +490,7 @@ class LearnKnowledgeRepository {
           ownerStudentId: studentId,
           campusId: student.campusId,
           type: payload.type,
+          groupType: payload.type === 'GROUP' ? (payload.groupType || 'STUDY_GROUP') : null,
           name: payload.name,
           slug: payload.slug,
           description: payload.description,

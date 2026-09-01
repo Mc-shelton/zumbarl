@@ -3,6 +3,7 @@ import { FiChevronLeft, FiChevronRight, FiShare2, FiX } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { useDialog } from '../../../components/ui'
 import { postCreatorProfilePath } from '../utils/creatorProfilePath'
+import { recordRecommendationInteraction } from '../../recommendations/services/recommendationEventService'
 
 function ExploreMediaModal({
   activeMediaComments,
@@ -45,6 +46,16 @@ function ExploreMediaModal({
   }
   const profilePath = postCreatorProfilePath(activeMediaPost)
 
+  function recordVideoPlay() {
+    recordRecommendationInteraction({
+      surface: 'connect_feed',
+      entityType: 'connect_post',
+      entityId: String(activeMediaPost.id),
+      eventType: 'video_play',
+      metadata: { location: 'viewer', mediaIndex: activeMediaIndex, mediaType: 'video' },
+    })
+  }
+
   return (
     <section ref={dialogRef} className="explore-campus-media-modal" role="dialog" aria-modal="true" aria-label="Post media viewer" onClick={onClose}>
       <div className="explore-campus-media-content" onClick={(event) => event.stopPropagation()}>
@@ -58,7 +69,7 @@ function ExploreMediaModal({
               <FiChevronLeft aria-hidden="true" />
             </button>
 
-            {activeMediaPost.tag === 'Video' ? <video src={activeMediaImage} className="explore-campus-media-image" controls autoPlay /> : <img src={activeMediaImage} alt={`${activeMediaPost.author} shared media`} className="explore-campus-media-image" />}
+            {activeMediaPost.tag === 'Video' ? <video src={activeMediaImage} className="explore-campus-media-image" controls autoPlay onPlay={recordVideoPlay} /> : <img src={activeMediaImage} alt={`${activeMediaPost.author} shared media`} className="explore-campus-media-image" />}
 
             <button type="button" className="explore-campus-media-nav next" onClick={() => onStep(1)} aria-label="Next image">
               <FiChevronRight aria-hidden="true" />

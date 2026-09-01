@@ -11,7 +11,6 @@ import {
   FiDownload,
   FiEye,
   FiEdit3,
-  FiExternalLink,
   FiFileText,
   FiMapPin,
   FiMessageCircle,
@@ -35,8 +34,20 @@ import Seo from "../components/Seo";
 import KnowledgeResourceCheckoutModal from "../features/learn/components/KnowledgeResourceCheckoutModal";
 import KnowledgeAvatarPicker from "../features/learn/components/KnowledgeAvatarPicker";
 import GeneratedResourceThumbnailPicker from "../features/learn/components/GeneratedResourceThumbnailPicker";
+import AttachmentPreviewModal from "../features/learn/components/AttachmentPreviewModal";
 import { generateResourceThumbnail } from "../features/learn/lib/generateResourceThumbnail";
+import ExploreFeed from "../features/explore/components/ExploreFeed";
+import ExploreMediaModal from "../features/explore/components/ExploreMediaModal";
 import ExplorePostComposer from "../features/explore/components/ExplorePostComposer";
+import ExploreStoryComposer from "../features/explore/components/ExploreStoryComposer";
+import ExploreShareModal from "../features/explore/components/ExploreShareModal";
+import { createStory } from "../features/explore/services/storyService";
+import {
+  createConnectPostComment,
+  createConnectPostReshare,
+  removeConnectPostReshare,
+  toggleConnectPostLike,
+} from "../features/explore/services/postService";
 import {
   accessKnowledgeResource,
   addKnowledgeManager,
@@ -168,27 +179,6 @@ function ChatMessage({ message, canPromote = false, promoting = false, onPromote
   </article>;
 }
 
-function AttachmentPreviewModal({ attachment, onClose }) {
-  if (!attachment) return null;
-  const url = normalizeZumbarlFileUrl(attachment.url);
-  const mimeType = String(attachment.mimeType || "").toLowerCase();
-  const path = String(url).split(/[?#]/)[0].toLowerCase();
-  const isImage = mimeType.startsWith("image/") || /\.(avif|gif|jpe?g|png|webp|svg)$/.test(path);
-  const isVideo = mimeType.startsWith("video/") || /\.(mp4|mov|m4v|webm|ogg)$/.test(path);
-  const isPdf = mimeType === "application/pdf" || path.endsWith(".pdf");
-  const isWebPage = /^https?:\/\//i.test(url) && !mimeType && !/\.(docx?|xlsx?|pptx?|zip|rar|7z)$/i.test(path);
-  const name = attachment.name || (() => { try { return decodeURIComponent(new URL(url, window.location.origin).pathname.split("/").filter(Boolean).at(-1) || "Resource preview"); } catch { return "Resource preview"; } })();
-  return <div className="knowledge-attachment-preview-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
-    <section className="knowledge-attachment-preview-modal" role="dialog" aria-modal="true" aria-label={`Preview ${name}`}>
-      <header><div><span>Resource preview</span><h2>{name}</h2></div><button type="button" onClick={onClose} aria-label="Close preview"><FiX /></button></header>
-      <div className="knowledge-attachment-preview-stage">
-        {isImage ? <img src={url} alt={name} /> : isVideo ? <video src={url} controls autoPlay playsInline /> : isPdf || isWebPage ? <iframe src={url} title={name} /> : <div className="knowledge-attachment-preview-unavailable"><FiFileText /><h3>Preview unavailable</h3><p>This file type cannot be displayed in the browser, but you can download it below.</p></div>}
-      </div>
-      <footer><span>{attachment.mimeType || "Shared resource"}</span><a href={url} download={name}><FiDownload /> Download</a><a href={url} target="_blank" rel="noreferrer"><FiExternalLink /> Open original</a></footer>
-    </section>
-  </div>;
-}
-
 function ResourceIcon({ type }) {
   return type === "past_paper" ? <FiFileText /> : <FiBookOpen />;
 }
@@ -233,6 +223,76 @@ function relativeTime(value) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
+function mapKnowledgeComment(comment) {
+  const author = comment.author || {};
+  return {
+    id: comment.id,
+    author: author.name || "Zumbarl student",
+    handle: author.handle || "@student",
+    avatar: normalizeZumbarlFileUrl(author.avatarUrl),
+    text: comment.body,
+    time: relativeTime(comment.createdAt),
+  };
+}
+
+function mapKnowledgePost(post) {
+  const author = post.author || {};
+  const type = String(post.type || "post").toLowerCase();
+  const contentTag = type === "video" ? "Video" : type === "image" ? "Photo" : type === "poll" ? "Poll" : type === "event" ? "Event" : "Update";
+  return {
+    id: post.id,
+    type,
+    creatorId: author.id || null,
+    creatorSlug: author.profilePath?.split("/").filter(Boolean).at(-1) || null,
+    creatorProfileType: author.profileType || "knowledge-group",
+    author: author.name || "Knowledge community",
+    handle: author.handle || "Community",
+    campus: author.campus || null,
+    avatar: normalizeZumbarlFileUrl(author.avatarUrl) || DEFAULT_MEMBER_AVATAR,
+    time: post.updatedAt !== post.createdAt ? `Edited · ${relativeTime(post.updatedAt)}` : relativeTime(post.createdAt),
+    tag: post.feeling?.label ? `${post.feeling.emoji || ""} ${post.feeling.label}`.trim() : contentTag,
+    copy: post.body || "",
+    gallery: (post.mediaUrls || []).map(normalizeZumbarlFileUrl),
+    mediaEdits: post.mediaEdits || [],
+    event: post.event && Object.keys(post.event).length ? post.event : null,
+    poll: post.poll && Object.keys(post.poll).length ? post.poll : null,
+    isMine: Boolean(post.isMine),
+    canEdit: Boolean(post.canEdit),
+    canTakeDown: Boolean(post.canTakeDown),
+    stats: {
+      likes: Number(post.reactionCount || 0),
+      comments: Number(post.commentCount || post.comments?.length || 0),
+      reposts: Number(post.repostCount || 0),
+    },
+    viewerLiked: Boolean(post.viewerReacted),
+    viewerReshared: Boolean(post.viewerReshared),
+    viewerReshareCommentary: post.viewerReshareCommentary || "",
+    createdAt: post.createdAt,
+    updatedAt: post.updatedAt,
+  };
+}
+
+function knowledgePostEngagementSnapshot(post) {
+  return {
+    body: post.copy || "Shared post",
+    type: post.type || "post",
+    mediaUrls: post.gallery || [],
+    mediaEdits: post.mediaEdits || [],
+    creator: {
+      id: post.creatorId || undefined,
+      slug: post.creatorSlug || undefined,
+      profileType: post.creatorProfileType || undefined,
+      name: post.author || "Knowledge community",
+      handle: post.handle || "Community",
+      avatarUrl: post.avatar || null,
+      campus: post.campus || null,
+    },
+    reactionCount: Number(post.stats?.likes || 0),
+    commentCount: Number(post.stats?.comments || 0),
+    repostCount: Number(post.stats?.reposts || 0),
+  };
+}
+
 export default function KnowledgeSpacePage() {
   const { spaceSlug } = useParams();
   const [data, setData] = useState(null);
@@ -255,8 +315,15 @@ export default function KnowledgeSpacePage() {
   const [roomForm, setRoomForm] = useState({ title: "", description: "", resourceId: "" });
   const [showResourceForm, setShowResourceForm] = useState(false);
   const [showPostForm, setShowPostForm] = useState(false);
+  const [showStoryForm, setShowStoryForm] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [postComposerType, setPostComposerType] = useState("post");
+  const [postComments, setPostComments] = useState({});
+  const [postEngagementOverrides, setPostEngagementOverrides] = useState({});
+  const [postEngagementPending, setPostEngagementPending] = useState({});
+  const [postEngagementErrors, setPostEngagementErrors] = useState({});
+  const [activeMedia, setActiveMedia] = useState(null);
+  const [shareTarget, setShareTarget] = useState(null);
   const [resourceSearch, setResourceSearch] = useState("");
   const [resourceTypeFilter, setResourceTypeFilter] = useState("all");
   const [resourceAccessFilter, setResourceAccessFilter] = useState("all");
@@ -285,6 +352,23 @@ export default function KnowledgeSpacePage() {
   const [purchaseCheckout, setPurchaseCheckout] = useState(null);
   const [purchaseError, setPurchaseError] = useState("");
 
+  const applyKnowledgePayload = useCallback((payload) => {
+    setData(payload);
+    setPostEngagementOverrides({});
+    setPostComments((current) => {
+      const next = { ...current };
+      (payload.posts || []).forEach((post) => {
+        const persisted = (post.comments || []).map(mapKnowledgeComment);
+        const persistedIds = new Set(persisted.map((comment) => comment.id));
+        next[post.id] = [
+          ...(current[post.id] || []).filter((comment) => !persistedIds.has(comment.id)),
+          ...persisted,
+        ];
+      });
+      return next;
+    });
+  }, []);
+
   function canOpenResourceDirectly(resource) {
     const membership = data?.space?.membership;
     const canManageSpace = resource.ownedByViewer || (membership?.status === "active" && ["owner", "admin"].includes(membership.role));
@@ -301,7 +385,7 @@ export default function KnowledgeSpacePage() {
     setError("");
     return readKnowledgeSpace(spaceSlug)
       .then((payload) => {
-        setData(payload);
+        applyKnowledgePayload(payload);
         if (loadedSpaceSlugRef.current !== spaceSlug) {
           setActiveTab(payload.space.type === "group" ? "chat" : "resources");
           setManageQueueTab("members");
@@ -325,10 +409,8 @@ export default function KnowledgeSpacePage() {
       })
       .catch((requestError) => setError(requestError.message || "This Knowledge Hub page could not be loaded."))
       .finally(() => setLoading(false));
-  }, [spaceSlug]);
+  }, [applyKnowledgePayload, spaceSlug]);
 
-  // Loading route-owned data is the external synchronization this effect performs.
-  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load(); }, [load]);
 
   const selectedRoom = data?.rooms?.find((room) => room.id === selectedRoomId) || null;
@@ -749,10 +831,37 @@ export default function KnowledgeSpacePage() {
     setWorking("create-post");
     setError("");
     try {
-      setData(await createKnowledgeSpacePost(data.space.id, payload));
+      applyKnowledgePayload(await createKnowledgeSpacePost(data.space.id, payload));
       setNotice("Post published here and on Explore Campus.");
     } catch (requestError) {
       setError(requestError.message || "Your post could not be published.");
+      throw requestError;
+    } finally {
+      setWorking("");
+    }
+  }
+
+  async function publishSpaceStory(story) {
+    setWorking("create-story");
+    setError("");
+    try {
+      await createStory({
+        title: story.title,
+        text: story.caption,
+        mediaUrl: story.media,
+        mediaType: story.type,
+        poster: story.poster,
+        storyKind: story.storyKind,
+        visibility: "campus",
+        context: "knowledge-space",
+        knowledgeSpaceId: data.space.id,
+        trimStart: story.trimStart,
+        trimEnd: story.trimEnd,
+      });
+      setShowStoryForm(false);
+      setNotice(`Story published as ${data.space.name} on Explore Campus.`);
+    } catch (requestError) {
+      setError(requestError.message || "Your story could not be published.");
       throw requestError;
     } finally {
       setWorking("");
@@ -766,7 +875,7 @@ export default function KnowledgeSpacePage() {
     setWorking(`edit-post-${editingPost.id}`);
     setError("");
     try {
-      setData(await updateKnowledgeSpacePost(data.space.id, editingPost.id, { body }));
+      applyKnowledgePayload(await updateKnowledgeSpacePost(data.space.id, editingPost.id, { body }));
       setEditingPost(null);
       setNotice("Post updated.");
     } catch (requestError) {
@@ -781,13 +890,145 @@ export default function KnowledgeSpacePage() {
     setWorking(`remove-post-${post.id}`);
     setError("");
     try {
-      setData(await takeDownKnowledgeSpacePost(data.space.id, post.id));
+      applyKnowledgePayload(await takeDownKnowledgeSpacePost(data.space.id, post.id));
       setNotice("Post taken down.");
     } catch (requestError) {
       setError(requestError.message || "That post could not be taken down.");
     } finally {
       setWorking("");
     }
+  }
+
+  async function addKnowledgePostComment(id, body, post) {
+    const activePost = post || exploreCommunityPosts.find((candidate) => candidate.id === id);
+    setPostEngagementErrors((current) => ({ ...current, [id]: "" }));
+    const saved = await createConnectPostComment(id, body, knowledgePostEngagementSnapshot(activePost || {}));
+    const comment = mapKnowledgeComment({
+      ...saved,
+      author: saved.author ? {
+        name: saved.author,
+        handle: saved.handle,
+        avatarUrl: saved.avatar,
+      } : null,
+    });
+    setPostComments((current) => ({ ...current, [id]: [...(current[id] || []), comment] }));
+    setPostEngagementOverrides((current) => ({
+      ...current,
+      [id]: {
+        ...(current[id] || {}),
+        stats: {
+          ...(current[id]?.stats || {}),
+          comments: Number(activePost?.stats?.comments || 0) + 1,
+        },
+      },
+    }));
+    return comment;
+  }
+
+  async function toggleKnowledgePostLike(post) {
+    const key = `${post.id}:like`;
+    const previousLiked = Boolean(post.viewerLiked);
+    const previousCount = Number(post.stats.likes || 0);
+    setPostEngagementPending((current) => ({ ...current, [key]: true }));
+    setPostEngagementErrors((current) => ({ ...current, [post.id]: "" }));
+    setPostEngagementOverrides((current) => ({
+      ...current,
+      [post.id]: {
+        ...(current[post.id] || {}),
+        viewerLiked: !previousLiked,
+        stats: { ...(current[post.id]?.stats || {}), likes: Math.max(0, previousCount + (previousLiked ? -1 : 1)) },
+      },
+    }));
+    try {
+      const saved = await toggleConnectPostLike(post.id, knowledgePostEngagementSnapshot(post));
+      setPostEngagementOverrides((current) => ({
+        ...current,
+        [post.id]: {
+          ...(current[post.id] || {}),
+          viewerLiked: saved.viewerReacted,
+          stats: { ...(current[post.id]?.stats || {}), likes: saved.reactionCount },
+        },
+      }));
+    } catch (requestError) {
+      setPostEngagementOverrides((current) => ({
+        ...current,
+        [post.id]: {
+          ...(current[post.id] || {}),
+          viewerLiked: previousLiked,
+          stats: { ...(current[post.id]?.stats || {}), likes: previousCount },
+        },
+      }));
+      setPostEngagementErrors((current) => ({ ...current, [post.id]: requestError.message || "Could not update this reaction." }));
+    } finally {
+      setPostEngagementPending((current) => ({ ...current, [key]: false }));
+    }
+  }
+
+  async function setKnowledgePostReshare(post, active, commentary = "") {
+    const key = `${post.id}:reshare`;
+    const previousReshared = Boolean(post.viewerReshared);
+    const previousCount = Number(post.stats.reposts || 0);
+    setPostEngagementPending((current) => ({ ...current, [key]: true }));
+    setPostEngagementErrors((current) => ({ ...current, [post.id]: "" }));
+    setPostEngagementOverrides((current) => ({
+      ...current,
+      [post.id]: {
+        ...(current[post.id] || {}),
+        viewerReshared: active,
+        viewerReshareCommentary: active ? commentary : "",
+        stats: {
+          ...(current[post.id]?.stats || {}),
+          reposts: Math.max(0, previousCount + (active && !previousReshared ? 1 : !active && previousReshared ? -1 : 0)),
+        },
+      },
+    }));
+    try {
+      const saved = active
+        ? await createConnectPostReshare(post.id, knowledgePostEngagementSnapshot(post), commentary)
+        : await removeConnectPostReshare(post.id);
+      setPostEngagementOverrides((current) => ({
+        ...current,
+        [post.id]: {
+          ...(current[post.id] || {}),
+          viewerReshared: saved.viewerReshared,
+          viewerReshareCommentary: saved.viewerReshareCommentary || "",
+          stats: { ...(current[post.id]?.stats || {}), reposts: saved.repostCount },
+        },
+      }));
+    } catch (requestError) {
+      setPostEngagementOverrides((current) => ({
+        ...current,
+        [post.id]: {
+          ...(current[post.id] || {}),
+          viewerReshared: previousReshared,
+          stats: { ...(current[post.id]?.stats || {}), reposts: previousCount },
+        },
+      }));
+      setPostEngagementErrors((current) => ({ ...current, [post.id]: requestError.message || "Could not update this reshare." }));
+      throw requestError;
+    } finally {
+      setPostEngagementPending((current) => ({ ...current, [key]: false }));
+    }
+  }
+
+  function shareKnowledgePost(post) {
+    const url = new URL(window.location.href);
+    url.pathname = "/campus/explore";
+    url.search = "";
+    url.searchParams.set("post", post.id);
+    url.hash = "";
+    setShareTarget({
+      kind: "post",
+      id: post.id,
+      author: post.author,
+      title: `${post.author}'s post on Zumbarl`,
+      text: post.copy || "See this post on Zumbarl",
+      url: url.toString(),
+    });
+  }
+
+  function openKnowledgePostMedia(post, index) {
+    setActiveMedia({ post, index });
   }
 
   async function saveSettings(event) {
@@ -916,12 +1157,35 @@ export default function KnowledgeSpacePage() {
   const canManage = ["owner", "admin"].includes(space.membership?.role) && space.membership?.status === "active";
   const isMember = space.membership?.status === "active" || isOwner;
   const isLibrary = space.type === "library";
+  const groupTypeLabel = ({
+    study_group: "Study group",
+    club: "Club",
+    association: "Association",
+    society: "Society",
+    chama: "Chama",
+  })[space.groupType] || "Study group";
   const isPending = space.membership?.status === "pending";
   const isInviteOnly = space.membershipMode === "invite" && !space.membership && Boolean(space.owner.id);
   const approvalCount = (management?.pendingRequests?.length || 0) + (isLibrary ? (management?.pendingResources?.length || 0) + (management?.pendingAccesses?.length || 0) : 0);
   const membershipLabel = isPending ? "Cancel request" : isMember ? "Leave" : isInviteOnly ? "Invite only" : "Request to join";
   const eventPosts = posts.filter((post) => post.type === "event");
   const communityPosts = isLibrary ? posts : posts.filter((post) => post.type !== "event");
+  const exploreCommunityPosts = communityPosts.map((post) => {
+    const mapped = mapKnowledgePost(post);
+    const override = postEngagementOverrides[post.id] || {};
+    return {
+      ...mapped,
+      ...override,
+      stats: { ...mapped.stats, ...(override.stats || {}) },
+    };
+  });
+  const activeMediaPost = activeMedia
+    ? exploreCommunityPosts.find((post) => post.id === activeMedia.post.id) || activeMedia.post
+    : null;
+  const activeMediaIndex = activeMediaPost?.gallery?.length
+    ? Math.min(activeMedia.index, activeMediaPost.gallery.length - 1)
+    : 0;
+  const activeMediaImage = activeMediaPost?.gallery?.[activeMediaIndex] || "";
   const filteredResources = resources.filter((resource) => {
     const query = resourceSearch.trim().toLowerCase();
     const matchesSearch = !query || `${resource.title} ${resource.description || ""} ${resource.unit?.name || resource.subject || ""}`.toLowerCase().includes(query);
@@ -965,9 +1229,9 @@ export default function KnowledgeSpacePage() {
                 <img src={space.avatarUrl} alt={`${space.name} avatar`} />
               </div>
               <div className="knowledge-space-identity">
-                <span className="knowledge-space-type">{isLibrary ? "Student library" : "Study group"}</span>
+                <span className="knowledge-space-type">{isLibrary ? "Student library" : groupTypeLabel}</span>
                 <h1>{space.name}</h1>
-                <p>{space.description || `A student-owned ${isLibrary ? "library" : "study group"} in the Zumbarl Knowledge Hub.`}</p>
+                <p>{space.description || `A student-owned ${isLibrary ? "library" : groupTypeLabel.toLowerCase()} on Zumbarl.`}</p>
                 <div className="knowledge-space-owner-line">
                   <img src={avatar(space.owner)} alt="" />
                   <span>{space.owner.id ? <Link to={`/campus/profiles/${space.owner.id}`}>{space.owner.name}</Link> : <strong>{space.owner.name}</strong>}</span>
@@ -1009,7 +1273,7 @@ export default function KnowledgeSpacePage() {
               </div>
             ) : null}
 
-            <nav className="knowledge-space-tabs" aria-label={`${space.name} sections`}>
+            <nav className="knowledge-space-tabs zumbarl-segmented-tabs" aria-label={`${space.name} sections`}>
               {tabs.map(({ id, label, count, icon: Icon }) => (
                 <button type="button" className={activeTab === id ? "is-active" : ""} onClick={() => setActiveTab(id)} key={id}>
                   <Icon /><span>{label}</span>{count > 0 && <strong>{count}</strong>}
@@ -1060,23 +1324,30 @@ export default function KnowledgeSpacePage() {
             {activeTab === "posts" && <section className="knowledge-space-section knowledge-posts-section">
               <div className="knowledge-space-section-head">
                 <div><span>Explore Campus</span><h2>Community posts</h2><p>Member updates from this {isLibrary ? "library" : "group"} also appear in Explore Campus.</p></div>
-                {isMember && <button type="button" className="knowledge-add-button" onClick={() => { setPostComposerType("post"); setShowPostForm(true); }}><FiPlus /> New post</button>}
+                {isMember && <div className="knowledge-post-publish-actions"><button type="button" className="knowledge-add-button is-story" onClick={() => setShowStoryForm(true)}>New story</button><button type="button" className="knowledge-add-button" onClick={() => { setPostComposerType("post"); setShowPostForm(true); }}><FiPlus /> New post</button></div>}
               </div>
-              <div className="knowledge-post-list">
-                {communityPosts.map((post) => <article className="knowledge-post-card" key={post.id}>
-                  <header>
-                    {post.author.profilePath ? <Link to={post.author.profilePath}><img src={avatar(post.author)} alt="" /></Link> : <img src={avatar(post.author)} alt="" />}
-                    <div><strong>{post.author.name}</strong><span>{[post.author.handle, post.author.campus, relativeTime(post.createdAt)].filter(Boolean).join(" · ")}</span></div>
-                    <div className="knowledge-post-actions">
-                      {post.canEdit && <button type="button" onClick={() => setEditingPost({ id: post.id, body: post.body })}><FiEdit3 /> Edit</button>}
-                      {post.canTakeDown && <button type="button" className="is-danger" disabled={working === `remove-post-${post.id}`} onClick={() => takeDownPost(post)}><FiTrash2 /> Take down</button>}
-                    </div>
-                  </header>
-                  <p>{post.body}</p>
-                  {post.mediaUrls?.length ? <div className={`knowledge-post-media is-${Math.min(post.mediaUrls.length, 3)}`}>{post.mediaUrls.slice(0, 3).map((url) => <img src={normalizeZumbarlFileUrl(url)} alt="" key={url} />)}</div> : null}
-                  <footer><span><FiMessageCircle /> Explore Campus post</span>{post.updatedAt !== post.createdAt && <small>Edited</small>}</footer>
-                </article>)}
-                {!communityPosts.length && <div className="knowledge-space-empty">No posts yet.{isMember ? " Share the first update with this community." : ""}</div>}
+              <div className="knowledge-post-list is-explore-feed">
+                <ExploreFeed
+                  activeFilter="Community"
+                  allowAnnouncementSubmission={false}
+                  commentsByPost={postComments}
+                  engagementErrors={postEngagementErrors}
+                  engagementPending={postEngagementPending}
+                  onComment={addKnowledgePostComment}
+                  onComposerPost={(type) => { setPostComposerType(type); setShowPostForm(true); }}
+                  onEditPost={(post) => setEditingPost({ id: post.id, body: post.copy })}
+                  onLikePost={toggleKnowledgePostLike}
+                  onOpenEvent={() => { if (!isLibrary) setActiveTab("events"); }}
+                  onOpenMediaViewer={openKnowledgePostMedia}
+                  onRemoveReshare={(post) => setKnowledgePostReshare(post, false)}
+                  onResharePost={(post, commentary) => setKnowledgePostReshare(post, true, commentary)}
+                  onSharePost={shareKnowledgePost}
+                  onSubmitAnnouncement={() => {}}
+                  onTakeDownPost={takeDownPost}
+                  onViewProduct={() => {}}
+                  posts={exploreCommunityPosts}
+                  showComposer={false}
+                />
               </div>
             </section>}
 
@@ -1198,7 +1469,7 @@ export default function KnowledgeSpacePage() {
               </section>
 
               <section className="knowledge-manage-card knowledge-manage-queues">
-                <nav className="knowledge-manage-subtabs" aria-label="Management queues">
+                <nav className="knowledge-manage-subtabs zumbarl-segmented-tabs" aria-label="Management queues">
                   <button type="button" className={manageQueueTab === "members" ? "is-active" : ""} onClick={() => setManageQueueTab("members")}><FiUsers /><span>Members</span><strong>{management?.pendingRequests?.length || 0}</strong></button>
                   {isLibrary && <button type="button" className={manageQueueTab === "resources" ? "is-active" : ""} onClick={() => setManageQueueTab("resources")}><FiBookOpen /><span>Submissions</span><strong>{management?.pendingResources?.length || 0}</strong></button>}
                   {isLibrary && <button type="button" className={manageQueueTab === "access" ? "is-active" : ""} onClick={() => setManageQueueTab("access")}><FiArchive /><span>Borrow requests</span><strong>{management?.pendingAccesses?.length || 0}</strong></button>}
@@ -1323,12 +1594,35 @@ export default function KnowledgeSpacePage() {
         </aside>
       </div>}
 
+      <ExploreMediaModal
+        activeMediaComments={activeMediaPost ? postComments[activeMediaPost.id] || [] : []}
+        activeMediaImage={activeMediaImage}
+        activeMediaIndex={activeMediaIndex}
+        activeMediaPost={activeMediaPost}
+        onClose={() => setActiveMedia(null)}
+        onComment={(id, body) => addKnowledgePostComment(id, body, activeMediaPost)}
+        onSharePost={shareKnowledgePost}
+        onStep={(direction) => setActiveMedia((current) => {
+          if (!current?.post?.gallery?.length) return current;
+          const total = current.post.gallery.length;
+          return { ...current, index: (current.index + direction + total) % total };
+        })}
+      />
+      <ExploreShareModal target={shareTarget} onClose={() => setShareTarget(null)} />
       <ExplorePostComposer
         isOpen={showPostForm}
         initialType={postComposerType}
         allowSpaceTags={false}
         onClose={() => setShowPostForm(false)}
         onPublish={publishSpacePost}
+      />
+      <ExploreStoryComposer
+        allowProductStories={false}
+        fixedKnowledgeSpace={space ? { id: space.id, name: space.name, type: isLibrary ? 'library' : 'group' } : null}
+        isOpen={showStoryForm}
+        onClose={() => setShowStoryForm(false)}
+        onPublish={publishSpaceStory}
+        publishingAs={space ? { name: space.name } : null}
       />
       {editingPost && <div className="knowledge-space-reader-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setEditingPost(null); }}>
         <form className="knowledge-room-dialog knowledge-post-edit-dialog" onSubmit={saveSpacePost}>

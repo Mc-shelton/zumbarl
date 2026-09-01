@@ -59,8 +59,14 @@ export const CampusPage = lazy(() => import("../../pages/CampusPage"));
 export const CampusProfilePage = lazy(
   () => import("../../pages/CampusProfilePage"),
 );
+export const CommunityPage = lazy(() => import("../../pages/CommunityPage"));
+export const WellbeingPage = lazy(() => import("../../pages/WellbeingPage"));
+export const SupportCirclePage = lazy(() => import("../../pages/SupportCirclePage"));
 export const CampusVendorWorkspacePage = lazy(
   () => import("../../pages/CampusVendorWorkspacePage"),
+);
+export const CampusVendorProfilePage = lazy(
+  () => import("../../pages/CampusVendorProfilePage"),
 );
 export const ExploreCampusPage = lazy(
   () => import("../../pages/ExploreCampusPage"),
@@ -106,3 +112,6 @@ export const StudentInterviewPage = lazy(
   () => import("../../pages/StudentInterviewPage"),
 );
 export const SuperAdminPage = lazy(() => import("../../pages/SuperAdminPage"));
+export const EvergreenWorkspacePage = lazy(
+  () => import("../../pages/EvergreenWorkspacePage"),
+);

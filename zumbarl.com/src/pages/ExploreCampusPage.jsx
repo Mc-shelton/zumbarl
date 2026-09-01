@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import CampusSidebar from "../components/layout/CampusSidebar";
 import Seo from "../components/Seo";
 import ExploreDefaultRail from "../features/explore/components/ExploreDefaultRail";
@@ -29,6 +29,7 @@ import {
   submitPostForAnnouncement,
   toggleConnectPostLike,
   updateConnectPost,
+  voteOnConnectPostPoll,
 } from "../features/explore/services/postService";
 import {
   CAMPUS_FEED_FILTERS,
@@ -101,6 +102,8 @@ function ownStoryCreator(snapshot, items = []) {
     shortName: "Your Story",
     handle: `@${user.username || user.email?.split("@")[0] || "student"}`,
     campus: student.campus || "Your campus",
+    zumbarlPoints: student.zumbarlPoints ?? student.score ?? null,
+    zumbarlTier: student.zumbarlTier || null,
     avatar:
       normalizeZumbarlFileUrl(student.avatarUrl) ||
       "/assets/index/bee_nobg.png",
@@ -151,7 +154,8 @@ function groupPersistedStories(records, snapshot, viewedIds) {
       creators.set(key, creator);
       return;
     }
-    if (record.isMine) {
+    const isPageStory = record.creator && !['student', 'person'].includes(String(record.creator.profileType || 'student').toLowerCase());
+    if (record.isMine && !isPageStory) {
       own.items.push(item);
       return;
     }
@@ -168,7 +172,7 @@ function groupPersistedStories(records, snapshot, viewedIds) {
         normalizeZumbarlFileUrl(record.creator.avatarUrl) ||
         "/assets/index/bee_nobg.png",
       items: [],
-      storyCategory: "people",
+      storyCategory: isPageStory ? "pages" : "people",
     };
     creator.items.push(item);
     creators.set(key, creator);
@@ -215,6 +219,8 @@ function postEngagementSnapshot(post) {
       handle: post.handle || '@student',
       avatarUrl: post.avatar || null,
       campus: post.campus || null,
+      zumbarlPoints: post.zumbarlPoints ?? undefined,
+      zumbarlTier: post.zumbarlTier || undefined,
     },
     reactionCount: Number(post.stats?.likes || 0),
     commentCount: Number(post.stats?.comments || 0),
@@ -278,7 +284,10 @@ function conciseText(value, fallback, length = 92) {
 }
 
 function ExploreCampusPage() {
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+  const isSocialHome = location.pathname === "/campus";
+  const requestedComposer = searchParams.get("compose") || "";
   const campusHubName = (searchParams.get("campus") || "").trim();
   const selectedTagReference = (searchParams.get("tag") || "").trim();
   const focusedPostId = (searchParams.get("post") || "").trim();
@@ -310,10 +319,37 @@ function ExploreCampusPage() {
   const [suggestedPeople, setSuggestedPeople] = useState([]);
   const [dismissedPeople, setDismissedPeople] = useState([]);
   const [suggestionPending, setSuggestionPending] = useState({});
+  const [campusRailItems, setCampusRailItems] = useState([]);
   const [marketplaceRailItems, setMarketplaceRailItems] = useState([]);
   const [productDetails, setProductDetails] = useState(EXPLORE_PRODUCT_DETAILS);
   const [railDataLoading, setRailDataLoading] = useState(true);
   const scrolledPostIdRef = useRef("");
+
+  useEffect(() => {
+    if (requestedComposer === "story") {
+      setIsStoryComposerOpen(true);
+      return;
+    }
+    if (["post", "event"].includes(requestedComposer)) {
+      setPostComposerType(requestedComposer);
+      setIsPostComposerOpen(true);
+    }
+  }, [requestedComposer]);
+
+  useEffect(() => {
+    const openComposer = (event) => {
+      const type = event.detail?.type || "post";
+      if (type === "story") {
+        setIsStoryComposerOpen(true);
+        return;
+      }
+      setPostComposerType(type);
+      setIsPostComposerOpen(true);
+    };
+    window.addEventListener("zumbarl:open-composer", openComposer);
+    return () => window.removeEventListener("zumbarl:open-composer", openComposer);
+  }, []);
+
   const {
     activeMediaComments,
     activeMediaImage,
@@ -392,21 +428,29 @@ function ExploreCampusPage() {
           const listings = (marketplaceResult.value?.data || [])
             .map(mapMarketplaceApiListing)
             .filter(Boolean);
+          const toRailItem = (item) => ({
+            id: item.id,
+            name: item.title,
+            price: item.price,
+            image: item.image,
+            vendor: item.shop?.name || item.seller?.name || "Campus seller",
+            badge: item.category || (item.kind === "service" ? "Service" : "Product"),
+            href: `/campus/opportunities/buy-sell/${encodeURIComponent(item.id)}`,
+            recommendation: item.recommendation,
+          });
+          const campusListings = listings.filter((item) => (
+            item.campusOnly ||
+            item.inventoryType === "food" ||
+            item.shop?.entityType === "campus_vendor"
+          ));
+          const campusListingIds = new Set(campusListings.map((item) => item.id));
+          const generalListings = listings.filter((item) => !campusListingIds.has(item.id));
           setProductDetails((current) => ({
             ...current,
             ...Object.fromEntries(listings.map((listing) => [listing.id, marketplaceListingToRailProduct(listing)])),
           }));
-          setMarketplaceRailItems(
-            listings
-              .slice(0, 3)
-              .map((item) => ({
-                id: item.id,
-                name: item.title,
-                price: item.price,
-                image: item.image,
-                href: `/campus/opportunities/buy-sell/${encodeURIComponent(item.id)}`,
-              })),
-          );
+          setCampusRailItems(campusListings.slice(0, 3).map(toRailItem));
+          setMarketplaceRailItems(generalListings.slice(0, 3).map(toRailItem));
         }
       })
       .finally(() => {
@@ -468,6 +512,8 @@ function ExploreCampusPage() {
       author: isSpaceAuthored ? knowledgeSpace.name : post.creator?.name || "Zumbarl student",
       handle: isSpaceAuthored ? (spaceType === "library" ? "Library" : "Study group") : post.creator?.handle || "@student",
       campus: post.creator?.campus || null,
+      zumbarlPoints: post.creator?.zumbarlPoints ?? null,
+      zumbarlTier: post.creator?.zumbarlTier || null,
       avatar: isSpaceAuthored
         ? normalizeZumbarlFileUrl(knowledgeSpace.avatarUrl) || `/assets/knowledge/default-${spaceType || "group"}-avatar.svg`
         : normalizeZumbarlFileUrl(post.creator?.avatarUrl),
@@ -735,6 +781,26 @@ function ExploreCampusPage() {
       setEngagementPending((current) => ({ ...current, [key]: false }));
     }
   }
+
+  async function voteOnPoll(post, optionIds) {
+    const key = `${post.id}:poll`;
+    setEngagementPending((current) => ({ ...current, [key]: true }));
+    setEngagementErrors((current) => ({ ...current, [post.id]: "" }));
+    try {
+      const saved = await voteOnConnectPostPoll(post.id, optionIds);
+      setCreatedPosts((current) => current.map((item) => item.id === post.id ? { ...item, poll: saved.poll } : item));
+      setPostEngagementOverrides((current) => ({
+        ...current,
+        [post.id]: { ...(current[post.id] || {}), poll: saved.poll },
+      }));
+      return saved.poll;
+    } catch (requestError) {
+      setEngagementErrors((current) => ({ ...current, [post.id]: requestError.message || "Your poll choice could not be saved." }));
+      throw requestError;
+    } finally {
+      setEngagementPending((current) => ({ ...current, [key]: false }));
+    }
+  }
   async function submitAnnouncement(id, payload) {
     const updated = await submitPostForAnnouncement(id, payload);
     setCreatedPosts((current) =>
@@ -879,6 +945,7 @@ function ExploreCampusPage() {
   const railPeople = useMemo(
     () => suggestedPeople.filter((person) => {
       if (dismissedPeople.includes(person.id)) return false;
+      if (person.isFollowing) return false;
       return !campusHubName || person.campus?.toLocaleLowerCase() === campusHubName.toLocaleLowerCase();
     }),
     [campusHubName, dismissedPeople, suggestedPeople],
@@ -917,7 +984,6 @@ function ExploreCampusPage() {
         const startsAt = new Date(post.event?.startsAt).getTime();
         return post.event && Number.isFinite(startsAt) && startsAt >= Date.now();
       })
-      .sort((left, right) => new Date(left.event.startsAt).getTime() - new Date(right.event.startsAt).getTime())
       .slice(0, 3)
       .map((post) => ({
         id: post.id,
@@ -1045,14 +1111,15 @@ function ExploreCampusPage() {
             ref={mainScrollContainerRef}
             className="campus-main explore-campus-main"
           >
-            <div className="explore-campus-sticky-head">
-              <ExploreTopBar
-                onClearSearch={handleClearSearch}
-                onSearchInputChange={handleSearchInputChange}
-                onSearchSubmit={handleSearchSubmit}
-                searchInput={searchInput}
-              />
+            <ExploreTopBar
+              onCreate={() => openPostComposer("post")}
+              onClearSearch={handleClearSearch}
+              onSearchInputChange={handleSearchInputChange}
+              onSearchSubmit={handleSearchSubmit}
+              searchInput={searchInput}
+            />
 
+            <div className="explore-campus-feed-head-area">
               {isSearchMode ? (
                 <ExploreSearchSummary
                   activeQuery={activeQuery}
@@ -1064,6 +1131,7 @@ function ExploreCampusPage() {
                   activeFilter={activeFeedFilter}
                   areStoriesVisible={areStoriesVisible}
                   filters={CAMPUS_FEED_FILTERS}
+                  isHome={isSocialHome}
                   onOpenStory={openStory}
                   onSelectFilter={setActiveFeedFilter}
                   onPrepareProfile={connect.handlePrepareProfile}
@@ -1097,6 +1165,7 @@ function ExploreCampusPage() {
                   onResharePost={(post, commentary) => setPostReshare(post, true, commentary)}
                   onSharePost={sharePost}
                   onSubmitAnnouncement={setAnnouncementPost}
+                  onVotePoll={voteOnPoll}
                   onViewProduct={handleViewProduct}
                   posts={visibleFeedPosts}
                 />
@@ -1125,6 +1194,7 @@ function ExploreCampusPage() {
             ) : (
               <ExploreDefaultRail
                 announcements={railAnnouncements}
+                campusItems={campusRailItems}
                 events={railEvents}
                 isLoading={railDataLoading}
                 marketplaceItems={marketplaceRailItems}
@@ -1167,6 +1237,7 @@ function ExploreCampusPage() {
             onPublish={handlePublishStory}
           />
           <ConnectProfileModal
+            key={isConnectProfileOpen ? `open:${connect.connectProfile?.updatedAt || 'new'}` : 'closed'}
             isOpen={isConnectProfileOpen}
             onClose={() => setIsConnectProfileOpen(false)}
             onSave={handleSaveConnectProfile}

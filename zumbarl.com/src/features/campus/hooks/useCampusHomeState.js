@@ -1,79 +1,68 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { readCampusHomeExperience, sendCampusAssistantQuery } from '../services/readCampusExperience'
 import useMarketplaceSlideshow from './useMarketplaceSlideshow'
 import useTypewriterPromptHint from './useTypewriterPromptHint'
 
 const EMPTY_ARRAY = []
+const DEFAULT_PROMPTS = [
+  'Find weekend gigs near me',
+  'What is happening on campus this week?',
+  'Find affordable study resources',
+]
 
 const ASSISTANT_KIND_LABELS = {
   gig: 'Gig',
-  product: 'Product',
+  product: 'Marketplace',
   service: 'Service',
-  person: 'Person',
+  person: 'People',
   event: 'Event',
-  resource: 'Resource',
+  resource: 'Study',
 }
 
-// Map a backend deep-search result into the discovery card shape the UI renders.
+const SECTION_LABELS = {
+  gigs: 'Gig',
+  marketplace: 'Marketplace',
+  services: 'Service',
+  events: 'Event',
+  roadmaps: 'Roadmap',
+  stories: 'Story',
+  posts: 'Post',
+}
+
 function toDiscoveryCard(result) {
-  const label = ASSISTANT_KIND_LABELS[result.kind] || 'Result'
+  const label = ASSISTANT_KIND_LABELS[result.kind] || SECTION_LABELS[result.section] || 'Campus'
   return {
-    id: result.id,
+    ...result,
     type: label,
-    title: result.title,
-    summary: result.summary || result.meta || '',
+    summary: result.summary || result.description || result.meta || '',
     href: result.href || undefined,
-    actionLabel: result.href ? 'Open' : undefined,
+    actionLabel: result.href ? (result.actionLabel || 'Open') : undefined,
     chip: label,
   }
 }
 
 function getSearchableText(item) {
-  return [
-    item.type,
-    item.title,
-    item.summary,
-    item.description,
-    item.meta,
-    ...(Array.isArray(item.tags) ? item.tags : []),
-    ...(Array.isArray(item.keywords) ? item.keywords : []),
-  ].filter(Boolean).join(' ').toLowerCase()
+  return [item.type, item.title, item.summary, item.description, item.meta, ...(Array.isArray(item.tags) ? item.tags : [])]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
 }
 
 function getDiscoverySuggestions(prompt, discoveryLibrary) {
   const normalizedPrompt = prompt.trim().toLowerCase()
-  if (!normalizedPrompt) {
-    return discoveryLibrary.slice(0, 5)
-  }
+  if (!normalizedPrompt) return discoveryLibrary.slice(0, 5).map(toDiscoveryCard)
 
-  const terms = normalizedPrompt.split(/\s+/).filter(Boolean)
-  const ranked = discoveryLibrary.map((item) => {
-    const searchableText = getSearchableText(item)
-    const score = terms.reduce((total, term) => {
-      if (!searchableText.includes(term)) {
-        return total
-      }
-      return total + (Array.isArray(item.tags) && item.tags.includes(term) ? 3 : 1)
-    }, 0)
-    return { ...item, score }
-  })
+  const terms = normalizedPrompt.split(/\s+/).filter((term) => term.length > 2)
+  const ranked = discoveryLibrary
+    .map((item) => ({
+      ...toDiscoveryCard(item),
+      score: terms.reduce((score, term) => score + (getSearchableText(item).includes(term) ? 1 : 0), 0),
+    }))
     .filter((item) => item.score > 0)
-    .sort((a, b) => b.score - a.score)
+    .sort((left, right) => right.score - left.score)
 
-  return ranked.slice(0, 5)
-}
-
-function formatAssistantReply(prompt, suggestions, assistant) {
-  const suggestionTitles = suggestions.slice(0, 2).map((item) => item.title).join(' and ')
-  const template = suggestionTitles ? assistant?.replyTemplate : assistant?.emptyReplyTemplate
-  if (!template) {
-    return ''
-  }
-
-  return template
-    .replaceAll('{prompt}', prompt)
-    .replaceAll('{suggestions}', suggestionTitles)
+  return (ranked.length ? ranked : discoveryLibrary.map(toDiscoveryCard)).slice(0, 5)
 }
 
 function useCampusHomeState() {
@@ -86,13 +75,18 @@ function useCampusHomeState() {
   const [activePrompt, setActivePrompt] = useState('')
   const [chatMessages, setChatMessages] = useState([])
   const [campusExperience, setCampusExperience] = useState(null)
+  const [homeError, setHomeError] = useState('')
+  const [isHomeLoading, setIsHomeLoading] = useState(true)
   const [showBackToAiButton, setShowBackToAiButton] = useState(false)
   const [assistantResults, setAssistantResults] = useState(null)
+  const [assistantPrompts, setAssistantPrompts] = useState(DEFAULT_PROMPTS)
+  const [assistantSource, setAssistantSource] = useState('')
   const [isAssistantThinking, setIsAssistantThinking] = useState(false)
 
   const assistant = campusExperience?.assistant ?? {}
-  const activeHints = chatMode ? assistant.chatPromptHints ?? EMPTY_ARRAY : assistant.searchPromptHints ?? EMPTY_ARRAY
-  const typewriterHints = useMemo(() => (activeHints.length ? activeHints : ['']), [activeHints])
+  const configuredHints = chatMode ? assistant.chatPromptHints : assistant.searchPromptHints
+  const activeHints = Array.isArray(configuredHints) && configuredHints.length ? configuredHints : DEFAULT_PROMPTS
+  const typewriterHints = useMemo(() => activeHints, [activeHints])
   const { hintDeleting, hintText, resetHint } = useTypewriterPromptHint(typewriterHints)
   const {
     activeMarketplaceHover,
@@ -101,31 +95,43 @@ function useCampusHomeState() {
     handleMarketplaceHoverStart,
   } = useMarketplaceSlideshow()
 
-  useEffect(() => {
-    const handleShortcutFocus = (event) => {
-      const usedCommandOrControl = event.metaKey || event.ctrlKey
-      if (!usedCommandOrControl || event.key !== '/') {
-        return
-      }
-
-      event.preventDefault()
-      promptInputRef.current?.focus()
+  const loadHomeExperience = useCallback(async () => {
+    setIsHomeLoading(true)
+    setHomeError('')
+    try {
+      setCampusExperience(await readCampusHomeExperience())
+    } catch {
+      setHomeError('We could not load your campus workspace. Check your connection and try again.')
+    } finally {
+      setIsHomeLoading(false)
     }
-
-    window.addEventListener('keydown', handleShortcutFocus)
-    return () => window.removeEventListener('keydown', handleShortcutFocus)
   }, [])
 
   useEffect(() => {
-    let isMounted = true
+    let isActive = true
     readCampusHomeExperience()
       .then((experience) => {
-        if (isMounted) setCampusExperience(experience)
+        if (isActive) setCampusExperience(experience)
       })
-      .catch(() => {})
+      .catch(() => {
+        if (isActive) setHomeError('We could not load your campus workspace. Check your connection and try again.')
+      })
+      .finally(() => {
+        if (isActive) setIsHomeLoading(false)
+      })
     return () => {
-      isMounted = false
+      isActive = false
     }
+  }, [])
+
+  useEffect(() => {
+    const handleShortcutFocus = (event) => {
+      if (!(event.metaKey || event.ctrlKey) || event.key !== '/') return
+      event.preventDefault()
+      promptInputRef.current?.focus()
+    }
+    window.addEventListener('keydown', handleShortcutFocus)
+    return () => window.removeEventListener('keydown', handleShortcutFocus)
   }, [])
 
   const discoveryLibrary = useMemo(
@@ -133,68 +139,75 @@ function useCampusHomeState() {
     [campusExperience?.discoveryLibrary]
   )
   const discoverySuggestions = useMemo(() => {
-    // Prefer the live deep-search results from the backend once a query has run;
-    // fall back to ranking the seeded discovery library locally.
-    if (chatMode && Array.isArray(assistantResults)) {
-      return assistantResults.map(toDiscoveryCard)
-    }
+    if (chatMode && Array.isArray(assistantResults)) return assistantResults.map(toDiscoveryCard)
     return getDiscoverySuggestions(chatMode ? activePrompt : '', discoveryLibrary)
-  }, [assistantResults, chatMode, activePrompt, discoveryLibrary])
+  }, [activePrompt, assistantResults, chatMode, discoveryLibrary])
 
   const discoveryChips = useMemo(() => {
-    if (!chatMode) {
-      return assistant.defaultChips ?? []
-    }
-    const chips = discoverySuggestions.map((item) => item.chip)
+    const chips = discoverySuggestions.map((item) => item.chip).filter(Boolean)
     return [...new Set(chips)].slice(0, 5)
-  }, [assistant.defaultChips, chatMode, discoverySuggestions])
+  }, [discoverySuggestions])
 
-  const handlePromptSubmit = async (event) => {
-    event.preventDefault()
-    const trimmedPrompt = prompt.trim()
-
-    if (!trimmedPrompt || isAssistantThinking) {
-      return
-    }
+  const runAssistantPrompt = useCallback(async (rawPrompt) => {
+    const trimmedPrompt = String(rawPrompt || '').trim()
+    if (!trimmedPrompt || isAssistantThinking) return
 
     const requestId = `${Date.now()}`
-    const userMessage = {
-      id: `${requestId}-user`,
-      role: 'user',
-      content: trimmedPrompt,
-    }
-    const pendingMessage = {
-      id: `${requestId}-assistant`,
-      role: 'assistant',
-      content: '',
-      pending: true,
-    }
+    const history = chatMessages
+      .filter((message) => !message.pending && message.content)
+      .slice(-8)
+      .map(({ role, content }) => ({ role, content }))
+    const userMessage = { id: `${requestId}-user`, role: 'user', content: trimmedPrompt }
+    const pendingMessage = { id: `${requestId}-assistant`, role: 'assistant', content: '', pending: true }
 
     setActivePrompt(trimmedPrompt)
     setChatMode(true)
     setChatMessages((previous) => [...previous, userMessage, pendingMessage])
     setPrompt('')
+    setAssistantSource('')
     setIsAssistantThinking(true)
     resetHint()
 
-    const finishMessage = (content) => {
+    const finishMessage = (content, { hasError = false, results = [], suggestions = [] } = {}) => {
       setChatMessages((previous) => previous.map((message) => (
-        message.id === pendingMessage.id ? { ...message, content, pending: false } : message
+        message.id === pendingMessage.id
+          ? { ...message, content, pending: false, hasError, results, suggestions }
+          : message
       )))
     }
 
     try {
-      const response = await sendCampusAssistantQuery(trimmedPrompt)
-      setAssistantResults(Array.isArray(response?.results) ? response.results : [])
-      finishMessage(response?.reply || 'I could not find anything for that just yet.')
+      const response = await sendCampusAssistantQuery(trimmedPrompt, history)
+      const results = Array.isArray(response?.results) ? response.results : []
+      setAssistantResults(results)
+      setAssistantPrompts(Array.isArray(response?.suggestedPrompts) && response.suggestedPrompts.length
+        ? response.suggestedPrompts
+        : DEFAULT_PROMPTS)
+      setAssistantSource(response?.source || 'search')
+      finishMessage(
+        response?.reply || 'I found no live match yet. Try a more specific campus, skill, item, or date.',
+        { results: results.map(toDiscoveryCard), suggestions: response?.suggestedPrompts || DEFAULT_PROMPTS }
+      )
     } catch {
-      // Backend/AI unavailable — fall back to the local discovery library search.
       const suggestions = getDiscoverySuggestions(trimmedPrompt, discoveryLibrary)
-      setAssistantResults(null)
-      finishMessage(formatAssistantReply(trimmedPrompt, suggestions, assistant))
+      setAssistantResults(suggestions)
+      setAssistantPrompts(DEFAULT_PROMPTS)
+      setAssistantSource('offline')
+      finishMessage(suggestions.length
+        ? 'The live search is taking a break, but these saved campus picks may still help.'
+        : 'I could not reach campus search just now. Please try again in a moment.', {
+        hasError: true,
+        results: suggestions,
+        suggestions: DEFAULT_PROMPTS,
+      })
     } finally {
       setIsAssistantThinking(false)
     }
+  }, [chatMessages, discoveryLibrary, isAssistantThinking, resetHint])
+
+  const handlePromptSubmit = (event) => {
+    event.preventDefault()
+    runAssistantPrompt(prompt)
   }
 
   const resetChatSurface = () => {
@@ -203,94 +216,76 @@ function useCampusHomeState() {
     setPrompt('')
     setChatMessages([])
     setAssistantResults(null)
+    setAssistantPrompts(DEFAULT_PROMPTS)
+    setAssistantSource('')
     setIsAssistantThinking(false)
     resetHint()
   }
 
   const handleMainScroll = (event) => {
     const scrollTop = event.currentTarget.scrollTop
-    const collapseDistance = 150
-    const progress = Math.min(scrollTop / collapseDistance, 1)
-    event.currentTarget.style.setProperty('--campus-header-progress', progress.toFixed(3))
-
+    event.currentTarget.style.setProperty('--campus-header-progress', Math.min(scrollTop / 150, 1).toFixed(3))
     const heroCard = heroCardRef.current
-    if (!heroCard) {
-      return
-    }
-
-    const heroBottom = heroCard.offsetTop + heroCard.offsetHeight
-    const shouldShowBackToAi = scrollTop > heroBottom - 120
-    setShowBackToAiButton((previous) => (
-      previous === shouldShowBackToAi ? previous : shouldShowBackToAi
-    ))
+    if (!heroCard) return
+    const shouldShowBackToAi = scrollTop > heroCard.offsetTop + heroCard.offsetHeight - 120
+    setShowBackToAiButton((previous) => previous === shouldShowBackToAi ? previous : shouldShowBackToAi)
   }
 
   const handleBackToAi = () => {
-    const mainScroller = mainScrollRef.current
-    const heroCard = heroCardRef.current
-    if (!mainScroller || !heroCard) {
-      return
-    }
-
-    mainScroller.scrollTo({
-      top: Math.max(heroCard.offsetTop - 10, 0),
+    if (!mainScrollRef.current || !heroCardRef.current) return
+    mainScrollRef.current.scrollTo({
+      top: Math.max(heroCardRef.current.offsetTop - 10, 0),
       behavior: 'smooth',
     })
   }
 
-  const focusPromptInput = () => {
-    promptInputRef.current?.focus()
-  }
-
-  const activeHint = hintText || activeHints[0] || ''
-  const promptPlaceholder = activeHint
-    ? `${chatMode ? 'Ask Zumbarl AI: ' : 'Try: '}${activeHint}${hintDeleting ? '' : '|'}`
-    : ''
+  const focusPromptInput = () => promptInputRef.current?.focus()
+  const activeHint = hintText || activeHints[0] || DEFAULT_PROMPTS[0]
+  const promptPlaceholder = `${chatMode ? 'Ask a follow-up: ' : 'Ask Zumbarl: '}${activeHint}${hintDeleting ? '' : '|'}`
 
   const openRecommendedGig = (opportunityUuid, owner, href) => {
-    if (href) {
-      navigate(href)
-      return
-    }
+    if (href) return navigate(href)
     const params = new URLSearchParams()
-    if (typeof opportunityUuid === 'string' && opportunityUuid.trim() !== '') {
-      params.set('opportunity', opportunityUuid)
-    }
-    if (typeof owner === 'string' && owner.trim() !== '') {
-      params.set('owner', owner)
-    }
+    if (typeof opportunityUuid === 'string' && opportunityUuid.trim()) params.set('opportunity', opportunityUuid)
+    if (typeof owner === 'string' && owner.trim()) params.set('owner', owner)
     navigate(`/campus/opportunities?${params.toString()}`)
   }
 
   return {
     activeMarketplaceHover,
     activeMarketplaceSlide,
+    assistantPrompts,
+    assistantSource,
     chatMessages,
     chatMode,
     discoveryChips,
     discoverySuggestions,
-    hero: campusExperience?.hero ?? null,
-    rail: campusExperience?.rail ?? null,
-    viewer: campusExperience?.viewer ?? null,
-    quickActions: campusExperience?.quickActions ?? [],
-    trustPoints: campusExperience?.trustPoints ?? [],
     focusPromptInput,
     handleBackToAi,
     handleMainScroll,
     handleMarketplaceHoverEnd,
     handleMarketplaceHoverStart,
     handlePromptSubmit,
+    hero: campusExperience?.hero ?? null,
     heroCardRef,
+    homeError,
     isAssistantThinking,
+    isHomeLoading,
     mainScrollRef,
     openRecommendedGig,
     prompt,
     promptInputRef,
     promptPlaceholder,
-    recommendationSections: campusExperience?.recommendationSections || [],
+    quickActions: campusExperience?.quickActions ?? [],
+    rail: campusExperience?.rail ?? null,
+    recommendationSections: campusExperience?.recommendationSections ?? [],
+    reloadHomeExperience: loadHomeExperience,
     resetChatSurface,
+    runAssistantPrompt,
     setPrompt,
     showBackToAiButton,
+    trustPoints: campusExperience?.trustPoints ?? [],
+    viewer: campusExperience?.viewer ?? null,
   }
 }
 

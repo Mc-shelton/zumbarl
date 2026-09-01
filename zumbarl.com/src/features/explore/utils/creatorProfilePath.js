@@ -7,9 +7,14 @@ function creatorProfilePath(creator = {}) {
   const reference = creator.slug || creator.id || normalizedHandle(creator.handle)
   if (!reference) return ''
   const profileType = String(creator.profileType || '').toLowerCase()
-  if (profileType === 'vendor') return ''
+  if (profileType === 'vendor') {
+    return `/campus/vendors/${encodeURIComponent(reference)}`
+  }
   if (profileType.startsWith('knowledge-')) {
     return `/campus/learn/spaces/${encodeURIComponent(reference)}`
+  }
+  if (profileType === 'support-circle') {
+    return `/campus/wellbeing/circles/${encodeURIComponent(reference)}`
   }
   const isOrganization = Boolean(creator.slug || (profileType && !['student', 'person'].includes(profileType)))
   return isOrganization

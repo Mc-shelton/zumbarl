@@ -58,6 +58,7 @@ function OpportunitiesPage() {
               onOpenMessages={pageState.onOpenMessages}
               onOpenPlaceBid={pageState.onOpenPlaceBid}
               onOpenProject={pageState.onOpenProject}
+              onRefreshServiceOrders={pageState.onRefreshServiceOrders}
               onResumeBidDraft={pageState.onResumeBidDraft}
               onRespondCounterOffer={pageState.onRespondCounterOffer}
               onViewBidOpportunity={pageState.onViewBidOpportunity}
@@ -66,6 +67,9 @@ function OpportunitiesPage() {
               onViewBooking={pageState.onViewBooking}
               opportunityTypeOptions={pageState.opportunityTypeOptions}
               projects={pageState.projects}
+              serviceOrders={pageState.serviceOrders}
+              serviceOrdersError={pageState.serviceOrdersError}
+              serviceOrdersLoading={pageState.serviceOrdersLoading}
               projectTeamInvites={pageState.projectTeamInvites}
               projectTeamInviteState={pageState.projectTeamInviteState}
               onRespondProjectTeamInvite={pageState.onRespondProjectTeamInvite}

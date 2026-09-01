@@ -528,7 +528,7 @@ function SuperAdminPage() {
 
         {error ? <p className="super-admin-error">{error}</p> : null}
 
-        <nav className="super-admin-tabs" aria-label="Super Admin modules">
+        <nav className="super-admin-tabs zumbarl-segmented-tabs" aria-label="Super Admin modules">
           {MODULES.map((module) => (
             <button
               key={module.id}

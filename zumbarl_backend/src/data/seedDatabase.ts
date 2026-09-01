@@ -1083,30 +1083,34 @@ async function seedStructuredCampusExperience(campusId: string, studentId: strin
   const enrollment = await prisma.studentRoadmapEnrollment.upsert({
     where: { studentId_roadmapId: { studentId, roadmapId: roadmap.id } },
     update: {
-      status: 'IN_PROGRESS',
-      progressPercent: 0,
-      currentStepOrder: 1,
-      completedStepIds: [],
+      status: 'COMPLETED',
+      progressPercent: 100,
+      currentStepOrder: steps.length,
+      completedStepIds: steps.map((step) => step.id),
       intent: 'earn-while-learning',
-      lockedAt: new Date()
+      lockedAt: new Date(),
+      completedAt: new Date(),
+      verifiedAt: new Date()
     },
     create: {
       studentId,
       roadmapId: roadmap.id,
-      status: 'IN_PROGRESS',
-      progressPercent: 0,
-      currentStepOrder: 1,
-      completedStepIds: [],
+      status: 'COMPLETED',
+      progressPercent: 100,
+      currentStepOrder: steps.length,
+      completedStepIds: steps.map((step) => step.id),
       intent: 'earn-while-learning',
-      lockedAt: new Date()
+      lockedAt: new Date(),
+      completedAt: new Date(),
+      verifiedAt: new Date()
     }
   })
 
-  for (const [index, step] of steps.entries()) {
+  for (const step of steps) {
     await prisma.studentRoadmapStepProgress.upsert({
       where: { enrollmentId_stepId: { enrollmentId: enrollment.id, stepId: step.id } },
-      update: index === 0 ? { evidenceScore: 64, testScore: 12, status: 'ACTIVE' } : { status: 'LOCKED' },
-      create: { enrollmentId: enrollment.id, stepId: step.id, evidenceScore: index === 0 ? 64 : 0, testScore: index === 0 ? 12 : 0, status: index === 0 ? 'ACTIVE' : 'LOCKED' }
+      update: { evidenceScore: 80, testScore: 20, status: 'COMPLETED', completedAt: new Date() },
+      create: { enrollmentId: enrollment.id, stepId: step.id, evidenceScore: 80, testScore: 20, status: 'COMPLETED', completedAt: new Date() }
     })
   }
   await prisma.roadmapEvidence.upsert({
@@ -1258,7 +1262,7 @@ async function seedDatabase() {
       firstName: 'Aisha',
       lastName: 'Mwangi',
       username: 'aisha_mwangi',
-      role: 'STUDENT_STANDARD',
+      role: 'STUDENT_TRANSITION',
       isActive: true
     },
     create: {
@@ -1269,7 +1273,7 @@ async function seedDatabase() {
       username: 'aisha_mwangi',
       phone: '+254700100001',
       passwordHash: await hashPassword('password123'),
-      role: 'STUDENT_STANDARD',
+      role: 'STUDENT_TRANSITION',
       isActive: true
     }
   })
@@ -1280,7 +1284,7 @@ async function seedDatabase() {
       firstName: 'Zetech',
       lastName: 'Studios',
       username: 'zetech_studios',
-      role: 'COMPANY_STANDARD',
+      role: 'COMPANY_PIPELINE_PARTNER',
       isActive: true
     },
     create: {
@@ -1291,7 +1295,7 @@ async function seedDatabase() {
       username: 'zetech_studios',
       phone: '+254700100002',
       passwordHash: await hashPassword('password123'),
-      role: 'COMPANY_STANDARD',
+      role: 'COMPANY_PIPELINE_PARTNER',
       isActive: true
     }
   })
@@ -1413,7 +1417,8 @@ async function seedDatabase() {
       bio: 'Digital marketer and social media creator passionate about helping students and young professionals grow their skills and careers.',
       careerPath: 'Marketing & Design',
       avatarUrl: assets.avatar,
-      kycStatus: 'APPROVED'
+      kycStatus: 'APPROVED',
+      transitionUnlockedAt: new Date()
     },
     create: {
       userId: studentUser.id,
@@ -1429,7 +1434,8 @@ async function seedDatabase() {
       careerPath: 'Marketing & Design',
       avatarUrl: assets.avatar,
       isOpenToHire: true,
-      kycStatus: 'APPROVED'
+      kycStatus: 'APPROVED',
+      transitionUnlockedAt: new Date()
     }
   })
 
@@ -1570,7 +1576,8 @@ async function seedDatabase() {
       sector: 'Marketing',
       size: '2-10',
       description: 'Student-facing creative studio running practical digital campaigns.',
-      kycStatus: 'APPROVED'
+      kycStatus: 'APPROVED',
+      isPipelinePartner: true
     },
     create: {
       name: 'Zetech Studios',
@@ -1578,7 +1585,8 @@ async function seedDatabase() {
       sector: 'Marketing',
       size: '2-10',
       description: 'Student-facing creative studio running practical digital campaigns.',
-      kycStatus: 'APPROVED'
+      kycStatus: 'APPROVED',
+      isPipelinePartner: true
     }
   })
   const businessContact = await prisma.companyContact.upsert({
@@ -1588,6 +1596,99 @@ async function seedDatabase() {
       userId: businessUser.id,
       companyId: business.id,
       isOwner: true
+    }
+  })
+  const evergreenValidFrom = new Date()
+  const evergreenValidUntil = new Date(evergreenValidFrom)
+  evergreenValidUntil.setFullYear(evergreenValidUntil.getFullYear() + 1)
+
+  await prisma.placementAvailability.upsert({
+    where: { studentId: student.id },
+    update: {
+      isSeeking: true,
+      placementTypes: ['INTERNSHIP', 'ATTACHMENT', 'FULL_TIME', 'CONTRACT'],
+      earliestStartDate: evergreenValidFrom,
+      latestStartDate: evergreenValidUntil,
+      locations: [],
+      workModes: ['REMOTE', 'HYBRID', 'ONSITE'],
+      roleInterests: ['Content Creator', 'Social Media Manager', 'Digital Marketing'],
+      consentVersion: 'evergreen-seed-v1',
+      companyVisibleFields: ['name', 'avatarUrl', 'campus', 'course', 'careerPath', 'skills', 'competencies', 'portfolio'],
+      consentedAt: evergreenValidFrom,
+      visibleFrom: evergreenValidFrom,
+      pausedAt: null,
+      expiresAt: evergreenValidUntil
+    },
+    create: {
+      studentId: student.id,
+      isSeeking: true,
+      placementTypes: ['INTERNSHIP', 'ATTACHMENT', 'FULL_TIME', 'CONTRACT'],
+      earliestStartDate: evergreenValidFrom,
+      latestStartDate: evergreenValidUntil,
+      locations: [],
+      workModes: ['REMOTE', 'HYBRID', 'ONSITE'],
+      roleInterests: ['Content Creator', 'Social Media Manager', 'Digital Marketing'],
+      consentVersion: 'evergreen-seed-v1',
+      companyVisibleFields: ['name', 'avatarUrl', 'campus', 'course', 'careerPath', 'skills', 'competencies', 'portfolio'],
+      consentedAt: evergreenValidFrom,
+      visibleFrom: evergreenValidFrom,
+      expiresAt: evergreenValidUntil
+    }
+  })
+
+  await prisma.evergreenOverride.upsert({
+    where: { id: 'evergreen-seed-zetech-qualification' },
+    update: {
+      subjectType: 'COMPANY',
+      subjectId: business.id,
+      policy: 'COMPANY_QUALIFICATION',
+      reason: 'Seeded qualification override for the Evergreen end-to-end test company.',
+      approvedById: adminUser.id,
+      status: 'ACTIVE',
+      expiresAt: evergreenValidUntil,
+      revokedAt: null,
+      revokedById: null
+    },
+    create: {
+      id: 'evergreen-seed-zetech-qualification',
+      subjectType: 'COMPANY',
+      subjectId: business.id,
+      policy: 'COMPANY_QUALIFICATION',
+      reason: 'Seeded qualification override for the Evergreen end-to-end test company.',
+      approvedById: adminUser.id,
+      status: 'ACTIVE',
+      expiresAt: evergreenValidUntil
+    }
+  })
+
+  await prisma.evergreenEntitlement.upsert({
+    where: { id: 'evergreen-seed-zetech-entitlement' },
+    update: {
+      companyId: business.id,
+      planCode: 'EVERGREEN_TEST_PARTNER',
+      status: 'ACTIVE',
+      programLimit: 5,
+      seatLimit: 25,
+      validFrom: evergreenValidFrom,
+      validUntil: evergreenValidUntil,
+      sourceType: 'SEED_TEST_DATA',
+      sourceReference: 'evergreen-seed-zetech-qualification',
+      confirmedById: adminUser.id,
+      confirmedAt: evergreenValidFrom
+    },
+    create: {
+      id: 'evergreen-seed-zetech-entitlement',
+      companyId: business.id,
+      planCode: 'EVERGREEN_TEST_PARTNER',
+      status: 'ACTIVE',
+      programLimit: 5,
+      seatLimit: 25,
+      validFrom: evergreenValidFrom,
+      validUntil: evergreenValidUntil,
+      sourceType: 'SEED_TEST_DATA',
+      sourceReference: 'evergreen-seed-zetech-qualification',
+      confirmedById: adminUser.id,
+      confirmedAt: evergreenValidFrom
     }
   })
   const businessProfile = await prisma.managedProfile.upsert({
@@ -1604,6 +1705,141 @@ async function seedDatabase() {
   const welfareAssociation = await prisma.communityGroup.upsert({ where: { id: 'group-ku-student-welfare-association' }, update: { name: 'KU Student Welfare Association', category: 'association', campus: kenyattaCampus.name, status: 'active' }, create: { id: 'group-ku-student-welfare-association', name: 'KU Student Welfare Association', category: 'association', purpose: 'Represent student welfare priorities and connect students to support.', campus: kenyattaCampus.name } })
   const welfareProfile = await prisma.managedProfile.upsert({ where: { slug: 'ku-student-welfare-association' }, update: { type: 'association', name: welfareAssociation.name, handle: 'ku_welfare', communityGroupId: welfareAssociation.id, isVerified: true, details: { mandate: welfareAssociation.purpose, constituency: 'All registered KU students', welfareAreas: ['Academic welfare', 'Accommodation', 'Health', 'Safety', 'Accessibility'], leadership: ['Chairperson', 'Secretary', 'Welfare representative'], electionCycle: 'Annual', membership: { status: 'open' }, accountability: ['Constitution', 'Member register', 'Annual elections', 'Semester action plan'] } }, create: { type: 'association', slug: 'ku-student-welfare-association', name: welfareAssociation.name, handle: 'ku_welfare', communityGroupId: welfareAssociation.id, isVerified: true, details: { mandate: welfareAssociation.purpose, constituency: 'All registered KU students', welfareAreas: ['Academic welfare', 'Accommodation', 'Health', 'Safety', 'Accessibility'], leadership: ['Chairperson', 'Secretary', 'Welfare representative'], electionCycle: 'Annual', membership: { status: 'open' }, accountability: ['Constitution', 'Member register', 'Annual elections', 'Semester action plan'] } } })
   await prisma.managedProfileManager.upsert({ where: { managedProfileId_userId: { managedProfileId: welfareProfile.id, userId: adminUser.id } }, update: { role: 'owner' }, create: { managedProfileId: welfareProfile.id, userId: adminUser.id, role: 'owner' } })
+
+  await prisma.communityGroup.upsert({
+    where: { id: 'group-zetech-first-year-support' },
+    update: {
+      name: 'First-Year Peer Support',
+      category: 'support-circle',
+      purpose: 'A moderated place to talk through settling in, pressure, loneliness and finding the right campus support.',
+      rules: ['Protect member privacy', 'Listen without diagnosing', 'Escalate urgent safety concerns'],
+      campus: campus.name,
+      status: 'active',
+      payload: { privacyMode: 'alias', moderationOwner: 'Zetech Student Affairs', activityLabel: 'Ongoing · reply when ready', splashImageUrl: '/assets/wellbeing/first-year-circle-splash.webp', safetyBoundaries: ['No harassment or diagnosis', 'No pressure to reveal identity', 'Safety escalation may involve trained staff'] }
+    },
+    create: {
+      id: 'group-zetech-first-year-support',
+      name: 'First-Year Peer Support',
+      category: 'support-circle',
+      purpose: 'A moderated place to talk through settling in, pressure, loneliness and finding the right campus support.',
+      rules: ['Protect member privacy', 'Listen without diagnosing', 'Escalate urgent safety concerns'],
+      campus: campus.name,
+      status: 'active',
+      payload: { privacyMode: 'alias', moderationOwner: 'Zetech Student Affairs', activityLabel: 'Ongoing · reply when ready', splashImageUrl: '/assets/wellbeing/first-year-circle-splash.webp', safetyBoundaries: ['No harassment or diagnosis', 'No pressure to reveal identity', 'Safety escalation may involve trained staff'] }
+    }
+  })
+  await prisma.communityGroup.upsert({
+    where: { id: 'group-zetech-recovery-circle' },
+    update: {
+      name: 'Recovery & Staying Clean Circle',
+      category: 'support-circle',
+      purpose: 'Peer encouragement and guided campus referrals for students working through substance-use recovery.',
+      rules: ['Share from personal experience', 'No sale or promotion of substances', 'Respect privacy and recovery boundaries'],
+      campus: campus.name,
+      status: 'active',
+      payload: { privacyMode: 'alias', moderationOwner: 'Campus Wellness Partner', activityLabel: 'Ongoing · reply when ready', splashImageUrl: '/assets/wellbeing/recovery-circle-splash.webp', safetyBoundaries: ['Peer support is not clinical treatment', 'Immediate risk is escalated to trained support'] }
+    },
+    create: {
+      id: 'group-zetech-recovery-circle',
+      name: 'Recovery & Staying Clean Circle',
+      category: 'support-circle',
+      purpose: 'Peer encouragement and guided campus referrals for students working through substance-use recovery.',
+      rules: ['Share from personal experience', 'No sale or promotion of substances', 'Respect privacy and recovery boundaries'],
+      campus: campus.name,
+      status: 'active',
+      payload: { privacyMode: 'alias', moderationOwner: 'Campus Wellness Partner', activityLabel: 'Ongoing · reply when ready', splashImageUrl: '/assets/wellbeing/recovery-circle-splash.webp', safetyBoundaries: ['Peer support is not clinical treatment', 'Immediate risk is escalated to trained support'] }
+    }
+  })
+  await prisma.campusWellbeingResource.upsert({
+    where: { id: 'wellbeing-zetech-counseling' },
+    update: {
+      campusId: campus.id,
+      resourceType: 'counselor',
+      name: 'Campus counseling request',
+      description: 'Request a private one-to-one session. A campus wellbeing coordinator confirms the available counselor and time.',
+      contactLabel: 'Request a session',
+      href: '/campus/wellbeing?open=booking',
+      availability: 'By confirmed appointment',
+      isEmergency: false,
+      sortOrder: 10,
+      status: 'active'
+    },
+    create: {
+      id: 'wellbeing-zetech-counseling',
+      campusId: campus.id,
+      resourceType: 'counselor',
+      name: 'Campus counseling request',
+      description: 'Request a private one-to-one session. A campus wellbeing coordinator confirms the available counselor and time.',
+      contactLabel: 'Request a session',
+      href: '/campus/wellbeing?open=booking',
+      availability: 'By confirmed appointment',
+      isEmergency: false,
+      sortOrder: 10
+    }
+  })
+  await prisma.campusWellbeingResource.upsert({
+    where: { id: 'wellbeing-zetech-student-affairs' },
+    update: {
+      campusId: campus.id,
+      resourceType: 'campus-support',
+      name: 'Student affairs & safeguarding',
+      description: 'Share a named concern when you need a campus support team member to follow up through Zumbarl.',
+      contactLabel: 'Send a check-in',
+      href: '/campus/wellbeing?open=check-in',
+      availability: 'Campus working hours',
+      isEmergency: false,
+      sortOrder: 20,
+      status: 'active'
+    },
+    create: {
+      id: 'wellbeing-zetech-student-affairs',
+      campusId: campus.id,
+      resourceType: 'campus-support',
+      name: 'Student affairs & safeguarding',
+      description: 'Share a named concern when you need a campus support team member to follow up through Zumbarl.',
+      contactLabel: 'Send a check-in',
+      href: '/campus/wellbeing?open=check-in',
+      availability: 'Campus working hours',
+      isEmergency: false,
+      sortOrder: 20
+    }
+  })
+  await prisma.campusWellbeingResource.upsert({
+    where: { id: 'wellbeing-emergency-guidance' },
+    update: {
+      campusId: null,
+      resourceType: 'urgent-guidance',
+      name: 'Urgent safety help',
+      description: 'If there is immediate danger, move toward another person and use your campus emergency service or nearest emergency department.',
+      contactLabel: 'Open safety help',
+      href: '/help',
+      availability: 'Use immediately when needed',
+      isEmergency: true,
+      sortOrder: 100,
+      status: 'active'
+    },
+    create: {
+      id: 'wellbeing-emergency-guidance',
+      resourceType: 'urgent-guidance',
+      name: 'Urgent safety help',
+      description: 'If there is immediate danger, move toward another person and use your campus emergency service or nearest emergency department.',
+      contactLabel: 'Open safety help',
+      href: '/help',
+      availability: 'Use immediately when needed',
+      isEmergency: true,
+      sortOrder: 100
+    }
+  })
+  const laptopChama = await prisma.communityGroup.upsert({
+    where: { id: 'group-zetech-laptop-chama' },
+    update: { name: 'Laptop Access Chama', category: 'chama', purpose: 'Save together toward laptops and essential study equipment with a visible member ledger.', rules: ['Contributions stay visible to members', 'Withdrawals follow member approval', 'No off-platform collection'], campus: campus.name, contributionAmount: 500, contributionCadence: 'Monthly', status: 'active' },
+    create: { id: 'group-zetech-laptop-chama', name: 'Laptop Access Chama', category: 'chama', purpose: 'Save together toward laptops and essential study equipment with a visible member ledger.', rules: ['Contributions stay visible to members', 'Withdrawals follow member approval', 'No off-platform collection'], campus: campus.name, contributionAmount: 500, contributionCadence: 'Monthly', status: 'active', walletBalance: 3500 }
+  })
+  await prisma.communityGroupMembership.upsert({
+    where: { groupId_studentId: { groupId: laptopChama.id, studentId: student.id } },
+    update: { status: 'active', role: 'member' },
+    create: { groupId: laptopChama.id, studentId: student.id, status: 'active', role: 'member', payload: { participationMode: 'named' } }
+  })
   await prisma.companyWallet.upsert({
     where: { companyId: business.id },
     update: {},

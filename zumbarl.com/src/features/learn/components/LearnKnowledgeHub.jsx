@@ -9,10 +9,12 @@ import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 import KnowledgeResourceCheckoutModal from './KnowledgeResourceCheckoutModal'
 import KnowledgeAvatarPicker from './KnowledgeAvatarPicker'
 import GeneratedResourceThumbnailPicker from './GeneratedResourceThumbnailPicker'
+import AttachmentPreviewModal from './AttachmentPreviewModal'
 import { generateResourceThumbnail } from '../lib/generateResourceThumbnail'
 import {
   accessKnowledgeResource, createKnowledgeResource, createKnowledgeSpace, readKnowledgeHub,
   purchaseKnowledgeResource, readKnowledgeResourceCheckout,
+  recordKnowledgeResourceDwell, recordKnowledgeResourceOpen,
   searchKnowledgeUnits,
   setKnowledgeSpaceFollowing, setKnowledgeSpaceMembership,
 } from '../services/learnService'
@@ -80,6 +82,7 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
   const [spaceAvatarFile, setSpaceAvatarFile] = useState(null)
   const [purchaseCheckout, setPurchaseCheckout] = useState(null)
   const [purchaseError, setPurchaseError] = useState('')
+  const [attachmentPreview, setAttachmentPreview] = useState(null)
 
   useEffect(() => {
     // This keeps a route-selected Knowledge Hub view synchronized with its tab.
@@ -110,6 +113,7 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
   const selectedDestination = publishableSpaces.find((space) => space.id === resourceForm.spaceId) || null
   const submitSearch = (event) => { event.preventDefault(); load({ q: query, type }) }
   const showResourceDetails = (resource) => {
+    recordKnowledgeResourceOpen(resource.id)
     const next = new URLSearchParams(searchParams)
     next.set('view', 'knowledge')
     next.set('resource', resource.id)
@@ -261,6 +265,13 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
   const routedResource = data.resources.find((resource) => resource.id === searchParams.get('resource')) || null
   const visibleDialog = dialog || (routedResource ? { type: 'reader', resource: routedResource } : null)
 
+  useEffect(() => {
+    if (visibleDialog?.type !== 'reader' || !visibleDialog.resource?.id) return undefined
+    const resourceId = visibleDialog.resource.id
+    const startedAt = Date.now()
+    return () => recordKnowledgeResourceDwell(resourceId, (Date.now() - startedAt) / 1000)
+  }, [visibleDialog?.resource?.id, visibleDialog?.type])
+
   const submitSpace = async (event) => {
     event.preventDefault()
     const created = await mutate('create-space', async () => {
@@ -298,7 +309,7 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
         </div>
       </section>
 
-      <nav className="knowledge-tabs" aria-label="Knowledge hub sections">
+      <nav className="knowledge-tabs zumbarl-segmented-tabs" aria-label="Knowledge hub sections">
         <button className={tab === 'resources' ? 'is-active' : ''} onClick={() => setTab('resources')}><FiBookOpen /> Resources</button>
         <button className={tab === 'libraries' ? 'is-active' : ''} onClick={() => setTab('libraries')}><FiArchive /> Libraries</button>
         <button className={tab === 'groups' ? 'is-active' : ''} onClick={() => setTab('groups')}><FiUsers /> Study groups</button>
@@ -386,8 +397,8 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
             <span className="learn-eyebrow">{TYPE_LABELS[visibleDialog.resource.type]}</span><h2>{visibleDialog.resource.title}</h2>
             <p>{visibleDialog.resource.description}</p><div className="knowledge-reader">{visibleDialog.resource.previewText || 'The owner has not added a text preview. Use the attached source to open the complete resource.'}</div>
             <div className="knowledge-reader-files">
-              {visibleDialog.resource.fileUrl && <a className="learn-primary-btn" href={visibleDialog.resource.fileUrl} target="_blank" rel="noreferrer">Open resource link <FiLink /></a>}
-              {(visibleDialog.resource.fileUrls || []).map((url, index) => <a key={url} className="learn-primary-btn" href={url} target="_blank" rel="noreferrer">Open file {index + 1} <FiFileText /></a>)}
+              {visibleDialog.resource.fileUrl && <button type="button" className="learn-primary-btn" onClick={() => setAttachmentPreview({ url: visibleDialog.resource.fileUrl, name: visibleDialog.resource.title, resourceId: visibleDialog.resource.id })}>Preview resource link <FiLink /></button>}
+              {(visibleDialog.resource.fileUrls || []).map((url, index) => <button type="button" key={url} className="learn-primary-btn" onClick={() => setAttachmentPreview({ url, name: `${visibleDialog.resource.title} · File ${index + 1}`, resourceId: visibleDialog.resource.id })}>Preview file {index + 1} <FiFileText /></button>)}
             </div>
           </>}
           {visibleDialog.type === 'resource-form' && <form onSubmit={submitResource} className="knowledge-form">
@@ -438,6 +449,7 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
           </form>}
         </section>
       </div>}
+      <AttachmentPreviewModal attachment={attachmentPreview} onClose={() => setAttachmentPreview(null)} />
     </div>
   )
 }

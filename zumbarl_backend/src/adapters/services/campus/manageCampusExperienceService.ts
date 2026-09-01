@@ -12,23 +12,54 @@ const KIND_LABEL: Record<string, string> = {
   resource: 'resource'
 }
 
+type AssistantHistoryItem = {
+  role: 'user' | 'assistant'
+  content: string
+}
+
 function buildFallbackReply(query: string, results: Array<{ kind: string; title: string }>): string {
   if (results.length === 0) {
-    return `I couldn't find anything matching "${query}" yet. Try a different keyword — a skill, a product, a person's name, or a campus event.`
+    return `I couldn't find a live match for “${query}” yet. Try a specific skill, item, person, or event and I’ll look across Zumbarl again.`
   }
   const top = results.slice(0, 2).map((result) => `${result.title} (${KIND_LABEL[result.kind] ?? result.kind})`).join(' and ')
   const more = results.length > 2 ? ` and ${results.length - 2} more` : ''
-  return `Here's what I found for "${query}": ${top}${more}. Open any card below to explore it.`
+  return `I found ${top}${more}. Open a result below, or narrow it down and I’ll keep looking.`
 }
 
-async function runCampusAssistantQueryService(studentId: string | undefined, rawQuery: string) {
+function resolveSearchQuery(query: string, history: AssistantHistoryItem[]) {
+  const isFollowUp = /\b(another|cheaper|closer|more|only|ones?|those|them|under|weekend)\b/i.test(query)
+  if (!isFollowUp) return query
+  const previousQuery = [...history].reverse().find((item) => item.role === 'user')?.content
+  return previousQuery ? `${previousQuery} ${query}`.slice(0, 400) : query
+}
+
+function buildSuggestedPrompts(results: Array<{ kind: string }>) {
+  const primaryKind = results[0]?.kind
+  if (primaryKind === 'gig') return ['Show beginner-friendly gigs', 'Only remote opportunities', 'Find work near my campus']
+  if (primaryKind === 'product' || primaryKind === 'service') return ['Show cheaper marketplace options', 'Only student sellers', 'Find campus services']
+  if (primaryKind === 'event') return ['What is happening this week?', 'Show free campus events', 'Find events near me']
+  if (primaryKind === 'person') return ['Find mentors at my campus', 'Show student creators', 'Who can help me study?']
+  if (primaryKind === 'resource') return ['Find revision notes', 'Show career roadmaps', 'Find affordable books']
+  return ['Find weekend gigs', 'What is happening this week?', 'Find affordable study resources']
+}
+
+async function runCampusAssistantQueryService(
+  studentId: string | undefined,
+  rawQuery: string,
+  history: AssistantHistoryItem[] = []
+) {
   const query = rawQuery.trim()
-  const results = await campusExperienceRepository.searchSystem(query, studentId)
-  const aiReply = await generateAssistantReply({ query, results })
+  const recentHistory = history.slice(-8)
+  const resolvedQuery = resolveSearchQuery(query, recentHistory)
+  const results = await campusExperienceRepository.searchSystem(resolvedQuery, studentId)
+  const aiReply = await generateAssistantReply({ query, results, history: recentHistory })
   return {
     query,
+    resolvedQuery,
     reply: aiReply ?? buildFallbackReply(query, results),
     results,
+    resultCount: results.length,
+    suggestedPrompts: buildSuggestedPrompts(results),
     source: aiReply ? 'ai' : (isAssistantAiEnabled() ? 'ai_fallback' : 'search')
   }
 }
@@ -59,5 +90,6 @@ export {
   readStudentProfileScoreService,
   readStudentProfileExperienceService,
   runCampusAssistantQueryService
-  ,updateStudentProfileService
+  ,updateStudentProfileService,
+  type AssistantHistoryItem
 }

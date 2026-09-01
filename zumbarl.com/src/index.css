@@ -101,3 +101,90 @@ small { font-size: var(--text-caption); }
   white-space: nowrap !important;
   border: 0 !important;
 }
+
+/*
+ * Shared Zumbarl segmented navigation.
+ *
+ * TabNav adds this class automatically. Page-owned tab bars can opt in to the
+ * same treatment so navigation feels identical across product areas.
+ */
+.zumbarl-segmented-tabs.zumbarl-segmented-tabs {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 0;
+  height: auto;
+  margin: 0;
+  padding: 4px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border: 1px solid #e0e4f0;
+  border-radius: 999px;
+  background: #f7f8fc;
+  box-shadow: none;
+  scrollbar-width: none;
+}
+
+.zumbarl-segmented-tabs.zumbarl-segmented-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.zumbarl-segmented-tabs.zumbarl-segmented-tabs > :is(button, a) {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 38px;
+  height: auto;
+  margin: 0;
+  padding: 8px 13px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  box-shadow: none;
+  color: #5f698a;
+  font: inherit;
+  font-size: var(--text-small);
+  font-weight: 750;
+  line-height: 1.2;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, box-shadow 150ms ease;
+}
+
+.zumbarl-segmented-tabs.zumbarl-segmented-tabs > :is(button, a):hover {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.66);
+  color: #76506f;
+}
+
+.zumbarl-segmented-tabs.zumbarl-segmented-tabs > :is(button, a):is(.is-active, [aria-selected='true'], [aria-current='page']) {
+  border-color: transparent;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(32, 37, 68, 0.07);
+  color: #76506f;
+}
+
+.zumbarl-segmented-tabs.zumbarl-segmented-tabs > :is(button, a) strong {
+  display: grid;
+  min-width: 22px;
+  height: 22px;
+  box-sizing: border-box;
+  place-items: center;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #e9eaf1;
+  color: #626b87;
+  font-size: 10px;
+}
+
+.zumbarl-segmented-tabs.zumbarl-segmented-tabs > :is(button, a):is(.is-active, [aria-selected='true'], [aria-current='page']) strong {
+  background: #eee4ef;
+  color: #76506f;
+}

@@ -164,7 +164,7 @@ function AuthPage({ defaultMode = 'login' }) {
         ? '/admin/super-admin'
         : response?.user?.businessId
           ? (mode === 'register' ? '/business/onboarding' : '/business/workspace')
-          : '/campus/opportunities'
+          : '/campus/landing'
       navigate(nextPath)
     } catch (error) {
       setErrorMessage(error.message || 'Authentication failed')

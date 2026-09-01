@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { roles } from '../../../lib/security.js'
+import { publicRegistrationRoles } from '../../../lib/security.js'
 
 const registerUserSchema = z.object({
   email: z.string().email(),
@@ -9,7 +9,7 @@ const registerUserSchema = z.object({
   lastName: z.string().min(2),
   username: z.string().min(3).max(30).regex(/^@?[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
   name: z.string().min(2).optional(),
-  role: z.enum(roles).default('STUDENT_STANDARD'),
+  role: z.enum(publicRegistrationRoles).default('STUDENT_STANDARD'),
   campus: z.union([
     z.object({ id: z.string().min(1) }),
     z.object({
@@ -21,7 +21,15 @@ const registerUserSchema = z.object({
       longitude: z.coerce.number().min(-180).max(180)
     })
   ]).optional(),
-  businessName: z.string().optional()
+  businessName: z.string().trim().min(2).max(160).optional()
+}).superRefine((payload, context) => {
+  if ((payload.role === 'business' || payload.role === 'COMPANY_STANDARD') && !payload.businessName) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['businessName'],
+      message: 'Business name is required for company registration'
+    })
+  }
 })
 
 const loginUserSchema = z.object({

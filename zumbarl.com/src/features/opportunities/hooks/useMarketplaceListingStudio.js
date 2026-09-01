@@ -191,7 +191,7 @@ function useMarketplaceListingStudio() {
   const [searchParams] = useSearchParams()
   const vendorId = searchParams.get('vendorId') || ''
   const vendorSlug = searchParams.get('vendorSlug') || ''
-  const [activeStep, setActiveStep] = useState(1)
+  const [activeStepRaw, setActiveStep] = useState(1)
   const [form, setForm] = useState(() => listingId ? DEFAULT_FORM : readLocalDraft())
   const [savedListingId, setSavedListingId] = useState(listingId)
   const [isLoading, setIsLoading] = useState(Boolean(listingId))
@@ -200,6 +200,8 @@ function useMarketplaceListingStudio() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [isDirty, setIsDirty] = useState(false)
+  const [foodMode, setFoodMode] = useState(false)
+  const [vendorContext, setVendorContext] = useState(null)
 
   useEffect(() => {
     if (!listingId) return undefined
@@ -207,9 +209,14 @@ function useMarketplaceListingStudio() {
     readMarketplaceListing(listingId)
       .then((response) => {
         if (cancelled) return
-        setForm(mapListingToForm(response.listing))
-        setSavedListingId(response.listing.id)
+        const listing = response.listing
+        setForm(mapListingToForm(listing))
+        setSavedListingId(listing.id)
         setIsLoading(false)
+        if (String(listing.inventoryType || '') === 'food') {
+          setFoodMode(true)
+          setVendorContext({ name: response.shop?.name || '', locationLabel: listing.locationLabel || '', latitude: listing.latitude ?? null, longitude: listing.longitude ?? null, campus: response.shop?.campus || '' })
+        }
       })
       .catch((requestError) => {
         if (!cancelled) {
@@ -219,6 +226,31 @@ function useMarketplaceListingStudio() {
       })
     return () => { cancelled = true }
   }, [listingId])
+
+  // Loading the selected vendor decides whether the studio runs in campus food mode.
+  useEffect(() => {
+    if (!vendorId || !vendorSlug || savedListingId) return undefined
+    let cancelled = false
+    readCampusVendorWorkspace(vendorSlug)
+      .then((workspace) => {
+        if (cancelled || !workspace?.shop) return
+        const shop = workspace.shop
+        const context = { id: shop.id, name: shop.name || '', slug: shop.slug || vendorSlug, type: shop.type || 'service', locationLabel: shop.locationLabel || shop.campus || '', latitude: shop.latitude ?? null, longitude: shop.longitude ?? null, campus: shop.campus || '' }
+        setVendorContext(context)
+        if (shop.type !== 'hotel') return
+        setFoodMode(true)
+        setForm((current) => ({
+          ...current,
+          category: current.category === DEFAULT_FORM.category ? 'Meals' : current.category,
+          deliveryOptions: ['Campus pickup'],
+          negotiable: false,
+          campusOnly: true,
+          ...(current.locationLabel.trim() === '' && context.locationLabel ? { locationLabel: context.locationLabel } : {}),
+        }))
+      })
+      .catch(() => undefined)
+    return () => { cancelled = true }
+  }, [vendorId, vendorSlug, savedListingId])
 
   useEffect(() => {
     if (savedListingId || typeof window === 'undefined') return
@@ -235,7 +267,11 @@ function useMarketplaceListingStudio() {
     return () => window.removeEventListener('beforeunload', warnBeforeUnload)
   }, [isDirty])
 
-  const readinessChecks = useMemo(() => getReadinessChecks(form), [form])
+  const steps = useMemo(() => (foodMode ? FOOD_INVENTORY_STEPS : MARKETPLACE_LISTING_STEPS), [foodMode])
+  // Food mode has one fewer step; the selected step is clamped on every render instead of in an effect.
+  const activeStep = Math.min(activeStepRaw, steps.length)
+
+  const readinessChecks = useMemo(() => getReadinessChecks(form, foodMode, steps), [form, foodMode, steps])
   const readinessScore = Math.round((readinessChecks.filter((check) => check.complete).length / readinessChecks.length) * 100)
   const isPublishReady = readinessChecks.every((check) => check.complete)
 
@@ -290,13 +326,13 @@ function useMarketplaceListingStudio() {
   }
 
   function goToStep(step) {
-    setActiveStep(Math.min(Math.max(step, 1), MARKETPLACE_LISTING_STEPS.length))
+    setActiveStep(Math.min(Math.max(step, 1), steps.length))
     setError('')
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function continueToNextStep() {
-    const errors = getStepErrors(activeStep, form)
+    const errors = getStepErrors(steps[activeStep - 1]?.id, form, foodMode)
     if (errors.length) {
       setError(errors[0])
       return
@@ -314,7 +350,7 @@ function useMarketplaceListingStudio() {
     setError('')
     setNotice('')
     try {
-      const payload = toPayload(form, status)
+      const payload = toPayload(form, status, { foodMode, vendorContext })
       const listing = savedListingId
         ? await updateMarketplaceListing(savedListingId, payload)
         : vendorId
@@ -359,7 +395,7 @@ function useMarketplaceListingStudio() {
 
   return {
     activeStep,
-    activeStepMeta: MARKETPLACE_LISTING_STEPS[activeStep - 1],
+    activeStepMeta: steps[activeStep - 1],
     addImageUrl,
     cancel,
     continueToNextStep,
@@ -369,7 +405,7 @@ function useMarketplaceListingStudio() {
     goToStep,
     isEdit: Boolean(savedListingId),
     isFirstStep: activeStep === 1,
-    isFinalStep: activeStep === MARKETPLACE_LISTING_STEPS.length,
+    isFinalStep: activeStep === steps.length,
     isLoading,
     isPublishReady,
     isSaving,
@@ -381,11 +417,13 @@ function useMarketplaceListingStudio() {
     removeImage,
     saveProgress,
     setCoverImage,
-    steps: MARKETPLACE_LISTING_STEPS,
+    steps,
+    foodMode,
     toggleDeliveryOption,
     updateField,
     uploadImages,
     vendorMode: Boolean(vendorId),
+    vendorName: vendorContext?.name || '',
     vendorSlug,
   }
 }

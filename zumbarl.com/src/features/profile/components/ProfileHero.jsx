@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { FiAtSign, FiCamera, FiCheck, FiEdit3, FiMapPin, FiPlus, FiSave, FiSettings, FiUserPlus, FiX } from 'react-icons/fi'
 import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
@@ -21,10 +21,6 @@ function ProfileHero({ activeTab = '', canRelate = false, isOwnProfile = false, 
   const [error, setError] = useState('')
   const [draft, setDraft] = useState(null)
 
-  useEffect(() => {
-    if (!isEditing) setDraft(null)
-  }, [profileHeader, isEditing])
-
   function beginEditing() {
     const [fallbackFirst = '', ...fallbackLast] = String(profileHeader?.name || '').split(' ')
     setDraft({
@@ -35,6 +31,7 @@ function ProfileHero({ activeTab = '', canRelate = false, isOwnProfile = false, 
       careerPath: profileHeader?.careerPath || '',
       bio: profileHeader?.bio || '',
       avatarUrl: profileHeader?.avatar || '',
+      showZumbarlPoints: profileHeader?.showZumbarlPoints !== false,
       skills: [...tags],
       skillInput: '',
     })
@@ -151,6 +148,7 @@ function ProfileHero({ activeTab = '', canRelate = false, isOwnProfile = false, 
             <div className="campus-profile-editor-fields">
               <section><h3>Identity</h3><div className="campus-profile-edit-grid"><label>First name<input value={draft.firstName} onChange={(event) => setDraft({ ...draft, firstName: event.target.value })} /></label><label>Last name<input value={draft.lastName} onChange={(event) => setDraft({ ...draft, lastName: event.target.value })} /></label><label>Location<input value={draft.location} onChange={(event) => setDraft({ ...draft, location: event.target.value })} /></label><label>Username<div className="campus-profile-username-field"><span>@</span><input value={draft.username} onChange={(event) => setDraft({ ...draft, username: event.target.value.replace(/[^a-z0-9_]/gi, '').toLowerCase() })} /></div></label></div></section>
               <section><h3>About you</h3><label>Career path or headline<input value={draft.careerPath} onChange={(event) => setDraft({ ...draft, careerPath: event.target.value })} placeholder="Marketing & Design" /></label><label>Bio<textarea rows="3" value={draft.bio} onChange={(event) => setDraft({ ...draft, bio: event.target.value })} placeholder="What are you building, learning or looking for?" /></label></section>
+              <section><h3>Post identity</h3><label className="campus-profile-visibility-toggle"><span><strong>Show Buzz on my posts</strong><small>Display your Buzz beside your university on posts and reshares.</small></span><input type="checkbox" checked={draft.showZumbarlPoints} onChange={(event) => setDraft({ ...draft, showZumbarlPoints: event.target.checked })} /></label></section>
               <section><h3>Skills</h3><div className="campus-profile-skill-input"><input value={draft.skillInput} onChange={(event) => setDraft({ ...draft, skillInput: event.target.value })} placeholder="Type a skill" onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); const skill = draft.skillInput.trim(); if (skill && !draft.skills.includes(skill)) setDraft({ ...draft, skills: [...draft.skills, skill], skillInput: '' }) } }} /><button type="button" onClick={() => { const skill = draft.skillInput.trim(); if (skill && !draft.skills.includes(skill)) setDraft({ ...draft, skills: [...draft.skills, skill], skillInput: '' }) }}><FiPlus /> Add</button></div><div className="campus-profile-editor-skills">{draft.skills.map((tag) => <button type="button" key={tag} onClick={() => setDraft({ ...draft, skills: draft.skills.filter((item) => item !== tag) })}>{tag}<FiX /></button>)}</div></section>
               {error ? <p className="campus-profile-edit-error">{error}</p> : null}
             </div>
