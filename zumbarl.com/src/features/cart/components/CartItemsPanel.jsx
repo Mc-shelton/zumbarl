@@ -129,6 +129,8 @@ function CartEmptyState() {
 function SuggestedProducts() {
   const canUseCart = hasAccess(ACCESS_KEYS.cart.view)
 
+  if (!SUGGESTED_PRODUCTS.length) return null
+
   return (
     <section className="campus-cart-suggested">
       <header>

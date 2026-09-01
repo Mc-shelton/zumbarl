@@ -1,6 +1,14 @@
 import { useMemo, useState } from 'react'
 import { FaGithub, FaGoogle, FaLinkedinIn } from 'react-icons/fa6'
-import { HiOutlineEnvelope, HiOutlineLockClosed, HiOutlineUser } from 'react-icons/hi2'
+import {
+  HiOutlineAcademicCap,
+  HiOutlineBriefcase,
+  HiOutlineEnvelope,
+  HiOutlineLockClosed,
+  HiOutlineSparkles,
+  HiOutlineUser,
+  HiOutlineUserGroup,
+} from 'react-icons/hi2'
 import { Link, useNavigate } from 'react-router-dom'
 import Seo from '../components/Seo'
 import Header from '../components/home/Header'
@@ -23,12 +31,14 @@ const SOCIAL_LOGIN_OPTIONS = [
 
 const AUTH_MODE_CONTENT = {
   login: {
-    heading: 'Login',
-    submitLabel: 'Login',
-    helperText: 'or login with social platforms',
-    promoHeading: 'New Here?',
-    promoBody: 'Create your Zumbarl account and start collaborating with campus talent.',
-    promoActionLabel: 'Register',
+    eyebrow: 'Your campus, connected',
+    heading: 'Welcome back',
+    intro: 'Sign in to pick up where you left off.',
+    submitLabel: 'Sign in to Zumbarl',
+    helperText: 'Or continue with',
+    promoHeading: 'More than a workspace.',
+    promoBody: 'Find your people, grow your skills and turn campus potential into real-world progress.',
+    promoActionLabel: 'Join Zumbarl',
     switchPath: '/register',
     fields: [
       {
@@ -51,12 +61,14 @@ const AUTH_MODE_CONTENT = {
     ],
   },
   register: {
-    heading: 'Registration',
-    submitLabel: 'Register',
-    helperText: 'or register with social platforms',
-    promoHeading: 'Welcome Back!',
-    promoBody: 'Already have an account? Sign in to continue your Zumbarl journey.',
-    promoActionLabel: 'Login',
+    eyebrow: 'Make your next move',
+    heading: 'Join Zumbarl',
+    intro: 'Build a profile that grows with your campus journey.',
+    submitLabel: 'Create my account',
+    helperText: 'Or sign up with',
+    promoHeading: 'Your journey starts here.',
+    promoBody: 'One campus network for opportunities, learning, collaboration and community.',
+    promoActionLabel: 'I already have an account',
     switchPath: '/login',
     fields: [
       {
@@ -186,7 +198,13 @@ function AuthPage({ defaultMode = 'login' }) {
       <section className="auth-stage" aria-label="Authentication">
         <div className="auth-card">
           <div className="auth-form-panel">
+            <div className="auth-form-brand" aria-hidden="true">
+              <span className="auth-form-brand-mark"><img src="/assets/index/bee_nobg.png" alt="" /></span>
+              <strong>zumbarl</strong>
+            </div>
+            <p className="auth-eyebrow"><HiOutlineSparkles aria-hidden="true" /> {content.eyebrow}</p>
             <h1 className="auth-title">{content.heading}</h1>
+            <p className="auth-intro">{content.intro}</p>
             <form className="auth-form" onSubmit={handleSubmit}>
               {mode === 'register' ? <><div className="auth-account-toggle" role="radiogroup" aria-label="Personal profile type">{[{ id: 'student', label: 'Student', detail: 'Campus life, learning, work and connections.' }, { id: 'professional', label: 'Professional', detail: 'Represent yourself, then create or manage business pages.' }].map((option) => <button key={option.id} type="button" className={accountType === option.id ? 'is-active' : ''} aria-pressed={accountType === option.id} onClick={() => setAccountType(option.id)}><strong>{option.label}</strong><span>{option.detail}</span></button>)}</div><p className="auth-account-note">This creates your personal profile. Organizations are separate pages with shared management.</p></> : null}
 
@@ -209,6 +227,13 @@ function AuthPage({ defaultMode = 'login' }) {
 
               {mode === 'register' && accountType === 'student' ? <CampusRegistrationField onChange={setCampus} /> : null}
 
+              {mode === 'login' ? (
+                <div className="auth-form-options">
+                  <label className="auth-remember"><input type="checkbox" name="remember" /> <span>Keep me signed in</span></label>
+                  <Link to="/help">Need help signing in?</Link>
+                </div>
+              ) : null}
+
               {errorMessage ? <p className="auth-error-message">{errorMessage}</p> : null}
 
               <button type="submit" className="auth-primary-btn" disabled={isSubmitting}>
@@ -216,7 +241,7 @@ function AuthPage({ defaultMode = 'login' }) {
               </button>
             </form>
 
-            <p className="auth-helper-text">{content.helperText}</p>
+            <p className="auth-helper-text"><span>{content.helperText}</span></p>
             <div className="auth-social-grid" role="list" aria-label="Social sign-in options">
               {SOCIAL_LOGIN_OPTIONS.map((provider) => (
                 <button
@@ -234,14 +259,26 @@ function AuthPage({ defaultMode = 'login' }) {
           </div>
 
           <aside className="auth-promo-panel">
+            <div className="auth-orbit auth-orbit-one" aria-hidden="true" />
+            <div className="auth-orbit auth-orbit-two" aria-hidden="true" />
             <div className="auth-promo-inner">
-              <p className="auth-promo-kicker">Zumbarl Workspace</p>
+              <div className="auth-promo-brand">
+                <span><img src="/assets/index/bee_nobg.png" alt="" /></span>
+                <strong>zumbarl</strong>
+              </div>
+              <p className="auth-promo-kicker">Campus life, in motion</p>
               <h2 className="auth-promo-title">{content.promoHeading}</h2>
               <p className="auth-promo-text">{content.promoBody}</p>
+              <div className="auth-promo-pill-row" aria-label="What you can do on Zumbarl">
+                <span><HiOutlineBriefcase aria-hidden="true" /> Earn</span>
+                <span><HiOutlineAcademicCap aria-hidden="true" /> Learn</span>
+                <span><HiOutlineUserGroup aria-hidden="true" /> Connect</span>
+              </div>
               <Link className="auth-promo-cta" to={content.switchPath}>
                 {content.promoActionLabel}
               </Link>
             </div>
+            <p className="auth-promo-note"><span aria-hidden="true">●</span> Made for campus. Built for what comes next.</p>
           </aside>
         </div>
       </section>

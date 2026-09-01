@@ -77,24 +77,18 @@ export const ORDER_TIMELINE_ITEMS = [
 ]
 
 export const CUSTOMER_DETAILS = {
-  name: 'Brian Otieno',
-  phone: '+254 700 100 011',
-  email: 'brian.otieno@zumbarl.test',
-  location: 'Zetech University',
-  county: 'Approved campus pickup point',
-  postal: 'Confirm the handoff time with the seller',
+  name: '',
+  phone: '',
+  email: '',
+  location: '',
+  county: '',
+  postal: '',
 }
 
-const deliveryStart = new Date()
-deliveryStart.setDate(deliveryStart.getDate() + 1)
-const deliveryEnd = new Date()
-deliveryEnd.setDate(deliveryEnd.getDate() + 3)
-const deliveryDateRange = `${deliveryStart.toLocaleDateString('en-KE', { month: 'short', day: 'numeric' })} - ${deliveryEnd.toLocaleDateString('en-KE', { month: 'short', day: 'numeric', year: 'numeric' })}`
-
 export const DELIVERY_ESTIMATE = {
-  dateRange: deliveryDateRange,
-  location: 'Zetech University',
-  addressSummary: 'Campus pickup · exact handoff point confirmed in Messages',
+  dateRange: '',
+  location: '',
+  addressSummary: '',
 }
 
 export const PAYMENT_SUMMARY = {
@@ -103,4 +97,4 @@ export const PAYMENT_SUMMARY = {
   brand: 'PAY',
 }
 
-export const ORDER_ID = 'ZMB-2026-0525-019'
+export const ORDER_ID = ''

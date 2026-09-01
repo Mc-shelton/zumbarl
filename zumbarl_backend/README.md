@@ -66,11 +66,13 @@ docker compose up -d osrm
 
 If OSRM is temporarily unavailable or cannot find a connected driving route, quotes use the configured adjusted-Haversine fallback and identify the distance source accordingly.
 
-Seed users are created in Postgres through the Prisma-backed database seeder:
+Local startup initializes an empty database. Accounts and product data are created through the application workflows.
 
-- `student@zumbarl.test` / `password123`
-- `business@zumbarl.test` / `password123`
-- `admin@zumbarl.test` / `password123`
+To populate the local database with the optional development dataset, run it explicitly:
+
+```bash
+npm run db:seed
+```
 
 ## Production Notes
 

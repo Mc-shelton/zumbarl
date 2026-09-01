@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  FEATURED_ITEMS,
-  RECENT_ITEMS,
-  TRENDING_ITEMS,
   getMarketplaceItemPath,
 } from '../../../data/marketplace'
 import { listMarketplaceListings, mapMarketplaceApiListing } from '../services/marketplaceInteractionService'
@@ -91,17 +88,13 @@ function useMarketplacePageState() {
   }, [])
 
   const marketplaceItems = useMemo(() => {
-    const byId = new Map(databaseItems.map((item) => [item.id, item]))
     const serviceListings = databaseItems.filter(isService)
     const mergedFeatured = [
       ...serviceListings.slice(0, 4),
-      ...FEATURED_ITEMS.map((item) => byId.get(item.id) ? { ...item, ...byId.get(item.id) } : item),
+      ...databaseItems.filter((item) => !isService(item)).slice(0, 4),
     ].filter((item, index, items) => items.findIndex((candidate) => candidate.id === item.id) === index)
     const featuredIds = new Set(mergedFeatured.map((item) => item.id))
-    const mergedRecent = [
-      ...databaseItems.filter((item) => !featuredIds.has(item.id)),
-      ...RECENT_ITEMS.filter((item) => !byId.has(item.id)),
-    ]
+    const mergedRecent = databaseItems.filter((item) => !featuredIds.has(item.id))
     return { featured: mergedFeatured, recent: mergedRecent }
   }, [databaseItems])
 
@@ -112,10 +105,9 @@ function useMarketplacePageState() {
     applyRecentFilter(filterByCategory(marketplaceItems.recent, activeCategory), activeRecentFilter)
   ), [activeCategory, activeRecentFilter, marketplaceItems.recent])
   const filteredTrendingItems = useMemo(() => (
-    filterByCategory([
-      ...marketplaceItems.featured.map((item) => ({ ...item, trend: item.trend || item.viewCount || item.savedCount || 1 })),
-      ...TRENDING_ITEMS.filter((item) => !marketplaceItems.featured.some((listing) => listing.id === item.id)),
-    ], activeCategory).slice(0, 5)
+    filterByCategory(marketplaceItems.featured
+      .map((item) => ({ ...item, trend: item.trend || item.viewCount || item.savedCount || 0 }))
+      .filter((item) => item.trend > 0), activeCategory).slice(0, 5)
   ), [activeCategory, marketplaceItems.featured])
 
   const openItemDetail = (itemId) => {

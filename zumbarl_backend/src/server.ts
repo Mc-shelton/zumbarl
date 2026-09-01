@@ -1,6 +1,6 @@
 import { buildApp } from './app.js'
 import { env } from './config/env.js'
-import { migrateLegacyAppRecords, migrateWorkflowDomains, seedDatabase } from './data/index.js'
+import { migrateLegacyAppRecords, migrateWorkflowDomains } from './data/index.js'
 import { backfillDefaultProjectDeliverables } from './shared/projects/ensureDefaultProjectDeliverable.js'
 import { processMarketplaceDeliveryDeadlinesService } from './adapters/services/marketplace/index.js'
 import { scheduleDueScoreRefreshes } from './adapters/services/scores/index.js'
@@ -8,7 +8,6 @@ import { runEvergreenMaintenanceService } from './adapters/services/evergreen/in
 
 await migrateLegacyAppRecords()
 await migrateWorkflowDomains()
-await seedDatabase()
 await backfillDefaultProjectDeliverables()
 
 const app = await buildApp()

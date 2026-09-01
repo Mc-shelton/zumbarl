@@ -14,7 +14,6 @@ import {
   PROJECT_TAB_QUERY,
   resolveAllowedProjectTab,
 } from '../constants'
-import { findMockProjectById, resolveProjectById } from '../data/mockWorkspace'
 import { fetchBackendProjectWorkspace, respondToProjectPriceProposal, submitProjectDeliverable, toProjectWorkspaceView } from '../services/projectWorkspaceService'
 import {
   createProjectTeamInvites,
@@ -24,21 +23,33 @@ import {
   respondToProjectTeamInvite,
 } from '../services/projectTeamInviteService'
 
+const EMPTY_PROJECT = Object.freeze({
+  id: '',
+  title: 'Project unavailable',
+  status: 'Not found',
+  lifecycleStatus: 'ended',
+  deliverables: [],
+  submissionTargets: [],
+  files: [],
+  timeline: [],
+  hasMilestones: false,
+  hasTeam: false,
+  isTeamProject: false,
+  source: 'empty',
+})
+
 function useProjectWorkspace() {
   const { projectId } = useParams()
   const isBusinessViewer = getCurrentLoginRole()?.side === 'company'
   const [searchParams, setSearchParams] = useSearchParams()
   const earnFlow = useEarnFlowState()
-  const mockProject = useMemo(() => findMockProjectById(projectId), [projectId])
   // Tagged with the projectId it belongs to so a stale in-flight result for a
   // previous project is ignored rather than briefly rendered.
   const [backendProject, setBackendProject] = useState({ id: null, view: null })
 
   useEffect(() => {
-    // Always ask the backend first. A real awarded project can legitimately use
-    // an ID that an old demo fixture also used; skipping the request in that
-    // case rendered the canned project and hid its real tasks. Mock data is now
-    // only a fallback when no backend project exists.
+    // Always ask the backend. Missing projects remain missing instead of being
+    // replaced with development fixtures.
     if (!projectId) return undefined
 
     let active = true
@@ -58,10 +69,9 @@ function useProjectWorkspace() {
   const backendView = backendProject.id === projectId ? backendProject.view : null
   const activeProject = useMemo(() => (
     backendView
-    || mockProject
     || resolveEarnWorkspaceProject(earnFlow.projects, projectId)
-    || resolveProjectById(projectId)
-  ), [backendView, earnFlow.projects, mockProject, projectId])
+    || { ...EMPTY_PROJECT, id: projectId || '' }
+  ), [backendView, earnFlow.projects, projectId])
   const projectReview = useMemo(() => (
     resolveProjectReview(earnFlow.projectReviews, projectId)
   ), [earnFlow.projectReviews, projectId])
@@ -208,7 +218,8 @@ function useProjectWorkspace() {
   }
 
   const handleSubmit = async (payload) => {
-    // Real awarded projects submit to the backend; demo/mock routes keep the local flow.
+    // Real awarded projects submit to the backend. The local flow is retained
+    // only for a project already present in the user's earn workflow state.
     if (backendView && projectId) {
       await submitProjectDeliverable(projectId, payload)
       await refreshWorkspace()

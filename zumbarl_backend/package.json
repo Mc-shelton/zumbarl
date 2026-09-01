@@ -16,6 +16,7 @@
     "jitsi:down": "docker compose --project-directory ../infrastructure/jitsi down",
     "jitsi:logs": "docker compose --project-directory ../infrastructure/jitsi logs -f",
     "db:push": "prisma db push",
+    "db:seed": "tsx src/data/seedDatabase.ts",
     "titles:normalize": "tsx src/data/normalizeStoredTitles.ts",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",

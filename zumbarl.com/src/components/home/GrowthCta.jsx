@@ -23,9 +23,7 @@ function GrowthCta() {
         </svg>
 
         <small className="growth-cta-note">
-          Only the smart
-          <br />
-          start early.
+          Be Smart, Buzz!
         </small>
       </div>
     </section>
