@@ -12,6 +12,7 @@ import {
   findUserByUsername,
   findUserById,
   listActiveCampuses
+  ,listCourses
 } from '../../repositories/auth/index.js'
 import { env } from '../../../config/env.js'
 
@@ -57,11 +58,12 @@ async function registerUserService(app: FastifyInstance, payload: Record<string,
     passwordHash: await hashPassword(payload.password),
     role: payload.role,
     status: 'active'
+    ,yearJoined: payload.yearJoined
   }
 
   if (String(payload.role).startsWith('STUDENT') || payload.role === 'student') {
     if (!payload.campus) forbidden('Select an existing campus or provide the new campus details')
-    const { user } = await createUserWithStudentProfile(userPayload, payload.campus)
+    const { user } = await createUserWithStudentProfile(userPayload, payload.campus, payload.course)
     const token = app.jwt.sign(toTokenPayload(user))
     await createSessionRecord({ userId: user.id })
     return { user: removePasswordHash(user), token }
@@ -105,6 +107,10 @@ async function listRegistrationCampusesService(query: string) {
   return { campuses: await listActiveCampuses(query) }
 }
 
+async function listRegistrationCoursesService(query: string) {
+  return { courses: await listCourses(query) }
+}
+
 async function searchRegistrationLocationsService(query: string) {
   const url = new URL('/api/', env.GEOCODING_BASE_URL)
   url.searchParams.set('q', `${query}, Kenya`)
@@ -125,5 +131,6 @@ export {
   loginUserService,
   readAuthenticatedUserService,
   listRegistrationCampusesService,
+  listRegistrationCoursesService,
   searchRegistrationLocationsService
 }

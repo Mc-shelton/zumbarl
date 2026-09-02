@@ -10,6 +10,7 @@ const registerUserSchema = z.object({
   username: z.string().min(3).max(30).regex(/^@?[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
   name: z.string().min(2).optional(),
   role: z.enum(publicRegistrationRoles).default('STUDENT_STANDARD'),
+  yearJoined: z.coerce.number().int().min(new Date().getFullYear() - 15).max(new Date().getFullYear()).optional(),
   campus: z.union([
     z.object({ id: z.string().min(1) }),
     z.object({
@@ -21,8 +22,18 @@ const registerUserSchema = z.object({
       longitude: z.coerce.number().min(-180).max(180)
     })
   ]).optional(),
+  course: z.union([
+    z.object({ id: z.string().min(1) }),
+    z.object({ name: z.string().trim().min(2).max(160), category: z.enum(['STEM', 'COMMERCE', 'ARTS', 'OTHER']), duration: z.coerce.number().int().min(1).max(10) })
+  ]).optional(),
   businessName: z.string().trim().min(2).max(160).optional()
 }).superRefine((payload, context) => {
+  if ((payload.role === 'student' || payload.role === 'STUDENT_STANDARD') && !payload.yearJoined) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['yearJoined'], message: 'Year joined campus is required' })
+  }
+  if ((payload.role === 'student' || payload.role === 'STUDENT_STANDARD') && !payload.course) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['course'], message: 'Course is required' })
+  }
   if ((payload.role === 'business' || payload.role === 'COMPANY_STANDARD') && !payload.businessName) {
     context.addIssue({
       code: z.ZodIssueCode.custom,

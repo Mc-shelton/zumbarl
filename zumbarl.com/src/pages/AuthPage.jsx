@@ -18,6 +18,7 @@ import {
 } from '../features/auth/roleConfig'
 import { clearAuthUserCache } from '../features/auth/services/authUserService'
 import CampusRegistrationField from '../features/auth/components/CampusRegistrationField'
+import CoursePicker from '../features/auth/components/CoursePicker'
 import { clearBusinessProfileCache } from '../features/business/services/businessProfileService'
 import { LOGIN_SEO, REGISTER_SEO } from '../features/seo/constants'
 import { AUTH_TOKEN_KEY, sendZumbarlApiRequest } from '../lib/sendZumbarlApiRequest'
@@ -125,6 +126,7 @@ function AuthPage({ defaultMode = 'login' }) {
   const [errorMessage, setErrorMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [campus, setCampus] = useState(null)
+  const [course, setCourse] = useState(null)
   const disclaimer = useMemo(
     () =>
       mode === 'register'
@@ -149,6 +151,8 @@ function AuthPage({ defaultMode = 'login' }) {
           password: formData.get('password'),
           role: accountType === 'professional' ? 'COMPANY_STANDARD' : 'STUDENT_STANDARD',
           campus: accountType === 'student' ? campus : undefined,
+          course: accountType === 'student' ? course : undefined,
+          yearJoined: accountType === 'student' ? Number(formData.get('yearJoined')) : undefined,
         }
       : {
           email: formData.get('email'),
@@ -157,6 +161,7 @@ function AuthPage({ defaultMode = 'login' }) {
 
     try {
       if (mode === 'register' && accountType === 'student' && !campus) throw new Error('Select an existing campus or add your campus and choose its location.')
+      if (mode === 'register' && accountType === 'student' && !course) throw new Error('Select an existing course or create yours.')
       const response = await sendZumbarlApiRequest(mode === 'register' ? '/auth/register' : '/auth/login', {
         method: 'POST',
         body: JSON.stringify(payload),
@@ -225,7 +230,18 @@ function AuthPage({ defaultMode = 'login' }) {
                 </label>
               ))}
 
-              {mode === 'register' && accountType === 'student' ? <CampusRegistrationField onChange={setCampus} /> : null}
+              {mode === 'register' && accountType === 'student' ? <>
+                <CampusRegistrationField onChange={setCampus} />
+                <CoursePicker value={course} onChange={setCourse} required />
+                <label className="auth-field" htmlFor="yearJoined">
+                  <span className="auth-field-label">Year joined campus</span>
+                  <select id="yearJoined" name="yearJoined" className="auth-input" defaultValue="" required>
+                    <option value="" disabled>Select year</option>
+                    {Array.from({ length: 11 }, (_, index) => new Date().getFullYear() - index).map((year) => <option key={year} value={year}>{year}</option>)}
+                  </select>
+                  <HiOutlineAcademicCap className="auth-input-icon" aria-hidden="true" />
+                </label>
+              </> : null}
 
               {mode === 'login' ? (
                 <div className="auth-form-options">

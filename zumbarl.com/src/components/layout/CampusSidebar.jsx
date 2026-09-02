@@ -146,7 +146,7 @@ function CampusSidebar({
     <>
     <aside className={`campus-sidebar${isCampusNavigation ? " is-social-rail" : ""}`} aria-label={ariaLabel}>
       <div className="campus-sidebar-primary">
-      <Link className="campus-brand" to="/" aria-label="Zumbarl logo">
+      <Link className="campus-brand" to="/campus" aria-label="Open Explore Campus">
         <img
           className="campus-brand-logo"
           width="62"

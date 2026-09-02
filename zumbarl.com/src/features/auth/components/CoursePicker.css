@@ -1,0 +1,21 @@
+.course-picker { position: relative; display: grid; gap: 8px; min-width: 0; }
+.course-picker > label { display: grid; gap: 7px; color: #55546c; font-size: var(--text-caption); font-weight: 750; }
+.course-picker-input { min-height: 46px; padding: 0 12px; border: 1px solid #dfe0eb; border-radius: 10px; display: flex; align-items: center; gap: 9px; background: #fff; }
+.course-picker-input:focus-within { border-color: #7650df; box-shadow: 0 0 0 3px rgba(118, 80, 223, .12); }
+.course-picker-input input { width: 100%; min-width: 0; border: 0; outline: 0; color: #292a42; background: transparent; font: inherit; }
+.course-picker-input svg { flex: 0 0 auto; color: #858499; }
+.course-picker-input svg.is-selected { color: #229a62; }
+.course-picker-results { z-index: 8; display: grid; max-height: 230px; overflow-y: auto; padding: 6px; border: 1px solid #ded9ec; border-radius: 10px; background: #fff; box-shadow: 0 12px 28px rgba(33, 29, 57, .14); }
+.course-picker-results p { margin: 8px; color: #77768a; }
+.course-picker-results button { padding: 9px 10px; border: 0; border-radius: 7px; display: grid; gap: 2px; color: #292a42; background: transparent; text-align: left; cursor: pointer; }
+.course-picker-results button:hover, .course-picker-results button:focus-visible { background: #f4f1fb; }
+.course-picker-results small { color: #77768a; }
+.course-picker-results .course-picker-create { border-top: 1px solid #ece8f4; color: #6542dd; font-weight: 800; }
+.course-picker-new { display: grid; gap: 10px; padding: 12px; border: 1px solid #ded9ec; border-radius: 10px; background: #faf8ff; }
+.course-picker-new > p { margin: 0; color: #67657b; font-size: var(--text-caption); }
+.course-picker-new label { display: grid; gap: 5px; color: #55546c; font-size: var(--text-caption); font-weight: 750; }
+.course-picker-new select { min-height: 42px; padding: 0 10px; border: 1px solid #dfe0eb; border-radius: 8px; background: #fff; }
+.course-picker-new > div { display: flex; justify-content: flex-end; gap: 8px; }
+.course-picker-new button { min-height: 38px; padding: 0 12px; border: 1px solid #ded9ec; border-radius: 8px; background: #fff; color: #514c68; font-weight: 750; cursor: pointer; }
+.course-picker-new button:last-child { border-color: #6d46df; background: #6d46df; color: #fff; }
+.campus-profile-edit-grid > .course-picker { grid-column: 1 / -1; }

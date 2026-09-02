@@ -2,7 +2,6 @@ import { FiPlusCircle } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 import {
   PORTFOLIO_SERVICE_COMPOSER_TOOLS,
-  PORTFOLIO_SERVICES,
 } from '../constants'
 
 function handleKeyboardActivation(event, onActivate) {
@@ -14,7 +13,7 @@ function handleKeyboardActivation(event, onActivate) {
 
 function ProfilePortfolioServicesPanel({
   onPortfolioServiceSelect,
-  portfolioServices = PORTFOLIO_SERVICES,
+  portfolioServices = [],
   selectedPortfolioServiceId,
 }) {
   const canManagePortfolio = hasAccess(ACCESS_KEYS.profile.managePortfolio)
@@ -38,8 +37,8 @@ function ProfilePortfolioServicesPanel({
         <article className="campus-portfolio-service-composer">
           <div className="campus-portfolio-service-composer-head">
             <img
-              src="/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp"
-              alt="Aisha Mwangi"
+              src="/assets/index/bee_nobg.png"
+              alt="Profile placeholder"
             />
             <p>What service do you want to offer next?</p>
           </div>
@@ -83,6 +82,7 @@ function ProfilePortfolioServicesPanel({
             </footer>
           </article>
         ))}
+        {!portfolioServices.length ? <p>No services added yet.</p> : null}
       </div>
     </section>
   )

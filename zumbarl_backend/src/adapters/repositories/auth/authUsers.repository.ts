@@ -34,6 +34,10 @@ function getUniquePhone(phone: string | undefined, email: string) {
   return `+254${digits}`
 }
 
+function canonicalCourseKey(name: string) {
+  return String(name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '')
+}
+
 function toAuthUser(user: Record<string, any>, profileIds: Record<string, string | undefined> = {}) {
   return {
     id: user.id,
@@ -147,7 +151,7 @@ class AuthUsersRepository {
     return toAuthUser(user) as AnyRecord
   }
 
-  async createUserWithStudentProfile(payload: Record<string, any>, campus?: Record<string, any>) {
+  async createUserWithStudentProfile(payload: Record<string, any>, campus?: Record<string, any>, requestedCourse?: Record<string, any>) {
     const split = splitName(payload.name)
     const firstName = payload.firstName || split.firstName
     const lastName = payload.lastName || split.lastName
@@ -168,16 +172,12 @@ class AuthUsersRepository {
               longitude: campus?.longitude == null ? null : Number(campus.longitude)
             }
           })
-      const course = await transaction.course.upsert({
-        where: { id: 'course-unassigned' },
-        update: {},
-        create: {
-          id: 'course-unassigned',
-          name: 'Unassigned course',
-          category: 'OTHER',
-          duration: 4
-        }
-      })
+      const course = !requestedCourse
+        ? await transaction.course.upsert({ where: { id: 'course-unassigned' }, update: {}, create: { id: 'course-unassigned', name: 'Unassigned course', category: 'OTHER', duration: 4 } })
+        : requestedCourse.id
+        ? await transaction.course.findUniqueOrThrow({ where: { id: requestedCourse.id } })
+        : (await transaction.course.findMany()).find((item) => canonicalCourseKey(item.name) === canonicalCourseKey(requestedCourse?.name))
+          || await transaction.course.create({ data: { name: requestedCourse?.name, category: requestedCourse?.category, duration: Number(requestedCourse?.duration) } })
       const user = await transaction.user.create({
         data: {
           name: payload.name,
@@ -191,6 +191,7 @@ class AuthUsersRepository {
           isActive: payload.status !== 'inactive'
         }
       })
+      const yearJoined = Number(payload.yearJoined || new Date().getFullYear())
       const student = await transaction.studentProfile.create({
         data: {
           userId: user.id,
@@ -199,9 +200,9 @@ class AuthUsersRepository {
           dateOfBirth: new Date('2000-01-01T00:00:00.000Z'),
           campusId: campusRecord.id,
           courseId: course.id,
-          yearJoined: new Date().getFullYear(),
+          yearJoined,
           courseDuration: course.duration,
-          expectedGraduation: new Date(`${new Date().getFullYear() + course.duration}-12-31T00:00:00.000Z`)
+          expectedGraduation: new Date(`${yearJoined + course.duration}-12-31T00:00:00.000Z`)
         }
       })
       await transaction.wallet.create({
@@ -266,6 +267,13 @@ class AuthUsersRepository {
     })
   }
 
+  async listCourses(query = '') {
+    const term = query.trim()
+    const termKey = canonicalCourseKey(term)
+    const courses = await prisma.course.findMany({ where: { id: { not: 'course-unassigned' } }, orderBy: { name: 'asc' } })
+    return courses.filter((course) => !term || course.name.toLowerCase().includes(term.toLowerCase()) || canonicalCourseKey(course.name).includes(termKey)).slice(0, 20)
+  }
+
   async findStudentProfileById(id?: string) {
     if (!id) return null
     const student = await prisma.studentProfile.findUnique({ where: { id }, include: { campus: true, zumbarl: true } })
@@ -303,6 +311,7 @@ const findStudentProfileById = authUsersRepository.findStudentProfileById.bind(a
 const findBusinessProfileById = authUsersRepository.findBusinessProfileById.bind(authUsersRepository)
 const createSessionRecord = authUsersRepository.createSessionRecord.bind(authUsersRepository)
 const listActiveCampuses = authUsersRepository.listActiveCampuses.bind(authUsersRepository)
+const listCourses = authUsersRepository.listCourses.bind(authUsersRepository)
 
 export {
   AuthUsersRepository,
@@ -317,4 +326,5 @@ export {
   findBusinessProfileById,
   createSessionRecord,
   listActiveCampuses
+  ,listCourses
 }

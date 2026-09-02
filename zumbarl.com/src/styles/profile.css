@@ -307,6 +307,13 @@
   font-weight: 600;
 }
 
+.campus-profile-identity-copy > .campus-profile-academic-detail {
+  margin-top: 7px;
+  color: #737a99;
+  font-size: var(--text-caption);
+  font-weight: 650;
+}
+
 .campus-profile-tag-row {
   margin-top: 11px;
   display: flex;
@@ -5693,6 +5700,16 @@
 .campus-profile-username-field input { border: 0; box-shadow: none !important; }
 .campus-profile-skill-input { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 7px; }
 .campus-profile-skill-input button { border: 0; border-radius: 9px; padding: 0 13px; display: flex; align-items: center; gap: 5px; color: #fff; background: #6d46df; font-weight: 800; cursor: pointer; }
+.campus-profile-skill-suggestions { grid-column: 1 / -1; z-index: 3; display: grid; max-height: 190px; overflow-y: auto; padding: 6px; border: 1px solid #ded9ec; border-radius: 10px; background: #fff; box-shadow: 0 12px 28px rgba(33, 29, 57, .12); }
+.campus-profile-skill-suggestions button { min-height: 40px; padding: 8px 10px; border: 0; border-radius: 7px; display: flex; flex-direction: column; align-items: flex-start; justify-content: center; color: #242943; background: transparent; text-align: left; }
+.campus-profile-skill-suggestions button:hover, .campus-profile-skill-suggestions button:focus-visible { background: #f4f1fb; }
+.campus-profile-skill-suggestions small { color: #77768a; }
+.campus-skills-add-form { position: relative; display: grid; grid-template-columns: minmax(180px, 1fr) auto auto; gap: 8px; align-items: end; padding: 12px 0; }
+.campus-skills-add-form label { grid-column: 1 / -1; color: #55546c; font-size: var(--text-caption); font-weight: 750; }
+.campus-skills-add-form input { min-height: 42px; padding: 0 12px; border: 1px solid #dadbea; border-radius: 9px; }
+.campus-skills-add-form > button { min-height: 42px; padding: 0 14px; border: 1px solid #ded9ec; border-radius: 9px; background: #fff; color: #4e4770; font-weight: 750; cursor: pointer; }
+.campus-skills-add-form > button[type='submit'] { border-color: #6d46df; background: #6d46df; color: #fff; }
+.campus-skills-add-form > p, .campus-skills-add-form .campus-profile-skill-suggestions { grid-column: 1 / -1; margin: 0; }
 .campus-profile-editor-skills { display: flex; flex-wrap: wrap; gap: 7px; }
 .campus-profile-editor-skills button { border: 1px solid #ddd8f5; border-radius: 999px; padding: 6px 9px; display: inline-flex; align-items: center; gap: 5px; color: #4e4770; background: #f7f5ff; font-size: var(--text-micro); font-weight: 750; cursor: pointer; }
 .campus-profile-edit-error { color: #bd3346; font-size: var(--text-caption); }

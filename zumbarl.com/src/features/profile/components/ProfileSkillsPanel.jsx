@@ -1,9 +1,11 @@
-import { FiChevronDown, FiMoreVertical, FiPlusCircle, FiRefreshCw, FiSearch } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import { FiChevronDown, FiMoreVertical, FiPlusCircle, FiRefreshCw, FiSearch, FiX } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 import {
   SKILLS_CATEGORY_FILTERS,
   SKILLS_LEVEL_FILTERS,
 } from '../constants'
+import { resolveProfileSkill, searchProfileSkills } from '../services/profileSkillService'
 
 function renderSkillRows(skills, groupName, canManageSkills) {
   return skills.map((skill) => (
@@ -55,6 +57,7 @@ function ProfileSkillsPanel({
   filteredCoreSkills,
   filteredOtherSkills,
   hasSkillsResults,
+  onAddSkill,
   onCategoryFilterChange,
   onLevelFilterChange,
   onSearchQueryChange,
@@ -63,6 +66,42 @@ function ProfileSkillsPanel({
   skillsSearchQuery,
 }) {
   const canManageSkills = canManage && hasAccess(ACCESS_KEYS.profile.manageSkills)
+  const [isAddingSkill, setIsAddingSkill] = useState(false)
+  const [skillName, setSkillName] = useState('')
+  const [isSavingSkill, setIsSavingSkill] = useState(false)
+  const [skillError, setSkillError] = useState('')
+  const [skillSuggestions, setSkillSuggestions] = useState([])
+
+  useEffect(() => {
+    const query = skillName.trim()
+    if (!isAddingSkill) return undefined
+    let active = true
+    const timer = window.setTimeout(() => {
+      searchProfileSkills(query)
+        .then((response) => { if (active) setSkillSuggestions(response?.data || []) })
+        .catch(() => { if (active) setSkillSuggestions([]) })
+    }, 180)
+    return () => { active = false; window.clearTimeout(timer) }
+  }, [isAddingSkill, skillName])
+
+  async function submitSkill(event) {
+    event.preventDefault()
+    const normalized = skillName.trim()
+    if (!normalized || isSavingSkill) return
+    setIsSavingSkill(true)
+    setSkillError('')
+    try {
+      const { skill } = await resolveProfileSkill(normalized)
+      await onAddSkill(skill.name || normalized)
+      setSkillName('')
+      setIsAddingSkill(false)
+      onSearchQueryChange('')
+    } catch (error) {
+      setSkillError(error.message || 'The skill could not be added.')
+    } finally {
+      setIsSavingSkill(false)
+    }
+  }
 
   return (
     <section className={`campus-profile-surface campus-skills-panel${embedded ? ' is-embedded' : ''}`}>
@@ -73,12 +112,21 @@ function ProfileSkillsPanel({
             <p>Your skills, their proficiency level, and how you&apos;re growing.</p>
           </div>
           {canManageSkills ? (
-            <button type="button" className="campus-skills-add-btn">
+            <button type="button" className="campus-skills-add-btn" onClick={() => { setIsAddingSkill(true); setSkillError('') }}>
               <FiPlusCircle aria-hidden="true" />
               Add Skill
             </button>
           ) : null}
         </header>
+
+        {isAddingSkill ? <form className="campus-skills-add-form" onSubmit={submitSkill}>
+          <label htmlFor="campus-new-skill">Skill name</label>
+          <input id="campus-new-skill" role="combobox" aria-autocomplete="list" aria-expanded={Boolean(skillSuggestions.length)} autoFocus maxLength="80" value={skillName} onChange={(event) => setSkillName(event.target.value)} placeholder="Search the skills database" />
+          <button type="submit" disabled={!skillName.trim() || isSavingSkill}>{isSavingSkill ? 'Saving…' : skillSuggestions.length ? 'Use closest match' : 'Create skill'}</button>
+          <button type="button" aria-label="Cancel adding skill" disabled={isSavingSkill} onClick={() => { setIsAddingSkill(false); setSkillName(''); setSkillError('') }}><FiX /></button>
+          {skillError ? <p role="alert">{skillError}</p> : null}
+          {skillSuggestions.length ? <div className="campus-profile-skill-suggestions" role="listbox">{skillSuggestions.map((skill) => <button type="button" role="option" key={skill.id} onClick={() => setSkillName(skill.name)}><strong>{skill.name}</strong>{skill.category?.name ? <small>{skill.category.name}</small> : null}</button>)}</div> : null}
+        </form> : null}
 
         <div className="campus-skills-toolbar">
           <label className="campus-skills-search-field" htmlFor="campus-skills-search">

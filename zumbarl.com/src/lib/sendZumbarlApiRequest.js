@@ -1,4 +1,6 @@
-const API_BASE_URL = import.meta.env.VITE_ZUMBARL_API_URL || 'http://localhost:4100/api/v1'
+// Keep local requests same-origin so Vite's HTTPS proxy can forward them to
+// the HTTP API without mixed-content or CORS failures in the browser.
+const API_BASE_URL = import.meta.env.VITE_ZUMBARL_API_URL || '/api/v1'
 const AUTH_TOKEN_KEY = 'zumbarl.auth.token'
 
 function readZumbarlAuthToken() {

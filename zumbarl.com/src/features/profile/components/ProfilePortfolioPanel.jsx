@@ -1,4 +1,4 @@
-import { FiArrowRight, FiChevronDown, FiMoreVertical, FiStar } from 'react-icons/fi'
+import { FiChevronDown, FiMoreVertical, FiStar } from 'react-icons/fi'
 import {
   PORTFOLIO_FILTERS,
 } from '../constants'
@@ -96,44 +96,7 @@ function ProfilePortfolioPanel({
               </div>
             </article>
           ))}
-        </div>
-      </section>
-
-      <section className="campus-profile-surface campus-portfolio-case-study">
-        <div className="campus-portfolio-case-head">
-          <div>
-            <p>
-              <FiStar aria-hidden="true" />
-              Featured Case Study
-            </p>
-            <h3>Media Campaigns</h3>
-            <span>Social Media · May 12, 2025</span>
-          </div>
-          <button type="button" className="campus-portfolio-case-btn">
-            View Case Study
-            <FiArrowRight aria-hidden="true" />
-          </button>
-        </div>
-
-        <div className="campus-portfolio-case-body">
-          <div className="campus-portfolio-case-metrics">
-            <article>
-              <strong>45%</strong>
-              <p>Engagement Increase</p>
-            </article>
-            <article>
-              <strong>2.3K</strong>
-              <p>New Followers</p>
-            </article>
-            <article>
-              <strong>12.5K</strong>
-              <p>Reach</p>
-            </article>
-            <article>
-              <strong>5.0/5</strong>
-              <p>Client Rating</p>
-            </article>
-          </div>
+          {!portfolioItems.length ? <p>No portfolio work added yet.</p> : null}
         </div>
       </section>
     </>

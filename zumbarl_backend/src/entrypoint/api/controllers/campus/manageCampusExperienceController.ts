@@ -28,6 +28,11 @@ const profileUpdateSchema = z.object({
   bio: z.string().trim().max(500).default(''),
   avatarUrl: z.string().trim().max(2048).default(''),
   showZumbarlPoints: z.boolean().optional(),
+  yearJoined: z.coerce.number().int().min(new Date().getFullYear() - 15).max(new Date().getFullYear()).optional(),
+  course: z.union([
+    z.object({ id: z.string().min(1) }),
+    z.object({ name: z.string().trim().min(2).max(160), category: z.enum(['STEM', 'COMMERCE', 'ARTS', 'OTHER']), duration: z.coerce.number().int().min(1).max(10) })
+  ]).optional(),
   skills: z.array(z.string().trim().min(1).max(80)).max(12).default([])
 })
 

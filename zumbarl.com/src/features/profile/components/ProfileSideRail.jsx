@@ -1,5 +1,4 @@
 import ProfileDefaultRail from './ProfileDefaultRail'
-import ProfileExperienceRail from './ProfileExperienceRail'
 import ProfileShopDetailRail from './ProfileShopDetailRail'
 import ProfileShopRail from './ProfileShopRail'
 
@@ -8,7 +7,6 @@ function ProfileSideRail({
   activeShopDetailTab,
   canContact = false,
   contactName,
-  isExperienceTab,
   isFollowedByViewer = false,
   isOwnProfile = false,
   isShopProductDetailOpen,
@@ -36,9 +34,7 @@ function ProfileSideRail({
 
   return (
     <aside className={railClasses}>
-      {isExperienceTab ? (
-        <ProfileExperienceRail />
-      ) : isShopTab ? (
+      {isShopTab ? (
         isShopProductDetailOpen && selectedShopProduct ? (
           <ProfileShopDetailRail
             activeShopDetailImage={activeShopDetailImage}

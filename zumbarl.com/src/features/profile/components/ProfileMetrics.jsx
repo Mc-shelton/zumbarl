@@ -1,7 +1,5 @@
-import { PROFILE_METRICS } from '../constants'
-
-function ProfileMetrics({ metrics = PROFILE_METRICS }) {
-  const resolvedMetrics = metrics?.length ? metrics : PROFILE_METRICS
+function ProfileMetrics({ metrics = [] }) {
+  const resolvedMetrics = metrics || []
 
   return (
     <section className="campus-profile-metrics" aria-label="Profile metrics">

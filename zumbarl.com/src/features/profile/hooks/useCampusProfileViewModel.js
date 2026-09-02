@@ -1,11 +1,5 @@
 import { useMemo } from 'react'
-import useEarnFlowState from '../../earn/hooks/useEarnFlowState'
 import {
-  PORTFOLIO_ITEMS,
-  PORTFOLIO_SERVICES,
-  SHOP_PRODUCTS_WITH_UID,
-  SKILLS_CORE,
-  SKILLS_OTHER,
   buildRadarPoints,
   getPortfolioDetail,
   getShopProductDetail,
@@ -38,14 +32,6 @@ function useCampusProfileViewModel({
   const isExperienceTab = activeTab === 'Experience'
   const isPagesTab = activeTab === 'Pages'
   const isShopTab = activeTab === 'Shop'
-  const earnFlow = useEarnFlowState()
-  const portfolioEvidenceItems = useMemo(() => earnFlow.portfolioEvidence.map((item) => ({
-    ...item,
-    source: 'earn-flow',
-  })), [earnFlow.portfolioEvidence])
-  const endorsementItems = useMemo(() => (
-    earnFlow.endorsements.map((item) => ({ ...item, source: 'earn-flow' }))
-  ), [earnFlow.endorsements])
   const apiPortfolioItems = useMemo(() => (
     (profileExperience?.portfolioItems || []).map((item) => ({
       ...item,
@@ -57,9 +43,8 @@ function useCampusProfileViewModel({
     }))
   ), [profileExperience?.portfolioItems])
   const combinedPortfolioItems = useMemo(() => {
-    const backendItems = [...portfolioEvidenceItems, ...apiPortfolioItems]
-    return backendItems.length ? backendItems : PORTFOLIO_ITEMS
-  }, [apiPortfolioItems, portfolioEvidenceItems])
+    return apiPortfolioItems
+  }, [apiPortfolioItems])
   const portfolioServices = useMemo(() => {
     const services = (profileExperience?.services || []).map((service) => ({
       id: service.id,
@@ -70,7 +55,7 @@ function useCampusProfileViewModel({
       delivery: service.delivery || service.meta,
       image: service.image || service.thumbnail || '/assets/business/campaign-workshop.jpg',
     }))
-    return services.length ? services : PORTFOLIO_SERVICES
+    return services
   }, [profileExperience?.services])
 
   const portfolioItems = useMemo(() => (
@@ -107,7 +92,7 @@ function useCampusProfileViewModel({
       filter: product.filter || 'products',
       badges: product.badges || product.tags || [],
     }))
-    return products.length ? products : SHOP_PRODUCTS_WITH_UID
+    return products
   }, [profileExperience?.header?.name, profileExperience?.shopProducts])
 
   const selectedShopProduct = useMemo(() => (
@@ -172,13 +157,10 @@ function useCampusProfileViewModel({
         lastUsed: skill.lastUsed || 'Not yet',
       }
     })
-    const coreSource = backendSkills.length ? backendSkills : SKILLS_CORE
-    const nextCoreSkills = coreSource.filter((skill) => (
+    const nextCoreSkills = backendSkills.filter((skill) => (
       matchesSkillFilters(skill, normalizedSkillSearch, skillsCategoryFilter, skillsLevelFilter)
     ))
-    const nextOtherSkills = SKILLS_OTHER.filter((skill) => (
-      matchesSkillFilters(skill, normalizedSkillSearch, skillsCategoryFilter, skillsLevelFilter)
-    ))
+    const nextOtherSkills = []
 
     return {
       filteredCoreSkills: nextCoreSkills,
@@ -213,7 +195,9 @@ function useCampusProfileViewModel({
     filteredCoreSkills,
     filteredOtherSkills,
     filteredShopProducts,
-    endorsements: endorsementItems,
+    endorsements: profileExperience?.endorsements || [],
+    achievements: profileExperience?.achievements || [],
+    earningsSummary: profileExperience?.earningsSummary || [],
     hasSkillsResults,
     isExperienceTab,
     isMarketingTab,

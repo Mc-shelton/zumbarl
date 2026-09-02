@@ -1,9 +1,7 @@
 import { FiChevronRight, FiClock, FiMessageCircle, FiPhone, FiVideo } from 'react-icons/fi'
 import { filterByAccess } from '../../auth/roleConfig'
 import {
-  PIPELINE_RELATIONSHIPS,
   QUICK_ACTIONS,
-  RECENT_ACTIVITY,
 } from '../constants'
 
 function compactNumber(value) {
@@ -21,8 +19,8 @@ function ProfileDefaultRail({
   onAudioCall,
   onMessage,
   onVideoCall,
-  relationships = PIPELINE_RELATIONSHIPS,
-  recentActivity = RECENT_ACTIVITY,
+  relationships = [],
+  recentActivity = [],
   socialStats,
 }) {
   const quickActions = filterByAccess(QUICK_ACTIONS)
@@ -77,7 +75,7 @@ function ProfileDefaultRail({
         </header>
 
         <div className="campus-profile-pipeline-list">
-          {relationships.map((item) => (
+          {relationships.length ? relationships.map((item) => (
             <article key={item.id || item.name || item.company}>
               <img src="/assets/index/bee_nobg.png" alt={`${item.name || item.company} logo`} />
               <div>
@@ -86,13 +84,13 @@ function ProfileDefaultRail({
               </div>
               <em>{item.status}</em>
             </article>
-          ))}
+          )) : <p>No client relationships yet.</p>}
         </div>
 
-        <p className="campus-profile-pipeline-note">
+        {relationships.length ? <p className="campus-profile-pipeline-note">
           <FiClock aria-hidden="true" />
           Transition mode unlocks in 14 months at current pace.
-        </p>
+        </p> : null}
       </article>
 
       <article className="campus-rail-card campus-profile-side-card">
@@ -102,7 +100,7 @@ function ProfileDefaultRail({
         </header>
 
         <div className="campus-profile-activity-list">
-          {recentActivity.map(({ title, detail, description, time, meta, Icon, tone = 'teal' }) => (
+          {recentActivity.length ? recentActivity.map(({ title, detail, description, time, meta, Icon, tone = 'teal' }) => (
             <article key={`${title}-${time || meta}`} className={Icon ? 'has-icon' : undefined}>
               {Icon ? (
                 <div className={`campus-profile-activity-icon is-${tone}`}>
@@ -117,7 +115,7 @@ function ProfileDefaultRail({
                 <p>{detail || description}</p>
               </div>
             </article>
-          ))}
+          )) : <p>No recent activity yet.</p>}
         </div>
       </article>
 

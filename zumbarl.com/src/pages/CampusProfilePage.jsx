@@ -16,7 +16,6 @@ import ProfileTabs from '../features/profile/components/ProfileTabs'
 import ProfileTopBar from '../features/profile/components/ProfileTopBar'
 import {
   PROFILE_TABS,
-  SHOP_PRODUCTS_WITH_UID,
   SHOP_TAB_FILTERS,
   SKILLS_CATEGORY_FILTERS,
   SKILLS_LEVEL_FILTERS,
@@ -55,7 +54,7 @@ function CampusProfilePage({ viewContext = 'campus' }) {
   const [isShopEditorOpen, setIsShopEditorOpen] = useState(false)
   const profileState = useCampusProfileState({
     profileTabs,
-    shopProducts: SHOP_PRODUCTS_WITH_UID,
+    shopProducts: [],
     shopTabFilters: SHOP_TAB_FILTERS,
     skillsCategoryFilters: SKILLS_CATEGORY_FILTERS,
     skillsLevelFilters: SKILLS_LEVEL_FILTERS,
@@ -113,19 +112,30 @@ function CampusProfilePage({ viewContext = 'campus' }) {
   }
 
   async function handleSaveProfile(payload) {
-    const header = await updateMyStudentProfile(payload)
+    await updateMyStudentProfile(payload)
     await refreshAuthUserFromBackend()
-    setProfileExperience((current) => ({
-      ...current,
-      header,
-      skills: (header.tags || []).map((name, index) => ({
-        id: `${header.id}-${index}`,
-        name,
-        category: 'General',
-        level: 'BEGINNER',
-        verifiedByGigs: 0,
-      })),
-    }))
+    const experience = await readMyStudentProfileExperience()
+    setProfileExperience(experience)
+    return experience.header
+  }
+
+  async function handleAddSkill(skillName) {
+    const header = profileExperience?.header
+    if (!header) throw new Error('Your profile is still loading.')
+    const skills = [...new Set([...(profileExperience.skills || []).map((skill) => skill.name), skillName.trim()])]
+    return handleSaveProfile({
+      firstName: header.firstName,
+      lastName: header.lastName,
+      username: String(header.handle || '').replace(/^@/, ''),
+      location: header.location,
+      careerPath: header.careerPath || '',
+      bio: header.bio || '',
+      avatarUrl: header.avatar || '',
+      showZumbarlPoints: header.showZumbarlPoints !== false,
+      yearJoined: header.yearJoined,
+      course: header.course,
+      skills,
+    })
   }
 
   useEffect(() => {
@@ -233,6 +243,7 @@ function CampusProfilePage({ viewContext = 'campus' }) {
   }
 
   const tabHandlers = {
+    onAddSkill: handleAddSkill,
     onPortfolioFilterChange: handlePortfolioFilterChange,
     onPortfolioItemSelect: handlePortfolioItemSelect,
     onPortfolioServiceSelect: handlePortfolioServiceSelect,

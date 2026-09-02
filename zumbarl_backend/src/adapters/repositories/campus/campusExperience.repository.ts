@@ -1,5 +1,21 @@
 import { prisma } from '../../../lib/prisma.js'
 import { OPPORTUNITY_APPLICABLE_STATUSES } from '../../../shared/opportunities/opportunityLifecycle.js'
+import { canonicalSkillKey } from '../skills/index.js'
+
+function uniqueSkillLevels(skills: Array<Record<string, any>> = []) {
+  const unique = new Map<string, Record<string, any>>()
+  for (const skill of skills) {
+    const key = canonicalSkillKey(skill.skillName)
+    const existing = unique.get(key)
+    const displayQuality = (value: string) => (/^[A-Z]/.test(value) ? 1 : 0) + (/[.+#]/.test(value) ? 1 : 0)
+    if (!existing || displayQuality(skill.skillName) > displayQuality(existing.skillName)) unique.set(key, skill)
+  }
+  return [...unique.values()]
+}
+
+function canonicalCourseKey(name: string) {
+  return String(name || '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '')
+}
 
 function toProfileHeader(student: Record<string, any> | null) {
   if (!student) return null
@@ -10,9 +26,11 @@ function toProfileHeader(student: Record<string, any> | null) {
     firstName: student.firstName,
     lastName: student.lastName,
     role: 'Student',
+    campusName: student.campus?.name ?? null,
     headline: `${student.campus?.name ?? 'Campus'} · Year ${Math.max(new Date().getFullYear() - student.yearJoined + 1, 1)} · ${student.careerPath ?? student.course?.name ?? 'Student'}`,
     location: student.locationCity,
     careerPath: student.careerPath,
+    course: student.course ? { id: student.course.id, name: student.course.name, category: student.course.category, duration: student.course.duration } : null,
     handle: student.user?.username
       ? `@${student.user.username}`
       : student.user?.email
@@ -20,8 +38,9 @@ function toProfileHeader(student: Record<string, any> | null) {
         : '@student',
     avatar: student.avatarUrl,
     bio: student.bio,
+    yearJoined: student.yearJoined,
     showZumbarlPoints: student.showZumbarlPoints !== false,
-    tags: student.skillLevels?.slice(0, 4).map((skill: Record<string, any>) => skill.skillName) ?? []
+    tags: uniqueSkillLevels(student.skillLevels).slice(0, 4).map((skill) => skill.skillName)
   }
 }
 
@@ -279,6 +298,12 @@ class CampusExperienceRepository {
     return prisma.$transaction(async (tx) => {
       const existing = await tx.studentProfile.findUnique({ where: { id: studentId } })
       if (!existing) return null
+      let course = null
+      if (payload.course?.id) course = await tx.course.findUniqueOrThrow({ where: { id: payload.course.id } })
+      else if (payload.course?.name) {
+        course = (await tx.course.findMany()).find((item) => canonicalCourseKey(item.name) === canonicalCourseKey(payload.course.name))
+          || await tx.course.create({ data: { name: payload.course.name, category: payload.course.category, duration: Number(payload.course.duration) } })
+      }
       await tx.studentProfile.update({
         where: { id: studentId },
         data: {
@@ -288,6 +313,13 @@ class CampusExperienceRepository {
           careerPath: payload.careerPath || null,
           bio: payload.bio || null,
           avatarUrl: payload.avatarUrl || null,
+          ...(course ? { courseId: course.id, courseDuration: course.duration } : {}),
+          ...((course || payload.yearJoined !== undefined) ? { expectedGraduation: new Date(`${Number(payload.yearJoined || existing.yearJoined) + (course?.duration || existing.courseDuration)}-12-31T00:00:00.000Z`) } : {}),
+          ...(payload.yearJoined !== undefined
+            ? {
+                yearJoined: Number(payload.yearJoined)
+              }
+            : {}),
           ...(payload.showZumbarlPoints !== undefined
             ? { showZumbarlPoints: payload.showZumbarlPoints }
             : {})
@@ -295,7 +327,10 @@ class CampusExperienceRepository {
       })
       if (payload.username) await tx.user.update({ where: { id: existing.userId }, data: { username: payload.username } })
       const requestedSkills: string[] = Array.isArray(payload.skills) ? payload.skills.map((skill: unknown) => String(skill).trim()).filter(Boolean) : []
-      const skills: string[] = [...new Set<string>(requestedSkills)].slice(0, 12)
+      const catalogSkills = await tx.skill.findMany({ where: { status: { not: 'archived' } }, select: { name: true } })
+      const catalogNameByKey = new Map(catalogSkills.map((skill) => [canonicalSkillKey(skill.name), skill.name]))
+      const requestedNameByKey = new Map(requestedSkills.map((name) => [canonicalSkillKey(name), name]))
+      const skills: string[] = [...requestedNameByKey.entries()].slice(0, 12).map(([key, name]) => catalogNameByKey.get(key) || name)
       await tx.skillLevel_.deleteMany({ where: { studentId, verifiedByGigs: 0, skillName: { notIn: skills } } })
       for (const skillName of skills) {
         await tx.skillLevel_.upsert({
@@ -638,7 +673,7 @@ class CampusExperienceRepository {
         { label: 'Repeat Clients', value: Math.round(score?.repeatClientRate ?? 0), meta: 'repeat signal' }
       ],
       score,
-      skills: student.skillLevels.map((skill) => ({
+      skills: uniqueSkillLevels(student.skillLevels).map((skill) => ({
         id: skill.id,
         name: skill.skillName,
         level: skill.level,

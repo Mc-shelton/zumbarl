@@ -2,7 +2,6 @@ import { FiChevronDown, FiPlusCircle } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import CampusTopActions from '../../../components/layout/CampusTopActions'
 import { Breadcrumb } from '../../../components/ui'
-import { PROFILE_TOP_VIEWER } from '../constants'
 
 function ProfileTopBar({ activeTab }) {
   return (
@@ -24,7 +23,6 @@ function ProfileTopBar({ activeTab }) {
           </Link>
         )}
         userButtonClassName="campus-profile-user-btn"
-        viewer={PROFILE_TOP_VIEWER}
       />
     </header>
   )

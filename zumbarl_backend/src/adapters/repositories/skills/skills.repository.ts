@@ -13,6 +13,42 @@ function createSkillSlug(name: string) {
     .replace(/(^-|-$)/g, '')
 }
 
+// Treat punctuation, whitespace and casing as presentation differences so
+// common variants such as Node.js, node js and nodejs share one catalog item.
+function canonicalSkillKey(name: string) {
+  return normalizeSkillName(name).toLowerCase().replace(/[^a-z0-9]+/g, '')
+}
+
+function editDistance(left: string, right: string) {
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index)
+  for (let leftIndex = 1; leftIndex <= left.length; leftIndex += 1) {
+    const current = [leftIndex]
+    for (let rightIndex = 1; rightIndex <= right.length; rightIndex += 1) {
+      current[rightIndex] = Math.min(
+        current[rightIndex - 1] + 1,
+        previous[rightIndex] + 1,
+        previous[rightIndex - 1] + (left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1)
+      )
+    }
+    previous.splice(0, previous.length, ...current)
+  }
+  return previous[right.length]
+}
+
+function skillMatchScore(skill: Record<string, any>, search: string) {
+  const searchKey = canonicalSkillKey(search)
+  const candidates = [skill.name, ...(skill.aliases || []).map((alias: Record<string, any>) => alias.name)]
+  let best = Number.POSITIVE_INFINITY
+  for (const candidate of candidates) {
+    const key = canonicalSkillKey(String(candidate))
+    if (key === searchKey) best = Math.min(best, 0)
+    else if (key.startsWith(searchKey) || searchKey.startsWith(key)) best = Math.min(best, 1)
+    else if (key.includes(searchKey) || searchKey.includes(key)) best = Math.min(best, 2)
+    else if (searchKey.length >= 5 && editDistance(key, searchKey) <= Math.max(1, Math.floor(searchKey.length * 0.2))) best = Math.min(best, 3)
+  }
+  return best
+}
+
 function toSkillResponse(skill: Record<string, any>) {
   return {
     id: skill.id,
@@ -55,13 +91,6 @@ class SkillsRepository {
     const where: Prisma.SkillWhereInput = {
       status: query.status ? String(query.status) : { not: 'archived' },
       ...(query.categoryId ? { categoryId: String(query.categoryId) } : {}),
-      ...(search ? {
-        OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { slug: { contains: createSkillSlug(search), mode: 'insensitive' } },
-          { aliases: { some: { name: { contains: search, mode: 'insensitive' } } } }
-        ]
-      } : {})
     }
 
     const skills = await prisma.skill.findMany({
@@ -74,15 +103,23 @@ class SkillsRepository {
         { usageCount: 'desc' },
         { name: 'asc' }
       ],
-      take: limit
+      ...(!search ? { take: limit } : {})
     })
 
+    const matchedSkills = search
+      ? skills.map((skill) => ({ skill, score: skillMatchScore(skill, search) }))
+        .filter(({ score }) => Number.isFinite(score))
+        .sort((left, right) => left.score - right.score || right.skill.usageCount - left.skill.usageCount || left.skill.name.localeCompare(right.skill.name))
+        .slice(0, limit)
+        .map(({ skill }) => skill)
+      : skills
+
     return {
-      data: skills.map(toSkillResponse),
+      data: matchedSkills.map(toSkillResponse),
       meta: {
         page: 1,
-        pageSize: skills.length,
-        total: skills.length
+        pageSize: matchedSkills.length,
+        total: matchedSkills.length
       }
     }
   }
@@ -92,6 +129,24 @@ class SkillsRepository {
       const name = normalizeSkillName(String(payload.name ?? ''))
       const slug = createSkillSlug(name)
       const categoryId = await ensureSkillCategory(transaction, payload)
+
+      const existingSkills = await transaction.skill.findMany({
+        where: { status: { not: 'archived' } },
+        include: { aliases: true, category: true }
+      })
+      const canonicalKey = canonicalSkillKey(name)
+      const equivalent = existingSkills.find((candidate) => (
+        canonicalSkillKey(candidate.name) === canonicalKey
+        || candidate.aliases.some((alias) => canonicalSkillKey(alias.name) === canonicalKey)
+      ))
+      if (equivalent) {
+        const existing = await transaction.skill.update({
+          where: { id: equivalent.id },
+          data: { status: 'active', usageCount: { increment: 1 } },
+          include: { aliases: true, category: true }
+        })
+        return toSkillResponse(existing)
+      }
 
       const skill = await transaction.skill.upsert({
         where: { slug },
@@ -178,6 +233,7 @@ const skillsRepository = new SkillsRepository()
 export {
   SkillsRepository,
   createSkillSlug,
+  canonicalSkillKey,
   normalizeSkillName,
   skillsRepository
 }

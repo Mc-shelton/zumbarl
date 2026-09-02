@@ -34,8 +34,6 @@ import {
 import {
   CAMPUS_FEED_FILTERS,
   EXPLORE_PRODUCT_DETAILS,
-  FEED_COMMENTS,
-  FEED_POSTS,
   MARKETPLACE_RESULTS,
   PEOPLE_WHO_CAN_HELP,
   SEARCH_HINTS,
@@ -303,7 +301,7 @@ function ExploreCampusPage() {
     ownStoryCreator(getAuthUserSnapshot()),
   ]);
   const [createdPosts, setCreatedPosts] = useState([]);
-  const [feedComments, setFeedComments] = useState(FEED_COMMENTS);
+  const [feedComments, setFeedComments] = useState({});
   const [postEngagementOverrides, setPostEngagementOverrides] = useState({});
   const [engagementPending, setEngagementPending] = useState({});
   const [engagementErrors, setEngagementErrors] = useState({});
@@ -378,7 +376,7 @@ function ExploreCampusPage() {
     stepMediaViewer,
   } = useExploreCampusState({
     feedComments,
-    feedPosts: FEED_POSTS,
+    feedPosts: createdPosts,
     productDetails,
   });
 
@@ -913,7 +911,7 @@ function ExploreCampusPage() {
   const visibleFeedPosts = useMemo(
     () => {
       const seen = new Set();
-      const filteredPosts = [...createdPosts, ...(campusHubName ? [] : FEED_POSTS)]
+      const filteredPosts = createdPosts
         .map((post) => {
           const override = postEngagementOverrides[post.id] || {};
           return {

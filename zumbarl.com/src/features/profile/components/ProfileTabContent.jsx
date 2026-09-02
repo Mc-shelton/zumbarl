@@ -1,4 +1,3 @@
-import ProfileExperiencePanel from './ProfileExperiencePanel'
 import ProfileMarketingPanel from './ProfileMarketingPanel'
 import ProfileOverviewPanel from './ProfileOverviewPanel'
 import ProfilePagesPanel from './ProfilePagesPanel'
@@ -12,7 +11,7 @@ function ProfileTabContent({ activeTab, canManageMarketing = false, canManageSho
   if (activeTab === 'Overview') {
     return (
       <>
-        <ProfileOverviewPanel endorsements={viewModel.endorsements} score={viewModel.profileScore} workHighlights={viewModel.workHighlights} />
+        <ProfileOverviewPanel achievements={viewModel.achievements} earningsSummary={viewModel.earningsSummary} endorsements={viewModel.endorsements} score={viewModel.profileScore} workHighlights={viewModel.workHighlights} />
         <ProfileSkillsPanel
           canManage={isOwnProfile}
           embedded
@@ -20,6 +19,7 @@ function ProfileTabContent({ activeTab, canManageMarketing = false, canManageSho
           filteredOtherSkills={viewModel.filteredOtherSkills}
           hasSkillsResults={viewModel.hasSkillsResults}
           onCategoryFilterChange={profileState.setSkillsCategoryFilter}
+          onAddSkill={handlers.onAddSkill}
           onLevelFilterChange={profileState.setSkillsLevelFilter}
           onSearchQueryChange={profileState.setSkillsSearchQuery}
           skillsCategoryFilter={profileState.skillsCategoryFilter}
@@ -50,7 +50,7 @@ function ProfileTabContent({ activeTab, canManageMarketing = false, canManageSho
   }
 
   if (viewModel.isExperienceTab) {
-    return <ProfileExperiencePanel />
+    return <ProfilePlaceholderPanel activeTab="Experience" />
   }
 
   if (viewModel.isPagesTab) {

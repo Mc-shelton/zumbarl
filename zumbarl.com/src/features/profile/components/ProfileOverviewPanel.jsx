@@ -1,18 +1,11 @@
 import { useState } from 'react'
 import { FiBarChart2, FiStar } from 'react-icons/fi'
 import {
-  ACHIEVEMENTS,
-  EARNINGS_SUMMARY,
-  ENDORSEMENTS,
-  PROFILE_SCORE,
-  SCORE_BARS,
   getScoreFillColor,
 } from '../constants'
-import { useProfileTrustSnapshot } from '../hooks/useProfileTrustSnapshot'
 
-function ProfileOverviewPanel({ endorsements = [], score = null, workHighlights = [] }) {
+function ProfileOverviewPanel({ achievements = [], earningsSummary = [], endorsements = [], score = null, workHighlights = [] }) {
   const [showScoreExplanation, setShowScoreExplanation] = useState(false)
-  const legacyTrustSnapshot = useProfileTrustSnapshot()
   const trustSnapshot = score ? {
     score: Number(score.currentScore || 0),
     tier: score.tier,
@@ -27,11 +20,23 @@ function ProfileOverviewPanel({ endorsements = [], score = null, workHighlights 
       { label: 'Professionalism', value: Math.round(Number(score.professionalismScore || score.trustScore || 0)), max: 100 },
       { label: 'Client relationship', value: Math.round(Number(score.relationshipScore || score.loyaltyScore || 0)), max: 100 },
     ],
-  } : legacyTrustSnapshot
-  const profileScore = trustSnapshot?.score ?? PROFILE_SCORE
-  const scoreBars = trustSnapshot?.scoreBars?.length ? trustSnapshot.scoreBars : SCORE_BARS
+  } : {
+    score: 0,
+    tier: 'BRONZE',
+    confidence: 'PROVISIONAL',
+    averageRating: 'Pending',
+    nextStep: 'Complete verified work to build your score',
+    scoreBars: [
+      { label: 'Quality', value: 0, max: 100 },
+      { label: 'Reliability', value: 0, max: 100 },
+      { label: 'Professionalism', value: 0, max: 100 },
+      { label: 'Client relationship', value: 0, max: 100 },
+    ],
+  }
+  const profileScore = trustSnapshot.score
+  const scoreBars = trustSnapshot.scoreBars
   const profileScoreColor = getScoreFillColor(profileScore, 100)
-  const visibleEndorsements = endorsements.length ? [...endorsements, ...ENDORSEMENTS] : ENDORSEMENTS
+  const visibleEndorsements = endorsements
   const endorsementCurrency = visibleEndorsements.reduce((total, item) => (
     total + (Number.parseInt(String(item.reward).replace(/\D/g, ''), 10) || 0)
   ), 0)
@@ -113,20 +118,20 @@ function ProfileOverviewPanel({ endorsements = [], score = null, workHighlights 
           </header>
 
           <div className="campus-profile-endorsement-list">
-            {visibleEndorsements.map((item) => (
+            {visibleEndorsements.length ? visibleEndorsements.map((item) => (
               <article key={`${item.company}-${item.date}`} className="campus-profile-endorsement-item">
                 <img src="/assets/index/bee_nobg.png" alt={`${item.company} logo`} />
                 <div>
                   <h3>{item.company}</h3>
-                  <p>{item.person}</p>
-                  <blockquote>{item.quote}</blockquote>
+                  <p>{item.person || [item.author, item.role].filter(Boolean).join(' · ')}</p>
+                  <blockquote>{item.quote || item.note}</blockquote>
                 </div>
                 <div>
-                  <strong>{item.reward}</strong>
+                  <strong>{item.reward || item.value}</strong>
                   <p>{item.date}</p>
                 </div>
               </article>
-            ))}
+            )) : <p>No endorsements yet.</p>}
           </div>
 
           <footer className="campus-profile-endorsement-foot">
@@ -147,17 +152,17 @@ function ProfileOverviewPanel({ endorsements = [], score = null, workHighlights 
           </header>
 
           <div className="campus-profile-achievement-list">
-            {ACHIEVEMENTS.map(({ title, subtitle, Icon, tone }) => (
-              <article key={title}>
-                <div className={`campus-profile-achievement-icon is-${tone}`}>
-                  <Icon aria-hidden="true" />
+            {achievements.length ? achievements.map(({ id, title, name, subtitle, description }) => (
+              <article key={id || title || name}>
+                <div className="campus-profile-achievement-icon is-purple">
+                  <FiStar aria-hidden="true" />
                 </div>
                 <div>
-                  <h3>{title}</h3>
-                  <p>{subtitle}</p>
+                  <h3>{title || name}</h3>
+                  <p>{subtitle || description}</p>
                 </div>
               </article>
-            ))}
+            )) : <p>No achievements yet.</p>}
           </div>
         </article>
 
@@ -167,12 +172,12 @@ function ProfileOverviewPanel({ endorsements = [], score = null, workHighlights 
             <FiBarChart2 aria-hidden="true" />
           </header>
           <div className="campus-profile-earnings-list">
-            {EARNINGS_SUMMARY.map((entry) => (
-              <div key={entry.label}>
-                <p>{entry.label}</p>
+            {earningsSummary.length ? earningsSummary.map((entry) => (
+              <div key={entry.id || entry.label || entry.title}>
+                <p>{entry.label || entry.title}</p>
                 <strong>{entry.value}</strong>
               </div>
-            ))}
+            )) : <p>No earnings yet.</p>}
           </div>
         </article>
 
