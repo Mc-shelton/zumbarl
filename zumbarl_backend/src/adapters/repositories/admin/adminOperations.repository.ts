@@ -1,7 +1,8 @@
 import { Prisma, UserRole, KycStatus } from '@prisma/client'
-import { pageEnvelope } from '../../../lib/http.js'
+import { ApiError, pageEnvelope } from '../../../lib/http.js'
 import { prisma } from '../../../lib/prisma.js'
 import { createPrismaRecordRepository } from '../../../shared/repositories/index.js'
+import { evaluateStudentKyc } from '../../../shared/services/studentKyc.js'
 
 const projects = createPrismaRecordRepository('projects')
 const cases = createPrismaRecordRepository('moderationCases')
@@ -39,6 +40,10 @@ function jsonObject(value: unknown) {
 
 function slugify(value: string) {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'campus-vendor'
+}
+
+function canonicalAcademicName(value: string | null | undefined) {
+  return String(value || '').trim().toLowerCase().replace(/\s+/g, ' ')
 }
 
 function getActorId(actorId: string | undefined) {
@@ -173,7 +178,20 @@ class AdminOperationsRepository {
       where,
       orderBy: { createdAt: 'desc' },
       include: {
-        studentProfile: { select: { id: true, firstName: true, lastName: true, kycStatus: true, studentIdNumber: true } },
+        studentProfile: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            kycStatus: true,
+            studentIdNumber: true,
+            kycDocuments: {
+              where: { status: { not: 'EXPIRED' } },
+              orderBy: { createdAt: 'desc' },
+              select: { id: true, documentType: true, status: true, expiresAt: true, rejectionReason: true, createdAt: true }
+            }
+          }
+        },
         companyContact: { select: { companyId: true, isOwner: true, company: { select: { name: true, registrationNumber: true, kycStatus: true } } } }
       }
     })
@@ -197,8 +215,16 @@ class AdminOperationsRepository {
       prisma.marketplaceShop.findMany({
         include: {
           campus: true,
-          owner: { select: { id: true, user: { select: { id: true, name: true, email: true, username: true } } } },
-          managers: { select: { role: true, user: { select: { id: true, name: true, email: true, username: true } } } },
+          owner: {
+            select: {
+              id: true,
+              studentIdNumber: true,
+              kycStatus: true,
+              kycDocuments: { where: { status: { not: 'EXPIRED' } }, select: { documentType: true, status: true, expiresAt: true } },
+              user: { select: { id: true, name: true, email: true, phone: true, username: true, isVerified: true } }
+            }
+          },
+          managers: { select: { role: true, user: { select: { id: true, name: true, email: true, phone: true, username: true } } } },
           _count: { select: { listings: true } }
         },
         orderBy: { name: 'asc' }
@@ -212,7 +238,26 @@ class AdminOperationsRepository {
           ...shop,
           type: payload.vendorType || 'service',
           campusManagedProfileId: payload.campusManagedProfileId || null,
+          approvalStatus: payload.approvalStatus || (shop.status === 'ACTIVE' ? 'approved' : String(shop.status).toLowerCase()),
+          ownershipType: payload.ownershipType || 'campus',
+          submittedAt: payload.submittedAt || shop.createdAt,
           manager: shop.owner.user,
+          ownerDetails: {
+            studentId: shop.owner.id,
+            studentIdNumber: shop.owner.studentIdNumber,
+            kycStatus: shop.owner.kycStatus,
+            userId: shop.owner.user.id,
+            name: shop.owner.user.name,
+            username: shop.owner.user.username,
+            email: shop.owner.user.email,
+            phone: shop.owner.user.phone,
+            isVerified: shop.owner.user.isVerified,
+            kycReady: evaluateStudentKyc(shop.owner.kycStatus, shop.owner.kycDocuments, 'student_kitchen').approved
+          },
+          contact: {
+            email: payload.contactEmail || shop.owner.user.email,
+            phone: payload.contactPhone || shop.owner.user.phone
+          },
           managers: shop.managers,
           capabilities: ['inventory', 'orders', 'posts', 'promotions']
         }
@@ -239,7 +284,7 @@ class AdminOperationsRepository {
       campusManagedProfileId: campusPage.id,
       campusName: campusPage.name,
       managerUserId: manager.id,
-      capabilities: ['inventory', 'orders', 'posts', 'promotions'],
+      capabilities: ['inventory', 'orders', 'posts', 'promotions', 'errands'],
       createdByAdminId: context?.actorId || null
     }
     const vendor = await prisma.marketplaceShop.create({
@@ -250,6 +295,7 @@ class AdminOperationsRepository {
         slug,
         tagline: `${campusPage.name} ${String(payload.type).replaceAll('_', ' ')}`,
         description: payload.description || null,
+        errandFee: Number(payload.deliveryFee || 0),
         category: payload.type === 'hotel' ? 'Food & hospitality' : payload.type === 'barber_shop' ? 'Beauty & grooming' : 'Campus services',
         locationLabel: payload.locationLabel || campusPage.locationLabel || manager.studentProfile.campus.name,
         contactRules: 'Keep vendor and customer communication on Zumbarl.',
@@ -293,6 +339,7 @@ class AdminOperationsRepository {
       data: {
         ...(payload.name !== undefined ? { name: payload.name } : {}),
         ...(payload.description !== undefined ? { description: payload.description || null } : {}),
+        ...(payload.deliveryFee !== undefined ? { errandFee: Number(payload.deliveryFee) } : {}),
         ...(payload.locationLabel !== undefined ? { locationLabel: payload.locationLabel || null } : {}),
         ...(payload.logoUrl !== undefined ? { logoUrl: payload.logoUrl || null } : {}),
         ...(payload.coverImageUrl !== undefined ? { coverImageUrl: payload.coverImageUrl || null } : {}),
@@ -311,6 +358,63 @@ class AdminOperationsRepository {
       ...updated,
       type: vendorType,
       campusManagedProfileId: campusPageId,
+      manager: updated.owner.user,
+      managers: updated.managers,
+      capabilities: currentPayload.capabilities || ['inventory', 'orders', 'posts', 'promotions']
+    }
+  }
+
+  async reviewStudentKitchen(id: string, payload: Record<string, any>, context?: AuditContext) {
+    const before = await prisma.marketplaceShop.findUnique({
+      where: { id },
+      include: {
+        owner: {
+          select: {
+            studentIdNumber: true,
+            kycStatus: true,
+            kycDocuments: { where: { status: { not: 'EXPIRED' } }, select: { documentType: true, status: true, expiresAt: true } },
+            user: { select: { isVerified: true } }
+          }
+        }
+      }
+    })
+    const currentPayload = jsonObject(before?.payload)
+    if (!before || currentPayload.entityType !== 'campus_vendor' || currentPayload.vendorType !== 'student_kitchen') return null
+
+    const approved = payload.decision === 'approved'
+    if (approved) {
+      const blockers = [
+        !evaluateStudentKyc(before.owner.kycStatus, before.owner.kycDocuments, 'student_kitchen').approved ? 'approve the required National ID and Student ID documents' : null
+      ].filter(Boolean)
+      if (blockers.length) {
+        throw new ApiError(409, `Kitchen approval is locked: ${blockers.join(', ')}.`, 'STUDENT_KITCHEN_OWNER_NOT_VERIFIED', { blockers })
+      }
+    }
+    const reviewedPayload = {
+      ...currentPayload,
+      approvalStatus: payload.decision,
+      acceptingOrders: approved ? Boolean(currentPayload.acceptingOrders) : false,
+      reviewedAt: new Date().toISOString(),
+      reviewedByAdminId: context?.actorId || null,
+      reviewReason: payload.reason
+    }
+    const updated = await prisma.marketplaceShop.update({
+      where: { id },
+      data: { status: approved ? 'ACTIVE' : 'REJECTED', payload: reviewedPayload },
+      include: {
+        campus: true,
+        owner: { select: { id: true, user: { select: { id: true, name: true, email: true, username: true } } } },
+        managers: { select: { role: true, user: { select: { id: true, name: true, email: true, username: true } } } },
+        _count: { select: { listings: true } }
+      }
+    })
+    await this.audit(`student_kitchen_${payload.decision}`, 'marketplace_shop', id, context, before, updated, payload.reason)
+    return {
+      ...updated,
+      type: 'student_kitchen',
+      campusManagedProfileId: currentPayload.campusManagedProfileId || null,
+      approvalStatus: payload.decision,
+      ownershipType: 'student',
       manager: updated.owner.user,
       managers: updated.managers,
       capabilities: currentPayload.capabilities || ['inventory', 'orders', 'posts', 'promotions']
@@ -375,14 +479,32 @@ class AdminOperationsRepository {
   }
 
   async reviewUserKyc(id: string, payload: Record<string, any>, context?: AuditContext) {
-    const user = await prisma.user.findUnique({ where: { id }, include: { studentProfile: true, companyContact: true } })
+    const user = await prisma.user.findUnique({
+      where: { id },
+      include: { studentProfile: { include: { kycDocuments: { where: { status: { not: 'EXPIRED' } } } } }, companyContact: true }
+    })
     if (!user) return null
     const status = normalizeKycStatus(payload.status)
     if (!status) return null
 
     if (user.studentProfile) {
       const before = user.studentProfile
-      const after = await prisma.studentProfile.update({ where: { id: before.id }, data: { kycStatus: status } })
+      if (status === KycStatus.APPROVED) {
+        const submittedTypes = new Set(before.kycDocuments.map((document) => document.documentType))
+        if (!submittedTypes.has('NATIONAL_ID') || !submittedTypes.has('STUDENT_ID')) {
+          throw new ApiError(409, 'A National ID and Student ID must be submitted before this profile can be approved.', 'KYC_DOCUMENTS_INCOMPLETE')
+        }
+      }
+      const after = await prisma.$transaction(async (tx) => {
+        await tx.kycDocument.updateMany({
+          where: { studentId: before.id, status: { in: ['PENDING', 'UNDER_REVIEW'] } },
+          data: { status, reviewedAt: new Date(), reviewedBy: context?.actorId || null, rejectionReason: status === KycStatus.REJECTED ? payload.reason : null }
+        })
+        return tx.studentProfile.update({
+          where: { id: before.id },
+          data: { kycStatus: status, kycVerifiedAt: status === KycStatus.APPROVED ? new Date() : null }
+        })
+      })
       await this.audit('student_kyc_reviewed', 'student_profile', before.id, context, before, after, payload.reason)
       return after
     }
@@ -393,6 +515,19 @@ class AdminOperationsRepository {
     const after = await prisma.company.update({ where: { id: companyId }, data: { kycStatus: status, kycVerifiedAt: status === KycStatus.APPROVED ? new Date() : null } })
     await this.audit('company_kyc_reviewed', 'company', companyId, context, before, after, payload.reason)
     return after
+  }
+
+  async readStudentKycDocument(userId: string, documentId: string) {
+    const document = await prisma.kycDocument.findFirst({
+      where: { id: documentId, student: { userId } },
+      select: { id: true, documentType: true, fileKey: true, studentId: true }
+    })
+    if (!document) return null
+    const upload = await prisma.uploadedFile.findFirst({
+      where: { bucket: 'zumbarl-kyc-private', storageKey: document.fileKey, status: 'complete' },
+      select: { fileName: true, mimeType: true, bucket: true, storageKey: true }
+    })
+    return upload ? { ...document, ...upload } : null
   }
 
   async mergeDuplicateAccounts(payload: Record<string, any>, context?: AuditContext) {
@@ -411,25 +546,43 @@ class AdminOperationsRepository {
   }
 
   async readFinancialOversight(query: Record<string, unknown>) {
-    const [transactions, escrowHolds, companyWallets, studentWallets, chamaWallets, advances, workflowEscrows] = await Promise.all([
+    const [
+      transactions,
+      escrowHolds,
+      advances,
+      workflowEscrows,
+      transactionCount,
+      transactionDebits,
+      escrowHoldCount,
+      activeAdvanceCount,
+      companyWalletTotals,
+      studentWalletTotals,
+      chamaWalletTotals
+    ] = await Promise.all([
       prisma.transaction.findMany({ orderBy: { createdAt: 'desc' }, take: 25 }),
       prisma.opportunityEscrowHold.findMany({ orderBy: { heldAt: 'desc' }, take: 25 }),
-      prisma.companyWallet.findMany({ orderBy: { updatedAt: 'desc' }, take: 25, include: { company: { select: { name: true } } } }),
-      prisma.wallet.findMany({ orderBy: { updatedAt: 'desc' }, take: 25 }),
-      prisma.chamaWallet.findMany({ orderBy: { updatedAt: 'desc' }, take: 25, include: { chama: { select: { name: true } } } }),
       prisma.microAdvance.findMany({ orderBy: { issuedAt: 'desc' }, take: 25 }),
-      escrows.listAll()
+      escrows.listAll(),
+      prisma.transaction.count(),
+      prisma.transaction.aggregate({ where: { amount: { lt: 0 } }, _sum: { amount: true } }),
+      prisma.opportunityEscrowHold.count(),
+      prisma.microAdvance.count({ where: { status: 'ACTIVE' } }),
+      prisma.companyWallet.aggregate({ _sum: { balance: true } }),
+      prisma.wallet.aggregate({ _sum: { balance: true } }),
+      prisma.chamaWallet.aggregate({ _sum: { balance: true } })
     ])
-    const totalVolume = transactions.reduce((sum: number, item) => sum + item.amount, 0) + workflowEscrows.reduce((sum: number, item) => sum + Number(item.amount ?? 0), 0)
+    // Debits represent money entering a purchase/funding flow. Credits are the
+    // corresponding settlement leg, so summing both would understate or cancel GMV.
+    const totalVolume = Math.abs(transactionDebits._sum.amount ?? 0)
     return {
       summary: {
-        transactions: transactions.length,
-        escrowHolds: escrowHolds.length + workflowEscrows.length,
-        activeAdvances: advances.filter((item) => item.status === 'ACTIVE').length,
+        transactions: transactionCount,
+        escrowHolds: escrowHoldCount + workflowEscrows.length,
+        activeAdvances: activeAdvanceCount,
         totalVolume,
-        companyWalletBalance: companyWallets.reduce((sum, item) => sum + item.balance, 0),
-        studentWalletBalance: studentWallets.reduce((sum, item) => sum + item.balance, 0),
-        chamaWalletBalance: chamaWallets.reduce((sum, item) => sum + item.balance, 0)
+        companyWalletBalance: companyWalletTotals._sum.balance ?? 0,
+        studentWalletBalance: studentWalletTotals._sum.balance ?? 0,
+        chamaWalletBalance: chamaWalletTotals._sum.balance ?? 0
       },
       transactions: pageEnvelope(transactions, query),
       escrowHolds: escrowHolds.slice(0, 10),
@@ -576,6 +729,117 @@ class AdminOperationsRepository {
     return { campuses, campusManagers, configurations: configs, featureFlags: flags, notificationTemplates: templates, integrationHealth: integrations, protectiveRules: rules }
   }
 
+  async readAcademicCatalog() {
+    const [campuses, courses, units] = await Promise.all([
+      prisma.campus.findMany({
+        orderBy: [{ name: 'asc' }, { branch: 'asc' }],
+        include: {
+          managedProfile: { select: { id: true, name: true, slug: true, status: true } },
+          students: {
+            orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+            take: 5,
+            select: { id: true, firstName: true, lastName: true, user: { select: { email: true } }, course: { select: { id: true, name: true } } }
+          },
+          _count: { select: { students: true } }
+        }
+      }),
+      prisma.course.findMany({
+        where: { id: { not: 'course-unassigned' } },
+        orderBy: { name: 'asc' },
+        include: {
+          students: {
+            orderBy: [{ firstName: 'asc' }, { lastName: 'asc' }],
+            take: 5,
+            select: { id: true, firstName: true, lastName: true, user: { select: { email: true } }, campus: { select: { id: true, name: true } } }
+          },
+          _count: { select: { students: true } }
+        }
+      }),
+      prisma.knowledgeUnit.findMany({
+        orderBy: { name: 'asc' },
+        include: { _count: { select: { resources: true } } }
+      })
+    ])
+    return { campuses, courses, units }
+  }
+
+  async updateAcademicCampus(id: string, payload: Record<string, any>, context?: AuditContext) {
+    const before = await prisma.campus.findUnique({ where: { id } })
+    if (!before) return null
+    const campuses = await prisma.campus.findMany({ where: { id: { not: id } }, select: { name: true, branch: true } })
+    const duplicate = campuses.some((campus) => (
+      canonicalAcademicName(campus.name) === canonicalAcademicName(payload.name)
+      && canonicalAcademicName(campus.branch) === canonicalAcademicName(payload.branch)
+    ))
+    if (duplicate) throw new ApiError(409, 'A campus with this institution name and branch already exists.', 'ACADEMIC_CAMPUS_DUPLICATE')
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const campus = await tx.campus.update({
+        where: { id },
+        data: {
+          name: payload.name,
+          branch: payload.branch || null,
+          city: payload.city,
+          locationLabel: payload.locationLabel || null,
+          latitude: payload.latitude,
+          longitude: payload.longitude,
+          isActive: payload.isActive
+        }
+      })
+      if (before.name !== campus.name) {
+        await Promise.all([
+          tx.knowledgeResource.updateMany({ where: { institution: before.name }, data: { institution: campus.name } }),
+          tx.communityGroup.updateMany({ where: { campus: before.name }, data: { campus: campus.name } })
+        ])
+      }
+      await tx.managedProfile.updateMany({
+        where: { campusId: id, type: 'campus' },
+        data: { locationLabel: campus.locationLabel || campus.city }
+      })
+      return campus
+    })
+    await this.audit('academic_campus_updated', 'campus', id, context, before, updated, payload.reason)
+    return updated
+  }
+
+  async updateAcademicCourse(id: string, payload: Record<string, any>, context?: AuditContext) {
+    const before = await prisma.course.findUnique({ where: { id } })
+    if (!before || id === 'course-unassigned') return null
+    const courses = await prisma.course.findMany({ where: { id: { not: id } }, select: { name: true } })
+    if (courses.some((course) => canonicalAcademicName(course.name) === canonicalAcademicName(payload.name))) {
+      throw new ApiError(409, 'A course with this name already exists.', 'ACADEMIC_COURSE_DUPLICATE')
+    }
+
+    const updated = await prisma.$transaction(async (tx) => {
+      const course = await tx.course.update({
+        where: { id },
+        data: { name: payload.name, category: payload.category, duration: payload.duration }
+      })
+      const students = await tx.studentProfile.findMany({ where: { courseId: id }, select: { id: true, yearJoined: true } })
+      await Promise.all(students.map((student) => tx.studentProfile.update({
+        where: { id: student.id },
+        data: {
+          courseDuration: course.duration,
+          expectedGraduation: new Date(`${student.yearJoined + course.duration}-12-31T00:00:00.000Z`)
+        }
+      })))
+      return course
+    })
+    await this.audit('academic_course_updated', 'course', id, context, before, updated, payload.reason)
+    return updated
+  }
+
+  async updateAcademicUnit(id: string, payload: Record<string, any>, context?: AuditContext) {
+    const before = await prisma.knowledgeUnit.findUnique({ where: { id } })
+    if (!before) return null
+    const normalizedName = canonicalAcademicName(payload.name)
+    const duplicate = await prisma.knowledgeUnit.findFirst({ where: { normalizedName, id: { not: id } } })
+    if (duplicate) throw new ApiError(409, 'A unit with this name already exists.', 'ACADEMIC_UNIT_DUPLICATE')
+    const updated = await prisma.knowledgeUnit.update({ where: { id }, data: { name: payload.name, normalizedName } })
+    await this.audit('academic_unit_updated', 'knowledge_unit', id, context, before, updated, payload.reason)
+    return updated
+  }
+
   async writeSystemConfiguration(payload: Record<string, any>, context?: AuditContext) {
     const collection = payload.kind === 'feature_flag' ? featureFlags
       : payload.kind === 'notification_template' ? notificationTemplates
@@ -611,8 +875,10 @@ class AdminOperationsRepository {
       prisma.opportunity.count(),
       projects.listAll()
     ])
-    const revenue = transactions.reduce((sum, item) => sum + item.platformFee, 0)
-    const gmv = transactions.reduce((sum, item) => sum + item.amount, 0)
+    const revenue = transactions.reduce((sum, item) => sum + Math.abs(item.platformFee), 0)
+    const gmv = transactions.reduce((sum, item) => (
+      item.amount < 0 ? sum + Math.abs(item.amount) : sum
+    ), 0)
     return {
       summary: {
         activeStudents: students,

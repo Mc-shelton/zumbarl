@@ -12,21 +12,22 @@ import '../styles/marketplace-listing-studio.css'
 
 function MarketplaceListingStudioPage() {
   const studio = useMarketplaceListingStudio()
+  const isStudentKitchen = studio.vendorType === 'student_kitchen'
 
   return (
     <main className="campus-page marketplace-studio-page">
-      <Seo title={`${studio.isEdit ? 'Edit' : 'Create'} Marketplace Listing | Zumbarl`} description="Create a clear, trusted marketplace listing for the Zumbarl campus community." path="/campus/marketplace/listings/new" />
+      <Seo title={studio.foodMode ? `${studio.isEdit ? 'Edit' : 'Add'} Menu Item | Zumbarl` : `${studio.isEdit ? 'Edit' : 'Create'} Marketplace Listing | Zumbarl`} description={studio.foodMode ? 'Add a food item to your campus kitchen menu.' : 'Create a clear, trusted marketplace listing for the Zumbarl campus community.'} path="/campus/marketplace/listings/new" />
       <div className="campus-stage">
         <div className="campus-shell marketplace-studio-shell">
           <CampusSidebar activeItemId="marketplace" />
           <section className="campus-main marketplace-studio-main">
             <header className="marketplace-studio-header">
               <div className="marketplace-studio-header-copy">
-                <Breadcrumb items={[{ label: 'Marketplace', href: '/campus/opportunities/buy-sell' }, { label: studio.isEdit ? 'Edit listing' : 'Create listing' }]} />
+                <Breadcrumb items={studio.foodMode ? [{ label: 'Eatery', href: '/campus/eatery' }, { label: studio.vendorName || 'Student kitchen', href: studio.vendorSlug ? `/campus/vendors/${encodeURIComponent(studio.vendorSlug)}/manage` : '/campus/eatery' }, { label: studio.isEdit ? 'Edit menu item' : 'Add menu item' }] : [{ label: 'Marketplace', href: '/campus/opportunities/buy-sell' }, { label: studio.isEdit ? 'Edit listing' : 'Create listing' }]} />
                 <div className="marketplace-studio-kicker"><FiShoppingBag aria-hidden="true" /><span>{studio.foodMode ? 'Campus menu studio' : studio.vendorMode ? 'Vendor inventory studio' : 'Marketplace seller studio'}</span></div>
                 <h1>{studio.isEdit ? 'Edit your listing' : studio.foodMode ? 'Add a menu item' : studio.vendorMode ? 'Add vendor inventory' : 'Create a marketplace listing'}</h1>
-                <p>{studio.foodMode ? 'List today’s food and edibles for campus pickup — students order ahead and collect from your spot.' : `Give campus buyers everything they need to discover, trust, and order your ${studio.vendorMode ? 'vendor offering' : 'listing'}.`}</p>
-                <div className="marketplace-studio-trust-row"><span><FiShield /> Protected transactions</span><span><FiCheckCircle /> Campus-ready publishing</span></div>
+                <p>{studio.foodMode ? (isStudentKitchen ? 'List today’s food for campus pickup from the locations on your kitchen page.' : 'List today’s food for delivery to students on campus.') : `Give campus buyers everything they need to discover, trust, and order your ${studio.vendorMode ? 'vendor offering' : 'listing'}.`}</p>
+                <div className="marketplace-studio-trust-row"><span><FiShield /> {studio.foodMode ? 'Protected food orders' : 'Protected transactions'}</span><span><FiCheckCircle /> {studio.foodMode ? (isStudentKitchen ? 'Pickup locations ready' : 'Delivery ready') : 'Campus-ready publishing'}</span></div>
               </div>
               <aside className="marketplace-studio-header-side">
                 <CampusTopActions scope="campus" />

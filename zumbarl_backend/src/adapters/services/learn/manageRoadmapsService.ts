@@ -79,6 +79,9 @@ function mapEnrollment(enrollment: Record<string, any>) {
     verified: Boolean(enrollment.verifiedAt),
     verifiedAt: enrollment.verifiedAt,
     progressPercent: enrollment.progressPercent,
+    practiceSkillIds: enrollment.practiceSkillIds,
+    weeklyPracticeTarget: enrollment.weeklyPracticeTarget,
+    coachingUpdatedAt: enrollment.coachingUpdatedAt,
     createdAt: enrollment.createdAt,
     updatedAt: enrollment.updatedAt,
     evidence: enrollment.evidence.map((item: Record<string, any>) => ({
@@ -157,6 +160,18 @@ async function createRoadmapService(studentId: string | undefined, payload: Reco
 async function lockRoadmapService(id: string, studentId?: string) {
   const enrollment = await learnRoadmapsRepository.lockEnrollment(id, requireStudentId(studentId)) ?? notFound('Roadmap enrollment')
   return mapEnrollment(enrollment)
+}
+
+async function updateRoadmapCoachingFocusService(id: string, studentId: string | undefined, payload: Record<string, any>) {
+  const result = await learnRoadmapsRepository.updateCoachingFocus(id, requireStudentId(studentId), payload.skillIds, payload.weeklyTarget)
+  if (result === 'INVALID_SKILL') throw new ApiError(400, 'Choose skills from this career path', 'INVALID_COACHING_SKILL')
+  return mapEnrollment(result ?? notFound('Roadmap enrollment'))
+}
+
+async function readRoadmapCoachingPlanService(id: string, studentId?: string) {
+  const resolvedStudentId = requireStudentId(studentId)
+  await learnRoadmapsRepository.syncVerifiedActivityEvidence(id, resolvedStudentId)
+  return await learnRoadmapsRepository.readCoachingPlan(id, resolvedStudentId) ?? notFound('Roadmap enrollment')
 }
 
 async function addRoadmapEvidenceService(id: string, actor: AuthUser | undefined, payload: Record<string, any>) {
@@ -248,7 +263,9 @@ export {
   lockRoadmapService,
   readRoadmapService,
   readLearnBaselineService,
+  readRoadmapCoachingPlanService,
   submitLearningPracticeService,
+  updateRoadmapCoachingFocusService,
   verifyRoadmapEvidenceService,
   verifyRoadmapService
 }

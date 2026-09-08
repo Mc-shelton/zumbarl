@@ -30,6 +30,7 @@ function OpportunityPlaceBidPage() {
     onSaveDraft,
     onSubmitProposal,
     selectedGig,
+    rateGuidance,
     submittedBid,
     submitError,
   } = useOpportunityPlaceBidState()
@@ -68,6 +69,7 @@ function OpportunityPlaceBidPage() {
                     onMarkDirty={onMarkDirty}
                     onSaveDraft={onSaveDraft}
                     onSubmitProposal={onSubmitProposal}
+                    rateGuidance={rateGuidance}
                     selectedGig={selectedGig}
                     submitError={submitError}
                   />

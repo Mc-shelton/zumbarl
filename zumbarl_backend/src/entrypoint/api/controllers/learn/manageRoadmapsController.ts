@@ -10,8 +10,10 @@ import {
   listTransitionPoolsService,
   lockRoadmapService,
   readRoadmapService,
+  readRoadmapCoachingPlanService,
   readLearnBaselineService,
   submitLearningPracticeService,
+  updateRoadmapCoachingFocusService,
   verifyRoadmapEvidenceService,
   verifyRoadmapService
 } from '../../../../adapters/services/learn/index.js'
@@ -20,6 +22,7 @@ import {
   completeCheckpointTestSchema,
   createRoadmapSchema,
   submitLearningPracticeSchema,
+  updateRoadmapCoachingFocusSchema,
   verifyRoadmapEvidenceSchema
 } from '../../../validators/learn/index.js'
 
@@ -47,6 +50,16 @@ async function createRoadmapController(request: FastifyRequest, reply: FastifyRe
 async function lockRoadmapController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
   return reply.send(await lockRoadmapService(id, request.authUser?.studentId))
+}
+
+async function updateRoadmapCoachingFocusController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await updateRoadmapCoachingFocusService(id, request.authUser?.studentId, requireBody(updateRoadmapCoachingFocusSchema, request)))
+}
+
+async function readRoadmapCoachingPlanController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await readRoadmapCoachingPlanService(id, request.authUser?.studentId))
 }
 
 async function addRoadmapEvidenceController(request: FastifyRequest, reply: FastifyReply) {
@@ -94,7 +107,9 @@ export {
   lockRoadmapController,
   readRoadmapController,
   readLearnBaselineController,
+  readRoadmapCoachingPlanController,
   submitLearningPracticeController,
+  updateRoadmapCoachingFocusController,
   verifyRoadmapEvidenceController,
   verifyRoadmapController
 }

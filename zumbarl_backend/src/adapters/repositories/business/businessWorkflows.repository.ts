@@ -8,6 +8,8 @@ import {
   canAdvanceOpportunityToInProgress
 } from '../../../shared/opportunities/opportunityLifecycle.js'
 import { resolveBudgetAmount, shareOfAgreedTotal } from '../../../shared/projects/projectPayouts.js'
+import { normalizeCurrency, normalizeMoney } from '../../../shared/services/money.js'
+import { debitCompanyWallet } from '../../../shared/services/walletLedger.js'
 import { createSkillSlug, normalizeSkillName as normalizeCanonicalSkillName } from '../skills/index.js'
 
 const projects = createPrismaRecordRepository('projects')
@@ -109,7 +111,7 @@ async function resolveAwardTerms(transaction: Prisma.TransactionClient, bid: Awa
   const agreedAmount = bidAmount > 0 ? bidAmount : budgetAmount
   const agreedCurrency = bid.currency ?? bid.opportunity.currency ?? 'KES'
   const fundedHolds = await transaction.opportunityEscrowHold.findMany({
-    where: { opportunityId: bid.opportunityId, status: 'FUNDED' }
+    where: { opportunityId: bid.opportunityId, status: { in: ['FUNDED', 'HELD'] } }
   })
   const escrowCoverage = fundedHolds.reduce((total, hold) => total + toNumber(hold.amount), 0)
   return {
@@ -1484,14 +1486,17 @@ class BusinessWorkflowsRepository {
 
   fundOpportunity(id: string, payload: Record<string, any>, actorId?: string) {
     return prisma.$transaction(async (transaction) => {
+      await transaction.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `opportunity-funding:${id}`)
       const opportunity = await transaction.opportunity.findUnique({ where: { id } })
       if (!opportunity) return null
 
-      const existingEscrow = payload.reference
-        ? await transaction.opportunityEscrowHold.findFirst({
-            where: { opportunityId: id, transactionRef: payload.reference }
-          })
-        : null
+      const currency = normalizeCurrency(payload.currency ?? opportunity.currency ?? 'KES')
+      const amount = normalizeMoney(payload.amount, currency)
+      const reference = String(payload.reference || randomUUID())
+
+      const existingEscrow = await transaction.opportunityEscrowHold.findFirst({
+        where: { opportunityId: id, transactionRef: reference }
+      })
 
       if (existingEscrow) {
         const currentOpportunity = await transaction.opportunity.findUnique({
@@ -1505,18 +1510,27 @@ class BusinessWorkflowsRepository {
         return { opportunity: toOpportunity(currentOpportunity), escrow: existingEscrow }
       }
 
+      await debitCompanyWallet(transaction, opportunity.companyId, amount, {
+        type: 'ESCROW_HOLD',
+        currency,
+        reference: `opportunity-funding:${id}:${reference}`,
+        opportunityId: id,
+        description: `Opportunity escrow funding: ${opportunity.title}`,
+        metadata: { opportunityId: id, actorId, direction: 'company_debit', balanceKind: 'available' }
+      })
+
       const escrow = await transaction.opportunityEscrowHold.create({
         data: {
           opportunityId: id,
           companyId: opportunity.companyId,
-          amount: toNumber(payload.amount),
-          currency: payload.currency ?? 'KES',
+          amount,
+          currency,
           status: 'FUNDED',
-          transactionRef: payload.reference
+          transactionRef: reference
         }
       })
       const fundedHolds = await transaction.opportunityEscrowHold.findMany({
-        where: { opportunityId: id, status: 'FUNDED' },
+        where: { opportunityId: id, status: { in: ['FUNDED', 'HELD'] } },
         select: { amount: true }
       })
       const escrowCoverage = fundedHolds.reduce((total, hold) => total + toNumber(hold.amount), 0)
@@ -1545,7 +1559,7 @@ class BusinessWorkflowsRepository {
 
   async getOpportunityEscrowCoverage(id: string) {
     const holds = await prisma.opportunityEscrowHold.findMany({
-      where: { opportunityId: id, status: 'FUNDED' },
+      where: { opportunityId: id, status: { in: ['FUNDED', 'HELD'] } },
       select: { amount: true }
     })
     return holds.reduce((total, hold) => total + toNumber(hold.amount), 0)

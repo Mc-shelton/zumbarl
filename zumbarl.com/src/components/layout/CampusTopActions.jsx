@@ -11,8 +11,9 @@ import {
   markAllZumbarlNotificationsRead,
   markZumbarlNotificationRead,
 } from '../../features/campus/services/readNotifications'
-import { listConversations } from '../../features/messages/services/messageService'
+import { listConversations, listPageConversations, listProjectGroupConversations } from '../../features/messages/services/messageService'
 import { playNotificationSound } from '../../features/communications/services/communicationSounds'
+import { subscribeToRealtimeEvents } from '../../features/communications/services/realtimeService'
 
 const ACTION_ACCESS_KEYS = {
   campus: {
@@ -155,20 +156,35 @@ function CampusTopActions({
   }, [canOpenNotifications, loadNotifications])
 
   useEffect(() => {
+    if (!canOpenNotifications) return undefined
+    const controller = new AbortController()
+    subscribeToRealtimeEvents((event) => {
+      if (event.type === 'notification.created') loadNotifications({ notify: true })
+    }, controller.signal).catch(() => {})
+    return () => controller.abort()
+  }, [canOpenNotifications, loadNotifications])
+
+  useEffect(() => {
     if (!canOpenMessages) return undefined
     let isMounted = true
-    const loadUnreadMessages = () => listConversations()
-      .then((response) => {
-        if (isMounted) setUnreadMessageCount(response?.unreadCount || 0)
+    const loadUnreadMessages = () => Promise.all([listConversations(), listPageConversations(), listProjectGroupConversations()])
+      .then(([directResponse, pageResponse, groupResponse]) => {
+        if (isMounted) setUnreadMessageCount(
+          Number(directResponse?.unreadCount || 0) + Number(pageResponse?.unreadCount || 0) + Number(groupResponse?.unreadCount || 0),
+        )
       })
       .catch(() => {})
     const handleMessage = () => loadUnreadMessages()
     loadUnreadMessages()
     window.addEventListener('zumbarl:message-created', handleMessage)
+    window.addEventListener('zumbarl:page-message-created', handleMessage)
+    window.addEventListener('zumbarl:page-conversation-created', handleMessage)
     window.addEventListener('zumbarl:messages-read', handleMessage)
     return () => {
       isMounted = false
       window.removeEventListener('zumbarl:message-created', handleMessage)
+      window.removeEventListener('zumbarl:page-message-created', handleMessage)
+      window.removeEventListener('zumbarl:page-conversation-created', handleMessage)
       window.removeEventListener('zumbarl:messages-read', handleMessage)
     }
   }, [canOpenMessages])

@@ -5,6 +5,11 @@ const createRoadmapSchema = z.object({
   intent: z.enum(['explore', 'earn-while-learning', 'attachment-readiness', 'internship-readiness', 'job-readiness'])
 })
 
+const updateRoadmapCoachingFocusSchema = z.object({
+  skillIds: z.array(z.string().min(1)).min(1).max(5),
+  weeklyTarget: z.coerce.number().int().min(1).max(7).default(3)
+})
+
 const addRoadmapEvidenceSchema = z.object({
   checkpointId: z.string(),
   competencyId: z.string().optional(),
@@ -139,6 +144,7 @@ const updateKnowledgePostSchema = z.object({
 
 export {
   createRoadmapSchema,
+  updateRoadmapCoachingFocusSchema,
   addRoadmapEvidenceSchema,
   completeCheckpointTestSchema,
   createKnowledgeRoomMessageSchema,

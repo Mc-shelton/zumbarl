@@ -24,6 +24,13 @@ export const CAMPUS_NAV_ITEMS = [
     requiredAccess: ACCESS_KEYS.marketplace.view,
   },
   {
+    id: 'eatery',
+    label: 'Eatery',
+    icon: 'coffee',
+    href: '/campus/eatery',
+    requiredAccess: ACCESS_KEYS.marketplace.view,
+  },
+  {
     id: 'wellbeing',
     label: 'Wellbeing',
     icon: 'heart',

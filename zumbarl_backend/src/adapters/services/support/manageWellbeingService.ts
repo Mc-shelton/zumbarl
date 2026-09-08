@@ -1,5 +1,5 @@
 import { forbidden, notFound } from '../../../lib/http.js'
-import { wellbeingRepository } from '../../repositories/support/index.js'
+import { supportCasesRepository, wellbeingRepository } from '../../repositories/support/index.js'
 import { generateWellbeingAssistantReply } from '../ai/anthropicAssistant.js'
 
 const MOOD_SCORE: Record<string, number> = {
@@ -81,6 +81,16 @@ function patternFromCheckIns(checkIns: Array<Record<string, any>>) {
     message: 'Sleep has been difficult on several recent check-ins. A gentler evening reset may help tonight.',
     suggestion: { id: 'talk', label: 'Talk through what is keeping you up', kind: 'talk' },
   }
+  if (primary === 'substance_use') return {
+    checkInDays, dominantStressors, poorSleepCount, overwhelmedCount, direction,
+    message: 'Substance use has appeared more than once. You deserve support without blame, and you can choose whether to involve a person.',
+    suggestion: { id: 'care', label: 'See private recovery support', kind: 'care' },
+  }
+  if (primary === 'peer_pressure') return {
+    checkInDays, dominantStressors, poorSleepCount, overwhelmedCount, direction,
+    message: 'Peer pressure has been showing up. A private plan can help you practise boundaries and identify people who feel safer.',
+    suggestion: { id: 'care', label: 'See boundaries support', kind: 'care' },
+  }
   if (primary === 'money') return {
     checkInDays, dominantStressors, poorSleepCount, overwhelmedCount, direction,
     message: 'Money pressure has appeared more than once. We can separate the immediate worry from the practical options.',
@@ -115,7 +125,7 @@ function classifyRisk(message: string) {
 
 function actionsForMessage(message: string, riskLevel: string) {
   if (riskLevel === 'urgent') return [
-    { id: 'human-help', label: 'Get human help now', kind: 'human-help', href: '/campus/wellbeing#human-help' },
+    { id: 'human-handoff', label: 'Ask the support team to follow up', kind: 'human-handoff', href: '/campus/wellbeing#human-help' },
     { id: 'safety-help', label: 'Open safety help', kind: 'link', href: '/help' },
   ]
   const actions: Array<Record<string, string>> = [{ id: 'reset', label: 'Take a three-minute reset', kind: 'reset' }]
@@ -240,6 +250,27 @@ async function createWellbeingConversationMessageService(studentId: string | und
   }
 }
 
+async function requestWellbeingHumanHandoffService(studentId: string | undefined, conversationId: string, payload: Record<string, any>) {
+  const id = requireStudentId(studentId)
+  const conversation = await wellbeingRepository.findConversation(conversationId, id)
+  if (!conversation) notFound('Wellbeing conversation')
+  const latestStudentMessage = [...conversation.messages].reverse().find((message) => message.role === 'user')
+  const sharedContext = payload.shareLatestMessage && latestStudentMessage
+    ? ` Shared message: ${latestStudentMessage.body}`
+    : ''
+  return supportCasesRepository.createWellnessReport({
+    studentId: id,
+    category: 'counseling',
+    anonymous: false,
+    urgency: conversation.riskLevel === 'urgent' ? 'high' : 'normal',
+    status: 'open',
+    message: `The student explicitly requested a human follow-up from Talk It Out.${sharedContext}${payload.note ? ` Note: ${payload.note}` : ''}`,
+    sourceConversationId: conversationId,
+    consentedAt: new Date().toISOString(),
+    sharedLatestMessage: Boolean(payload.shareLatestMessage)
+  })
+}
+
 export {
   classifyRisk,
   completeWellbeingResetService,
@@ -249,5 +280,6 @@ export {
   patternFromCheckIns,
   readWellbeingConversationService,
   readWellbeingDashboardService,
+  requestWellbeingHumanHandoffService,
   updateWellbeingPreferenceService,
 }

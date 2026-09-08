@@ -15,6 +15,8 @@ function CampusCartPage() {
     handleClearCart,
     handleQuantityChange,
     handleFulfilmentChange,
+    handleErrandDelivery,
+    handleFreeCampusDelivery,
     handleZumbarlDeliveryQuote,
     handleRemoveItem,
     promoCode,
@@ -26,6 +28,7 @@ function CampusCartPage() {
     <CartShell
       rail={(
         <CartSummaryRail
+          items={cartItems}
           promoCode={promoCode}
           setPromoCode={setPromoCode}
           totals={totals}
@@ -46,6 +49,8 @@ function CampusCartPage() {
         items={cartItems}
         onQuantityChange={handleQuantityChange}
         onFulfilmentChange={handleFulfilmentChange}
+        onErrandDelivery={handleErrandDelivery}
+        onFreeCampusDelivery={handleFreeCampusDelivery}
         onZumbarlDeliveryQuote={handleZumbarlDeliveryQuote}
         onRemoveItem={handleRemoveItem}
       />

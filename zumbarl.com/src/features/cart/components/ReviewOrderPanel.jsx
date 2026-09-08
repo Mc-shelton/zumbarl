@@ -1,5 +1,6 @@
 import {
   FiArrowRight,
+  FiGift,
   FiLock,
   FiMail,
   FiMapPin,
@@ -15,7 +16,7 @@ import {
 } from '../checkoutData'
 import { formatKes, getLineItemPrice, getLineItemQuantity } from '../pricing'
 
-export function ReviewOrderPanel({ error = '', isPlacingOrder = false, items, onBack, onPlaceOrder }) {
+export function ReviewOrderPanel({ error = '', hasUnavailableItems = false, isPlacingOrder = false, items, onBack, onPlaceOrder }) {
   return (
     <section className="campus-checkout-panel campus-review-stack">
       <DeliveryInformationCard />
@@ -29,7 +30,7 @@ export function ReviewOrderPanel({ error = '', isPlacingOrder = false, items, on
           <FiArrowRight aria-hidden="true" />
           Back to Payment
         </button>
-        <button type="button" className="campus-checkout-next-btn" disabled={isPlacingOrder || !items.length} onClick={onPlaceOrder}>
+        <button type="button" className="campus-checkout-next-btn" disabled={isPlacingOrder || hasUnavailableItems || !items.length} onClick={onPlaceOrder}>
           <FiLock aria-hidden="true" />
           {isPlacingOrder ? 'Placing Order…' : 'Place Order'}
           <FiArrowRight aria-hidden="true" />
@@ -105,6 +106,8 @@ function ReviewItemsCard({ items }) {
               <div>
                 <h3>{item.title}</h3>
                 <p>Qty: {quantity}</p>
+                {item.fulfilment?.method === 'errand_delivery' ? <p className="campus-review-selected-errander"><FiTruck aria-hidden="true" /> Campus errand delivery · {formatKes(Number(item.fulfilment.fee || 0))}</p> : null}
+                {item.fulfilment?.method === 'free_campus_delivery' ? <p className="campus-review-selected-errander is-free"><FiGift aria-hidden="true" /> Free delivery by {item.shopName || 'the business'}</p> : null}
               </div>
               <strong>{formatKes(lineTotal)}</strong>
             </article>

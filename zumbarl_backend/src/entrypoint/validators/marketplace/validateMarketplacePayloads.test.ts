@@ -1,7 +1,25 @@
 import { describe, expect, it } from 'vitest'
-import { campusVendorListingSchema, cartItemSchema, listingSchema, marketplaceListingUpdateSchema, vendorPostSchema } from './validateMarketplacePayloads.js'
+import { campusVendorListingSchema, cartItemSchema, errandStatusSchema, listingSchema, managedVendorUpdateSchema, marketplaceListingUpdateSchema, shopErrandsSchema, studentKitchenSchema, vendorPostSchema } from './validateMarketplacePayloads.js'
 
 describe('marketplace service validation', () => {
+  it('requires the buyer delivery code only at the delivered checkpoint', () => {
+    expect(errandStatusSchema.safeParse({ status: 'PICKED_UP' }).success).toBe(true)
+    expect(errandStatusSchema.safeParse({ status: 'DELIVERED' }).success).toBe(false)
+    expect(errandStatusSchema.safeParse({ status: 'DELIVERED', confirmationCode: '128904' }).success).toBe(true)
+    expect(errandStatusSchema.safeParse({ status: 'DELIVERED', confirmationCode: '12890' }).success).toBe(false)
+  })
+
+  it('accepts an admin-set delivery rate for a business page', () => {
+    const result = shopErrandsSchema.safeParse({ acceptingErranders: true, deliveryFee: '150', enabled: true, freeCampusDelivery: false })
+
+    expect(result.success).toBe(true)
+    expect(result.success && result.data.deliveryFee).toBe(150)
+  })
+
+  it('rejects a page delivery rate above the supported range', () => {
+    expect(shopErrandsSchema.safeParse({ acceptingErranders: true, deliveryFee: 5001, enabled: true, freeCampusDelivery: false }).success).toBe(false)
+  })
+
   it('accepts an appointment-based campus service listing', () => {
     const result = listingSchema.safeParse({
       title: 'Campus barber',
@@ -19,18 +37,21 @@ describe('marketplace service validation', () => {
     expect(result.success).toBe(true)
   })
 
-  it('stores a timed order-ahead request in the cart contract', () => {
+  it('adds an order-ahead item without requiring a scheduled time', () => {
     const result = cartItemSchema.safeParse({
       listingId: 'campus-eatery-lunch',
       quantity: 1,
-      serviceRequest: {
-        mode: 'order_ahead',
-        time: '12:30',
-        notes: 'No chilli',
-      },
     })
 
     expect(result.success).toBe(true)
+  })
+
+  it('rejects legacy scheduling data for order-ahead items', () => {
+    expect(cartItemSchema.safeParse({
+      listingId: 'campus-eatery-lunch',
+      quantity: 1,
+      serviceRequest: { mode: 'order_ahead', time: '12:30' },
+    }).success).toBe(false)
   })
 
   it('rejects service requests without a fulfilment time', () => {
@@ -91,5 +112,23 @@ describe('marketplace service validation', () => {
     expect(result.success).toBe(true)
     expect(result.success && result.data.inventoryType).toBe('food')
     expect(result.success && result.data.ingredients).toContain('chapati flour')
+  })
+
+  it('requires a student kitchen to list at least one pickup location', () => {
+    const baseKitchen = {
+      name: 'Jane’s Kitchen',
+      description: 'Fresh student-made meals available every weekday.',
+      locationLabel: 'Hostel B entrance',
+    }
+
+    expect(studentKitchenSchema.safeParse({ ...baseKitchen, pickupSpots: [] }).success).toBe(false)
+    expect(studentKitchenSchema.safeParse({ ...baseKitchen, pickupSpots: ['Hostel B entrance', 'Student centre gate'] }).success).toBe(true)
+  })
+
+  it('accepts updated pickup locations for a managed student kitchen', () => {
+    const result = managedVendorUpdateSchema.safeParse({ pickupSpots: ['Library courtyard', 'Hostel C gate'] })
+
+    expect(result.success).toBe(true)
+    expect(result.success && result.data.pickupSpots).toHaveLength(2)
   })
 })

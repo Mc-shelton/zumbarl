@@ -68,6 +68,7 @@ async function buildApp() {
   await app.register(fastifyStatic, {
     root: LOCAL_STORAGE_ROOT,
     prefix: `${LOCAL_STORAGE_PUBLIC_PREFIX}/`,
+    allowedPath: (pathName) => !pathName.replace(/^\/+/, '').startsWith('zumbarl-kyc-private/'),
     decorateReply: false
   })
   await app.register(swagger, {

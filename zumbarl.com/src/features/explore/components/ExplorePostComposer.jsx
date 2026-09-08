@@ -15,7 +15,7 @@ import {
   FiUploadCloud,
   FiX,
 } from "react-icons/fi";
-import { useDialog } from "../../../components/ui";
+import { ImageCropper, useDialog } from "../../../components/ui";
 import { normalizeZumbarlFileUrl } from "../../../lib/normalizeZumbarlFileUrl";
 import { uploadZumbarlFile } from "../../../lib/uploadZumbarlFile";
 import {
@@ -420,20 +420,22 @@ function ExplorePostComposer({
               </label>
               {activeEdit ? (
                 <section className="explore-post-media-editor">
-                  <div className="explore-post-media-stage">
-                    {activeEdit.type === "video" ? (
+                  {activeEdit.type === "video" ? (
+                    <div className="explore-post-media-stage">
                       <video src={activeEdit.previewUrl} controls />
-                    ) : (
-                      <img
-                        src={activeEdit.previewUrl}
-                        alt="Post preview"
-                        style={{
-                          objectPosition: `${activeEdit.positionX}% ${activeEdit.positionY}%`,
-                          transform: `scale(${activeEdit.zoom})`,
-                        }}
-                      />
-                    )}
-                  </div>
+                    </div>
+                  ) : (
+                    <ImageCropper
+                      className="is-compact"
+                      src={activeEdit.previewUrl}
+                      value={activeEdit}
+                      onChange={patchEdit}
+                      aspectRatio={4 / 3}
+                      aspectLabel="4:3 post · locked"
+                      alt="Post image being cropped"
+                      maxStageHeight={300}
+                    />
+                  )}
                   <div className="explore-post-media-thumbs">
                     {mediaEdits.map((edit, index) => (
                       <article
@@ -482,47 +484,7 @@ function ExplorePostComposer({
                       </article>
                     ))}
                   </div>
-                  {activeEdit.type === "image" ? (
-                    <div className="explore-post-edit-controls">
-                      <label>
-                        Zoom
-                        <input
-                          type="range"
-                          min="1"
-                          max="3"
-                          step=".05"
-                          value={activeEdit.zoom}
-                          onChange={(e) =>
-                            patchEdit({ zoom: Number(e.target.value) })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Horizontal position
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={activeEdit.positionX}
-                          onChange={(e) =>
-                            patchEdit({ positionX: Number(e.target.value) })
-                          }
-                        />
-                      </label>
-                      <label>
-                        Vertical position
-                        <input
-                          type="range"
-                          min="0"
-                          max="100"
-                          value={activeEdit.positionY}
-                          onChange={(e) =>
-                            patchEdit({ positionY: Number(e.target.value) })
-                          }
-                        />
-                      </label>
-                    </div>
-                  ) : (
+                  {activeEdit.type === "video" ? (
                     <div className="explore-post-edit-controls">
                       <label>
                         Start at (seconds)
@@ -553,7 +515,7 @@ function ExplorePostComposer({
                         />
                       </label>
                     </div>
-                  )}
+                  ) : null}
                 </section>
               ) : null}
             </>
@@ -582,16 +544,16 @@ function ExplorePostComposer({
               </label>
               {activeEdit ? (
                 <div className="explore-event-thumbnail-editor">
-                  <div className="explore-post-media-stage">
-                    <img
-                      src={activeEdit.previewUrl}
-                      alt="Event thumbnail preview"
-                      style={{
-                        objectPosition: `${activeEdit.positionX}% ${activeEdit.positionY}%`,
-                        transform: `scale(${activeEdit.zoom})`,
-                      }}
-                    />
-                  </div>
+                  <ImageCropper
+                    className="is-compact"
+                    src={activeEdit.previewUrl}
+                    value={activeEdit}
+                    onChange={patchEdit}
+                    aspectRatio={16 / 7}
+                    aspectLabel="Event banner · locked"
+                    alt="Event thumbnail being cropped"
+                    maxStageHeight={260}
+                  />
                   <button
                     type="button"
                     className="explore-event-thumbnail-remove"
@@ -599,45 +561,6 @@ function ExplorePostComposer({
                   >
                     <FiTrash2 /> Remove thumbnail
                   </button>
-                  <div className="explore-post-edit-controls">
-                    <label>
-                      Zoom
-                      <input
-                        type="range"
-                        min="1"
-                        max="3"
-                        step=".05"
-                        value={activeEdit.zoom}
-                        onChange={(e) =>
-                          patchEdit({ zoom: Number(e.target.value) })
-                        }
-                      />
-                    </label>
-                    <label>
-                      Horizontal position
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={activeEdit.positionX}
-                        onChange={(e) =>
-                          patchEdit({ positionX: Number(e.target.value) })
-                        }
-                      />
-                    </label>
-                    <label>
-                      Vertical position
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={activeEdit.positionY}
-                        onChange={(e) =>
-                          patchEdit({ positionY: Number(e.target.value) })
-                        }
-                      />
-                    </label>
-                  </div>
                 </div>
               ) : null}
               <label>

@@ -30,7 +30,7 @@ async function runMatchingJob() {
     for (const availability of availabilities) {
       const student = availability.student
       const requiredCompetencies = cohort.program.competencies.filter((item) => item.required)
-      const verifiedCompetencies = requiredCompetencies.filter((requirement) => student.competencyStates.some((state) => state.competencyId === requirement.competencyId && state.status === 'VERIFIED' && state.evidenceScore >= requirement.minimumScore))
+      const verifiedCompetencies = requiredCompetencies.filter((requirement) => student.competencyStates.some((state) => state.competencyId === requirement.competencyId && ['VERIFIED', 'EVIDENCE_VERIFIED'].includes(state.status) && state.evidenceScore >= requirement.minimumScore))
       const requiredSkills = cohort.program.skills.filter((item) => item.required)
       const verifiedSkills = requiredSkills.filter((requirement) => student.studentSkills.some((skill) => skill.skillId === requirement.skillId && skill.verifiedByGigs > 0))
       const activeOverride = transitionOverrides.has(student.id)

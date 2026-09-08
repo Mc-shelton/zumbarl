@@ -5,7 +5,9 @@ import {
   readMilestoneBudget
 } from '../../../shared/projects/milestoneBudget.js'
 import { creditStudentWallet } from '../../../shared/services/walletLedger.js'
-import { createPrismaRecordRepository } from '../../../shared/repositories/index.js'
+import { consumeOpportunityEscrow } from '../../../shared/services/opportunityEscrow.js'
+import { normalizeMoney } from '../../../shared/services/money.js'
+import { createPrismaRecordRepository, createPrismaRecordRepositoryWithClient } from '../../../shared/repositories/index.js'
 
 const projects = createPrismaRecordRepository('projects')
 const milestones = createPrismaRecordRepository('milestones')
@@ -266,10 +268,14 @@ class MilestoneWorkspaceRepository {
   // months pays as it goes instead of holding everything to the end. A payout is
   // recorded per task, so this is safe to run repeatedly.
   async settleApprovedTaskPayouts(projectId: string) {
-    const [tasks, deliverables] = await Promise.all([
+    const [project, tasks, deliverables, projectMilestones] = await Promise.all([
+      projects.findById(projectId),
       prisma.deliverableTask.findMany({ where: { projectId } }),
-      prisma.milestoneDeliverable.findMany({ where: { projectId } })
+      prisma.milestoneDeliverable.findMany({ where: { projectId } }),
+      milestones.listAll((item) => item.projectId === projectId)
     ])
+    if (!project) return { settled: 0, amount: 0 }
+    const currency = String(project.agreedCurrency || 'KES').toUpperCase()
 
     const payable = tasks.filter((task) => (
       task.status === 'done' && task.ownerId && !task.paidAmount && task.milestoneDeliverableId
@@ -282,21 +288,49 @@ class MilestoneWorkspaceRepository {
     for (const task of payable) {
       const deliverable = deliverables.find((item) => item.id === task.milestoneDeliverableId)
       if (!deliverable || deliverable.status === DORMANT_STATUS) continue
+      const milestone = projectMilestones.find((item) => item.id === task.milestoneId)
+      if (!project.opportunityId && milestone?.fundingStatus !== 'funded') continue
 
       const siblings = tasks.filter((item) => item.milestoneDeliverableId === deliverable.id)
-      const payout = getTaskPayableAmount(task, siblings, deliverable.budgetAmount)
+      const payout = normalizeMoney(getTaskPayableAmount(task, siblings, deliverable.budgetAmount), currency)
       if (payout <= 0) continue
 
-      await prisma.$transaction(async (tx) => {
-        await tx.deliverableTask.update({
-          where: { id: task.id },
+      const paid = await prisma.$transaction(async (tx) => {
+        const claimed = await tx.deliverableTask.updateMany({
+          where: { id: task.id, status: 'done', paidAmount: null },
           data: { paidAmount: payout, paidAt: new Date() }
         })
-        await creditStudentWallet(tx, task.ownerId as string, payout, {
-          description: `Weekly payout for approved work: ${task.title}`,
-          metadata: { projectId, taskId: task.id, milestoneDeliverableId: deliverable.id }
+        if (claimed.count !== 1) return false
+        const transactionPayouts = createPrismaRecordRepositoryWithClient(tx, 'payouts')
+        const payoutRecord = await transactionPayouts.create({
+          projectId,
+          milestoneId: task.milestoneId ?? null,
+          scopeItemId: task.scopeItemId ?? null,
+          deliverableId: task.milestoneDeliverableId,
+          taskId: task.id,
+          studentId: task.ownerId,
+          payoutKind: 'task_interim',
+          status: 'paid',
+          amount: payout,
+          currency,
+          paidAt: new Date().toISOString()
         })
+        if (project.opportunityId) {
+          await consumeOpportunityEscrow(tx, project.opportunityId, payout, {
+            currency,
+            studentId: task.ownerId,
+            releaseReference: `project-task-payout:${payoutRecord.id}`
+          })
+        }
+        await creditStudentWallet(tx, task.ownerId as string, payout, {
+          currency,
+          description: `Weekly payout for approved work: ${task.title}`,
+          opportunityId: project.opportunityId ?? null,
+          metadata: { projectId, taskId: task.id, milestoneDeliverableId: deliverable.id, payoutId: payoutRecord.id }
+        })
+        return true
       })
+      if (!paid) continue
 
       // Keep the in-memory copy current so later tasks in this run see the
       // reduced remaining budget rather than all drawing from the full amount.

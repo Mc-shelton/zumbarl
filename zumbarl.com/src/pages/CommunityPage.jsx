@@ -199,7 +199,7 @@ function CommunityPage() {
       setSelectedGroupId(normalized.id)
       setGroupDraft(EMPTY_GROUP)
       setIsCreateOpen(false)
-      setNotice(`${normalized.name} is ready for its first members.`)
+      setNotice(normalized.category === 'support-circle' ? `${normalized.name} was sent for safeguarding review before it opens.` : `${normalized.name} is ready for its first members.`)
     } catch (requestError) {
       setError(requestError.message || 'The community space could not be created.')
     } finally {

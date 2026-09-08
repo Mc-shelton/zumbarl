@@ -101,7 +101,8 @@ function ListingMediaStep({ addImageUrl, form, foodMode, isUploading, removeImag
   )
 }
 
-function ListingPricingStep({ form, foodMode, updateField }) {
+function ListingPricingStep({ form, foodMode, updateField, vendorType }) {
+  const isStudentKitchen = vendorType === 'student_kitchen'
   return (
     <section className="marketplace-studio-step-panel">
       <header><span>03</span><div><h2>Set price and availability</h2><p>{foodMode ? 'Price the item and tell students how many servings you have today.' : 'Control how the listing is priced, negotiated and taken out of stock.'}</p></div></header>
@@ -112,7 +113,7 @@ function ListingPricingStep({ form, foodMode, updateField }) {
       {foodMode ? (
         <>
           <article className="marketplace-studio-toggle-row"><div><strong>Available to order today</strong><p>Turn this off when today’s servings run out — students will see the item as unavailable.</p></div><button type="button" role="switch" aria-checked={form.availableToday} className={form.availableToday ? 'is-on' : ''} onClick={() => updateField('availableToday', !form.availableToday)}><span /></button></article>
-          <div className="marketplace-studio-pricing-note"><FiBox aria-hidden="true" /><p><strong>Campus pickup only.</strong> Food orders are collected from your campus spot, so there is nothing to configure here — buyers are told where to find you automatically.</p></div>
+          <div className="marketplace-studio-pricing-note"><FiBox aria-hidden="true" /><p>{isStudentKitchen ? <><strong>Pickup from your listed locations.</strong> Buyers choose one of your kitchen’s pickup points during checkout.</> : <><strong>Delivery only.</strong> Campus eateries do not offer collection because their serving areas can become crowded. Your page’s enabled delivery option is shown at checkout.</>}</p></div>
         </>
       ) : (
         <>
@@ -204,20 +205,21 @@ function ListingFulfilmentStep({ form, toggleDeliveryOption, updateField }) {
   )
 }
 
-function ListingReviewStep({ activeStep, form, foodMode, goToStep }) {
+function ListingReviewStep({ activeStep, form, foodMode, goToStep, vendorType }) {
   const cover = form.gallery[0] || '/assets/index/business_page_images/optimized/product-school-XZkk5xT8Xrk-unsplash.webp'
   const priceText = new Intl.NumberFormat('en-KE', { style: 'currency', currency: 'KES', maximumFractionDigits: 0 }).format(Number(form.priceAmount) || 0)
+  const isStudentKitchen = vendorType === 'student_kitchen'
   return (
     <section className="marketplace-studio-step-panel marketplace-studio-review">
       <header><span>{String(activeStep).padStart(2, '0')}</span><div><h2>Review your {foodMode ? 'menu item' : 'listing'}</h2><p>Check the buyer-facing preview and the operational details before publishing.</p></div></header>
-      <article className="marketplace-studio-review-preview"><img src={cover} alt={foodMode ? 'Menu item cover preview' : 'Listing cover preview'} /><div><span>{foodMode ? `${(FOOD_TYPES.find((type) => type.id === form.foodType) || FOOD_TYPES[0]).label} · ${form.category}` : `${form.category}${form.kind === 'product' ? ` · ${form.condition}` : ` · ${form.serviceMode.replace('_', ' ')}`}`}</span><h3>{form.title || (foodMode ? 'Your menu item name' : 'Your listing title')}</h3><p>{form.subtitle || form.description || 'Your listing description will appear here.'}</p><strong>{priceText}</strong><small>{form.stock} {foodMode ? 'servings today · Pickup on campus' : form.kind === 'service' ? 'slots available' : 'in stock'}{foodMode ? '' : ` · ${form.locationLabel || 'Location not set'}`}</small></div></article>
+      <article className="marketplace-studio-review-preview"><img src={cover} alt={foodMode ? 'Menu item cover preview' : 'Listing preview'} /><div><span>{foodMode ? `${(FOOD_TYPES.find((type) => type.id === form.foodType) || FOOD_TYPES[0]).label} · ${form.category}` : `${form.category}${form.kind === 'product' ? ` · ${form.condition}` : ` · ${form.serviceMode.replace('_', ' ')}`}`}</span><h3>{form.title || (foodMode ? 'Your menu item name' : 'Your listing title')}</h3><p>{form.subtitle || form.description || 'Your listing description will appear here.'}</p><strong>{priceText}</strong><small>{form.stock} {foodMode ? `servings today · ${isStudentKitchen ? 'Pickup on campus' : 'Delivery only'}` : form.kind === 'service' ? 'slots available' : 'in stock'}{foodMode ? '' : ` · ${form.locationLabel || 'Location not set'}`}</small></div></article>
       <div className="marketplace-studio-review-sections">
         {foodMode ? (
           <>
             <article><header><h3>Menu information</h3><button type="button" onClick={() => goToStep(1)}>Edit</button></header><dl><div><dt>Food type</dt><dd>{(FOOD_TYPES.find((type) => type.id === form.foodType) || FOOD_TYPES[0]).label}</dd></div><div><dt>Category</dt><dd>{form.category}</dd></div><div><dt>Description</dt><dd>{form.description || 'Not provided'}</dd></div></dl></article>
             <article><header><h3>Food details</h3><button type="button" onClick={() => goToStep(2)}>Edit</button></header><dl><div><dt>Images</dt><dd>{form.gallery.length}</dd></div><div><dt>Portion size</dt><dd>{form.portionSize || 'Not specified'}</dd></div><div><dt>Preparation time</dt><dd>{form.preparationMinutes} minutes</dd></div><div><dt>Ingredients</dt><dd>{form.ingredients || 'Not listed'}</dd></div><div><dt>Allergens</dt><dd>{form.allergens || 'None listed'}</dd></div></dl></article>
             <article><header><h3>Price &amp; availability</h3><button type="button" onClick={() => goToStep(3)}>Edit</button></header><dl><div><dt>Price</dt><dd>{priceText}</dd></div><div><dt>Servings today</dt><dd>{form.stock}</dd></div><div><dt>Offers</dt><dd>Fixed price</dd></div><div><dt>Available today</dt><dd>{form.availableToday ? 'Yes' : 'No — shown as unavailable'}</dd></div></dl></article>
-            <article><header><h3>Campus pickup</h3><button type="button" onClick={() => goToStep(3)}>Edit</button></header><dl><div><dt>Handoff</dt><dd>Campus pickup only — no delivery setup needed</dd></div><div><dt>Pickup spot</dt><dd>{form.locationLabel || 'Your campus location'}</dd></div><div><dt>Cancellation</dt><dd>{form.returnPolicy || 'Food orders can only be cancelled before preparation begins.'}</dd></div></dl></article>
+            <article><header><h3>{isStudentKitchen ? 'Campus pickup' : 'Order handoff'}</h3><button type="button" onClick={() => goToStep(3)}>Edit</button></header><dl><div><dt>Handoff</dt><dd>{isStudentKitchen ? 'Buyer chooses one of the kitchen’s listed pickup locations' : 'Delivery only — customer pickup is unavailable'}</dd></div><div><dt>{isStudentKitchen ? 'Pickup points' : 'Delivery'}</dt><dd>{isStudentKitchen ? 'Managed from the kitchen page settings' : 'Configured from the eatery page'}</dd></div><div><dt>Cancellation</dt><dd>{form.returnPolicy || 'Food orders can only be cancelled before preparation begins.'}</dd></div></dl></article>
           </>
         ) : (
           <>

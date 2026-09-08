@@ -83,13 +83,15 @@ const campusVendorSchema = z.object({
   campusManagedProfileId: z.string().min(1),
   managerUserId: z.string().min(1),
   description: z.string().trim().max(1000).optional(),
+  deliveryFee: z.coerce.number().min(0).max(5000).default(0),
   locationLabel: z.string().trim().max(160).optional()
 })
 const campusVendorUpdateSchema = z.object({
-  type: z.enum(['hotel', 'barber_shop', 'service']).optional(),
+  type: z.enum(['hotel', 'barber_shop', 'service', 'student_kitchen']).optional(),
   name: z.string().trim().min(2).max(120).optional(),
   campusManagedProfileId: z.string().min(1).optional(),
   description: z.string().trim().max(1000).nullable().optional(),
+  deliveryFee: z.coerce.number().min(0).max(5000).optional(),
   locationLabel: z.string().trim().max(160).nullable().optional(),
   logoUrl: z.string().trim().max(2000).nullable().optional(),
   coverImageUrl: z.string().trim().max(2000).nullable().optional()
@@ -97,6 +99,33 @@ const campusVendorUpdateSchema = z.object({
 const campusVendorManagerSchema = z.object({
   email: z.string().email(),
   role: z.enum(['admin', 'editor']).default('editor')
+})
+const campusVendorReviewSchema = z.object({
+  decision: z.enum(['approved', 'rejected']),
+  reason: z.string().trim().min(3).max(500)
+})
+
+const academicCampusUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  branch: z.string().trim().max(120).nullable().optional(),
+  city: z.string().trim().min(2).max(120),
+  locationLabel: z.string().trim().max(300).nullable().optional(),
+  latitude: z.coerce.number().min(-90).max(90).nullable().optional(),
+  longitude: z.coerce.number().min(-180).max(180).nullable().optional(),
+  isActive: z.coerce.boolean(),
+  reason: z.string().trim().min(3).max(500)
+})
+
+const academicCourseUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(160),
+  category: z.enum(['STEM', 'BUSINESS', 'COMMERCE', 'ARTS', 'OTHER']),
+  duration: z.coerce.number().int().min(1).max(10),
+  reason: z.string().trim().min(3).max(500)
+})
+
+const academicUnitUpdateSchema = z.object({
+  name: z.string().trim().min(2).max(160),
+  reason: z.string().trim().min(3).max(500)
 })
 
 export {
@@ -112,5 +141,9 @@ export {
   updateModerationCaseSchema,
   campusVendorSchema,
   campusVendorUpdateSchema,
-  campusVendorManagerSchema
+  campusVendorManagerSchema,
+  campusVendorReviewSchema,
+  academicCampusUpdateSchema,
+  academicCourseUpdateSchema,
+  academicUnitUpdateSchema
 }

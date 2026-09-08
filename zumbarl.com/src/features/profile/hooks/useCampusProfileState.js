@@ -27,7 +27,7 @@ function useCampusProfileState({
   const queryActiveTab = queryShopProduct && hasShopTab
     ? 'Shop'
     : profileTabs.find((tab) => tab.toLowerCase() === queryTab)
-  const [activeTab, setActiveTabState] = useState(queryActiveTab || fallbackTab)
+  const [selectedTab, setSelectedTab] = useState(queryActiveTab || fallbackTab)
   const [activePortfolioFilter, setActivePortfolioFilter] = useState('all')
   const [selectedPortfolioId, setSelectedPortfolioId] = useState(null)
   const [selectedPortfolioServiceId, setSelectedPortfolioServiceId] = useState(null)
@@ -43,8 +43,10 @@ function useCampusProfileState({
     queryShopProduct && hasShopTab ? 'all' : shopTabFilters[0].key
   )
 
+  const activeTab = queryActiveTab || (profileTabs.includes(selectedTab) ? selectedTab : fallbackTab)
+
   const setActiveTab = (tab) => {
-    setActiveTabState(tab)
+    setSelectedTab(tab)
 
     if (queryTab || queryProduct) {
       setSearchParams(new URLSearchParams(), { replace: true })

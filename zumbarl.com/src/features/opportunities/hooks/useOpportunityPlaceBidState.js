@@ -17,6 +17,11 @@ import {
   setPreferredOpportunityIntentId,
 } from '../services/opportunityIntentPreference'
 import { toBidGig } from '../placeBidData'
+import { readMyStudentProfileExperience } from '../../campus/services/readCampusExperience'
+
+function comparableSkill(value) {
+  return String(value || '').trim().toLowerCase().replace(/[^a-z0-9+#.]+/g, '')
+}
 
 function useOpportunityPlaceBidState() {
   const { opportunityId } = useParams()
@@ -31,6 +36,7 @@ function useOpportunityPlaceBidState() {
   const [draftLoadResult, setDraftLoadResult] = useState({ draft: null, opportunityId: null })
   const [draftError, setDraftError] = useState('')
   const [draftNotice, setDraftNotice] = useState('')
+  const [profileProgression, setProfileProgression] = useState(null)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [isSavingDraft, setIsSavingDraft] = useState(false)
   const applicationStateRef = useRef(null)
@@ -78,6 +84,27 @@ function useOpportunityPlaceBidState() {
   const opportunityOverviewPath = selectedOpportunityId
     ? `/campus/opportunities?opportunity=${encodeURIComponent(selectedOpportunityId)}`
     : '/campus/opportunities'
+
+  useEffect(() => {
+    let active = true
+    readMyStudentProfileExperience()
+      .then((profile) => { if (active) setProfileProgression(profile?.progression || null) })
+      .catch(() => {})
+    return () => { active = false }
+  }, [])
+
+  const rateGuidance = useMemo(() => {
+    const opportunitySkills = new Set((selectedGig?.skills || []).map(comparableSkill))
+    const skills = profileProgression?.skills || []
+    const matchedSkill = skills.find((skill) => opportunitySkills.has(comparableSkill(skill.name))) || skills[0]
+    if (!matchedSkill?.recommendedRate) return null
+    return {
+      ...matchedSkill.recommendedRate,
+      skillName: matchedSkill.name,
+      level: matchedSkill.level,
+      midpoint: Math.round((Number(matchedSkill.recommendedRate.minimum) + Number(matchedSkill.recommendedRate.maximum)) / 2),
+    }
+  }, [profileProgression?.skills, selectedGig?.skills])
 
   useEffect(() => {
     if (submittedBid || isSubmitting) return
@@ -289,6 +316,7 @@ function useOpportunityPlaceBidState() {
     onSaveDraft: persistDraft,
     onSubmitProposal: handleSubmitProposal,
     selectedGig,
+    rateGuidance,
     submittedBid,
     submitError,
   }

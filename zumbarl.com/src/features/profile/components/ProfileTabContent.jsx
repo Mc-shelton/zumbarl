@@ -6,11 +6,18 @@ import ProfilePortfolioPanel from './ProfilePortfolioPanel'
 import ProfileShopPanel from './ProfileShopPanel'
 import ProfileShopOrders from './ProfileShopOrders'
 import ProfileSkillsPanel from './ProfileSkillsPanel'
+import ProfileErrandsPanel from './ProfileErrandsPanel'
+import CareerProgressionPanel from './CareerProgressionPanel'
 
-function ProfileTabContent({ activeTab, canManageMarketing = false, canManageShop = false, handlers, isOwnProfile = false, isShopOrdersOpen = false, onOpenKnowledgeHub, pendingShopOffers = [], profileName = '', profileState, profileStudentId = '', sellerOrders = [], sellerOrdersError = '', sellerOrdersLoading = false, shop, shopOfferDecisionId = '', updatingOrderId = '', viewModel }) {
+function ProfileTabContent({ activeTab, canManageMarketing = false, canManageShop = false, handlers, initialOrderId = '', isOwnProfile = false, isShopOrdersOpen = false, onOpenKnowledgeHub, pendingShopOffers = [], profileName = '', profileState, profileStudentId = '', sellerOrders = [], sellerOrdersError = '', sellerOrdersLoading = false, shop, shopOfferDecisionId = '', updatingOrderId = '', viewModel }) {
   if (activeTab === 'Overview') {
     return (
       <>
+        <CareerProgressionPanel
+          isOwnProfile={isOwnProfile}
+          onModeChange={handlers.onProgressionModeChange}
+          progression={viewModel.progression}
+        />
         <ProfileOverviewPanel achievements={viewModel.achievements} earningsSummary={viewModel.earningsSummary} endorsements={viewModel.endorsements} score={viewModel.profileScore} workHighlights={viewModel.workHighlights} />
         <ProfileSkillsPanel
           canManage={isOwnProfile}
@@ -53,6 +60,10 @@ function ProfileTabContent({ activeTab, canManageMarketing = false, canManageSho
     return <ProfilePlaceholderPanel activeTab="Experience" />
   }
 
+  if (canManageShop && isShopOrdersOpen) {
+    return <ProfileShopOrders error={sellerOrdersError} initialOrderId={initialOrderId} isLoading={sellerOrdersLoading} orders={sellerOrders} onBack={handlers.onCloseOrders} onMessageBuyer={handlers.onMessageBuyer} onRefresh={handlers.onRefreshOrders} onUpdateStatus={handlers.onUpdateOrderStatus} updatingOrderId={updatingOrderId} />
+  }
+
   if (viewModel.isPagesTab) {
     return (
       <ProfilePagesPanel
@@ -64,8 +75,11 @@ function ProfileTabContent({ activeTab, canManageMarketing = false, canManageSho
     )
   }
 
+  if (viewModel.isErrandsTab && isOwnProfile) {
+    return <ProfileErrandsPanel />
+  }
+
   if (viewModel.isShopTab) {
-    if (canManageShop && isShopOrdersOpen) return <ProfileShopOrders error={sellerOrdersError} isLoading={sellerOrdersLoading} orders={sellerOrders} onBack={handlers.onCloseOrders} onMessageBuyer={handlers.onMessageBuyer} onRefresh={handlers.onRefreshOrders} onUpdateStatus={handlers.onUpdateOrderStatus} updatingOrderId={updatingOrderId} />
     return (
       <ProfileShopPanel
         activeShopFilter={profileState.activeShopFilter}

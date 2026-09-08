@@ -34,13 +34,9 @@ import {
 import {
   CAMPUS_FEED_FILTERS,
   EXPLORE_PRODUCT_DETAILS,
-  MARKETPLACE_RESULTS,
-  PEOPLE_WHO_CAN_HELP,
-  SEARCH_HINTS,
-  SEARCH_TABS,
-  TOP_LEARNING_RESOURCES,
 } from "../features/explore/constants";
 import useExploreCampusState from "../features/explore/hooks/useExploreCampusState";
+import useCampusSearchResults from "../features/explore/hooks/useCampusSearchResults";
 import useExploreConnectWorkflow from "../features/explore/hooks/useExploreConnectWorkflow";
 import {
   createStory,
@@ -96,10 +92,13 @@ function ownStoryCreator(snapshot, items = []) {
     "Your Story";
   return {
     id: "your-story",
+    profileId: student.id || null,
+    profileType: "student",
     name,
     shortName: "Your Story",
     handle: `@${user.username || user.email?.split("@")[0] || "student"}`,
     campus: student.campus || "Your campus",
+    campusPage: student.campusPage || null,
     zumbarlPoints: student.zumbarlPoints ?? student.score ?? null,
     zumbarlTier: student.zumbarlTier || null,
     avatar:
@@ -161,10 +160,14 @@ function groupPersistedStories(records, snapshot, viewedIds) {
     const key = record.creator.id;
     const creator = creators.get(key) || {
       id: `story-${key}`,
+      profileId: record.creator.id,
+      profileSlug: record.creator.slug || null,
+      profileType: record.creator.profileType || "student",
       name: record.creator.name,
       shortName: record.creator.name.split(" ")[0],
       handle: record.creator.handle,
       campus: record.creator.campus,
+      campusPage: record.creator.campusPage || null,
       isSameCampus: record.creator.isSameCampus,
       avatar:
         normalizeZumbarlFileUrl(record.creator.avatarUrl) ||
@@ -217,6 +220,7 @@ function postEngagementSnapshot(post) {
       handle: post.handle || '@student',
       avatarUrl: post.avatar || null,
       campus: post.campus || null,
+      campusPage: post.campusPage || null,
       zumbarlPoints: post.zumbarlPoints ?? undefined,
       zumbarlTier: post.zumbarlTier || undefined,
     },
@@ -301,6 +305,7 @@ function ExploreCampusPage() {
     ownStoryCreator(getAuthUserSnapshot()),
   ]);
   const [createdPosts, setCreatedPosts] = useState([]);
+  const [searchTabSelection, setSearchTabSelection] = useState({ query: "", tab: "all" });
   const [feedComments, setFeedComments] = useState({});
   const [postEngagementOverrides, setPostEngagementOverrides] = useState({});
   const [engagementPending, setEngagementPending] = useState({});
@@ -379,6 +384,11 @@ function ExploreCampusPage() {
     feedPosts: createdPosts,
     productDetails,
   });
+  const campusSearch = useCampusSearchResults(activeQuery, createdPosts);
+  const activeSearchTab = searchTabSelection.query === activeQuery
+    ? searchTabSelection.tab
+    : "all";
+  const selectSearchTab = (tab) => setSearchTabSelection({ query: activeQuery, tab });
 
   useEffect(() => {
     let cancelled = false;
@@ -510,6 +520,7 @@ function ExploreCampusPage() {
       author: isSpaceAuthored ? knowledgeSpace.name : post.creator?.name || "Zumbarl student",
       handle: isSpaceAuthored ? (spaceType === "library" ? "Library" : "Study group") : post.creator?.handle || "@student",
       campus: post.creator?.campus || null,
+      campusPage: post.creator?.campusPage || null,
       zumbarlPoints: post.creator?.zumbarlPoints ?? null,
       zumbarlTier: post.creator?.zumbarlTier || null,
       avatar: isSpaceAuthored
@@ -1121,8 +1132,12 @@ function ExploreCampusPage() {
               {isSearchMode ? (
                 <ExploreSearchSummary
                   activeQuery={activeQuery}
-                  hints={SEARCH_HINTS}
-                  tabs={SEARCH_TABS}
+                  activeTab={activeSearchTab}
+                  counts={campusSearch.data.counts}
+                  hints={campusSearch.data.hints}
+                  loading={campusSearch.loading}
+                  onSelectTab={selectSearchTab}
+                  partial={campusSearch.data.partial}
                 />
               ) : (
                 <ExploreFeedHero
@@ -1141,9 +1156,12 @@ function ExploreCampusPage() {
 
             {isSearchMode ? (
               <ExploreSearchResults
-                marketplaceResults={MARKETPLACE_RESULTS}
-                people={PEOPLE_WHO_CAN_HELP}
-                resources={TOP_LEARNING_RESOURCES}
+                activeTab={activeSearchTab}
+                data={campusSearch.data}
+                error={campusSearch.error}
+                loading={campusSearch.loading}
+                onSelectTab={selectSearchTab}
+                query={activeQuery}
               />
             ) : (
               <>

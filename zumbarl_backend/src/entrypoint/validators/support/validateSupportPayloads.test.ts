@@ -1,33 +1,29 @@
 import { describe, expect, it } from 'vitest'
-import { wellbeingCheckInSchema, wellbeingMessageSchema, wellbeingPreferenceSchema, wellbeingResetSchema } from './validateSupportPayloads.js'
+import { careEnrollmentUpdateSchema, careProgramEnrollmentSchema, careProgressCheckInSchema, supportCaseStatusSchema, wellbeingCheckInSchema, wellbeingHandoffSchema } from './validateSupportPayloads.js'
 
-describe('wellbeing payload validation', () => {
-  it('accepts a minimal daily check-in and applies privacy-safe defaults', () => {
-    const result = wellbeingCheckInSchema.safeParse({ mood: 'okay' })
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.stressors).toEqual([])
-      expect(result.data.source).toBe('daily')
-    }
+describe('student care payload validation', () => {
+  it('accepts peer-pressure and substance-use context in a private check-in', () => {
+    const parsed = wellbeingCheckInSchema.parse({ mood: 'low', stressors: ['peer_pressure', 'substance_use'], source: 'daily' })
+    expect(parsed.stressors).toEqual(['peer_pressure', 'substance_use'])
   })
 
-  it('rejects unsupported moods and excessive stressor selections', () => {
-    expect(wellbeingCheckInSchema.safeParse({ mood: 'diagnosed' }).success).toBe(false)
-    expect(wellbeingCheckInSchema.safeParse({
-      mood: 'low',
-      stressors: ['money', 'school', 'relationships', 'family', 'work', 'loneliness', 'anxiety'],
-    }).success).toBe(false)
+  it('requires explicit consent before creating a named care-program request', () => {
+    const request = { goal: 'Build a safer recovery support plan', consentText: 'I agree to private care coordination.' }
+    expect(careProgramEnrollmentSchema.safeParse({ ...request, consent: false }).success).toBe(false)
+    expect(careProgramEnrollmentSchema.safeParse({ ...request, consent: true }).success).toBe(true)
   })
 
-  it('requires an explicit preference change', () => {
-    expect(wellbeingPreferenceSchema.safeParse({}).success).toBe(false)
-    expect(wellbeingPreferenceSchema.safeParse({ insightsEnabled: false }).success).toBe(true)
+  it('keeps a setback valid and lets the student request follow-up', () => {
+    expect(careProgressCheckInSchema.parse({ status: 'setback', requestFollowUp: true })).toMatchObject({ status: 'setback', requestFollowUp: true })
   })
 
-  it('bounds reset metrics and conversation length', () => {
-    expect(wellbeingResetSchema.safeParse({ breathingSeconds: 30, groundingCount: 5, durationSeconds: 180 }).success).toBe(true)
-    expect(wellbeingResetSchema.safeParse({ groundingCount: 6 }).success).toBe(false)
-    expect(wellbeingMessageSchema.safeParse({ message: '' }).success).toBe(false)
-    expect(wellbeingMessageSchema.safeParse({ message: 'I need to talk.' }).success).toBe(true)
+  it('requires separate consent for a Talk It Out human handoff', () => {
+    expect(wellbeingHandoffSchema.safeParse({ consent: false, shareLatestMessage: true }).success).toBe(false)
+    expect(wellbeingHandoffSchema.safeParse({ consent: true, shareLatestMessage: false }).success).toBe(true)
+  })
+
+  it('supports operational states for reports, appointments and care plans', () => {
+    expect(supportCaseStatusSchema.safeParse({ status: 'confirmed' }).success).toBe(true)
+    expect(careEnrollmentUpdateSchema.safeParse({ status: 'active', studentVisibleNote: 'Your plan is active.' }).success).toBe(true)
   })
 })

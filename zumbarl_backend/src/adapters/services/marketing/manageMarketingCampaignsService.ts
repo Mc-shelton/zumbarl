@@ -40,6 +40,7 @@ async function createMarketingCampaignService(businessId: string | undefined, pa
   const campaign = await marketingCampaignsRepository.createCampaign({
     ...campaignPayload,
     businessId,
+    status: 'draft',
     acceptedBudget: 0,
     inviteOnlyUntil: null,
     workflow: { proofSubmitted: false, statsGenerated: false, endorsed: false }
@@ -71,6 +72,9 @@ async function updateMarketingCampaignService(id: string, actor: AuthUser | unde
   const detail = await marketingCampaignsRepository.readCampaignDetail(id)
   if (!detail.campaign) notFound('Campaign')
   if (actor?.businessId && detail.campaign.businessId !== actor.businessId) forbidden('This campaign belongs to another business')
+  if (['funded', 'published', 'active', 'completed'].includes(String(detail.campaign.status)) && ('budgetAmount' in patch || 'currency' in patch)) {
+    throw new ApiError(409, 'A funded campaign budget and currency cannot be changed', 'FUNDED_CAMPAIGN_PRICE_LOCKED')
+  }
 
   const acceptedCount = detail.acceptances.filter((item: Record<string, any>) => item.status === 'accepted').length
   if (patch.creatorsLimit != null && Number(patch.creatorsLimit) < acceptedCount) {
@@ -97,11 +101,19 @@ async function updateMarketingCampaignService(id: string, actor: AuthUser | unde
   return campaign
 }
 
-async function fundMarketingCampaignService(id: string) {
+async function assertCampaignAccess(id: string, actor: AuthUser | undefined) {
+  const campaign = await marketingCampaignsRepository.findCampaign(id) ?? notFound('Campaign')
+  if (actor?.businessId && campaign.businessId !== actor.businessId) forbidden('This campaign belongs to another business')
+  return campaign
+}
+
+async function fundMarketingCampaignService(id: string, actor: AuthUser | undefined) {
+  await assertCampaignAccess(id, actor)
   return await marketingCampaignsRepository.fundCampaign(id) ?? notFound('Campaign')
 }
 
-async function publishMarketingCampaignService(id: string) {
+async function publishMarketingCampaignService(id: string, actor: AuthUser | undefined) {
+  await assertCampaignAccess(id, actor)
   return await marketingCampaignsRepository.publishCampaign(id) ?? notFound('Campaign')
 }
 
@@ -115,7 +127,8 @@ async function publishZumbarlAdService(id: string, actor?: AuthUser) {
   return ad
 }
 
-async function inviteCampaignersService(id: string, payload: Record<string, any>) {
+async function inviteCampaignersService(id: string, payload: Record<string, any>, actor?: AuthUser) {
+  await assertCampaignAccess(id, actor)
   return await marketingCampaignsRepository.createCampaignInvites(id, payload) ?? notFound('Campaign')
 }
 
@@ -133,7 +146,8 @@ async function submitMarketingCampaignProofService(id: string, actor: AuthUser |
   return await marketingCampaignsRepository.submitCampaignProof(id, actor.studentId, verifiedPayload) ?? notFound('Campaign')
 }
 
-async function generateMarketingCampaignStatsService(id: string) {
+async function generateMarketingCampaignStatsService(id: string, actor?: AuthUser) {
+  await assertCampaignAccess(id, actor)
   const detail = await marketingCampaignsRepository.readCampaignDetail(id)
   if (!detail.campaign) notFound('Campaign')
   const proofs = detail.proofs
@@ -157,7 +171,8 @@ async function readMarketingCampaignTrackingPageService(token: string) {
   return await marketingCampaignsRepository.readCampaignTrackingPage(token) ?? notFound('Tracking link')
 }
 
-async function endorseMarketingCampaignersService(id: string, payload: Record<string, any>) {
+async function endorseMarketingCampaignersService(id: string, payload: Record<string, any>, actor?: AuthUser) {
+  await assertCampaignAccess(id, actor)
   return await marketingCampaignsRepository.endorseCampaigners(id, payload) ?? notFound('Campaign')
 }
 

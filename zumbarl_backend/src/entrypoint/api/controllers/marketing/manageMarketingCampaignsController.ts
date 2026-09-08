@@ -42,17 +42,17 @@ async function updateMarketingCampaignController(request: FastifyRequest, reply:
 
 async function fundMarketingCampaignController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.code(201).send(await fundMarketingCampaignService(id))
+  return reply.code(201).send(await fundMarketingCampaignService(id, request.authUser))
 }
 
 async function publishMarketingCampaignController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.send(await publishMarketingCampaignService(id))
+  return reply.send(await publishMarketingCampaignService(id, request.authUser))
 }
 
 async function inviteCampaignersController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.code(201).send(await inviteCampaignersService(id, requireBody(inviteCampaignersSchema, request)))
+  return reply.code(201).send(await inviteCampaignersService(id, requireBody(inviteCampaignersSchema, request), request.authUser))
 }
 
 async function listZumbarlAdsController(request: FastifyRequest, reply: FastifyReply) {
@@ -111,12 +111,12 @@ function ensureCampaignVisitor(request: FastifyRequest, reply: FastifyReply) {
 
 async function generateMarketingCampaignStatsController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.send(await generateMarketingCampaignStatsService(id))
+  return reply.send(await generateMarketingCampaignStatsService(id, request.authUser))
 }
 
 async function endorseMarketingCampaignersController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.code(201).send(await endorseMarketingCampaignersService(id, requireBody(endorseCampaignersSchema, request)))
+  return reply.code(201).send(await endorseMarketingCampaignersService(id, requireBody(endorseCampaignersSchema, request), request.authUser))
 }
 
 export {

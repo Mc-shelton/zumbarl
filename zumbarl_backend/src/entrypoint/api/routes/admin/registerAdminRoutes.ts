@@ -18,6 +18,7 @@ import {
   readNavigationFeatureTagsController,
   recordFinancialActionController,
   reviewUserKycController,
+  readStudentKycDocumentController,
   revokeUserSessionsController,
   updateGigOversightController,
   updateModerationCaseController,
@@ -27,8 +28,13 @@ import {
   readCampusVendorManagementController,
   createCampusVendorController,
   updateCampusVendorController,
+  reviewStudentKitchenController,
   addCampusVendorManagerController,
-  removeCampusVendorManagerController
+  removeCampusVendorManagerController,
+  readAcademicCatalogController,
+  updateAcademicCampusController,
+  updateAcademicCourseController,
+  updateAcademicUnitController
 } from '../../controllers/admin/index.js'
 
 async function registerAdminRoutes(app: FastifyInstance) {
@@ -49,11 +55,13 @@ async function registerAdminRoutes(app: FastifyInstance) {
   app.get('/super-admin/campus-vendors', { preHandler: superAdminOnly }, readCampusVendorManagementController)
   app.post('/super-admin/campus-vendors', { preHandler: superAdminOnly }, createCampusVendorController)
   app.patch('/super-admin/campus-vendors/:id', { preHandler: superAdminOnly }, updateCampusVendorController)
+  app.patch('/super-admin/campus-vendors/:id/review', { preHandler: superAdminOnly }, reviewStudentKitchenController)
   app.post('/super-admin/campus-vendors/:id/managers', { preHandler: superAdminOnly }, addCampusVendorManagerController)
   app.delete('/super-admin/campus-vendors/:id/managers/:userId', { preHandler: superAdminOnly }, removeCampusVendorManagerController)
   app.patch('/super-admin/accounts/:id', { preHandler: superAdminOnly }, updateUserController)
   app.post('/super-admin/accounts/:id/revoke-sessions', { preHandler: superAdminOnly }, revokeUserSessionsController)
   app.post('/super-admin/accounts/:id/review-kyc', { preHandler: superAdminOnly }, reviewUserKycController)
+  app.get('/super-admin/accounts/:id/kyc-documents/:documentId', { preHandler: superAdminOnly }, readStudentKycDocumentController)
   app.post('/super-admin/accounts/merge', { preHandler: superAdminOnly }, mergeDuplicateAccountsController)
   app.get('/super-admin/finance', { preHandler: superAdminOnly }, readFinancialOversightController)
   app.post('/super-admin/finance/actions', { preHandler: superAdminOnly }, recordFinancialActionController)
@@ -66,6 +74,10 @@ async function registerAdminRoutes(app: FastifyInstance) {
   app.post('/super-admin/content/actions', { preHandler: superAdminOnly }, moderateContentController)
   app.get('/super-admin/configuration', { preHandler: superAdminOnly }, readSystemConfigurationController)
   app.post('/super-admin/configuration', { preHandler: superAdminOnly }, writeSystemConfigurationController)
+  app.get('/super-admin/academic-catalog', { preHandler: superAdminOnly }, readAcademicCatalogController)
+  app.patch('/super-admin/academic-catalog/campuses/:id', { preHandler: superAdminOnly }, updateAcademicCampusController)
+  app.patch('/super-admin/academic-catalog/courses/:id', { preHandler: superAdminOnly }, updateAcademicCourseController)
+  app.patch('/super-admin/academic-catalog/units/:id', { preHandler: superAdminOnly }, updateAcademicUnitController)
   app.get('/super-admin/analytics', { preHandler: superAdminOnly }, readAnalyticsReportController)
   app.get('/super-admin/audit-logs', { preHandler: superAdminOnly }, listAuditLogsController)
 }

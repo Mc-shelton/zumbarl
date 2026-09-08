@@ -1,8 +1,10 @@
 import type { Prisma } from '@prisma/client'
 import { randomUUID } from 'node:crypto'
-import { pageEnvelope } from '../../../lib/http.js'
+import { ApiError, pageEnvelope } from '../../../lib/http.js'
 import { prisma } from '../../../lib/prisma.js'
 import { createPrismaRecordRepository } from '../../../shared/repositories/index.js'
+import { normalizeCurrency, normalizeMoney } from '../../../shared/services/money.js'
+import { debitStudentWallet } from '../../../shared/services/walletLedger.js'
 import { rankWithRecommendations } from '../../services/recommendations/index.js'
 
 const moderationCases = createPrismaRecordRepository('moderationCases')
@@ -98,6 +100,9 @@ class ConnectCommunityRepository {
     return prisma.$transaction(async (tx) => {
       let communityGroupId: string | null = null
       let companyId: string | null = null
+      const campus = payload.type === 'campus' && payload.campusId
+        ? await tx.campus.findUnique({ where: { id: payload.campusId } })
+        : null
       if (payload.type === 'club' || payload.type === 'association') {
         const group = await tx.communityGroup.create({ data: { name: payload.name, category: payload.type, purpose: payload.details?.purpose || payload.details?.mandate || payload.bio || payload.name, campus: payload.details?.campus || null, status: 'active', payload: jsonInput(payload.details ?? {}) } })
         communityGroupId = group.id
@@ -106,7 +111,7 @@ class ConnectCommunityRepository {
         const company = await tx.company.create({ data: { name: payload.name, sector: payload.details?.sector || 'Other', size: payload.details?.size || 'MICRO', website: payload.websiteUrl || null, description: payload.bio || null, locationCity: payload.details?.city || 'Nairobi', isActive: true } })
         companyId = company.id
       }
-      return tx.managedProfile.create({ data: { type: payload.type, slug: payload.slug, name: payload.name, handle: payload.handle.replace(/^@/, ''), bio: payload.bio || null, avatarUrl: payload.avatarUrl || null, coverImageUrl: payload.coverImageUrl || null, locationLabel: payload.locationLabel || null, websiteUrl: payload.websiteUrl || null, email: payload.email || null, phone: payload.phone || null, details: jsonInput(payload.details ?? {}), campusId: payload.campusId ?? null, communityGroupId, companyId, status: 'active', managers: { create: { userId: ownerUserId, role: 'owner' } } }, include: { campus: true, communityGroup: true, company: true, managers: true } })
+      return tx.managedProfile.create({ data: { type: payload.type, slug: payload.slug, name: payload.name, handle: payload.handle.replace(/^@/, ''), bio: payload.bio || null, avatarUrl: payload.avatarUrl || null, coverImageUrl: payload.coverImageUrl || null, locationLabel: campus?.locationLabel || campus?.city || payload.locationLabel || null, websiteUrl: payload.websiteUrl || null, email: payload.email || null, phone: payload.phone || null, details: jsonInput(payload.details ?? {}), campusId: payload.campusId ?? null, communityGroupId, companyId, status: 'active', managers: { create: { userId: ownerUserId, role: 'owner' } } }, include: { campus: true, communityGroup: true, company: true, managers: true } })
     })
   }
 
@@ -196,7 +201,10 @@ class ConnectCommunityRepository {
         }))
       }
     })
-    return { ...profile, posts, attachedServices, isFollowing: Boolean(followRecord) }
+    const locationLabel = profile.type === 'campus'
+      ? profile.campus?.locationLabel || profile.campus?.city || profile.locationLabel
+      : profile.locationLabel
+    return { ...profile, locationLabel, posts, attachedServices, isFollowing: Boolean(followRecord) }
   }
 
   async setManagedProfileFollow(managedProfileId: string, userId: string, active: boolean) {
@@ -224,20 +232,33 @@ class ConnectCommunityRepository {
   }
 
   async updateManagedProfile(id: string, patch: Record<string, any>) {
-    return prisma.managedProfile.update({
-      where: { id },
-      data: {
-        ...(patch.name !== undefined ? { name: patch.name } : {}),
-        ...(patch.bio !== undefined ? { bio: patch.bio } : {}),
-        ...(patch.avatarUrl !== undefined ? { avatarUrl: patch.avatarUrl } : {}),
-        ...(patch.coverImageUrl !== undefined ? { coverImageUrl: patch.coverImageUrl } : {}),
-        ...(patch.locationLabel !== undefined ? { locationLabel: patch.locationLabel } : {}),
-        ...(patch.websiteUrl !== undefined ? { websiteUrl: patch.websiteUrl } : {}),
-        ...(patch.email !== undefined ? { email: patch.email } : {}),
-        ...(patch.phone !== undefined ? { phone: patch.phone } : {}),
-        ...(patch.details !== undefined ? { details: jsonInput(patch.details) } : {})
-      },
-      include: { campus: true, communityGroup: true }
+    return prisma.$transaction(async (tx) => {
+      const current = await tx.managedProfile.findUnique({ where: { id }, select: { type: true, campusId: true } })
+      if (current?.type === 'campus' && current.campusId && patch.locationLabel !== undefined) {
+        await tx.campus.update({
+          where: { id: current.campusId },
+          data: {
+            locationLabel: patch.locationLabel,
+            ...(patch.latitude !== undefined ? { latitude: patch.latitude } : {}),
+            ...(patch.longitude !== undefined ? { longitude: patch.longitude } : {})
+          }
+        })
+      }
+      return tx.managedProfile.update({
+        where: { id },
+        data: {
+          ...(patch.name !== undefined ? { name: patch.name } : {}),
+          ...(patch.bio !== undefined ? { bio: patch.bio } : {}),
+          ...(patch.avatarUrl !== undefined ? { avatarUrl: patch.avatarUrl } : {}),
+          ...(patch.coverImageUrl !== undefined ? { coverImageUrl: patch.coverImageUrl } : {}),
+          ...(patch.locationLabel !== undefined ? { locationLabel: patch.locationLabel } : {}),
+          ...(patch.websiteUrl !== undefined ? { websiteUrl: patch.websiteUrl } : {}),
+          ...(patch.email !== undefined ? { email: patch.email } : {}),
+          ...(patch.phone !== undefined ? { phone: patch.phone } : {}),
+          ...(patch.details !== undefined ? { details: jsonInput(patch.details) } : {})
+        },
+        include: { campus: true, communityGroup: true }
+      })
     })
   }
 
@@ -285,9 +306,22 @@ class ConnectCommunityRepository {
       orderBy: { createdAt: 'desc' }
     })
     const studentIds = [...new Set(records.flatMap((record) => [record.studentId, ...record.comments.map((comment) => comment.studentId)]).filter(Boolean))] as string[]
-    const students = await prisma.studentProfile.findMany({ where: { id: { in: studentIds } }, include: { user: true, campus: true, zumbarl: true } })
+    const students = await prisma.studentProfile.findMany({
+      where: { id: { in: studentIds } },
+      include: {
+        user: true,
+        campus: { include: { managedProfile: { select: { id: true, type: true, name: true, slug: true, status: true } } } },
+        zumbarl: true
+      }
+    })
     const managedProfileIds = [...new Set(records.map((record) => record.managedProfileId).filter(Boolean))] as string[]
-    const managedProfiles = await prisma.managedProfile.findMany({ where: { id: { in: managedProfileIds } }, include: { campus: true, communityGroup: true } })
+    const managedProfiles = await prisma.managedProfile.findMany({
+      where: { id: { in: managedProfileIds } },
+      include: {
+        campus: { include: { managedProfile: { select: { id: true, type: true, name: true, slug: true, status: true } } } },
+        communityGroup: true
+      }
+    })
     const communityGroupIds = [...new Set(records.map((record) => record.communityGroupId).filter(Boolean))] as string[]
     const communityGroups = communityGroupIds.length ? await prisma.communityGroup.findMany({ where: { id: { in: communityGroupIds } } }) : []
     const vendorShopIds = [...new Set(records.map((record) => {
@@ -303,6 +337,10 @@ class ConnectCommunityRepository {
       where: { id: { in: knowledgeSpaceIds }, status: 'ACTIVE' },
       select: { id: true, slug: true, name: true, type: true, avatarUrl: true }
     }) : []
+    const campusPages = await prisma.managedProfile.findMany({
+      where: { type: 'campus', status: 'active', campusId: { not: null } },
+      select: { id: true, name: true, slug: true, campus: { select: { name: true } } }
+    })
     const eventIds = [...new Set(records.map((record) => String(payloadObject(payloadObject(record.payload).event).id || '')).filter(Boolean))]
     const [eventResponseGroups, viewerEventResponses] = await Promise.all([
       eventIds.length ? prisma.campusEventRsvp.groupBy({
@@ -339,6 +377,18 @@ class ConnectCommunityRepository {
     const vendorShopById = new Map(vendorShops.map((shop) => [shop.id, shop]))
     const knowledgeSpaceById = new Map(knowledgeSpaces.map((space) => [space.id, space]))
     const recordById = new Map(records.map((record) => [record.id, record]))
+    const campusPageByName = new Map(campusPages.flatMap((page) => (
+      [page.campus?.name, page.name]
+        .filter(Boolean)
+        .map((name) => [String(name).trim().toLowerCase(), { id: page.id, name: page.name, slug: page.slug }] as const)
+    )))
+    const withCampusPage = (creator: Record<string, any> | null) => {
+      if (!creator) return null
+      return {
+        ...creator,
+        campusPage: campusPageByName.get(String(creator.campus || '').trim().toLowerCase()) || null
+      }
+    }
     const creatorFor = (candidate: typeof records[number]) => {
       const candidateKnowledgeSpace = candidate.knowledgeSpaceId ? knowledgeSpaceById.get(candidate.knowledgeSpaceId) : null
       const candidateStudent = candidate.studentId ? studentById.get(candidate.studentId) : null
@@ -348,7 +398,7 @@ class ConnectCommunityRepository {
       const candidatePayload = payloadObject(candidate.payload)
       const vendorSnapshot = payloadObject(candidatePayload.vendorSnapshot)
       const liveVendor = vendorShopById.get(String(candidatePayload.vendorShopId || vendorSnapshot.id || ''))
-      return candidateCommunityGroup ? {
+      return withCampusPage(candidateCommunityGroup ? {
         id: candidateCommunityGroup.id,
         profileType: candidateCommunityGroup.category === 'support-circle' ? 'support-circle' : 'community-group',
         name: candidateCommunityGroup.name,
@@ -382,6 +432,9 @@ class ConnectCommunityRepository {
         handle: `@${candidateManagedProfile.handle}`,
         avatarUrl: candidateManagedProfile.avatarUrl,
         campus: candidateManagedProfile.campus?.name || candidateManagedProfile.communityGroup?.campus || null,
+        campusPage: candidateManagedProfile.campus?.managedProfile?.type === 'campus' && candidateManagedProfile.campus.managedProfile.status === 'active'
+          ? { id: candidateManagedProfile.campus.managedProfile.id, name: candidateManagedProfile.campus.managedProfile.name, slug: candidateManagedProfile.campus.managedProfile.slug }
+          : null,
         isVerified: candidateManagedProfile.isVerified
       } : candidateStudent ? {
         id: candidateStudent.id,
@@ -390,11 +443,14 @@ class ConnectCommunityRepository {
         handle: `@${candidateStudent.user?.username || candidateStudent.user?.email?.split('@')[0] || 'student'}`,
         avatarUrl: candidateStudent.avatarUrl,
         campus: candidateStudent.campus?.name || null,
+        campusPage: candidateStudent.campus?.managedProfile?.type === 'campus' && candidateStudent.campus.managedProfile.status === 'active'
+          ? { id: candidateStudent.campus.managedProfile.id, name: candidateStudent.campus.managedProfile.name, slug: candidateStudent.campus.managedProfile.slug }
+          : null,
         ...(candidateStudent.showZumbarlPoints !== false ? {
           zumbarlPoints: Math.round(candidateStudent.zumbarl?.currentScore || 0),
           zumbarlTier: candidateStudent.zumbarl?.tier || null
         } : {})
-      } : candidateSnapshot.creator ? payloadObject(candidateSnapshot.creator) : null
+      } : candidateSnapshot.creator ? payloadObject(candidateSnapshot.creator) : null)
     }
     const mappedRecords = records.filter((record) => {
       if (!record.communityGroupId) return true
@@ -1091,14 +1147,95 @@ class ConnectCommunityRepository {
 
   async searchEventOrganizers(query: string, actorStudentId?: string, actorBusinessId?: string) {
     const term = query.trim()
-    const students = await prisma.studentProfile.findMany({ where: { user: { isActive: true }, ...(term ? { OR: [{ firstName: { contains: term, mode: 'insensitive' } }, { lastName: { contains: term, mode: 'insensitive' } }, { user: { username: { contains: term, mode: 'insensitive' } } }] } : actorStudentId ? { id: actorStudentId } : {}) }, include: { user: true }, take: 8 })
-    const companies = await prisma.company.findMany({ where: { isActive: true, ...(term ? { name: { contains: term, mode: 'insensitive' } } : actorBusinessId ? { id: actorBusinessId } : {}) }, take: 8 })
-    const campuses = term ? await prisma.campus.findMany({ where: { isActive: true, name: { contains: term, mode: 'insensitive' } }, take: 5 }) : []
-    return { data: [
-      ...students.map((student) => ({ id: student.id, type: 'person', name: [student.firstName, student.lastName].filter(Boolean).join(' '), handle: `@${student.user.username || student.user.email.split('@')[0]}`, avatarUrl: student.avatarUrl, isSelf: student.id === actorStudentId })),
-      ...companies.map((company) => ({ id: company.id, type: 'business', name: company.name, handle: company.sector, avatarUrl: company.logoUrl, isSelf: company.id === actorBusinessId })),
-      ...campuses.map((campus) => ({ id: campus.id, type: 'campus', name: campus.name, handle: [campus.branch, campus.city].filter(Boolean).join(' · '), avatarUrl: null, isSelf: false }))
-    ] }
+    const tokens = [...new Set(term.toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((token) => token.length > 1))].slice(0, 8)
+    const students = await prisma.studentProfile.findMany({
+      where: {
+        user: { isActive: true },
+        ...(tokens.length ? {
+          AND: tokens.map((token) => ({
+            OR: [
+              { firstName: { contains: token, mode: 'insensitive' as const } },
+              { lastName: { contains: token, mode: 'insensitive' as const } },
+              { bio: { contains: token, mode: 'insensitive' as const } },
+              { careerPath: { contains: token, mode: 'insensitive' as const } },
+              { user: { username: { contains: token, mode: 'insensitive' as const } } },
+              { campus: { name: { contains: token, mode: 'insensitive' as const } } },
+              { course: { name: { contains: token, mode: 'insensitive' as const } } },
+              { studentSkills: { some: { skill: { name: { contains: token, mode: 'insensitive' as const } } } } }
+            ]
+          }))
+        } : actorStudentId ? { id: actorStudentId } : {})
+      },
+      include: {
+        user: true,
+        campus: true,
+        course: true,
+        studentSkills: { include: { skill: true }, take: 6 }
+      },
+      take: 30
+    })
+    const [managedProfiles, companies, campuses] = await Promise.all([
+      tokens.length ? prisma.managedProfile.findMany({
+        where: {
+          status: 'active',
+          AND: tokens.map((token) => ({ OR: [
+            { name: { contains: token, mode: 'insensitive' as const } },
+            { handle: { contains: token, mode: 'insensitive' as const } },
+            { bio: { contains: token, mode: 'insensitive' as const } },
+            { locationLabel: { contains: token, mode: 'insensitive' as const } }
+          ] }))
+        },
+        take: 24
+      }) : Promise.resolve([]),
+      prisma.company.findMany({
+        where: {
+          isActive: true,
+          ...(tokens.length ? { AND: tokens.map((token) => ({ OR: [
+            { name: { contains: token, mode: 'insensitive' as const } },
+            { sector: { contains: token, mode: 'insensitive' as const } },
+            { description: { contains: token, mode: 'insensitive' as const } }
+          ] })) } : actorBusinessId ? { id: actorBusinessId } : {})
+        },
+        include: { managedProfile: true },
+        take: 16
+      }),
+      tokens.length ? prisma.campus.findMany({
+        where: {
+          isActive: true,
+          AND: tokens.map((token) => ({ OR: [
+            { name: { contains: token, mode: 'insensitive' as const } },
+            { branch: { contains: token, mode: 'insensitive' as const } },
+            { city: { contains: token, mode: 'insensitive' as const } }
+          ] }))
+        },
+        include: { managedProfile: true },
+        take: 12
+      }) : Promise.resolve([])
+    ])
+    const directory = [
+      ...students.map((student) => ({
+        id: student.id,
+        type: 'person',
+        profileType: 'student',
+        name: [student.firstName, student.lastName].filter(Boolean).join(' '),
+        handle: `@${student.user.username || student.user.email.split('@')[0]}`,
+        avatarUrl: student.avatarUrl,
+        bio: student.bio,
+        role: student.careerPath || student.course.name,
+        campus: student.campus.name,
+        skills: student.studentSkills.map(({ skill }) => skill.name),
+        isSelf: student.id === actorStudentId
+      })),
+      ...managedProfiles.map((profile) => ({ id: profile.id, type: profile.type, profileType: profile.type, slug: profile.slug, name: profile.name, handle: profile.handle, avatarUrl: profile.avatarUrl, bio: profile.bio, location: profile.locationLabel, isSelf: false })),
+      ...companies.map((company) => ({ id: company.managedProfile?.id || company.id, type: 'business', profileType: 'business', slug: company.managedProfile?.slug, name: company.name, handle: company.managedProfile?.handle || company.sector, avatarUrl: company.managedProfile?.avatarUrl || company.logoUrl, bio: company.description, location: company.locationCity, isSelf: company.id === actorBusinessId })),
+      ...campuses.map((campus) => ({ id: campus.managedProfile?.id || campus.id, type: 'campus', profileType: 'campus', slug: campus.managedProfile?.slug, name: campus.name, handle: campus.managedProfile?.handle || [campus.branch, campus.city].filter(Boolean).join(' · '), avatarUrl: campus.managedProfile?.avatarUrl || null, bio: campus.managedProfile?.bio, location: campus.locationLabel || campus.city, isSelf: false }))
+    ]
+    return {
+      data: directory.filter((item, index, items) => {
+        const key = `${item.type}:${'slug' in item && item.slug ? item.slug : item.id}`
+        return items.findIndex((candidate) => `${candidate.type}:${'slug' in candidate && candidate.slug ? candidate.slug : candidate.id}` === key) === index
+      })
+    }
   }
 
   async searchPostTagTargets(query: string, actorStudentId?: string) {
@@ -1195,7 +1332,9 @@ class ConnectCommunityRepository {
 
   async listGroups(query: Record<string, unknown>, viewerStudentId?: string) {
     const groups = await prisma.communityGroup.findMany({
-      where: { status: { in: ['active', 'pending-review'] } },
+      where: viewerStudentId
+        ? { OR: [{ status: 'active' }, { status: 'pending-review', ownerStudentId: viewerStudentId }] }
+        : { status: 'active' },
       orderBy: { createdAt: 'desc' },
       include: {
         _count: { select: { memberships: true } },
@@ -1839,19 +1978,35 @@ class ConnectCommunityRepository {
 
   contributeToChama(id: string, studentId: string | undefined, payload: Record<string, any>) {
     return prisma.$transaction(async (tx) => {
+      if (!studentId) throw new ApiError(403, 'A student profile is required', 'STUDENT_PROFILE_REQUIRED')
       const group = await tx.communityGroup.findUnique({ where: { id } })
       if (!group) return null
+      const membership = await tx.communityGroupMembership.findFirst({ where: { groupId: id, studentId, status: 'active' } })
+      if (group.ownerStudentId !== studentId && !membership) throw new ApiError(403, 'Join this chama before contributing', 'CHAMA_MEMBERSHIP_REQUIRED')
+      const currency = normalizeCurrency(payload.currency || 'KES')
+      const amount = normalizeMoney(payload.amount, currency)
+      const previousContribution = await tx.communityChamaContribution.findFirst({ where: { groupId: id }, orderBy: { createdAt: 'asc' } })
+      if (previousContribution && previousContribution.currency !== currency) {
+        throw new ApiError(409, 'Contribution currency does not match this chama', 'CHAMA_CURRENCY_MISMATCH')
+      }
       const contribution = await tx.communityChamaContribution.create({
         data: {
           groupId: id,
-          studentId: studentId ?? null,
-          amount: Number(payload.amount),
-          currency: payload.currency ?? 'KES',
+          studentId,
+          amount,
+          currency,
           status: 'recorded',
           payload: jsonInput(payload)
         }
       })
-      await tx.communityGroup.update({ where: { id }, data: { walletBalance: { increment: Number(payload.amount) } } })
+      await debitStudentWallet(tx, studentId, amount, {
+        type: 'CHAMA_CONTRIBUTION',
+        currency,
+        reference: `chama-contribution:${contribution.id}`,
+        description: `Contribution to ${group.name}`,
+        metadata: { groupId: id, contributionId: contribution.id, direction: 'student_debit' }
+      })
+      await tx.communityGroup.update({ where: { id }, data: { walletBalance: { increment: amount } } })
       return toRecord(contribution)
     })
   }

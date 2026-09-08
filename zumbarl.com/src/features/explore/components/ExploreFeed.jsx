@@ -96,6 +96,7 @@ function reshareTargetFor(post, posts) {
     handle: creator.handle || '@creator',
     avatar: creator.avatarUrl || null,
     campus: creator.campus || null,
+    campusPage: creator.campusPage || null,
     copy: original.body || 'Shared post',
     gallery: original.mediaUrls || [],
     mediaEdits: original.mediaEdits || [],
@@ -122,6 +123,7 @@ function ResharedPostPreview({ onOpenMediaViewer, post }) {
     avatar: normalizeZumbarlFileUrl(creator.avatarUrl),
     creatorId: creator.id,
     campus: creator.campus,
+    campusPage: creator.campusPage || null,
     copy: original.body || '',
     gallery,
     type: original.type || 'post',
@@ -140,7 +142,11 @@ function ResharedPostPreview({ onOpenMediaViewer, post }) {
         {profilePath ? <Link className="explore-reshared-owner-avatar" to={profilePath} aria-label={`View ${mediaPost.author}'s profile`}><img src={normalizeZumbarlFileUrl(mediaPost.avatar) || '/assets/index/bee_nobg.png'} alt="" loading="lazy" /></Link> : <img src={normalizeZumbarlFileUrl(mediaPost.avatar) || '/assets/index/bee_nobg.png'} alt="" loading="lazy" />}
         <div>
           {profilePath ? <Link className="explore-reshared-owner-link" to={profilePath}>{mediaPost.author}</Link> : <strong>{mediaPost.author}</strong>}
-          <span>{mediaPost.handle}{mediaPost.campus ? ` · ${mediaPost.campus}` : ''}{creator.zumbarlPoints !== null && creator.zumbarlPoints !== undefined ? ` · ${Math.round(Number(creator.zumbarlPoints) || 0)} Buzz` : ''}</span>
+          <span>
+            {mediaPost.handle}
+            {mediaPost.campus ? <> · {mediaPost.campusPage?.slug ? <Link className="explore-campus-author-context" to={`/campus/organizations/${encodeURIComponent(mediaPost.campusPage.slug)}`}>{mediaPost.campus}</Link> : mediaPost.campus}</> : null}
+            {creator.zumbarlPoints !== null && creator.zumbarlPoints !== undefined ? ` · ${Math.round(Number(creator.zumbarlPoints) || 0)} Buzz` : ''}
+          </span>
         </div>
       </header>
       <p>{mediaPost.copy}</p>
@@ -368,7 +374,10 @@ function ExploreFeed({ activeFilter, allowAnnouncementSubmission = true, comment
                   {profilePath ? <Link className="explore-campus-author-link" to={profilePath}>{post.author} <span>{post.handle}</span></Link> : <>{post.author} <span>{post.handle}</span></>}
                 </h3>
                 <p>
-                  {post.campus ? <span className="explore-campus-author-context">{post.campus}</span> : null}
+                  {post.campus ? post.campusPage?.slug
+                    ? <Link className="explore-campus-author-context is-linked" to={`/campus/organizations/${encodeURIComponent(post.campusPage.slug)}`}>{post.campus}</Link>
+                    : <span className="explore-campus-author-context">{post.campus}</span>
+                  : null}
                   {post.creatorProfileType === 'student' && post.zumbarlPoints !== null && post.zumbarlPoints !== undefined ? <span className="explore-campus-author-points" title="Zumbarl reputation points"><FiAward aria-hidden="true" />{Math.round(Number(post.zumbarlPoints) || 0)} Buzz</span> : null}
                   {post.taggedSpace ? <Link className="explore-campus-tagged-space-chip" to={post.taggedSpace.href}>{post.tag}</Link> : <em>{post.tag}</em>}
                   {(post.taggedAcademic || []).map((tag) => <Link className="explore-campus-tagged-space-chip is-academic" to={tag.href} key={`${tag.type}-${tag.id}`}>{tag.type === 'university' ? 'University' : tag.type === 'course' ? 'Course' : 'Unit'} · {tag.label}</Link>)}

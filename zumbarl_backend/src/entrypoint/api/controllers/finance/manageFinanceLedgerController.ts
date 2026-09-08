@@ -4,12 +4,12 @@ import { createEscrowService, listPayoutsService, listWalletLedgerService, listW
 import { createEscrowSchema, releaseEscrowSchema } from '../../../validators/finance/index.js'
 
 async function listWalletsController(request: FastifyRequest, reply: FastifyReply) {
-  return reply.send(await listWalletsService(request.authUser?.studentId ?? request.authUser?.businessId, request.authUser?.role === 'admin' || request.authUser?.role === 'SUPER_ADMIN'))
+  return reply.send(await listWalletsService(request.authUser))
 }
 
 async function listWalletLedgerController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.send(await listWalletLedgerService(id, request.query as Record<string, unknown>))
+  return reply.send(await listWalletLedgerService(id, request.query as Record<string, unknown>, request.authUser))
 }
 
 async function createEscrowController(request: FastifyRequest, reply: FastifyReply) {
@@ -22,7 +22,7 @@ async function releaseEscrowController(request: FastifyRequest, reply: FastifyRe
 }
 
 async function listPayoutsController(request: FastifyRequest, reply: FastifyReply) {
-  return reply.send(await listPayoutsService(request.query as Record<string, unknown>))
+  return reply.send(await listPayoutsService(request.query as Record<string, unknown>, request.authUser))
 }
 
 async function markPayoutPaidController(request: FastifyRequest, reply: FastifyReply) {

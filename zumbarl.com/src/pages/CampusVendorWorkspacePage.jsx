@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { FiArrowLeft, FiArrowRight, FiBox, FiBriefcase, FiCamera, FiChevronRight, FiClock, FiEdit2, FiMapPin, FiMinus, FiPause, FiPlay, FiPlus, FiPower, FiRefreshCw, FiSearch, FiSettings, FiShield, FiShoppingBag, FiUsers } from 'react-icons/fi'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { FiArrowLeft, FiArrowRight, FiBox, FiBriefcase, FiCamera, FiChevronRight, FiClock, FiDollarSign, FiEdit2, FiGift, FiMapPin, FiMessageCircle, FiMinus, FiPause, FiPlay, FiPlus, FiPower, FiRefreshCw, FiSearch, FiSettings, FiShield, FiShoppingBag, FiTruck, FiUsers } from 'react-icons/fi'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import CampusSidebar from '../components/layout/CampusSidebar'
 import Seo from '../components/Seo'
 import { ConfirmDialog } from '../components/ui'
@@ -9,12 +9,15 @@ import ExploreShareModal from '../features/explore/components/ExploreShareModal'
 import ExploreStoryComposer from '../features/explore/components/ExploreStoryComposer'
 import ExploreStoryViewer from '../features/explore/components/ExploreStoryViewer'
 import ManagedEntityFeed from '../features/explore/components/ManagedEntityFeed'
+import PageFinancePanel from '../features/finance/components/PageFinancePanel'
+import PageInboxPanel from '../features/messages/components/PageInboxPanel'
 import { createStory, listStories } from '../features/explore/services/storyService'
 import { buildVendorStoryCreator, markVendorStoryViewed } from '../features/explore/utils/vendorStories'
 import { CampusVendorInventoryPreview, CampusVendorMetricGrid, CampusVendorOverviewBanner } from '../features/opportunities/components/CampusVendorOverview'
 import ProfileShopOrders from '../features/profile/components/ProfileShopOrders'
-import { addManagedCampusVendorManager, createCampusVendorPost, readCampusVendorWorkspace, removeManagedCampusVendorManager, searchManagedCampusVendorManagerCandidates, updateCampusVendorAvailability, updateCampusVendorOrderStatus, updateCampusVendorPost, updateManagedCampusVendor, updateMarketplaceListing } from '../features/opportunities/services/marketplaceInteractionService'
+import { addManagedCampusVendorManager, createCampusVendorPost, manageVendorErrander, readCampusVendorFinance, readCampusVendorWorkspace, removeManagedCampusVendorManager, requestCampusVendorWithdrawal, searchManagedCampusVendorManagerCandidates, updateCampusVendorAvailability, updateCampusVendorOrderStatus, updateCampusVendorPost, updateManagedCampusVendor, updateMarketplaceListing, updateShopErrands } from '../features/opportunities/services/marketplaceInteractionService'
 import { normalizeZumbarlFileUrl } from '../lib/normalizeZumbarlFileUrl'
+import { buildPageOrderConversationHref, buyerOrderHref, sellerOrderHref } from '../features/opportunities/orderMessaging'
 import { uploadZumbarlFile } from '../lib/uploadZumbarlFile'
 import '../styles/campus.css'
 import '../styles/explore-campus.css'
@@ -25,6 +28,9 @@ const TABS = [
   { id: 'overview', label: 'Overview', Icon: FiBriefcase },
   { id: 'inventory', label: 'Inventory', Icon: FiBox },
   { id: 'orders', label: 'Orders', Icon: FiShoppingBag },
+  { id: 'messages', label: 'Messages', Icon: FiMessageCircle },
+  { id: 'finance', label: 'Finance', Icon: FiDollarSign },
+  { id: 'errands', label: 'Errands', Icon: FiTruck },
   { id: 'posts', label: 'Posts', Icon: FiPlus },
   { id: 'settings', label: 'Settings & team', Icon: FiSettings },
 ]
@@ -46,8 +52,9 @@ function listingImage(listing) {
 function CampusVendorWorkspacePage() {
   const { vendorSlug } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [workspace, setWorkspace] = useState(null)
-  const [activeTab, setActiveTab] = useState('overview')
+  const [activeTab, setActiveTab] = useState(() => searchParams.get('tab') || 'overview')
   const [status, setStatus] = useState('Loading vendor workspace…')
   const [isPostComposerOpen, setIsPostComposerOpen] = useState(false)
   const [isStoryComposerOpen, setIsStoryComposerOpen] = useState(false)
@@ -56,7 +63,7 @@ function CampusVendorWorkspacePage() {
   const [shareTarget, setShareTarget] = useState(null)
   const [isSaving, setIsSaving] = useState(false)
   const [feedback, setFeedback] = useState(null)
-  const [vendorDraft, setVendorDraft] = useState({ name: '', type: 'service', description: '', locationLabel: '', logoUrl: '' })
+  const [vendorDraft, setVendorDraft] = useState({ name: '', type: 'service', description: '', locationLabel: '', pickupSpots: [], logoUrl: '' })
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [assignment, setAssignment] = useState({ email: '', role: 'editor' })
   const [isTeammateFormOpen, setIsTeammateFormOpen] = useState(false)
@@ -67,6 +74,12 @@ function CampusVendorWorkspacePage() {
   const [updatingOrderId, setUpdatingOrderId] = useState('')
   const [orderUnableToFulfil, setOrderUnableToFulfil] = useState(null)
   const [updatingListingId, setUpdatingListingId] = useState('')
+  const [acceptingErranders, setAcceptingErranders] = useState(false)
+  const [deliveryFee, setDeliveryFee] = useState('0')
+  const [savingErrandSetting, setSavingErrandSetting] = useState('')
+  const [finance, setFinance] = useState(null)
+  const [financeLoading, setFinanceLoading] = useState(false)
+  const [financeError, setFinanceError] = useState('')
 
   const load = useCallback(async () => {
     try {
@@ -76,7 +89,9 @@ function CampusVendorWorkspacePage() {
       ])
       setWorkspace(nextWorkspace)
       setVendorStoryCreator(buildVendorStoryCreator(nextWorkspace.shop, storyResponse?.data || []))
-      setVendorDraft({ name: nextWorkspace.shop.name || '', type: nextWorkspace.shop.type || 'service', description: nextWorkspace.shop.description || '', locationLabel: nextWorkspace.shop.locationLabel || '', logoUrl: nextWorkspace.shop.logoUrl || '' })
+      setVendorDraft({ name: nextWorkspace.shop.name || '', type: nextWorkspace.shop.type || 'service', description: nextWorkspace.shop.description || '', locationLabel: nextWorkspace.shop.locationLabel || '', pickupSpots: nextWorkspace.shop.pickupSpots?.length ? nextWorkspace.shop.pickupSpots : nextWorkspace.shop.locationLabel ? [nextWorkspace.shop.locationLabel] : [], logoUrl: nextWorkspace.shop.logoUrl || '' })
+      setAcceptingErranders(Boolean(nextWorkspace.shop.acceptingErranders))
+      setDeliveryFee(String(Number(nextWorkspace.shop.errandFee || 0)))
       setStatus('')
     } catch (error) {
       setStatus(error.message || 'This vendor workspace could not be loaded.')
@@ -87,10 +102,19 @@ function CampusVendorWorkspacePage() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { load() }, [load])
 
+  const loadFinance = useCallback(async () => {
+    setFinanceLoading(true)
+    setFinanceError('')
+    try { setFinance(await readCampusVendorFinance(vendorSlug)) }
+    catch (error) { setFinanceError(error.message || 'Page finances could not be loaded.') }
+    finally { setFinanceLoading(false) }
+  }, [vendorSlug])
+
   const posts = useMemo(() => (workspace?.posts || []).filter((post) => post.type !== 'promotion' && !post.isPromoted && !post.promotion), [workspace?.posts])
   const shop = workspace?.shop
   const vendorId = shop?.id || ''
   const canManageVendor = Boolean(shop?.canManageAssignments || ['owner', 'admin'].includes(String(shop?.viewerRole || '').toLowerCase()))
+  const isApproved = Boolean(shop && (shop.type !== 'student_kitchen' || ['approved', 'open', 'closed'].includes(String(shop.approvalStatus || shop.status).toLowerCase())))
   const hasUnseenVendorStory = Boolean(vendorStoryCreator?.items?.some((item) => !item.isViewed))
   const isAcceptingOrders = shop?.acceptingOrders !== false
 
@@ -173,6 +197,40 @@ function CampusVendorWorkspacePage() {
     await runAction(
       () => updateCampusVendorAvailability(vendorSlug, nextState),
       nextState ? 'This vendor is open and accepting new orders.' : 'This vendor is closed to new orders. Existing orders are unchanged.',
+    )
+  }
+
+  async function saveErrandSettings({ enabled = shop?.errandsEnabled, accepting = acceptingErranders, freeDelivery = shop?.freeCampusDelivery, fee = deliveryFee } = {}, setting = 'enabled') {
+    const normalizedFee = Number(fee)
+    if (!Number.isFinite(normalizedFee) || normalizedFee < 0 || normalizedFee > 5000) {
+      setFeedback({ type: 'error', text: 'Enter a delivery price between KSh 0 and KSh 5,000.' })
+      return false
+    }
+    setSavingErrandSetting(setting)
+    try {
+      return await runAction(
+        () => updateShopErrands(vendorSlug, { acceptingErranders: Boolean(accepting), deliveryFee: normalizedFee, enabled: Boolean(enabled), freeCampusDelivery: Boolean(freeDelivery) }),
+        setting === 'rate' ? `Every completed errand now pays KSh ${normalizedFee.toLocaleString()}.` : freeDelivery ? 'Free in-campus delivery is on.' : enabled ? 'Errand delivery is on. The first available errander to accept gets each delivery.' : 'Delivery settings saved.',
+      )
+    } finally {
+      setSavingErrandSetting('')
+    }
+  }
+
+  async function saveDeliveryFee(event) {
+    event.preventDefault()
+    await saveErrandSettings({ fee: deliveryFee }, 'rate')
+  }
+
+  async function changeErrander(registration, action) {
+    const messages = {
+      REMOVE: `${registration.student.name} was removed from this page.`,
+      FLAG: `${registration.student.name} was flagged and will not receive new errands.`,
+      RESTORE: `${registration.student.name} can receive this page’s errands again.`,
+    }
+    await runAction(
+      () => manageVendorErrander(vendorSlug, registration.student.id, action, action === 'FLAG' ? 'Flagged by the business for review.' : undefined),
+      messages[action],
     )
   }
 
@@ -296,18 +354,19 @@ function CampusVendorWorkspacePage() {
               <div><span>Campus vendor</span><h1>{shop?.name || 'Loading vendor…'}</h1><p>{shop?.description || 'Inventory, orders, content, and vendor access in one place.'}</p>{shop ? <small className="vendor-workspace-social-summary">{Number(shop.followerCount || 0).toLocaleString()} {Number(shop.followerCount || 0) === 1 ? 'follower' : 'followers'} · {posts.length.toLocaleString()} {posts.length === 1 ? 'update' : 'updates'}</small> : null}</div>
             </div>
             <div className="vendor-workspace-actions">
-              {workspace ? <button className={`vendor-order-availability-toggle ${isAcceptingOrders ? 'is-open' : 'is-closed'}`} disabled={isSaving} onClick={toggleOrderAvailability} type="button"><FiPower /> {isAcceptingOrders ? 'Close orders' : 'Open for orders'}</button> : null}
-              {workspace ? <Link className="is-primary" to={inventoryHref}><FiPlus /> Add inventory</Link> : null}
+              {workspace ? <button className={`vendor-order-availability-toggle ${isAcceptingOrders ? 'is-open' : 'is-closed'}`} disabled={isSaving || !isApproved} onClick={toggleOrderAvailability} type="button"><FiPower /> {isApproved ? (isAcceptingOrders ? 'Close orders' : 'Open for orders') : 'Awaiting approval'}</button> : null}
+              {workspace && isApproved ? <Link className="is-primary" to={inventoryHref}><FiPlus /> Add inventory</Link> : null}
               <button type="button" onClick={load}><FiRefreshCw /> Refresh</button>
             </div>
           </div>
-          {shop ? <div className="vendor-workspace-meta"><span><FiMapPin /> {shop.campus || shop.locationLabel || 'Campus vendor'}</span><span><FiBriefcase /> {(shop.type || 'service').replaceAll('_', ' ')}</span><span><FiShield /> {shop.viewerRole || 'editor'} access</span><span className={isAcceptingOrders ? 'is-live' : 'is-closed'}>{isAcceptingOrders ? 'Accepting orders' : 'Closed to orders'}</span></div> : null}
+          {shop ? <div className="vendor-workspace-meta">{shop.campusProfileSlug ? <Link className="vendor-workspace-campus-link" to={`/campus/organizations/${encodeURIComponent(shop.campusProfileSlug)}`}><FiMapPin /> {shop.campus || shop.locationLabel || 'Campus vendor'}</Link> : <span><FiMapPin /> {shop.campus || shop.locationLabel || 'Campus vendor'}</span>}<span><FiBriefcase /> {(shop.type || 'service').replaceAll('_', ' ')}</span><span><FiShield /> {shop.viewerRole || 'editor'} access</span><span className={isAcceptingOrders ? 'is-live' : 'is-closed'}>{isAcceptingOrders ? 'Accepting orders' : 'Closed to orders'}</span></div> : null}
         </header>
 
         <nav className="vendor-workspace-tabs zumbarl-segmented-tabs" aria-label="Vendor tools">
-          {TABS.map(({ id, label, Icon }) => <button className={activeTab === id ? 'is-active' : ''} key={id} onClick={() => setActiveTab(id)} type="button"><Icon /> {label}</button>)}
+          {TABS.filter((tab) => tab.id !== 'finance' || (canManageVendor && shop?.handlesFinances !== false)).map(({ id, label, Icon }) => <button className={activeTab === id ? 'is-active' : ''} key={id} onClick={() => { setActiveTab(id); if (id === 'finance') loadFinance() }} type="button"><Icon /> {label}</button>)}
         </nav>
         {status ? <p className="vendor-workspace-status">{status}</p> : null}
+        {workspace && !isApproved ? <p className="vendor-workspace-approval-note" role="status"><FiShield /> <span><strong>Admin review in progress</strong>Your kitchen page is private for now. You can update its profile and team, but menus, posts, promotions, and orders unlock after approval.</span></p> : null}
         {feedback ? <p className={`vendor-workspace-feedback is-${feedback.type}`} role={feedback.type === 'error' ? 'alert' : 'status'}>{feedback.text}</p> : null}
         {workspace && activeTab === 'overview' ? <>
           <CampusVendorOverviewBanner actionLabel="Manage inventory" onAction={() => setActiveTab('inventory')} shop={shop} />
@@ -318,7 +377,7 @@ function CampusVendorWorkspacePage() {
             { id: 'followers', Icon: FiUsers, label: 'Followers', value: Number(shop.followerCount || 0), note: 'Campus audience' },
           ]} />
           <section className="vendor-workspace-overview-grid">
-            <CampusVendorInventoryPreview emptyAction={<Link to={inventoryHref}>Add first item <FiArrowRight /></Link>} emptyText="Add a menu item or service so students can discover and order it." eyebrow="Sell on Zumbarl" items={workspace.listings.slice(0, 4).map((listing) => ({ id: listing.id, image: listingImage(listing), category: listing.category, title: listing.title, stock: Number(listing.stock ?? listing.stockCount ?? 0), price: `KSh ${Number(listing.priceAmount || 0).toLocaleString()}`, onAction: () => editListing(listing), actionLabel: 'Manage' }))} onViewAll={() => setActiveTab('inventory')} title="Inventory at a glance" />
+            <CampusVendorInventoryPreview emptyAction={isApproved ? <Link to={inventoryHref}>Add first item <FiArrowRight /></Link> : null} emptyText={isApproved ? 'Add a menu item or service so students can discover and order it.' : 'Menu publishing unlocks after an admin approves this kitchen.'} eyebrow="Sell on Zumbarl" items={workspace.listings.slice(0, 4).map((listing) => ({ id: listing.id, image: listingImage(listing), category: listing.category, title: listing.title, stock: Number(listing.stock ?? listing.stockCount ?? 0), price: `KSh ${Number(listing.priceAmount || 0).toLocaleString()}`, onAction: () => editListing(listing), actionLabel: 'Manage' }))} onViewAll={() => setActiveTab('inventory')} title="Inventory at a glance" />
             <aside className="vendor-workspace-panel vendor-workspace-access-card">
               <header><div><span>Workspace</span><h2>Team & access</h2></div><FiUsers /></header>
               <div className="vendor-workspace-access-summary"><strong>{shop.managers?.length || 0}</strong><span>assigned operators</span></div>
@@ -332,7 +391,7 @@ function CampusVendorWorkspacePage() {
           </section>
         </> : null}
         {workspace && activeTab === 'inventory' ? <section className="vendor-workspace-panel">
-          <header><div><span>Products and services</span><h2>Inventory</h2><p>{workspace.listings.length ? `${workspace.listings.length} item${workspace.listings.length === 1 ? '' : 's'} · ${workspace.listings.filter((listing) => ['published', 'active'].includes(String(listing.status || '').toLowerCase())).length} live in the marketplace.` : 'Showcase the vendor’s products and services.'}</p></div><Link to={inventoryHref}><FiPlus /> Add inventory</Link></header>
+          <header><div><span>Products and services</span><h2>Inventory</h2><p>{workspace.listings.length ? `${workspace.listings.length} item${workspace.listings.length === 1 ? '' : 's'} · ${workspace.listings.filter((listing) => ['published', 'active'].includes(String(listing.status || '').toLowerCase())).length} live in the marketplace.` : isApproved ? 'Showcase the vendor’s products and services.' : 'Inventory unlocks when this kitchen is approved.'}</p></div>{isApproved ? <Link to={inventoryHref}><FiPlus /> Add inventory</Link> : null}</header>
           <div className="vendor-workspace-inventory">
             {workspace.listings.map((listing) => {
               const stock = Number(listing.stock ?? listing.stockCount ?? 0)
@@ -374,12 +433,19 @@ function CampusVendorWorkspacePage() {
         {workspace && activeTab === 'orders' ? <section className="vendor-workspace-panel vendor-marketplace-orders">
           <ProfileShopOrders
             backLabel="Inventory"
-            description="Confirm paid campus orders, prepare each item and coordinate collection with the buyer."
+            description="Confirm paid campus orders and prepare each item. Once ready, the assigned errander controls collection and delivery."
             eyebrow={`${shop.name} seller workspace`}
             error=""
+            initialOrderId={searchParams.get('orderId') || ''}
             isLoading={false}
             onBack={() => setActiveTab('inventory')}
-            onMessageBuyer={(order) => navigate(order.buyerUserId ? `/messages?participantId=${encodeURIComponent(order.buyerUserId)}` : '/messages')}
+            onMessageBuyer={(order) => navigate(buildPageOrderConversationHref({
+              order,
+              page: { id: shop.id, type: 'marketplace_shop', slug: shop.slug, name: shop.name, avatarUrl: shop.logoUrl },
+              customerUserId: order.buyerUserId,
+              customerHref: buyerOrderHref(order.id),
+              pageHref: sellerOrderHref(order.id, vendorSlug),
+            }))}
             onRefresh={load}
             onUpdateStatus={(order, fulfillmentStatus) => {
               if (fulfillmentStatus === 'cannot_fulfil') {
@@ -393,7 +459,37 @@ function CampusVendorWorkspacePage() {
             updatingOrderId={updatingOrderId}
           />
         </section> : null}
-        {workspace && activeTab === 'posts' ? <section className="vendor-workspace-panel vendor-workspace-social-panel"><header><div><span>Vendor voice</span><h2>Posts & stories</h2><p>Publish rich Explore Campus posts and 24-hour stories using {shop.name}’s profile.</p></div><div className="vendor-workspace-publish-actions"><button className="is-story" type="button" onClick={() => setIsStoryComposerOpen(true)}><FiPlay /> Create story</button><button className="is-post" type="button" onClick={() => setIsPostComposerOpen(true)}><FiPlus /> Create post</button></div></header>{posts.length ? <ManagedEntityFeed identity={{ id: shop.id, slug: shop.slug, profileType: 'vendor', name: shop.name, handle: 'Campus vendor', avatar: shop.logoUrl, campus: shop.campus || shop.locationLabel }} onEditPost={editPost} posts={posts} /> : <div className="vendor-workspace-empty"><FiPlus /><div><strong>No posts yet</strong><p>Share this vendor’s first campus update, menu photo, offer, or behind-the-scenes moment.</p></div><button type="button" onClick={() => setIsPostComposerOpen(true)}>Create first post</button></div>}</section> : null}
+        {workspace && activeTab === 'finance' && canManageVendor && shop?.handlesFinances !== false ? <section className="vendor-workspace-panel"><PageFinancePanel error={financeError} finance={finance} loading={financeLoading} onRefresh={loadFinance} onWithdraw={async (payload) => { await requestCampusVendorWithdrawal(vendorSlug, payload); await loadFinance(); setFeedback({ type: 'success', text: 'Withdrawal requested and sent to the finance payout queue.' }) }} /></section> : null}
+        {workspace && activeTab === 'messages' ? <PageInboxPanel pageId={shop.id} pageName={shop.name} pageType="marketplace_shop" /> : null}
+        {workspace && activeTab === 'errands' ? <section className="vendor-workspace-panel vendor-workspace-errands">
+          <header><div><span>Campus delivery</span><h2>Errands</h2><p>Set one delivery price for this page. Every available errander receives each offer, and the first to accept gets it.</p></div><span className={`vendor-errand-state ${shop.errandsEnabled || shop.freeCampusDelivery ? 'is-on' : 'is-off'}`}>{shop.freeCampusDelivery ? 'Free delivery' : shop.errandsEnabled ? 'Erranders on' : 'Deliveries off'}</span></header>
+          {canManageVendor ? <div className="vendor-errand-settings-grid">
+            <article className="vendor-errand-price-setting is-enabled"><div><FiTruck /><span><strong>Delivery pay</strong><small>One fixed amount paid to whichever errander accepts first.</small></span></div><form onSubmit={saveDeliveryFee}><label htmlFor="vendor-errand-fee"><b>KSh</b><input id="vendor-errand-fee" max="5000" min="0" onChange={(event) => setDeliveryFee(event.target.value)} required step="1" type="number" value={deliveryFee} /></label><button disabled={isSaving} type="submit">{savingErrandSetting === 'rate' ? 'Saving…' : 'Save price'}</button></form></article>
+            <article className={acceptingErranders ? 'is-enabled' : 'is-disabled'}><div><FiUsers /><span><strong>Accept new erranders</strong><small>Students can register from this business page.</small></span></div><button aria-checked={acceptingErranders} aria-label={`${acceptingErranders ? 'Turn off' : 'Turn on'} new errander registrations`} className={`vendor-setting-toggle ${acceptingErranders ? 'is-active' : ''}`} disabled={isSaving} onClick={async () => { const previous = acceptingErranders; const next = !previous; setAcceptingErranders(next); const saved = await saveErrandSettings({ accepting: next }, 'accepting'); if (!saved) setAcceptingErranders(previous) }} role="switch" type="button"><span className="vendor-setting-toggle-track" aria-hidden="true"><i /></span><span className="vendor-setting-toggle-copy"><strong>{acceptingErranders ? 'Accepting' : 'Closed'}</strong><small>{savingErrandSetting === 'accepting' ? 'Saving…' : acceptingErranders ? 'Click to close' : 'Click to accept'}</small></span></button></article>
+            <article className={shop.errandsEnabled ? 'is-enabled' : 'is-disabled'}><div><FiPower /><span><strong>Use student erranders</strong><small>Broadcast new deliveries to every active errander who is available.</small></span></div><button aria-checked={Boolean(shop.errandsEnabled)} aria-label={`${shop.errandsEnabled ? 'Turn off' : 'Turn on'} student errander delivery`} className={`vendor-setting-toggle ${shop.errandsEnabled ? 'is-active' : ''}`} disabled={isSaving} onClick={() => saveErrandSettings({ enabled: !shop.errandsEnabled, freeDelivery: false }, 'enabled')} role="switch" type="button"><span className="vendor-setting-toggle-track" aria-hidden="true"><i /></span><span className="vendor-setting-toggle-copy"><strong>{shop.errandsEnabled ? 'Enabled' : 'Disabled'}</strong><small>{savingErrandSetting === 'enabled' ? 'Saving…' : shop.errandsEnabled ? 'Click to disable' : 'Click to enable'}</small></span></button></article>
+            <article className={shop.freeCampusDelivery ? 'is-enabled' : 'is-disabled'}><div><FiGift /><span><strong>Offer free in-campus delivery</strong><small>Your page handles delivery for free. Buyers will not be shown erranders.</small></span></div><button aria-checked={Boolean(shop.freeCampusDelivery)} aria-label={`${shop.freeCampusDelivery ? 'Turn off' : 'Turn on'} free in-campus delivery`} className={`vendor-setting-toggle ${shop.freeCampusDelivery ? 'is-active' : ''}`} disabled={isSaving} onClick={() => saveErrandSettings({ enabled: false, freeDelivery: !shop.freeCampusDelivery }, 'free-delivery')} role="switch" type="button"><span className="vendor-setting-toggle-track" aria-hidden="true"><i /></span><span className="vendor-setting-toggle-copy"><strong>{shop.freeCampusDelivery ? 'Free' : 'Not offered'}</strong><small>{savingErrandSetting === 'free-delivery' ? 'Saving…' : shop.freeCampusDelivery ? 'Click to disable' : 'Click to offer'}</small></span></button></article>
+          </div> : <p>Only the page owner or an admin can change errand settings.</p>}
+
+          <section className="vendor-erranders-roster">
+            <header><div><span>Registered people</span><h3>Erranders for this page</h3><p>Remove or flag a student to stop future offers. Existing assigned deliveries remain visible.</p></div><strong>{(workspace.erranders || []).filter((item) => item.status === 'ACTIVE').length} active</strong></header>
+            <div>
+              {(workspace.erranders || []).map((registration) => <article key={registration.id}>
+                <span className="vendor-errander-person"><img alt="" src={normalizeZumbarlFileUrl(registration.student?.avatarUrl) || '/assets/knowledge/default-group-avatar.svg'} /><span><strong>{registration.student?.name}</strong><small>{registration.student?.isAvailable ? 'Available now' : 'Unavailable'} · {registration.student?.completedCount || 0} completed · KSh {Number(shop.errandFee || 0).toLocaleString()} / delivery</small></span></span>
+                <span className={`vendor-errander-status is-${String(registration.status).toLowerCase()}`}>{String(registration.status).toLowerCase()}</span>
+                {canManageVendor ? <span className="vendor-errander-actions">{registration.status === 'ACTIVE' ? <><button disabled={isSaving} onClick={() => changeErrander(registration, 'FLAG')} type="button">Flag</button><button disabled={isSaving} onClick={() => changeErrander(registration, 'REMOVE')} type="button">Remove</button></> : <button disabled={isSaving} onClick={() => changeErrander(registration, 'RESTORE')} type="button">Restore</button>}</span> : null}
+              </article>)}
+              {!workspace.erranders?.length ? <div className="vendor-workspace-empty"><FiUsers /><div><strong>No registered erranders yet</strong><p>{acceptingErranders ? 'Students can join from this business’s public Errands tab.' : 'Turn on new errander registrations when you are ready to build your roster.'}</p></div></div> : null}
+            </div>
+          </section>
+
+          <section className="vendor-errand-history"><header><div><span>Delivery activity</span><h3>Errand history</h3></div></header>
+          <div className="vendor-errand-list">
+            {(workspace.errands || []).map((errand) => <article key={errand.id}><span><FiTruck /><span><strong>Order #{errand.orderId.slice(-8).toUpperCase()}</strong><small>{errand.pickupLabel} → {errand.dropoffLabel}</small></span></span><span><strong>{String(errand.status).toLowerCase().replaceAll('_', ' ')}</strong><small>{errand.assignedErrander?.name || 'Waiting for an errander'}</small></span></article>)}
+            {!workspace.errands?.length ? <div className="vendor-workspace-empty"><FiTruck /><div><strong>No errands yet</strong><p>New order deliveries will appear here after errands are enabled.</p></div></div> : null}
+          </div>
+          </section>
+        </section> : null}
+        {workspace && activeTab === 'posts' ? <section className="vendor-workspace-panel vendor-workspace-social-panel"><header><div><span>Vendor voice</span><h2>Posts & stories</h2><p>{isApproved ? `Publish rich Explore Campus posts and 24-hour stories using ${shop.name}’s profile.` : 'Publishing unlocks after the kitchen passes admin review.'}</p></div>{isApproved ? <div className="vendor-workspace-publish-actions"><button className="is-story" type="button" onClick={() => setIsStoryComposerOpen(true)}><FiPlay /> Create story</button><button className="is-post" type="button" onClick={() => setIsPostComposerOpen(true)}><FiPlus /> Create post</button></div> : null}</header>{posts.length ? <ManagedEntityFeed identity={{ id: shop.id, slug: shop.slug, profileType: 'vendor', name: shop.name, handle: 'Campus vendor', avatar: shop.logoUrl, campus: shop.campus || shop.locationLabel }} onEditPost={editPost} posts={posts} /> : <div className="vendor-workspace-empty"><FiPlus /><div><strong>No posts yet</strong><p>{isApproved ? 'Share this vendor’s first campus update, menu photo, offer, or behind-the-scenes moment.' : 'Your first update can be published once this kitchen is approved.'}</p></div>{isApproved ? <button type="button" onClick={() => setIsPostComposerOpen(true)}>Create first post</button> : null}</div>}</section> : null}
         {workspace && activeTab === 'settings' ? <section className="vendor-workspace-settings-grid">
           <section className="vendor-workspace-panel">
             <header><div><span>Vendor profile</span><h2>Edit vendor</h2></div></header>
@@ -403,8 +499,9 @@ function CampusVendorWorkspacePage() {
                 <div><strong>Profile picture</strong><small>Use a clear square image for posts, stories, menus, and Explore Campus.</small><label><FiCamera /> {isUploadingAvatar ? 'Uploading…' : 'Change picture'}<input accept="image/*" disabled={isUploadingAvatar || isSaving} onChange={(event) => uploadVendorAvatar(event.target.files?.[0])} type="file" /></label></div>
               </div>
               <label><span>Name</span><input required value={vendorDraft.name} onChange={(event) => setVendorDraft({ ...vendorDraft, name: event.target.value })} /></label>
-              <label><span>Type</span><select value={vendorDraft.type} onChange={(event) => setVendorDraft({ ...vendorDraft, type: event.target.value })}><option value="hotel">Hotel</option><option value="barber_shop">Barber shop</option><option value="service">Other service</option></select></label>
-              <label><span>Location</span><input value={vendorDraft.locationLabel} onChange={(event) => setVendorDraft({ ...vendorDraft, locationLabel: event.target.value })} /></label>
+              <label><span>Type</span><select disabled={shop.type === 'student_kitchen'} value={vendorDraft.type} onChange={(event) => setVendorDraft({ ...vendorDraft, type: event.target.value })}><option value="hotel">Hotel</option><option value="student_kitchen">Student kitchen</option><option value="barber_shop">Barber shop</option><option value="service">Other service</option></select></label>
+              <label><span>{shop.type === 'student_kitchen' ? 'Kitchen base location' : 'Location'}</span><input value={vendorDraft.locationLabel} onChange={(event) => setVendorDraft({ ...vendorDraft, locationLabel: event.target.value })} /></label>
+              {shop.type === 'student_kitchen' ? <label><span>Buyer pickup locations</span><textarea rows="4" value={(vendorDraft.pickupSpots || []).join('\n')} onChange={(event) => setVendorDraft({ ...vendorDraft, pickupSpots: event.target.value.split('\n').map((spot) => spot.trim()).filter(Boolean) })} placeholder={'Hostel B entrance\nStudent centre gate'} /><small>Add one public campus pickup point per line. Buyers must choose one at checkout.</small></label> : null}
               <label><span>Description</span><textarea value={vendorDraft.description} onChange={(event) => setVendorDraft({ ...vendorDraft, description: event.target.value })} /></label>
               <button disabled={isSaving || isUploadingAvatar} type="submit">{isSaving ? 'Saving…' : 'Save vendor'}</button>
             </form> : <p>Editors can operate this vendor. An owner or vendor admin controls profile settings and assignments.</p>}
@@ -480,7 +577,7 @@ function CampusVendorWorkspacePage() {
     <ExploreShareModal key={shareTarget?.url || 'vendor-story-share'} target={shareTarget} onClose={() => setShareTarget(null)} />
     <ConfirmDialog
       confirmLabel="Cancel order"
-      description="This will cancel the order and send the buyer’s held payment for refund review. No funds will be released to this vendor. This action cannot be undone."
+      description="This will cancel the order and immediately return the buyer’s full held payment to their wallet. No funds will be released to this vendor or an errander. This action cannot be undone."
       isOpen={Boolean(orderUnableToFulfil)}
       isPending={Boolean(orderUnableToFulfil && updatingOrderId === orderUnableToFulfil.id)}
       onCancel={() => setOrderUnableToFulfil(null)}

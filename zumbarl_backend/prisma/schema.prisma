@@ -366,6 +366,10 @@ model StudentProfile {
   posts                       CampusPost[]
   marketplaceShops            MarketplaceShop[]
   marketplaceListings         MarketplaceListing[]
+  errandEnrollment            ErrandEnrollment?
+  erranderRegistrations       ErrandShopRegistration[]
+  assignedErrands             MarketplaceErrand[]              @relation("AssignedErrander")
+  errandResponses             ErrandResponse[]
   eventRsvps                  CampusEventRsvp[]
   roadmapEnrollments          StudentRoadmapEnrollment[]
   roadmapEvidence             RoadmapEvidence[]
@@ -399,6 +403,7 @@ model StudentProfile {
   wellbeingCheckIns           WellbeingCheckIn[]
   wellbeingResetSessions      WellbeingResetSession[]
   wellbeingConversations      WellbeingConversation[]
+  careProgramEnrollments      StudentCareProgramEnrollment[]
   placementAvailability       PlacementAvailability?
   evergreenCandidates         EvergreenCandidate[]
   evergreenOffers             PlacementOffer[]
@@ -433,6 +438,7 @@ model Campus {
   careerRoadmaps      CareerRoadmap[]
   managedProfile      ManagedProfile?
   wellbeingResources  CampusWellbeingResource[]
+  carePrograms        StudentCareProgram[]
 
   @@map("campuses")
 }
@@ -583,10 +589,16 @@ model MarketplaceShop {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  owner    StudentProfile           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  campus   Campus?                  @relation(fields: [campusId], references: [id])
-  listings MarketplaceListing[]
-  managers MarketplaceShopManager[]
+  owner                 StudentProfile           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  campus                Campus?                  @relation(fields: [campusId], references: [id])
+  listings              MarketplaceListing[]
+  managers              MarketplaceShopManager[]
+  errands               MarketplaceErrand[]
+  erranderRegistrations ErrandShopRegistration[]
+
+  acceptingErranders Boolean @default(false)
+  errandsEnabled     Boolean @default(false)
+  errandFee          Float   @default(0)
 
   @@index([ownerId])
   @@index([campusId])
@@ -1247,6 +1259,79 @@ model CampusWellbeingResource {
   @@map("campus_wellbeing_resources")
 }
 
+model StudentCareProgram {
+  id                           String   @id @default(cuid())
+  campusId                     String?
+  name                         String
+  category                     String
+  summary                      String
+  facilitatorName              String
+  providerType                 String   @default("campus_support")
+  requiresProfessionalReferral Boolean  @default(false)
+  status                       String   @default("active")
+  startsAt                     DateTime?
+  endsAt                       DateTime?
+  capacity                     Int?
+  steps                        String[] @default([])
+  payload                      Json?
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+
+  campus      Campus?                        @relation(fields: [campusId], references: [id], onDelete: Cascade)
+  enrollments StudentCareProgramEnrollment[]
+
+  @@index([campusId, status, category])
+  @@map("student_care_programs")
+}
+
+model StudentCareProgramEnrollment {
+  id                 String    @id @default(cuid())
+  programId          String
+  studentId          String
+  supportCaseId      String?
+  status             String    @default("requested")
+  goal               String
+  privacyMode        String    @default("private")
+  currentStep        Int       @default(0)
+  consentedAt        DateTime
+  startedAt          DateTime?
+  completedAt        DateTime?
+  nextCheckInAt      DateTime?
+  lastCheckInAt      DateTime?
+  assignedToUserId   String?
+  studentVisibleNote String?
+  payload            Json?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  program  StudentCareProgram @relation(fields: [programId], references: [id], onDelete: Cascade)
+  student  StudentProfile     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  progress StudentCareProgress[]
+
+  @@unique([programId, studentId])
+  @@index([studentId, status])
+  @@index([assignedToUserId, status])
+  @@map("student_care_program_enrollments")
+}
+
+model StudentCareProgress {
+  id                 String   @id @default(cuid())
+  enrollmentId       String
+  recordedByUserId   String?
+  kind               String
+  status             String
+  note               String?
+  studentVisible     Boolean  @default(true)
+  occurredAt         DateTime @default(now())
+  payload            Json?
+  createdAt          DateTime @default(now())
+
+  enrollment StudentCareProgramEnrollment @relation(fields: [enrollmentId], references: [id], onDelete: Cascade)
+
+  @@index([enrollmentId, occurredAt])
+  @@map("student_care_progress")
+}
+
 model MarketplaceCart {
   id        String   @id @default(cuid())
   studentId String?
@@ -1283,9 +1368,92 @@ model MarketplaceOrder {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
+  errands MarketplaceErrand[]
+
   @@index([studentId, createdAt])
   @@index([status, fulfillmentStatus])
   @@map("marketplace_orders")
+}
+
+model ErrandEnrollment {
+  id             String   @id @default(cuid())
+  studentId      String   @unique
+  campusId       String
+  completedCount Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  student StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([campusId])
+  @@map("errand_enrollments")
+}
+
+model ErrandShopRegistration {
+  id               String    @id @default(cuid())
+  shopId           String
+  studentId        String
+  isAvailable      Boolean   @default(false)
+  status           String    @default("ACTIVE") // ACTIVE | REMOVED | FLAGGED
+  flagReason       String?
+  joinedAt         DateTime  @default(now())
+  reviewedAt       DateTime?
+  reviewedByUserId String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  shop    MarketplaceShop @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  student StudentProfile  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, studentId])
+  @@index([studentId, status])
+  @@index([shopId, status, joinedAt])
+  @@map("errand_shop_registrations")
+}
+
+model MarketplaceErrand {
+  id                 String    @id @default(cuid())
+  orderId            String
+  shopId             String
+  campusId           String
+  assignedErranderId String?
+  status             String    @default("AVAILABLE") // AVAILABLE | ASSIGNED | PICKED_UP | DELIVERED | CANCELLED
+  pickupLabel        String
+  dropoffLabel       String
+  feeAmount          Float     @default(0)
+  currency           String    @default("KES")
+  payload            Json?
+  acceptedAt         DateTime?
+  pickedUpAt         DateTime?
+  deliveredAt        DateTime?
+  cancelledAt        DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  order            MarketplaceOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  shop             MarketplaceShop  @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  assignedErrander StudentProfile?  @relation("AssignedErrander", fields: [assignedErranderId], references: [id], onDelete: SetNull)
+  responses        ErrandResponse[]
+
+  @@unique([orderId, shopId])
+  @@index([campusId, status, createdAt])
+  @@index([assignedErranderId, status])
+  @@map("marketplace_errands")
+}
+
+model ErrandResponse {
+  id         String   @id @default(cuid())
+  errandId   String
+  erranderId String
+  decision   String // ACCEPTED | IGNORED
+  createdAt  DateTime @default(now())
+
+  errand   MarketplaceErrand @relation(fields: [errandId], references: [id], onDelete: Cascade)
+  errander StudentProfile    @relation(fields: [erranderId], references: [id], onDelete: Cascade)
+
+  @@unique([errandId, erranderId])
+  @@index([erranderId, createdAt])
+  @@map("errand_responses")
 }
 
 model MarketplaceOffer {
@@ -2463,6 +2631,9 @@ model StudentRoadmapEnrollment {
   startedAt        DateTime  @default(now())
   completedAt      DateTime?
   intent           String    @default("explore")
+  practiceSkillIds String[]  @default([])
+  weeklyPracticeTarget Int   @default(3)
+  coachingUpdatedAt DateTime?
   lockedAt         DateTime?
   verifiedAt       DateTime?
   createdAt        DateTime  @default(now())
@@ -3642,7 +3813,7 @@ model Wallet {
   student      StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
   transactions Transaction[]
 
-  @@index([studentId])
+  @@unique([studentId, type])
   @@map("wallets")
 }
 

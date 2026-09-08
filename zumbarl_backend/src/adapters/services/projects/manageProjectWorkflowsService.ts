@@ -185,11 +185,17 @@ async function createMilestoneService(
   })
 }
 
-async function fundMilestoneService(id: string) {
+async function fundMilestoneService(id: string, authUser: AuthUser | undefined) {
+  const milestone = await projectWorkflowsRepository.findMilestone(id) ?? notFound('Milestone')
+  const project = await projectWorkflowsRepository.findProject(milestone.projectId) ?? notFound('Project')
+  assertCanManageProject(project, authUser)
   return await projectWorkflowsRepository.fundMilestone(id) ?? notFound('Milestone')
 }
 
-async function activateMilestoneService(id: string) {
+async function activateMilestoneService(id: string, authUser: AuthUser | undefined) {
+  const milestone = await projectWorkflowsRepository.findMilestone(id) ?? notFound('Milestone')
+  const project = await projectWorkflowsRepository.findProject(milestone.projectId) ?? notFound('Project')
+  assertCanManageProject(project, authUser)
   const result = await projectWorkflowsRepository.activateMilestone(id) ?? notFound('Milestone')
   if ((result as Record<string, any>).activated === false) {
     throw new ApiError(

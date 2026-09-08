@@ -1750,6 +1750,48 @@ async function seedDatabase() {
       payload: { privacyMode: 'alias', moderationOwner: 'Campus Wellness Partner', activityLabel: 'Ongoing · reply when ready', splashImageUrl: '/assets/wellbeing/recovery-circle-splash.webp', safetyBoundaries: ['Peer support is not clinical treatment', 'Immediate risk is escalated to trained support'] }
     }
   })
+  const carePrograms = [
+    {
+      id: 'care-zetech-steady-under-pressure',
+      name: 'Steady Under Pressure',
+      category: 'stress_and_mental_wellbeing',
+      summary: 'A private, practical pathway for academic pressure, anxiety, sleep disruption and difficult weeks.',
+      facilitatorName: 'Zetech Student Affairs',
+      providerType: 'campus_support',
+      requiresProfessionalReferral: false,
+      steps: ['Private intake and goals', 'Personal support plan', 'Weekly skills sessions', 'Progress check-in', 'Follow-up and next steps'],
+      payload: { durationLabel: '4–6 weeks', formatLabel: 'Private plan + small sessions', circleId: 'group-zetech-first-year-support', safeguards: ['Not a diagnosis', 'Student controls optional sharing', 'Urgent concerns use the safety pathway'] }
+    },
+    {
+      id: 'care-zetech-belonging-boundaries',
+      name: 'Belonging, Boundaries & Peer Pressure',
+      category: 'peer_pressure',
+      summary: 'Build practical boundaries, safer relationships and a support network without public disclosure.',
+      facilitatorName: 'Zetech Student Affairs',
+      providerType: 'campus_support',
+      requiresProfessionalReferral: false,
+      steps: ['Choose a private goal', 'Map pressure and support', 'Practise boundary strategies', 'Join an optional peer session', 'Review what is working'],
+      payload: { durationLabel: '4 weeks', formatLabel: 'Private coaching + optional circle', circleId: 'group-zetech-first-year-support', safeguards: ['Alias participation is optional', 'No forced disclosure', 'Safety concerns can be referred with consent'] }
+    },
+    {
+      id: 'care-zetech-recovery-navigation',
+      name: 'Recovery Navigation & Staying Well',
+      category: 'substance_use_recovery',
+      summary: 'Non-judgmental recovery coordination, licensed-provider referrals, peer support and an aftercare plan.',
+      facilitatorName: 'Campus Wellness Partner',
+      providerType: 'licensed_referral_partner',
+      requiresProfessionalReferral: true,
+      steps: ['Private intake and consent', 'Safety and recovery support plan', 'Professional referral', 'Optional peer recovery sessions', 'Aftercare and follow-up'],
+      payload: { durationLabel: 'Individual pace', formatLabel: 'Private navigation + professional referral', circleId: 'group-zetech-recovery-circle', safeguards: ['Zumbarl does not diagnose or provide treatment', 'Setbacks never remove progress or access', 'Immediate danger is directed to emergency support'] }
+    }
+  ]
+  for (const program of carePrograms) {
+    await prisma.studentCareProgram.upsert({
+      where: { id: program.id },
+      update: { ...program, campusId: campus.id, status: 'active' },
+      create: { ...program, campusId: campus.id, status: 'active' }
+    })
+  }
   await prisma.campusWellbeingResource.upsert({
     where: { id: 'wellbeing-zetech-counseling' },
     update: {
@@ -1840,11 +1882,32 @@ async function seedDatabase() {
     update: { status: 'active', role: 'member' },
     create: { groupId: laptopChama.id, studentId: student.id, status: 'active', role: 'member', payload: { participationMode: 'named' } }
   })
-  await prisma.companyWallet.upsert({
+  const companyWallet = await prisma.companyWallet.upsert({
     where: { companyId: business.id },
     update: {},
     create: { companyId: business.id }
   })
+  const companyWalletLedgerCount = await prisma.transaction.count({ where: { companyWalletId: companyWallet.id } })
+  if (companyWalletLedgerCount === 0 && companyWallet.balance === 0) {
+    const openingBalance = 32450
+    await prisma.$transaction([
+      prisma.companyWallet.update({ where: { id: companyWallet.id }, data: { balance: openingBalance, currency: 'KES' } }),
+      prisma.transaction.create({
+        data: {
+          companyWalletId: companyWallet.id,
+          type: 'COMPANY_PAYMENT',
+          status: 'COMPLETED',
+          amount: openingBalance,
+          netAmount: openingBalance,
+          currency: 'KES',
+          reference: `seed-company-wallet-opening:${business.id}`,
+          description: 'Demo company wallet opening balance',
+          processedAt: new Date(),
+          metadata: { source: 'seed', direction: 'company_credit' }
+        }
+      })
+    ])
+  }
 
   const seedOpportunities = [
     {

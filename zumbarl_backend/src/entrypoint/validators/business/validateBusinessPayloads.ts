@@ -173,6 +173,7 @@ const inviteOpportunityBiddersSchema = z.object({
 const fundOpportunitySchema = z.object({
   amount: z.coerce.number().positive(),
   currency: z.string().length(3).default('KES'),
+  method: z.enum(['wallet', 'mobile_money', 'bank', 'card']).default('wallet'),
   reference: z.string().optional()
 })
 

@@ -27,6 +27,10 @@ function CampusCartReviewPage() {
 
   const handlePlaceOrder = async () => {
     if (isPlacingOrder || !cartId || !cartItems.length) return
+    if (cartItems.some((item) => item.unavailable)) {
+      setOrderError('An item in your cart is out of stock. Return to your cart and remove it before placing the order.')
+      return
+    }
     setIsPlacingOrder(true)
     setOrderError('')
     const deliveryItems = cartItems.filter((item) => item.fulfilment?.method !== 'pickup')
@@ -57,7 +61,7 @@ function CampusCartReviewPage() {
           showQuantity={false}
           totals={orderTotals}
         >
-          <DeliveryEstimateCard />
+          <DeliveryEstimateCard items={cartItems} />
         </CheckoutOrderSummaryRail>
       )}
     >
@@ -78,6 +82,7 @@ function CampusCartReviewPage() {
       <CheckoutStepper steps={CHECKOUT_STEPS.review} />
       <ReviewOrderPanel
         error={orderError}
+        hasUnavailableItems={cartItems.some((item) => item.unavailable)}
         isPlacingOrder={isPlacingOrder}
         items={cartItems}
         onBack={() => navigate('/campus/cart/payment')}

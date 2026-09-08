@@ -99,6 +99,10 @@ async function fundBackendBusinessOpportunity(opportunityId, payment) {
   })
 }
 
+async function listBackendFinanceWallets() {
+  return sendZumbarlApiRequest('/finance/wallets')
+}
+
 async function createBackendOpportunityDeliverables(opportunityId, deliverables, payment) {
   return sendZumbarlApiRequest(`/business/opportunities/${opportunityId}/deliverables`, {
     method: 'POST',
@@ -191,6 +195,7 @@ export {
   publishBackendBusinessOpportunity,
   setBackendOpportunityApplicationsClosed,
   fundBackendBusinessOpportunity,
+  listBackendFinanceWallets,
   createBackendOpportunityDeliverables,
   listBackendOpportunityInviteCandidates,
   listBackendOpportunityApplicants,

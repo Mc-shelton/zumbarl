@@ -1,3 +1,4 @@
+import { ApiError } from '../../../lib/http.js'
 import { createPrismaRecordRepository, runPrismaRecordTransaction } from '../../../shared/repositories/index.js'
 import { OPPORTUNITY_COMPLETED_STATUS } from '../../../shared/opportunities/opportunityLifecycle.js'
 import { milestoneWorkspaceRepository } from './milestoneWorkspace.repository.js'
@@ -9,7 +10,9 @@ import {
   type WorkloadShare
 } from '../../../shared/projects/deliverableWorkload.js'
 import { resolveBudgetAmount, shareOfAgreedTotal } from '../../../shared/projects/projectPayouts.js'
-import { creditStudentWallet, readStudentWallet } from '../../../shared/services/walletLedger.js'
+import { consumeOpportunityEscrow } from '../../../shared/services/opportunityEscrow.js'
+import { normalizeMoney } from '../../../shared/services/money.js'
+import { creditStudentWallet, debitCompanyWallet, readStudentWallet } from '../../../shared/services/walletLedger.js'
 import { prisma } from '../../../lib/prisma.js'
 import type { Prisma, ProjectTeamInvite } from '@prisma/client'
 import { recordCompletedProjectOutcomes } from '../../services/scores/index.js'
@@ -580,13 +583,31 @@ class ProjectWorkflowsRepository {
   }
 
   fundMilestone(id: string) {
-    return runPrismaRecordTransaction(async (createRepository) => {
+    return runPrismaRecordTransaction(async (createRepository, tx) => {
       const transactionMilestones = createRepository('milestones')
       const transactionEscrows = createRepository('escrows')
       const milestone = await transactionMilestones.findById(id)
       if (!milestone) return null
 
-      const escrow = await transactionEscrows.create({ scope: 'milestone', scopeId: id, amount: milestone.budgetAmount, currency: 'KES', status: 'funded' })
+      const existing = (await transactionEscrows.listAll((item) => item.scope === 'milestone' && item.scopeId === id && item.status === 'funded'))[0]
+      if (milestone.fundingStatus === 'funded' && existing) return existing
+      const project = await createRepository('projects').findById(milestone.projectId)
+      if (!project) return null
+      const amount = Number(milestone.budgetAmount || 0)
+      const currency = project.agreedCurrency || 'KES'
+      if (amount <= 0) throw new ApiError(409, 'Set a positive milestone budget before funding it', 'MILESTONE_BUDGET_REQUIRED')
+      if (!project.opportunityId) {
+        if (!project.businessId) throw new ApiError(409, 'A company wallet is required to fund this milestone', 'COMPANY_WALLET_REQUIRED')
+        await debitCompanyWallet(tx, project.businessId, amount, {
+          type: 'ESCROW_HOLD',
+          currency,
+          reference: `milestone-funding:${id}`,
+          description: `Milestone escrow funding: ${milestone.title || id}`,
+          metadata: { projectId: milestone.projectId, milestoneId: id, balanceKind: 'available' }
+        })
+      }
+
+      const escrow = await transactionEscrows.create({ scope: 'milestone', scopeId: id, amount, currency, status: 'funded', source: project.opportunityId ? 'opportunity_escrow' : 'company_wallet' })
       await transactionMilestones.updateById(id, { fundingStatus: 'funded' })
       return escrow
     })
@@ -615,6 +636,7 @@ class ProjectWorkflowsRepository {
     // agreed-price field do we fall back to the raw budget.
     const reviewProject = await projects.findById(existing.projectId)
     const agreedAmount = Number(reviewProject?.agreedAmount) || 0
+    let projectCurrency = String(reviewProject?.agreedCurrency || 'KES')
     let projectBudgetAmount = 0
     let opportunityScopeItems: Array<{ id: string; budgetAmount: number; paymentPercent: number }> = []
     if (!existing.milestoneId && reviewProject?.opportunityId) {
@@ -623,9 +645,11 @@ class ProjectWorkflowsRepository {
         select: {
           budgetAmount: true,
           budgetLabel: true,
+          currency: true,
           scopeItems: { select: { id: true, budgetAmount: true, budgetLabel: true, paymentPercent: true } }
         }
       })
+      projectCurrency = String(reviewProject?.agreedCurrency || opportunity?.currency || 'KES')
       projectBudgetAmount = resolveBudgetAmount(opportunity?.budgetAmount, opportunity?.budgetLabel)
       opportunityScopeItems = (opportunity?.scopeItems ?? []).map((item) => ({
         id: item.id,
@@ -755,11 +779,19 @@ class ProjectWorkflowsRepository {
           studentId,
           status: 'paid',
           amount: payoutAmount,
-          currency: 'KES',
+          currency: projectCurrency,
           paidAt
         })
         if (studentId && payoutAmount > 0) {
+          if (reviewProject?.opportunityId) {
+            await consumeOpportunityEscrow(tx, reviewProject.opportunityId, payoutAmount, {
+              currency: projectCurrency,
+              studentId,
+              releaseReference: `project-payout:${payout.id}`
+            })
+          }
           await creditStudentWallet(tx, studentId, payoutAmount, {
+            currency: projectCurrency,
             description: `Payout for approved work: ${deliverable.title}`,
             opportunityId: reviewProject?.opportunityId ?? null,
             metadata: { projectId: deliverable.projectId, deliverableId: id, payoutId: payout.id }
@@ -778,13 +810,18 @@ class ProjectWorkflowsRepository {
             ? item.scopeItemId === deliverable.scopeItemId
             : !item.milestoneId && !item.scopeItemId
       )
+      const targetPayouts = await transactionPayouts.listAll((item) => (
+        item.projectId === deliverable.projectId && matchesTarget(item)
+      ))
+      const hasFinalPayout = targetPayouts.some((item) => item.payoutKind !== 'task_interim')
+      const interimPaid = targetPayouts
+        .filter((item) => item.payoutKind === 'task_interim')
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0)
+      amount = normalizeMoney(Math.max(0, amount - interimPaid), projectCurrency)
       if (reviewProject?.isTeamProject) {
         // Disburse a target's budget only once, no matter how many submissions
         // get approved for it.
-        const alreadyPaid = (await transactionPayouts.listAll((item) => (
-          item.projectId === deliverable.projectId && matchesTarget(item)
-        ))).length > 0
-        if (!alreadyPaid) {
+        if (!hasFinalPayout) {
           const declaredShares = await resolveDeclaredWorkloadShares(
             tx,
             deliverable.projectId,
@@ -812,7 +849,7 @@ class ProjectWorkflowsRepository {
           }
         }
       } else {
-        await disburse(deliverable.studentId, amount)
+        if (!hasFinalPayout) await disburse(deliverable.studentId, amount)
       }
       return next
     })
@@ -833,6 +870,7 @@ class ProjectWorkflowsRepository {
     const targetMilestoneId = payload.milestoneId ?? null
 
     const agreedAmount = Number(project.agreedAmount) || 0
+    let projectCurrency = String(project.agreedCurrency || 'KES')
     let projectBudgetAmount = 0
     let opportunityScopeItems: Array<{ id: string; budgetAmount: number; paymentPercent: number }> = []
     if (!targetMilestoneId && project.opportunityId) {
@@ -841,9 +879,11 @@ class ProjectWorkflowsRepository {
         select: {
           budgetAmount: true,
           budgetLabel: true,
+          currency: true,
           scopeItems: { select: { id: true, budgetAmount: true, budgetLabel: true, paymentPercent: true } }
         }
       })
+      projectCurrency = String(project.agreedCurrency || opportunity?.currency || 'KES')
       projectBudgetAmount = resolveBudgetAmount(opportunity?.budgetAmount, opportunity?.budgetLabel)
       opportunityScopeItems = (opportunity?.scopeItems ?? []).map((item) => ({
         id: item.id,
@@ -869,9 +909,10 @@ class ProjectWorkflowsRepository {
       )
 
       // A target's budget is released only once.
-      const alreadyPaid = (await transactionPayouts.listAll((item) => (
+      const targetPayouts = await transactionPayouts.listAll((item) => (
         item.projectId === projectId && matchesTarget(item)
-      ))).length > 0
+      ))
+      const alreadyPaid = targetPayouts.some((item) => item.payoutKind !== 'task_interim')
       if (alreadyPaid) return { completed: true as const, alreadyCompleted: true }
 
       let amount = contractAmount
@@ -891,7 +932,7 @@ class ProjectWorkflowsRepository {
           ? shareOfAgreedTotal(contractAmount, projectMilestones, targetMilestoneId, allDone, (item) => Number(item.budgetAmount ?? 0))
           : Number(milestone?.budgetAmount ?? 0)
       } else if (targetScopeItemId) {
-        const paidScopeIds = new Set((await transactionPayouts.listAll((item) => item.projectId === projectId))
+        const paidScopeIds = new Set((await transactionPayouts.listAll((item) => item.projectId === projectId && item.payoutKind !== 'task_interim'))
           .map((item) => item.scopeItemId).filter(Boolean))
         paidScopeIds.add(targetScopeItemId)
         allDone = opportunityScopeItems.length > 0 && opportunityScopeItems.every((item) => paidScopeIds.has(item.id))
@@ -902,6 +943,11 @@ class ProjectWorkflowsRepository {
       } else {
         allDone = true
       }
+
+      const interimPaid = targetPayouts
+        .filter((item) => item.payoutKind === 'task_interim')
+        .reduce((sum, item) => sum + Number(item.amount || 0), 0)
+      amount = normalizeMoney(Math.max(0, amount - interimPaid), projectCurrency)
 
       await transactionProjects.updateById(projectId, {
         status: allDone ? 'completed' : 'execution',
@@ -923,11 +969,19 @@ class ProjectWorkflowsRepository {
           studentId,
           status: 'paid',
           amount: payoutAmount,
-          currency: 'KES',
+          currency: projectCurrency,
           paidAt
         })
         if (studentId && payoutAmount > 0) {
+          if (project.opportunityId) {
+            await consumeOpportunityEscrow(tx, project.opportunityId, payoutAmount, {
+              currency: projectCurrency,
+              studentId,
+              releaseReference: `project-payout:${payout.id}`
+            })
+          }
           await creditStudentWallet(tx, studentId, payoutAmount, {
+            currency: projectCurrency,
             description: 'Payout for completed deliverable',
             opportunityId: project.opportunityId ?? null,
             metadata: { projectId, payoutId: payout.id }
@@ -1091,13 +1145,14 @@ class ProjectWorkflowsRepository {
       deliverables.listAll((item) => item.projectId === projectId),
       payouts.listAll((item) => item.projectId === projectId)
     ])
-    const paidDeliverableIds = new Set(projectPayouts.map((payout) => payout.deliverableId).filter(Boolean))
+    const finalPayouts = projectPayouts.filter((payout) => payout.payoutKind !== 'task_interim')
+    const paidDeliverableIds = new Set(finalPayouts.map((payout) => payout.deliverableId).filter(Boolean))
     // A team project releases its budget per scope target, not per submission, so
     // those payouts carry a scopeItemId/milestoneId and no deliverableId. Matching
     // only on deliverableId left every approved submission looking unpaid, which
     // blocked the project from ever being ended.
-    const paidScopeItemIds = new Set(projectPayouts.map((payout) => payout.scopeItemId).filter(Boolean))
-    const paidMilestoneIds = new Set(projectPayouts.map((payout) => payout.milestoneId).filter(Boolean))
+    const paidScopeItemIds = new Set(finalPayouts.map((payout) => payout.scopeItemId).filter(Boolean))
+    const paidMilestoneIds = new Set(finalPayouts.map((payout) => payout.milestoneId).filter(Boolean))
     const isSettled = (item: Record<string, any>) => (
       paidDeliverableIds.has(item.id)
       || (item.scopeItemId && paidScopeItemIds.has(item.scopeItemId))

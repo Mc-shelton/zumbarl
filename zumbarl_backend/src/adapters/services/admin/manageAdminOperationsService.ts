@@ -1,4 +1,5 @@
 import { notFound } from '../../../lib/http.js'
+import { resolveLocalStoragePath } from '../../storage/index.js'
 import { adminOperationsRepository } from '../../repositories/admin/index.js'
 
 function removePasswordHash(record: Record<string, any>) {
@@ -19,12 +20,17 @@ async function createCampusVendorService(payload: Record<string, any>, context?:
   return await adminOperationsRepository.createCampusVendor(payload, context) ?? notFound('Campus page or student vendor manager')
 }
 async function updateCampusVendorService(id: string, payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.updateCampusVendor(id, payload, context) ?? notFound('Campus vendor') }
+async function reviewStudentKitchenService(id: string, payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.reviewStudentKitchen(id, payload, context) ?? notFound('Student kitchen') }
 async function addCampusVendorManagerService(id: string, payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.addCampusVendorManager(id, payload.email, payload.role, context) ?? notFound('Campus vendor or eligible operator') }
 async function removeCampusVendorManagerService(id: string, userId: string, context?: AuditContext) { return await adminOperationsRepository.removeCampusVendorManager(id, userId, context) ?? notFound('Removable campus vendor assignment') }
 async function listUsersService(query: Record<string, unknown>) { const users = await adminOperationsRepository.listUsers(query); return { ...users, data: users.data.map(removePasswordHash) } }
 async function updateUserService(id: string, payload: Record<string, any>, context?: AuditContext) { const user = await adminOperationsRepository.updateUser(id, payload, context) ?? notFound('User'); return removePasswordHash(user) }
 async function revokeUserSessionsService(id: string, payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.revokeUserSessions(id, context, payload.reason) }
 async function reviewUserKycService(id: string, payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.reviewUserKyc(id, payload, context) ?? notFound('User KYC profile') }
+async function readStudentKycDocumentService(userId: string, documentId: string) {
+  const document = await adminOperationsRepository.readStudentKycDocument(userId, documentId) ?? notFound('Student KYC document')
+  return { ...document, diskPath: resolveLocalStoragePath(document.bucket, document.storageKey) }
+}
 async function mergeDuplicateAccountsService(payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.mergeDuplicateAccounts(payload, context) ?? notFound('Duplicate account pair') }
 const readFinancialOversightService = (query: Record<string, unknown>) => adminOperationsRepository.readFinancialOversight(query)
 const recordFinancialActionService = (payload: Record<string, any>, context?: AuditContext) => adminOperationsRepository.recordFinancialAction(payload, context)
@@ -36,6 +42,10 @@ const readSafetyMetricsService = () => adminOperationsRepository.readSafetyMetri
 const readContentModerationService = (query: Record<string, unknown>) => adminOperationsRepository.readContentModeration(query)
 const moderateContentService = (payload: Record<string, any>, context?: AuditContext) => adminOperationsRepository.moderateContent(payload, context)
 const readSystemConfigurationService = () => adminOperationsRepository.readSystemConfiguration()
+const readAcademicCatalogService = () => adminOperationsRepository.readAcademicCatalog()
+async function updateAcademicCampusService(id: string, payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.updateAcademicCampus(id, payload, context) ?? notFound('Campus') }
+async function updateAcademicCourseService(id: string, payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.updateAcademicCourse(id, payload, context) ?? notFound('Course') }
+async function updateAcademicUnitService(id: string, payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.updateAcademicUnit(id, payload, context) ?? notFound('Unit') }
 const readNavigationFeatureTagsService = () => adminOperationsRepository.readNavigationFeatureTags()
 const writeSystemConfigurationService = (payload: Record<string, any>, context?: AuditContext) => adminOperationsRepository.writeSystemConfiguration(payload, context)
 const readAnalyticsReportService = () => adminOperationsRepository.readAnalyticsReport()
@@ -49,12 +59,14 @@ export {
   readCampusVendorManagementService,
   createCampusVendorService,
   updateCampusVendorService,
+  reviewStudentKitchenService,
   addCampusVendorManagerService,
   removeCampusVendorManagerService,
   listUsersService,
   updateUserService,
   revokeUserSessionsService,
   reviewUserKycService,
+  readStudentKycDocumentService,
   mergeDuplicateAccountsService,
   readFinancialOversightService,
   recordFinancialActionService,
@@ -66,6 +78,10 @@ export {
   readContentModerationService,
   moderateContentService,
   readSystemConfigurationService,
+  readAcademicCatalogService,
+  updateAcademicCampusService,
+  updateAcademicCourseService,
+  updateAcademicUnitService,
   readNavigationFeatureTagsService,
   writeSystemConfigurationService,
   readAnalyticsReportService,

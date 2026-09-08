@@ -8,7 +8,7 @@ import { CAMPUS_VIEWER } from '../features/campus/constants'
 import { useViewerProfile } from '../features/auth/viewerProfile'
 import { joinCommunityGroup, listCommunityGroups } from '../features/community/services/communityService'
 import { getSupportCircleSplash } from '../features/community/supportCircleVisuals'
-import { completeWellbeingReset, createDailyCheckIn, createTalkItOutConversation, readTalkItOutConversation, readWellbeingDashboard, requestCounselorSession, sendTalkItOutMessage, submitWellbeingCheckIn, updateWellbeingPreferences } from '../features/community/services/wellbeingService'
+import { completeWellbeingReset, createDailyCheckIn, createTalkItOutConversation, enrollInStudentCareProgram, listStudentCarePrograms, readTalkItOutConversation, readWellbeingDashboard, recordStudentCareCheckIn, requestCounselorSession, requestTalkItOutHandoff, sendTalkItOutMessage, submitWellbeingCheckIn, updateWellbeingPreferences } from '../features/community/services/wellbeingService'
 import '../styles/campus.css'
 import '../styles/wellbeing.css'
 
@@ -24,7 +24,7 @@ const MOOD_GUIDANCE = {
   low: { title: 'You do not have to carry this alone', detail: 'A trained campus support person can respond without this becoming a public post.', action: 'human-check-in', actionLabel: 'Ask for human support' },
   overwhelmed: { title: 'Make only the next two minutes smaller', detail: 'Start with breathing and grounding. You can stop whenever you want.', action: 'reset', actionLabel: 'Start a short reset' },
 }
-const STRESSORS = [['school', 'School'], ['money', 'Money'], ['relationships', 'Relationships'], ['family', 'Family'], ['work', 'Work'], ['loneliness', 'Loneliness'], ['anxiety', 'Anxiety'], ['sleep', 'Sleep']]
+const STRESSORS = [['school', 'School'], ['money', 'Money'], ['relationships', 'Relationships'], ['family', 'Family'], ['work', 'Work'], ['loneliness', 'Loneliness'], ['anxiety', 'Anxiety'], ['sleep', 'Sleep'], ['health', 'Health'], ['peer_pressure', 'Peer pressure'], ['substance_use', 'Substance use'], ['other', 'Something else']]
 const SLEEP_OPTIONS = [['under_4', 'Under 4h'], ['4_6', '4–6h'], ['6_8', '6–8h'], ['over_8', '8h+']]
 const CHECK_IN_TOPICS = [
   { id: 'counseling', label: 'I need someone to talk to' }, { id: 'anonymous-support', label: 'I want to share privately' },
@@ -53,16 +53,21 @@ function WellbeingPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [dashboard, setDashboard] = useState(null)
   const [circles, setCircles] = useState([])
+  const [carePrograms, setCarePrograms] = useState([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState(null)
   const [activeModal, setActiveModal] = useState('')
   const [working, setWorking] = useState(false)
   const [selectedCircle, setSelectedCircle] = useState(null)
+  const [selectedProgram, setSelectedProgram] = useState(null)
   const [alias, setAlias] = useState(createAlias)
   const [daily, setDaily] = useState({ mood: '', stressors: [], sleep: '', note: '' })
   const [checkIn, setCheckIn] = useState({ category: 'anonymous-support', anonymous: true, urgency: 'normal', message: '' })
   const [booking, setBooking] = useState({ scheduledAt: localDateTimeMinimum(), reason: '' })
+  const [programRequest, setProgramRequest] = useState({ goal: '', privacyMode: 'private', urgency: 'normal', consent: false })
+  const [programCheckIn, setProgramCheckIn] = useState({ status: 'steady', note: '', requestFollowUp: false })
+  const [handoff, setHandoff] = useState({ shareLatestMessage: false, note: '', consent: false })
   const [conversation, setConversation] = useState(null)
   const [chatInput, setChatInput] = useState('')
   const [resetStep, setResetStep] = useState(0)
@@ -83,19 +88,23 @@ function WellbeingPage() {
 
   useEffect(() => {
     let active = true
-    Promise.all([readWellbeingDashboard(), listCommunityGroups()]).then(([wellbeing, community]) => {
+    Promise.all([readWellbeingDashboard(), listCommunityGroups(), listStudentCarePrograms()]).then(([wellbeing, community, programs]) => {
       if (!active) return
       setDashboard(wellbeing)
       setCircles((community?.data || []).filter((group) => group.category === 'support-circle'))
+      setCarePrograms(programs?.data || [])
     }).catch((requestError) => { if (active) setError(requestError.message || 'Wellbeing could not be loaded.') })
       .finally(() => { if (active) setIsLoading(false) })
     return () => { active = false }
   }, [])
 
   useEffect(() => {
-    const open = searchParams.get('open')
-    if (open === 'booking') setActiveModal('booking')
-    if (open === 'check-in') setActiveModal('human-check-in')
+    const timeout = window.setTimeout(() => {
+      const open = searchParams.get('open')
+      if (open === 'booking') setActiveModal('booking')
+      if (open === 'check-in') setActiveModal('human-check-in')
+    }, 0)
+    return () => window.clearTimeout(timeout)
   }, [searchParams])
 
   useEffect(() => {
@@ -108,11 +117,16 @@ function WellbeingPage() {
 
   const joinedCount = useMemo(() => circles.filter((circle) => circle.viewerMembership).length, [circles])
   const moodGuidance = daily.mood ? MOOD_GUIDANCE[daily.mood] : null
+  const supportActivity = useMemo(() => [
+    ...(dashboard?.supportActivity?.reports || []).map((item) => ({ ...item, kind: 'Support request', date: item.createdAt })),
+    ...(dashboard?.supportActivity?.bookings || []).map((item) => ({ ...item, kind: 'Counselor appointment', date: item.scheduledAt })),
+  ].sort((left, right) => new Date(right.date) - new Date(left.date)).slice(0, 6), [dashboard?.supportActivity])
 
   function closeModal() {
     if (working) return
     setActiveModal('')
     setSelectedCircle(null)
+    setSelectedProgram(null)
     setBrainDump('')
     setSearchParams({}, { replace: true })
   }
@@ -200,6 +214,52 @@ function WellbeingPage() {
     finally { setWorking(false) }
   }
 
+  async function joinCareProgram(event) {
+    event.preventDefault()
+    if (!selectedProgram || !programRequest.consent) return
+    setWorking(true); setError('')
+    try {
+      const enrollment = await enrollInStudentCareProgram(selectedProgram.id, {
+        goal: programRequest.goal,
+        privacyMode: programRequest.privacyMode,
+        urgency: programRequest.urgency,
+        consent: true,
+        consentText: 'I agree that Student Affairs or the named wellbeing partner may use this request to coordinate this private care pathway.'
+      })
+      setCarePrograms((current) => current.map((program) => program.id === selectedProgram.id ? { ...program, enrollments: [enrollment] } : program))
+      setNotice({ title: 'Your private care request was sent.', detail: 'Student Affairs can now review it, assign follow-up and keep the plan moving with you.' })
+      setProgramRequest({ goal: '', privacyMode: 'private', urgency: 'normal', consent: false }); setActiveModal(''); setSelectedProgram(null)
+      loadDashboard().catch(() => {})
+    } catch (requestError) { setError(requestError.message || 'The care pathway request could not be sent.') }
+    finally { setWorking(false) }
+  }
+
+  async function submitProgramCheckIn(event) {
+    event.preventDefault()
+    const enrollment = selectedProgram?.enrollments?.[0]
+    if (!enrollment) return
+    setWorking(true); setError('')
+    try {
+      const response = await recordStudentCareCheckIn(enrollment.id, programCheckIn)
+      setCarePrograms((current) => current.map((program) => program.id === selectedProgram.id ? { ...program, enrollments: [response.enrollment] } : program))
+      setNotice({ title: programCheckIn.requestFollowUp ? 'Check-in saved and follow-up requested.' : 'Your private progress check-in was saved.', detail: programCheckIn.status === 'setback' ? 'A setback does not erase your progress. Your plan stays available.' : 'This does not affect your public profile, score or opportunities.' })
+      setProgramCheckIn({ status: 'steady', note: '', requestFollowUp: false }); setActiveModal(''); setSelectedProgram(null)
+    } catch (requestError) { setError(requestError.message || 'Your care check-in could not be saved.') }
+    finally { setWorking(false) }
+  }
+
+  async function submitHumanHandoff(event) {
+    event.preventDefault()
+    if (!conversation?.id || !handoff.consent) return
+    setWorking(true); setError('')
+    try {
+      await requestTalkItOutHandoff(conversation.id, { consent: true, shareLatestMessage: handoff.shareLatestMessage, note: handoff.note.trim() || undefined })
+      setNotice({ title: 'A human follow-up was requested.', detail: handoff.shareLatestMessage ? 'The latest message was shared with the support team as you chose.' : 'Your Talk It Out words remain private; only the follow-up request was shared.' })
+      setHandoff({ shareLatestMessage: false, note: '', consent: false }); setActiveModal(''); loadDashboard().catch(() => {})
+    } catch (requestError) { setError(requestError.message || 'The human follow-up could not be requested.') }
+    finally { setWorking(false) }
+  }
+
   async function joinCircle() {
     if (!selectedCircle) return
     setWorking(true)
@@ -217,6 +277,8 @@ function WellbeingPage() {
     else if (action.kind === 'talk') openTalkItOut()
     else if (action.kind === 'check-in') document.getElementById('daily-check-in')?.scrollIntoView({ behavior: 'smooth' })
     else if (action.kind === 'human-help') setActiveModal('booking')
+    else if (action.kind === 'human-handoff') setActiveModal('handoff')
+    else if (action.kind === 'care') document.getElementById('care-pathways')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
   function handleMoodGuidance() {
@@ -270,18 +332,31 @@ function WellbeingPage() {
           </section>
         </section>
 
+        <section className="wellbeing-care-pathways" id="care-pathways"><header><div><span>Structured support</span><h2>A private path, not just a conversation</h2><p>Choose a goal, connect with Student Affairs or a wellbeing partner, attend relevant sessions and check in at your own pace.</p></div><em>{carePrograms.filter((program) => program.enrollments?.length).length} active plans</em></header>
+          {carePrograms.length ? <div className="wellbeing-care-grid">{carePrograms.map((program) => {
+            const enrollment = program.enrollments?.[0]
+            const stepCount = program.steps?.length || 1
+            const currentStep = Math.min(enrollment?.currentStep || 0, stepCount)
+            return <article key={program.id} className={enrollment ? 'is-enrolled' : ''}><header><span><FiCompass /></span><div><small>{program.payload?.durationLabel || 'Individual pace'}</small><h3>{program.name}</h3></div>{enrollment ? <em>{enrollment.status}</em> : null}</header><p>{program.summary}</p><div className="wellbeing-care-provider"><FiShield /><span><small>Coordinated by</small><strong>{program.facilitatorName}</strong></span></div>{enrollment ? <><div className="wellbeing-care-progress"><span><i style={{ width: `${Math.round((currentStep / stepCount) * 100)}%` }} /></span><small>Step {Math.min(currentStep + 1, stepCount)} of {stepCount}</small></div>{enrollment.studentVisibleNote ? <p className="wellbeing-care-note">{enrollment.studentVisibleNote}</p> : null}</> : <ol>{program.steps.slice(0, 3).map((step) => <li key={step}>{step}</li>)}</ol>}<footer><small><FiLock /> Never shown on your profile or score</small><button type="button" onClick={() => { setSelectedProgram(program); setActiveModal(enrollment ? 'care-check-in' : 'care-enroll') }}>{enrollment ? 'Private check-in' : 'Explore this path'} <FiArrowRight /></button></footer></article>
+          })}</div> : null}
+          <aside className="wellbeing-care-boundary"><FiShield /><p><strong>Care coordination, not clinical treatment.</strong> Zumbarl helps you reach people, programs and referrals. Diagnosis, detoxification, medication and treatment must remain with qualified professionals.</p></aside>
+        </section>
+
+        {supportActivity.length ? <section className="wellbeing-support-activity"><header><div><span>Human support</span><h2>Your requests and appointments</h2><p>Status updates stay here and in your private notifications.</p></div><FiUser /></header><div>{supportActivity.map((item) => <article key={`${item.kind}-${item.id}`}><span>{item.kind === 'Counselor appointment' ? <FiCalendar /> : <FiMessageCircle />}</span><div><strong>{item.kind}</strong><small>{item.category ? item.category.replaceAll('-', ' ') : new Date(item.date).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' })}</small></div><em className={`is-${item.status}`}>{item.status.replaceAll('_', ' ')}</em></article>)}</div></section> : null}
+
         <section className="wellbeing-circles" id="support-circles"><header><div><span>Low-pressure connection</span><h2>People who may understand</h2><p>Small moderated spaces for shared experiences—not public pages or open feeds.</p></div><em>{joinedCount} joined</em></header>
           {isLoading ? <div className="wellbeing-loading"><span /><span /></div> : circles.length ? <div className="wellbeing-circle-grid">{circles.slice(0, 4).map((circle) => {
             const memberCount = Number(circle.memberCount || 0)
             const circleHref = `/campus/wellbeing/circles/${circle.id}`
             const splashImageUrl = getSupportCircleSplash(circle)
-            return <article key={circle.id} className={`${circle.viewerMembership ? 'is-joined ' : ''}${splashImageUrl ? 'has-splash' : ''}`.trim()} role={circle.viewerMembership ? 'link' : undefined} tabIndex={circle.viewerMembership ? 0 : undefined} onClick={circle.viewerMembership ? () => navigate(circleHref) : undefined} onKeyDown={circle.viewerMembership ? (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); navigate(circleHref) } } : undefined}>
+            const isPending = circle.status !== 'active'
+            return <article key={circle.id} className={`${circle.viewerMembership ? 'is-joined ' : ''}${splashImageUrl ? 'has-splash ' : ''}${isPending ? 'is-pending' : ''}`.trim()} role={circle.viewerMembership && !isPending ? 'link' : undefined} tabIndex={circle.viewerMembership && !isPending ? 0 : undefined} onClick={circle.viewerMembership && !isPending ? () => navigate(circleHref) : undefined} onKeyDown={circle.viewerMembership && !isPending ? (event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); navigate(circleHref) } } : undefined}>
               {splashImageUrl ? <div className="wellbeing-circle-splash" aria-hidden="true"><img src={splashImageUrl} alt="" loading="lazy" /><span><FiHeart /></span></div> : null}
-              <header><span><FiHeart /></span><div><small>Alias-first circle</small><h3>{circle.name}</h3></div><FiLock aria-label="Members-only space" /></header>
+              <header><span><FiHeart /></span><div><small>{isPending ? 'Awaiting safeguarding review' : 'Alias-first circle'}</small><h3>{circle.name}</h3></div><FiLock aria-label="Members-only space" /></header>
               <p>{circle.purpose}</p>
               <div className="wellbeing-circle-trust"><span><FiShield /><i>Moderated by</i><strong>{circle.moderationOwner || 'Campus wellbeing team'}</strong></span><span><FiClock /><i>Participation</i><strong>{circle.activityLabel || 'Ongoing · reply when ready'}</strong></span></div>
               <div className="wellbeing-circle-meta"><span><FiUsers /> {memberCount ? `${memberCount} ${memberCount === 1 ? 'member' : 'members'}` : 'New circle'}</span><span>{circle.campus || viewer.campus}</span></div>
-              <footer><span><FiLock /> Your alias is shown to members</span>{circle.viewerMembership ? <Link to={circleHref} onClick={(event) => event.stopPropagation()}>Open circle <FiArrowRight /></Link> : <button type="button" onClick={() => { setSelectedCircle(circle); setAlias(createAlias()); setActiveModal('circle') }}>Join with alias</button>}</footer>
+              <footer><span><FiLock /> {isPending ? 'Only you and reviewers can see this proposal' : 'Your alias is shown to members'}</span>{isPending ? <strong>Pending review</strong> : circle.viewerMembership ? <Link to={circleHref} onClick={(event) => event.stopPropagation()}>Open circle <FiArrowRight /></Link> : <button type="button" onClick={() => { setSelectedCircle(circle); setAlias(createAlias()); setActiveModal('circle') }}>Join with alias</button>}</footer>
             </article>
           })}</div> : <div className="wellbeing-empty"><FiHeart /><h3>No campus circles are open yet.</h3><p>You can still talk privately with the wellbeing team.</p></div>}
         </section>
@@ -310,6 +385,12 @@ function WellbeingPage() {
       {activeModal === 'human-check-in' ? <form className="wellbeing-modal" onSubmit={sendHumanCheckIn} onMouseDown={(event) => event.stopPropagation()}><header><div><span>Human support request</span><h2>What would feel helpful right now?</h2><p>Share only what you are comfortable sharing.</p></div><button type="button" onClick={closeModal} aria-label="Close"><FiX /></button></header><div className="wellbeing-topic-grid">{CHECK_IN_TOPICS.map((topic) => <label key={topic.id} className={checkIn.category === topic.id ? 'is-selected' : ''}><input type="radio" name="topic" value={topic.id} checked={checkIn.category === topic.id} onChange={(event) => setCheckIn((current) => ({ ...current, category: event.target.value }))} /><span>{topic.label}</span></label>)}</div><label className="wellbeing-field"><span>What’s happening?</span><textarea required minLength="5" value={checkIn.message} onChange={(event) => setCheckIn((current) => ({ ...current, message: event.target.value }))} placeholder="Write in your own words…" /></label><div className="wellbeing-form-row"><label className="wellbeing-field"><span>Urgency</span><select value={checkIn.urgency} onChange={(event) => setCheckIn((current) => ({ ...current, urgency: event.target.value }))}><option value="low">I can wait</option><option value="normal">I’d like support soon</option><option value="high">This feels urgent</option></select></label><label className="wellbeing-anonymous-toggle"><input type="checkbox" checked={checkIn.anonymous} onChange={(event) => setCheckIn((current) => ({ ...current, anonymous: event.target.checked }))} /><span><FiLock /><strong>Send without my profile</strong><small>The report is stored without your student ID. Keep the reference shown after sending.</small></span></label></div><footer><small><FiShield /> This is reviewed by people, but it is not an emergency channel.</small><button type="submit" disabled={working}>{working ? 'Sending…' : 'Send request'} <FiArrowRight /></button></footer></form> : null}
 
       {activeModal === 'booking' ? <form className="wellbeing-modal" onSubmit={bookCounselor} onMouseDown={(event) => event.stopPropagation()}><header><div><span>One-to-one human support</span><h2>Request a counselor session</h2><p>Choose a preferred time. The wellbeing team will confirm availability.</p></div><button type="button" onClick={closeModal} aria-label="Close"><FiX /></button></header><div className="wellbeing-booking-banner"><FiCalendar /><div><strong>Private campus support</strong><span>Your request never appears on your profile or feed.</span></div></div><label className="wellbeing-field"><span>Preferred date and time</span><input required type="datetime-local" min={localDateTimeMinimum()} value={booking.scheduledAt} onChange={(event) => setBooking((current) => ({ ...current, scheduledAt: event.target.value }))} /></label><label className="wellbeing-field"><span>Anything the counselor should know? <small>Optional</small></span><textarea value={booking.reason} onChange={(event) => setBooking((current) => ({ ...current, reason: event.target.value }))} placeholder="You can keep this brief…" /></label><footer><small><FiClock /> This is a request, not a confirmed appointment.</small><button type="submit" disabled={working}>{working ? 'Requesting…' : 'Request session'} <FiArrowRight /></button></footer></form> : null}
+
+      {activeModal === 'care-enroll' && selectedProgram ? <form className="wellbeing-modal wellbeing-care-modal" onSubmit={joinCareProgram} onMouseDown={(event) => event.stopPropagation()}><header><div><span>Private care pathway</span><h2>{selectedProgram.name}</h2><p>{selectedProgram.summary}</p></div><button type="button" onClick={closeModal} aria-label="Close"><FiX /></button></header><div className="wellbeing-care-steps">{selectedProgram.steps.map((step, index) => <span key={step}><i>{index + 1}</i>{step}</span>)}</div><label className="wellbeing-field"><span>What would you like this pathway to help with?</span><textarea required minLength="5" value={programRequest.goal} onChange={(event) => setProgramRequest((current) => ({ ...current, goal: event.target.value }))} placeholder="Describe a private, practical goal in your own words…" /></label><label className="wellbeing-field"><span>How soon would you like contact?</span><select value={programRequest.urgency} onChange={(event) => setProgramRequest((current) => ({ ...current, urgency: event.target.value }))}><option value="low">When a place is available</option><option value="normal">Within the normal support window</option><option value="high">As soon as the team can respond</option></select></label><label className="wellbeing-consent"><input type="checkbox" checked={programRequest.consent} onChange={(event) => setProgramRequest((current) => ({ ...current, consent: event.target.checked }))} /><span><strong>I agree to a named, private follow-up</strong><small>{selectedProgram.facilitatorName} may see my identity, goal and plan progress to coordinate support. Nothing is posted publicly.</small></span></label><footer><small><FiShield /> You can pause or withdraw through the support team.</small><button type="submit" disabled={working || !programRequest.consent || programRequest.goal.trim().length < 5}>{working ? 'Sending…' : 'Request this pathway'} <FiArrowRight /></button></footer></form> : null}
+
+      {activeModal === 'care-check-in' && selectedProgram?.enrollments?.[0] ? <form className="wellbeing-modal wellbeing-care-modal" onSubmit={submitProgramCheckIn} onMouseDown={(event) => event.stopPropagation()}><header><div><span>Private progress check-in</span><h2>{selectedProgram.name}</h2><p>This is for support, not scoring. A difficult week never removes earlier progress.</p></div><button type="button" onClick={closeModal} aria-label="Close"><FiX /></button></header><div className="wellbeing-care-statuses">{[['steady', 'I’m steady'], ['completed_step', 'I completed a step'], ['need_support', 'I need more support'], ['setback', 'I had a setback']].map(([id, label]) => <label key={id} className={programCheckIn.status === id ? 'is-selected' : ''}><input type="radio" name="care-status" value={id} checked={programCheckIn.status === id} onChange={(event) => setProgramCheckIn((current) => ({ ...current, status: event.target.value, requestFollowUp: ['need_support', 'setback'].includes(event.target.value) }))} /><span>{label}</span></label>)}</div><label className="wellbeing-field"><span>Anything you want your support team to know? <small>Optional</small></span><textarea value={programCheckIn.note} onChange={(event) => setProgramCheckIn((current) => ({ ...current, note: event.target.value }))} /></label><label className="wellbeing-consent"><input type="checkbox" checked={programCheckIn.requestFollowUp} onChange={(event) => setProgramCheckIn((current) => ({ ...current, requestFollowUp: event.target.checked }))} /><span><strong>Ask the support team to follow up</strong><small>This reopens your care request for a human response.</small></span></label><footer><small><FiLock /> Private to you and the assigned support team.</small><button type="submit" disabled={working}>{working ? 'Saving…' : 'Save check-in'} <FiArrowRight /></button></footer></form> : null}
+
+      {activeModal === 'handoff' && conversation ? <form className="wellbeing-modal wellbeing-care-modal" onSubmit={submitHumanHandoff} onMouseDown={(event) => event.stopPropagation()}><header><div><span>Explicit human handoff</span><h2>Ask a person to follow up</h2><p>Talk It Out is private by default. You decide whether the support team also receives your latest message.</p></div><button type="button" onClick={closeModal} aria-label="Close"><FiX /></button></header><label className="wellbeing-consent"><input type="checkbox" checked={handoff.shareLatestMessage} onChange={(event) => setHandoff((current) => ({ ...current, shareLatestMessage: event.target.checked }))} /><span><strong>Share my latest Talk It Out message</strong><small>Leave this off to send only a request for contact.</small></span></label><label className="wellbeing-field"><span>Optional note for the support team</span><textarea value={handoff.note} onChange={(event) => setHandoff((current) => ({ ...current, note: event.target.value }))} /></label><label className="wellbeing-consent is-required"><input type="checkbox" checked={handoff.consent} onChange={(event) => setHandoff((current) => ({ ...current, consent: event.target.checked }))} /><span><strong>I understand this creates a named support case</strong><small>This is not an emergency service. If danger is immediate, move toward a trusted person, campus security or emergency care now.</small></span></label><footer><Link to="/help">Open urgent safety help</Link><button type="submit" disabled={working || !handoff.consent}>{working ? 'Requesting…' : 'Request human follow-up'} <FiArrowRight /></button></footer></form> : null}
 
       {activeModal === 'circle' && selectedCircle ? <section className="wellbeing-modal" role="dialog" aria-modal="true" onMouseDown={(event) => event.stopPropagation()}><header><div><span>Alias participation</span><h2>Join {selectedCircle.name}</h2><p>Members will see your chosen alias instead of your student profile.</p></div><button type="button" onClick={closeModal} aria-label="Close"><FiX /></button></header><div className="wellbeing-alias"><span>{alias.slice(0, 1)}</span><div><small>You’ll appear as</small><strong>{alias}</strong></div><button type="button" onClick={() => setAlias(createAlias())}>Try another</button></div><div className="wellbeing-disclosure"><FiShield /><p><strong>Private to members, accountable to safety.</strong>Your profile is hidden from circle members. Authorized safety staff can connect the alias to your account only for moderation, safeguarding, or a required escalation.</p></div><footer><small>By joining, you agree to the circle rules and safety boundaries.</small><button type="button" disabled={working} onClick={joinCircle}>{working ? 'Joining…' : 'Join with this alias'} <FiArrowRight /></button></footer></section> : null}
     </div> : null}

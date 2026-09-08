@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import CampusSidebar from '../components/layout/CampusSidebar'
 import Seo from '../components/Seo'
 import { Breadcrumb, ConfirmDialog } from '../components/ui'
@@ -25,27 +25,35 @@ import useCampusProfileViewModel from '../features/profile/hooks/useCampusProfil
 import { readMyStudentProfileExperience, readStudentProfileExperience, updateMyStudentProfile } from '../features/campus/services/readCampusExperience'
 import { getAuthUserSnapshot, hydrateAuthUserFromBackend, refreshAuthUserFromBackend } from '../features/auth/services/authUserService'
 import { readProfileRelationship, setProfileRelationship } from '../features/profile/services/profileRelationshipService'
+import { updateMyProgressionMode } from '../features/profile/services/profileProgressionService'
 import { CAMPUS_PROFILE_SEO } from '../features/seo/constants'
-import { decideMarketplaceOffer, readMyMarketplaceInventory, readMyMarketplaceSales, readMyPendingMarketplaceOffers, updateMarketplaceSaleStatus, updateMyMarketplaceShop } from '../features/opportunities/services/marketplaceInteractionService'
+import { decideMarketplaceOffer, readMyErrands, readMyMarketplaceInventory, readMyMarketplaceSales, readMyPendingMarketplaceOffers, updateMarketplaceSaleStatus, updateMyMarketplaceShop } from '../features/opportunities/services/marketplaceInteractionService'
+import { buildOrderConversationHref, buyerOrderHref, sellerOrderHref } from '../features/opportunities/orderMessaging'
 import '../styles/campus.css'
 import '../styles/profile.css'
 
 function CampusProfilePage({ viewContext = 'campus' }) {
   const { studentId } = useParams()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const isBusinessView = viewContext === 'business'
   const isPublicStudentView = Boolean(studentId)
   const [viewerStudentId, setViewerStudentId] = useState(() => getAuthUserSnapshot()?.student?.id || '')
   const [profileExperience, setProfileExperience] = useState(null)
   const targetStudentId = profileExperience?.header?.id || studentId || ''
   const isOwnProfile = !isBusinessView && (!studentId || Boolean(viewerStudentId && viewerStudentId === targetStudentId))
-  const profileTabs = isOwnProfile ? PROFILE_TABS : PROFILE_TABS.filter((tab) => tab !== 'Marketing')
+  const [hasErrandAccess, setHasErrandAccess] = useState(false)
+  const profileTabs = PROFILE_TABS.filter((tab) => {
+    if (!isOwnProfile && ['Marketing', 'Errands'].includes(tab)) return false
+    if (tab === 'Errands') return hasErrandAccess
+    return true
+  })
   const [relationship, setRelationship] = useState({ isConnected: false, isFollowing: false })
   const [relationshipPending, setRelationshipPending] = useState('')
   const [pendingShopOffers, setPendingShopOffers] = useState([])
   const [shopOfferDecisionId, setShopOfferDecisionId] = useState('')
   const [shop, setShop] = useState(null)
-  const [isShopOrdersOpen, setIsShopOrdersOpen] = useState(false)
+  const [isShopOrdersOpen, setIsShopOrdersOpen] = useState(() => searchParams.get('orders') === 'open' || Boolean(searchParams.get('orderId')))
   const [sellerOrders, setSellerOrders] = useState([])
   const [sellerOrdersLoading, setSellerOrdersLoading] = useState(false)
   const [sellerOrdersError, setSellerOrdersError] = useState('')
@@ -81,6 +89,18 @@ function CampusProfilePage({ viewContext = 'campus' }) {
     }).catch(() => {})
     return () => { isMounted = false }
   }, [])
+
+  useEffect(() => {
+    if (!isOwnProfile) return undefined
+    let cancelled = false
+    readMyErrands().then((result) => {
+      if (cancelled) return
+      setHasErrandAccess(Boolean(result?.registrations?.some((registration) => registration.status === 'ACTIVE') || result?.assigned?.length))
+    }).catch(() => {
+      if (!cancelled) setHasErrandAccess(false)
+    })
+    return () => { cancelled = true }
+  }, [isOwnProfile])
 
   useEffect(() => {
     if (!targetStudentId || isBusinessView || isOwnProfile) return undefined
@@ -244,6 +264,11 @@ function CampusProfilePage({ viewContext = 'campus' }) {
 
   const tabHandlers = {
     onAddSkill: handleAddSkill,
+    onProgressionModeChange: async (mode) => {
+      const progression = await updateMyProgressionMode(mode)
+      setProfileExperience((current) => current ? { ...current, progression } : current)
+      return progression
+    },
     onPortfolioFilterChange: handlePortfolioFilterChange,
     onPortfolioItemSelect: handlePortfolioItemSelect,
     onPortfolioServiceSelect: handlePortfolioServiceSelect,
@@ -276,7 +301,13 @@ function CampusProfilePage({ viewContext = 'campus' }) {
       } catch (error) { setSellerOrdersError(error?.message || 'The order could not be updated.') }
       finally { setUpdatingOrderId('') }
     },
-    onMessageBuyer: (order) => navigate(order.buyerUserId ? `/messages?participantId=${encodeURIComponent(order.buyerUserId)}` : '/messages'),
+    onMessageBuyer: (order) => navigate(buildOrderConversationHref({
+      order,
+      participant: { userId: order.buyerUserId, name: order.buyerName || 'Buyer' },
+      senderHref: sellerOrderHref(order.id),
+      recipientHref: buyerOrderHref(order.id),
+      messageIntent: 'seller_to_buyer',
+    })),
     onOpenOffer: (offer) => navigate(`/messages?participantId=${encodeURIComponent(offer.buyer.id)}`),
     onDecideOffer: async (offer, decision) => {
       if (shopOfferDecisionId) return
@@ -368,6 +399,7 @@ function CampusProfilePage({ viewContext = 'campus' }) {
               handlers={tabHandlers}
               isOwnProfile={isOwnProfile}
               isShopOrdersOpen={isShopOrdersOpen}
+              initialOrderId={searchParams.get('orderId') || ''}
               onOpenKnowledgeHub={(tab = 'resources') => navigate(`/campus/learn?view=knowledge&tab=${tab}`)}
               pendingShopOffers={pendingShopOffers}
               profileName={profileExperience?.header?.name}

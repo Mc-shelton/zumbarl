@@ -10,11 +10,25 @@ import {
   FiShoppingBag,
   FiTag,
 } from 'react-icons/fi'
+import { isFoodListing } from '../../eatery/eateryListings'
 
 function getDetailRows(item) {
   const isService = String(item.kind || item.listingType || '').toLowerCase() === 'service'
+  if (isFoodListing(item)) {
+    const preparation = Number(item.preparationMinutes)
+    const isStudentKitchen = String(item.shop?.vendorType || '').toLowerCase() === 'student_kitchen'
+    return [
+      { label: 'Food type', value: item.categoryPath || item.category || 'Meal', Icon: FiTag },
+      { label: 'Preparation', value: Number.isFinite(preparation) ? (preparation === 0 ? 'Ready now' : `${preparation} minutes`) : item.duration || 'Confirm with the kitchen', Icon: FiClock },
+      { label: 'Portion', value: item.portionSize || 'Ask the kitchen', Icon: FiPackage },
+      { label: 'Ingredients', value: item.ingredients || 'Ask the kitchen before ordering', Icon: FiLayers },
+      { label: 'Allergens', value: item.allergens || 'None listed — confirm before ordering', Icon: FiShield },
+      { label: isStudentKitchen ? 'Pickup' : 'Fulfilment', value: isStudentKitchen ? (item.pickupInstructions || 'Choose a listed kitchen pickup location at checkout') : 'Delivery only — choose an available option at checkout', Icon: FiMapPin },
+      { label: 'Listed on', value: item.postedOn || item.posted || 'Recently', Icon: FiClock },
+    ]
+  }
   if (isService) {
-    const fulfilment = item.serviceMode === 'order_ahead' ? 'Order ahead' : item.serviceMode === 'request_quote' ? 'Request a quote' : 'Appointment'
+    const fulfilment = item.serviceMode === 'order_ahead' ? 'Prepared after ordering' : item.serviceMode === 'request_quote' ? 'Request a quote' : 'Appointment'
     return [
       { label: 'Service', value: item.categoryPath || item.category, Icon: FiTag },
       { label: 'How it works', value: fulfilment, Icon: FiCalendar },

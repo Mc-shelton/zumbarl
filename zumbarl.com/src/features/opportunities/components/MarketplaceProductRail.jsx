@@ -1,5 +1,6 @@
-import { FiBarChart2, FiCalendar, FiCoffee, FiEdit3, FiEye, FiHeart, FiMessageCircle, FiPackage, FiShield, FiShoppingCart } from 'react-icons/fi'
+import { FiBarChart2, FiCalendar, FiEdit3, FiEye, FiHeart, FiMessageCircle, FiPackage, FiShield, FiShoppingCart } from 'react-icons/fi'
 import { MARKETPLACE_DEFAULT_SELLER } from '../../../data/marketplace'
+import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 
 function MarketplaceProductRail({
@@ -25,8 +26,29 @@ function MarketplaceProductRail({
   const acceptsBuyerActions = (!item.status || ['published', 'active'].includes(String(item.status).toLowerCase())) && item.shop?.acceptingOrders !== false
   const isService = String(item.kind || item.listingType || '').toLowerCase() === 'service'
   const isQuoteService = isService && item.serviceMode === 'request_quote'
-  const ServiceActionIcon = item.serviceMode === 'order_ahead' ? FiCoffee : FiCalendar
-  const serviceActionLabel = item.serviceMode === 'order_ahead' ? 'Choose pickup time' : 'Choose a time'
+  const isOrderAhead = isService && item.serviceMode === 'order_ahead'
+  const isOutOfStock = item.unavailable || Number(item.stock ?? 1) < 1
+  const ServiceActionIcon = isOrderAhead ? FiShoppingCart : FiCalendar
+  const vendorType = String(item.shop?.vendorType || '').toLowerCase()
+  const isKitchen = vendorType === 'student_kitchen'
+  const isHotel = vendorType === 'hotel'
+  const serviceActionLabel = isOrderAhead ? 'Place order' : 'Choose a time'
+  const isFoodVendor = isKitchen || isHotel
+  const vendorNoun = isHotel ? 'hotel' : 'kitchen'
+  const vendorJoined = item.shop?.createdAt
+    ? new Date(item.shop.createdAt).toLocaleDateString('en-KE', { month: 'short', year: 'numeric' })
+    : seller.joined
+  const sellerPresentation = isFoodVendor ? {
+    ...seller,
+    name: item.shop?.name || seller.name,
+    avatar: normalizeZumbarlFileUrl(item.shop?.logoUrl) || seller.avatar,
+    role: isHotel ? 'Campus hotel' : 'Student kitchen',
+    campus: item.shop?.locationLabel || seller.campus,
+    itemsSold: item.shop?.orderCount ?? seller.itemsSold,
+    rating: Number(item.shop?.ratingAverage || 0).toFixed(1),
+    reviews: item.shop?.ratingCount ?? seller.reviews,
+    joined: vendorJoined,
+  } : seller
 
   return (
     <aside className="campus-rail opportunities-rail opportunities-marketplace-rail opportunities-marketplace-product-rail" aria-label="Marketplace checkout and provider information">
@@ -47,8 +69,8 @@ function MarketplaceProductRail({
           </>
         ) : canBuy && acceptsBuyerActions ? (
           <>
-            {!activeOffer && !isService ? <button type="button" className="opportunities-marketplace-product-primary-btn is-cart" disabled={isActionPending || Number(item.stock ?? 1) < 1} onClick={onAddToCart}><FiShoppingCart aria-hidden="true" />{Number(item.stock ?? 1) < 1 ? 'Out of stock' : 'Add to cart'}</button> : null}
-            {!activeOffer && isService && !isQuoteService ? <button type="button" className="opportunities-marketplace-product-primary-btn is-cart" disabled={isActionPending || Number(item.stock ?? 1) < 1} onClick={onRequestService}><ServiceActionIcon aria-hidden="true" />{Number(item.stock ?? 1) < 1 ? 'Fully booked' : serviceActionLabel}</button> : null}
+            {!activeOffer && !isService ? <button type="button" className="opportunities-marketplace-product-primary-btn is-cart" disabled={isActionPending || isOutOfStock} onClick={() => onAddToCart()}><FiShoppingCart aria-hidden="true" />{isOutOfStock ? 'Out of stock' : 'Add to cart'}</button> : null}
+            {!activeOffer && isService && !isQuoteService ? <button type="button" className="opportunities-marketplace-product-primary-btn is-cart" disabled={isActionPending || isOutOfStock} onClick={isOrderAhead ? () => onAddToCart() : onRequestService}><ServiceActionIcon aria-hidden="true" />{isOutOfStock ? isOrderAhead ? 'Sold out' : 'Fully booked' : serviceActionLabel}</button> : null}
             {!activeOffer && isQuoteService ? <button type="button" className="opportunities-marketplace-product-primary-btn is-cart" disabled={isActionPending} onClick={onChatWithSeller}><FiMessageCircle aria-hidden="true" />Request service</button> : null}
             {!isQuoteService ? (
               <button type="button" className="opportunities-marketplace-product-primary-btn is-chat" disabled={isActionPending} onClick={onChatWithSeller}>
@@ -100,35 +122,35 @@ function MarketplaceProductRail({
       </section>
 
       <section className="campus-rail-card opportunities-marketplace-product-seller-card">
-        <h3>{isOwner ? 'Your shop' : (isService ? 'Provider information' : 'Seller information')}</h3>
+        <h3>{isFoodVendor ? `${isOwner ? 'Your ' : ''}${vendorNoun}` : isOwner ? 'Your shop' : (isService ? 'Provider information' : 'Seller information')}</h3>
 
         <div className="opportunities-marketplace-product-seller-head">
-          <img src={seller.avatar} alt={seller.name} />
+          <img src={sellerPresentation.avatar} alt={sellerPresentation.name} />
           <div>
-            <h4>{seller.name}</h4>
-            <p>{seller.role}</p>
-            <span>{seller.campus}</span>
+            <h4>{sellerPresentation.name}</h4>
+            <p>{sellerPresentation.role}</p>
+            <span>{sellerPresentation.campus}</span>
           </div>
         </div>
 
         <div className="opportunities-marketplace-product-seller-metrics">
           <article>
-            <strong>{seller.itemsSold}</strong>
+            <strong>{sellerPresentation.itemsSold}</strong>
             <span>{isService ? 'Orders' : 'Items sold'}</span>
           </article>
           <article>
-            <strong>{seller.rating}</strong>
-            <span>({seller.reviews} reviews)</span>
+            <strong>{sellerPresentation.rating}</strong>
+            <span>({sellerPresentation.reviews} reviews)</span>
           </article>
           <article>
-            <strong>{seller.joined}</strong>
+            <strong>{sellerPresentation.joined}</strong>
             <span>Joined</span>
           </article>
         </div>
 
         <button type="button" className="opportunities-marketplace-product-secondary-btn" disabled={isActionPending} onClick={onViewSellerProfile}>
           {isOwner ? <FiEye aria-hidden="true" /> : null}
-          {isOwner ? 'View your shop' : `View ${isService ? 'provider' : 'seller'} profile`}
+          {isFoodVendor ? `${isOwner ? 'Manage' : 'View'} ${vendorNoun}` : isOwner ? 'View your shop' : `View ${isService ? 'provider' : 'seller'} profile`}
         </button>
       </section>
 

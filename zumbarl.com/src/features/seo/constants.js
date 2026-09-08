@@ -173,6 +173,21 @@ export const CAMPUS_BUY_SELL_SEO = {
   }),
 }
 
+export const CAMPUS_EATERY_SEO = {
+  title: 'Zumbarl Eatery | Campus Meals and Student Kitchens',
+  description:
+    'Order affordable campus meals ahead or discover home-style food made by verified student cooks near you.',
+  path: '/campus/eatery',
+  keywords:
+    'Zumbarl eatery, campus food, student kitchens, home-cooked meals, campus pickup, affordable student meals',
+  pageJsonLd: buildWebPageJsonLd({
+    title: 'Zumbarl Eatery | Campus Meals and Student Kitchens',
+    description:
+      'Order affordable campus meals ahead or discover home-style food made by verified student cooks near you.',
+    path: '/campus/eatery',
+  }),
+}
+
 export const CAMPUS_CART_SEO = {
   title: 'Zumbarl Cart | Review and Checkout',
   description:

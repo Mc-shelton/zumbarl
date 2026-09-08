@@ -6,10 +6,13 @@ import {
   markUserNotificationReadController,
   readCampusHomeExperienceController,
   readMyStudentProfileExperienceController,
+  readMyStudentKycController,
+  submitMyStudentKycDocumentController,
   readStudentProfileScoreController,
   readStudentProfileExperienceController,
   runCampusAssistantController
-  ,updateMyStudentProfileController
+  ,updateMyStudentProfileController,
+  updateMyStudentProgressionModeController
 } from '../../controllers/campus/index.js'
 
 async function registerCampusRoutes(app: FastifyInstance) {
@@ -21,6 +24,9 @@ async function registerCampusRoutes(app: FastifyInstance) {
   app.post('/notifications/:id/read', { preHandler: campusActor }, markUserNotificationReadController)
   app.get('/profile/me', { preHandler: campusActor }, readMyStudentProfileExperienceController)
   app.patch('/profile/me', { preHandler: campusActor }, updateMyStudentProfileController)
+  app.patch('/profile/me/progression-mode', { preHandler: campusActor }, updateMyStudentProgressionModeController)
+  app.get('/profile/me/kyc', { preHandler: campusActor }, readMyStudentKycController)
+  app.post('/profile/me/kyc/documents', { preHandler: campusActor }, submitMyStudentKycDocumentController)
   app.get('/profiles/:id/score', { preHandler: campusActor }, readStudentProfileScoreController)
   app.get('/profiles/:id', { preHandler: campusActor }, readStudentProfileExperienceController)
 }

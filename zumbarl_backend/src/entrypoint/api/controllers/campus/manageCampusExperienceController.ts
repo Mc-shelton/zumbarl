@@ -8,8 +8,11 @@ import {
   readCampusHomeExperienceService,
   readStudentProfileScoreService,
   readStudentProfileExperienceService,
+  readMyStudentKycService,
+  submitMyStudentKycDocumentService,
   runCampusAssistantQueryService
-  ,updateStudentProfileService
+  ,updateStudentProfileService,
+  updateStudentProgressionModeService
 } from '../../../../adapters/services/campus/index.js'
 
 const assistantQuerySchema = z.object({
@@ -35,6 +38,13 @@ const profileUpdateSchema = z.object({
   ]).optional(),
   skills: z.array(z.string().trim().min(1).max(80)).max(12).default([])
 })
+const studentKycDocumentSchema = z.object({
+  documentType: z.enum(['NATIONAL_ID', 'STUDENT_ID']),
+  uploadId: z.string().min(1)
+})
+const progressionModeSchema = z.object({
+  mode: z.enum(['EARN', 'BALANCED', 'CAREER'])
+})
 
 async function listUserNotificationsController(request: FastifyRequest, reply: FastifyReply) {
   return reply.send(await listUserNotificationsService(request.authUser?.id))
@@ -59,6 +69,16 @@ async function readMyStudentProfileExperienceController(request: FastifyRequest,
 async function updateMyStudentProfileController(request: FastifyRequest, reply: FastifyReply) {
   return reply.send(await updateStudentProfileService(request.authUser?.studentId, requireBody(profileUpdateSchema, request)))
 }
+async function updateMyStudentProgressionModeController(request: FastifyRequest, reply: FastifyReply) {
+  const { mode } = requireBody(progressionModeSchema, request)
+  return reply.send(await updateStudentProgressionModeService(request.authUser?.studentId, mode))
+}
+async function readMyStudentKycController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await readMyStudentKycService(request.authUser?.studentId, request.authUser?.id))
+}
+async function submitMyStudentKycDocumentController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.code(201).send(await submitMyStudentKycDocumentService(request.authUser?.studentId, request.authUser?.id, requireBody(studentKycDocumentSchema, request)))
+}
 
 async function readStudentProfileExperienceController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
@@ -81,8 +101,11 @@ export {
   markUserNotificationReadController,
   readCampusHomeExperienceController,
   readMyStudentProfileExperienceController,
+  readMyStudentKycController,
+  submitMyStudentKycDocumentController,
   readStudentProfileScoreController,
   readStudentProfileExperienceController,
   runCampusAssistantController
-  ,updateMyStudentProfileController
+  ,updateMyStudentProfileController,
+  updateMyStudentProgressionModeController
 }

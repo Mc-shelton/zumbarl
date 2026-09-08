@@ -50,13 +50,13 @@ const cartItemSchema = z.object({
   offerId: z.string().optional(),
   quantity: z.coerce.number().int().positive().default(1),
   serviceRequest: z.object({
-    mode: z.enum(['appointment', 'order_ahead']),
+    mode: z.literal('appointment'),
     date: z.string().trim().optional(),
     time: z.string().trim().min(1),
     notes: z.string().trim().max(500).optional(),
   }).optional(),
 })
-const cartItemFulfilmentSchema = z.object({ method: z.enum(['pickup', 'seller_delivery', 'zumbarl_delivery', 'digital', 'unquoted']), location: z.string().min(1), fee: z.coerce.number().nonnegative(), quoted: z.boolean(), distanceKm: z.coerce.number().positive().optional(), buyerLatitude: z.coerce.number().min(-90).max(90).optional(), buyerLongitude: z.coerce.number().min(-180).max(180).optional() })
+const cartItemFulfilmentSchema = z.object({ method: z.enum(['pickup', 'seller_delivery', 'zumbarl_delivery', 'errand_delivery', 'free_campus_delivery', 'digital', 'unquoted']), location: z.string().min(1), fee: z.coerce.number().nonnegative(), quoted: z.boolean(), distanceKm: z.coerce.number().positive().optional(), buyerLatitude: z.coerce.number().min(-90).max(90).optional(), buyerLongitude: z.coerce.number().min(-180).max(180).optional() })
 const zumbarlDeliveryQuoteSchema = z.object({ listingId: z.string().min(1), buyerLatitude: z.coerce.number().min(-90).max(90), buyerLongitude: z.coerce.number().min(-180).max(180), destination: z.string().trim().min(2).default('Buyer current location') })
 const orderSchema = z.object({ cartId: z.string(), handoffType: z.enum(['pickup', 'drop-off']), handoffSpot: z.string(), paymentReference: z.string().optional() })
 const orderStatusSchema = z.object({ fulfillmentStatus: z.enum(['confirmed', 'packaging', 'ready', 'in_transit', 'delivered', 'cannot_fulfil']) })
@@ -103,11 +103,48 @@ const managedVendorUpdateSchema = z.object({
   name: z.string().trim().min(2).max(120).optional(),
   description: z.string().trim().max(1000).nullable().optional(),
   locationLabel: z.string().trim().max(160).nullable().optional(),
+  pickupSpots: z.array(z.string().trim().min(2).max(160)).max(10).optional(),
   logoUrl: z.string().trim().max(2000).nullable().optional(),
   coverImageUrl: z.string().trim().max(2000).nullable().optional()
 })
 const managedVendorManagerSchema = z.object({ email: z.string().email(), role: z.enum(['admin', 'editor']).default('editor') })
 const managedVendorAvailabilitySchema = z.object({ acceptingOrders: z.boolean() })
+const shopErrandsSchema = z.object({
+  acceptingErranders: z.boolean(),
+  deliveryFee: z.coerce.number().min(0).max(5000),
+  enabled: z.boolean(),
+  freeCampusDelivery: z.boolean().default(false)
+})
+const erranderRegistrationDecisionSchema = z.object({
+  action: z.enum(['REMOVE', 'FLAG', 'RESTORE']),
+  reason: z.string().trim().max(500).optional()
+})
+const erranderAvailabilitySchema = z.object({ isAvailable: z.boolean() })
+const errandResponseSchema = z.object({ decision: z.enum(['ACCEPTED', 'IGNORED']) })
+const errandStatusSchema = z.object({
+  status: z.enum(['PICKED_UP', 'DELIVERED']),
+  confirmationCode: z.string().trim().regex(/^\d{6}$/, 'Enter the buyer’s 6-digit delivery code').optional()
+}).superRefine((payload, context) => {
+  if (payload.status === 'DELIVERED' && !payload.confirmationCode) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['confirmationCode'], message: 'The buyer’s delivery code is required' })
+  }
+})
+const vendorWithdrawalSchema = z.object({
+  amount: z.coerce.number().positive(),
+  currency: z.string().trim().length(3).default('KES'),
+  method: z.enum(['mpesa', 'bank']),
+  destination: z.string().trim().min(6).max(120)
+})
+const studentKitchenSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  description: z.string().trim().min(10).max(1000),
+  locationLabel: z.string().trim().min(2).max(160),
+  pickupSpots: z.array(z.string().trim().min(2).max(160)).min(1).max(10),
+  contactEmail: z.string().trim().email().optional(),
+  contactPhone: z.string().trim().min(6).max(30).optional(),
+  logoUrl: z.string().trim().max(2000).optional(),
+  coverImageUrl: z.string().trim().max(2000).optional()
+})
 
 export {
   shopSchema,
@@ -132,5 +169,12 @@ export {
   vendorPromotionSchema,
   managedVendorUpdateSchema,
   managedVendorManagerSchema,
-  managedVendorAvailabilitySchema
+  managedVendorAvailabilitySchema,
+  shopErrandsSchema,
+  erranderRegistrationDecisionSchema,
+  erranderAvailabilitySchema,
+  errandResponseSchema,
+  errandStatusSchema,
+  vendorWithdrawalSchema,
+  studentKitchenSchema
 }

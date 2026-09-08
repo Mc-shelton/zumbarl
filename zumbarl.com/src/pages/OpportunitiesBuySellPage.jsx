@@ -10,8 +10,10 @@ import MarketplaceBuyerOrders from '../features/opportunities/components/Marketp
 import MarketplaceItemSections from '../features/opportunities/components/MarketplaceItemSections'
 import MarketplaceRail from '../features/opportunities/components/MarketplaceRail'
 import useMarketplacePageState from '../features/opportunities/hooks/useMarketplacePageState'
+import { subscribeToRealtimeEvents } from '../features/communications/services/realtimeService'
 import { CAMPUS_BUY_SELL_SEO } from '../features/seo/constants'
 import { cancelMarketplaceOrder, confirmMarketplaceOrderReceived, readMyMarketplaceOrders } from '../features/opportunities/services/marketplaceInteractionService'
+import { buildOrderConversationHref, buildPageOrderConversationHref, buyerOrderHref, erranderOrderHref, sellerOrderHref } from '../features/opportunities/orderMessaging'
 import '../styles/campus.css'
 import '../styles/opportunities.css'
 
@@ -52,6 +54,41 @@ function OpportunitiesBuySellPage() {
     finally { setOrdersLoading(false) }
   }, [])
 
+  function openOrderConversation(order) {
+    const useErrander = order.fulfillmentStatus === 'in_transit' && order.assignedErrander?.userId
+    if (useErrander) {
+      navigate(buildOrderConversationHref({
+        order,
+        participant: order.assignedErrander,
+        senderHref: buyerOrderHref(order.id),
+        recipientHref: erranderOrderHref(order.id),
+        messageIntent: 'buyer_to_errander',
+      }))
+      return
+    }
+    navigate(buildPageOrderConversationHref({
+      order,
+      page: {
+        id: order.sellerContact?.shopId,
+        type: 'marketplace_shop',
+        slug: order.sellerContact?.shopSlug,
+        name: order.sellerContact?.shopName || order.sellerContact?.name,
+        avatarUrl: order.sellerContact?.avatarUrl,
+      },
+      customerHref: buyerOrderHref(order.id),
+      pageHref: sellerOrderHref(order.id, order.sellerContact?.shopSlug),
+    }))
+  }
+
+  useEffect(() => {
+    if (!isOrdersOpen) return undefined
+    const controller = new AbortController()
+    subscribeToRealtimeEvents((event) => {
+      if (event?.type === 'notification.created') loadOrders()
+    }, controller.signal)
+    return () => controller.abort()
+  }, [isOrdersOpen, loadOrders])
+
   useEffect(() => {
     if (!isOrdersOpen) return undefined
     let cancelled = false
@@ -78,7 +115,7 @@ function OpportunitiesBuySellPage() {
 
           <section ref={marketplaceMainRef} className="campus-main opportunities-main opportunities-marketplace-main">
             <MarketplaceHeader isOrdersOpen={isOrdersOpen} onOpenOrders={() => { if (!isOrdersOpen) setOrdersLoading(true); setSearchParams(isOrdersOpen ? {} : { view: 'orders' }) }} onPostItem={() => navigate('/campus/marketplace/listings/new')} />
-            {isOrdersOpen ? <MarketplaceBuyerOrders error={ordersError} isLoading={ordersLoading} onCancel={setOrderToCancel} onConfirmReceived={(order) => updateBuyerOrder(order, 'received')} onContinueShopping={() => setSearchParams({})} onMessageSeller={() => navigate('/messages')} onRefresh={loadOrders} orders={orders} updatingOrderId={updatingOrderId} /> : <>
+            {isOrdersOpen ? <MarketplaceBuyerOrders error={ordersError} initialOrderId={searchParams.get('orderId') || ''} isLoading={ordersLoading} onCancel={setOrderToCancel} onConfirmReceived={(order) => updateBuyerOrder(order, 'received')} onContinueShopping={() => setSearchParams({})} onMessageOrderContact={openOrderConversation} onRefresh={loadOrders} orders={orders} updatingOrderId={updatingOrderId} /> : <>
             <MarketplaceCommerceGuide onSelect={marketplaceState.onCategoryChange} />
             <MarketplaceCategories
               activeCategory={marketplaceState.activeCategory}
@@ -111,7 +148,7 @@ function OpportunitiesBuySellPage() {
       </div>
       <ConfirmDialog
         confirmLabel="Cancel order"
-        description="This will stop fulfilment and send your held payment to Zumbarl administrators for refund review under company policy. No funds have been released to the seller. This action cannot be undone."
+        description="This will stop fulfilment and immediately return the full held payment to your wallet. No funds have been released to the seller or errander. This action cannot be undone."
         isOpen={Boolean(orderToCancel)}
         isPending={Boolean(orderToCancel && updatingOrderId === orderToCancel.id)}
         onCancel={() => setOrderToCancel(null)}

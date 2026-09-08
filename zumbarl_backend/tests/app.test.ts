@@ -9,6 +9,8 @@ const createdCounterOfferBidIds: string[] = []
 const createdMarketingCampaignIds: string[] = []
 const createdConnectPostIds: string[] = []
 const seededTeamProjectId = 'team-social-media-content-creation'
+let testCompanyWalletId: string | null = null
+let initialCompanyTransactionIds = new Set<string>()
 
 async function login(email: string) {
   const response = await app.inject({
@@ -56,6 +58,38 @@ async function createPublishedOpportunity(token: string, payload: Record<string,
 describe('Zumbarl API', () => {
   beforeAll(async () => {
     await seedDatabase()
+    const business = await prisma.user.findUnique({
+      where: { email: 'business@zumbarl.test' },
+      select: { companyContact: { select: { companyId: true } } }
+    })
+    if (business?.companyContact?.companyId) {
+      const wallet = await prisma.companyWallet.findUnique({ where: { companyId: business.companyContact.companyId } })
+      if (wallet) {
+        testCompanyWalletId = wallet.id
+        initialCompanyTransactionIds = new Set((await prisma.transaction.findMany({
+          where: { companyWalletId: wallet.id },
+          select: { id: true }
+        })).map((transaction) => transaction.id))
+      }
+      if (wallet && wallet.balance < 100000) {
+        const amount = 100000 - wallet.balance
+        await prisma.$transaction([
+          prisma.companyWallet.update({ where: { id: wallet.id }, data: { balance: { increment: amount } } }),
+          prisma.transaction.create({ data: {
+            companyWalletId: wallet.id,
+            type: 'COMPANY_PAYMENT',
+            status: 'COMPLETED',
+            amount,
+            netAmount: amount,
+            currency: wallet.currency,
+            reference: `test-company-wallet-credit-${Date.now()}`,
+            description: 'Integration test company wallet funding',
+            processedAt: new Date(),
+            metadata: { source: 'integration_test', direction: 'company_credit' }
+          } })
+        ])
+      }
+    }
   })
 
   afterAll(async () => {
@@ -100,6 +134,22 @@ describe('Zumbarl API', () => {
         }
       }
     })
+    if (testCompanyWalletId) {
+      const testTransactions = (await prisma.transaction.findMany({
+        where: { companyWalletId: testCompanyWalletId },
+        select: { id: true, amount: true }
+      })).filter((transaction) => !initialCompanyTransactionIds.has(transaction.id))
+      if (testTransactions.length) {
+        const balanceDelta = testTransactions.reduce((sum, transaction) => sum + transaction.amount, 0)
+        await prisma.$transaction([
+          prisma.transaction.deleteMany({ where: { id: { in: testTransactions.map((transaction) => transaction.id) } } }),
+          prisma.companyWallet.update({
+            where: { id: testCompanyWalletId },
+            data: { balance: { decrement: balanceDelta } }
+          })
+        ])
+      }
+    }
     await app.close()
   })
 
@@ -151,6 +201,59 @@ describe('Zumbarl API', () => {
       overallScore: 74,
       conservativeLowerBound: 70
     })
+  })
+
+  it('shows measurable student progression and persists an explicit work focus', async () => {
+    const studentToken = await login('student@zumbarl.test')
+    const authUser = await prisma.user.findUniqueOrThrow({
+      where: { email: 'student@zumbarl.test' },
+      include: { studentProfile: true }
+    })
+    const originalMode = authUser.studentProfile?.currentMode || 'EARN'
+
+    try {
+      const profileResponse = await app.inject({
+        method: 'GET',
+        url: '/api/v1/campus/profile/me',
+        headers: { authorization: `Bearer ${studentToken}` }
+      })
+      expect(profileResponse.statusCode).toBe(200)
+      expect(profileResponse.json().progression).toMatchObject({
+        trust: { confidence: 'ESTABLISHED', verifiedGigs: expect.any(Number), uniqueClients: expect.any(Number) },
+        careerStage: { number: expect.any(Number), progressPercent: expect.any(Number) },
+        availableModes: expect.arrayContaining([
+          expect.objectContaining({ key: 'EARN' }),
+          expect.objectContaining({ key: 'BALANCED' }),
+          expect.objectContaining({ key: 'CAREER' })
+        ])
+      })
+      expect(profileResponse.json().progression.skills[0]).toMatchObject({
+        level: expect.any(String),
+        progressPercent: expect.any(Number),
+        recommendedRate: { currency: 'KES', advisory: true }
+      })
+
+      const updateResponse = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/campus/profile/me/progression-mode',
+        headers: { authorization: `Bearer ${studentToken}` },
+        payload: { mode: 'CAREER' }
+      })
+      expect(updateResponse.statusCode).toBe(200)
+      expect(updateResponse.json()).toMatchObject({ mode: 'CAREER', modeDetails: { label: 'Build career' } })
+
+      const invalidResponse = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/campus/profile/me/progression-mode',
+        headers: { authorization: `Bearer ${studentToken}` },
+        payload: { mode: 'MAKE_ME_EXPERT' }
+      })
+      expect(invalidResponse.statusCode).toBe(400)
+    } finally {
+      if (authUser.studentProfile) {
+        await prisma.studentProfile.update({ where: { id: authUser.studentProfile.id }, data: { currentMode: originalMode } })
+      }
+    }
   })
 
   it('persists post engagement and handles explicit reshares with commentary', async () => {
@@ -334,14 +437,27 @@ describe('Zumbarl API', () => {
           url: '/files/zumbarl-public-assets/companies/test/campaign-creative.png',
           mimeType: 'image/png'
         }],
-        startsAt: '2026-08-16',
-        endsAt: '2026-08-30',
+        startsAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+        endsAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
         status: 'published'
       }
     })
     expect(createResponse.statusCode).toBe(201)
     const campaignId = createResponse.json().id as string
     createdMarketingCampaignIds.push(campaignId)
+
+    const fundingResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/marketing/campaigns/${campaignId}/fund`,
+      headers: { authorization: `Bearer ${businessToken}` }
+    })
+    expect(fundingResponse.statusCode).toBe(201)
+    const publishResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/marketing/campaigns/${campaignId}/publish`,
+      headers: { authorization: `Bearer ${businessToken}` }
+    })
+    expect(publishResponse.statusCode).toBe(200)
 
     const editResponse = await app.inject({
       method: 'PATCH',
@@ -464,6 +580,13 @@ describe('Zumbarl API', () => {
     expect(draftQueue.statusCode).toBe(200)
     const draftAd = draftQueue.json().data.find((ad: Record<string, any>) => ad.campaignId === campaignId)
     expect(draftAd.status).toBe('draft')
+
+    const fundCampaign = await app.inject({
+      method: 'POST',
+      url: `/api/v1/marketing/campaigns/${campaignId}/fund`,
+      headers: { authorization: `Bearer ${businessToken}` }
+    })
+    expect(fundCampaign.statusCode).toBe(201)
 
     const publishCampaign = await app.inject({
       method: 'POST',
@@ -672,6 +795,35 @@ describe('Zumbarl API', () => {
     const enrollment = roadmapResponse.json()
     const firstCheckpoint = enrollment.checkpoints[0]
     const secondCheckpoint = enrollment.checkpoints[1]
+    const practiceSkillId = firstCheckpoint.competencies.find((item: Record<string, any>) => item.skill)?.skill.id
+
+    const focusResponse = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/learn/roadmaps/${enrollment.id}/coaching-focus`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { skillIds: [practiceSkillId], weeklyTarget: 4 }
+    })
+    expect(focusResponse.statusCode).toBe(200)
+    expect(focusResponse.json()).toMatchObject({ practiceSkillIds: [practiceSkillId], weeklyPracticeTarget: 4 })
+
+    const coachingPlanResponse = await app.inject({
+      method: 'GET',
+      url: `/api/v1/learn/roadmaps/${enrollment.id}/coaching-plan`,
+      headers: { authorization: `Bearer ${studentToken}` }
+    })
+    expect(coachingPlanResponse.statusCode).toBe(200)
+    expect(coachingPlanResponse.json()).toMatchObject({
+      enrollmentId: enrollment.id,
+      focus: { selectedSkillIds: [practiceSkillId], weeklyTarget: 4, configured: true },
+      game: { levelName: expect.any(String), xp: expect.any(Number), quests: expect.any(Array) },
+      resources: expect.any(Array),
+      opportunities: expect.any(Array),
+      events: expect.any(Array),
+      companyUpdates: expect.any(Array),
+      coaches: expect.any(Array),
+      placements: expect.any(Array),
+      possibilities: expect.any(Array)
+    })
 
     const evidenceResponse = await app.inject({
       method: 'POST',

@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { idParamSchema, requireBody, requireParams } from '../../../../lib/http.js'
-import { counselorBookingSchema, supportCaseStatusSchema, wellbeingCheckInSchema, wellbeingConversationSchema, wellbeingMessageSchema, wellbeingPreferenceSchema, wellbeingResetSchema, wellnessReportSchema } from '../../../validators/support/index.js'
-import { completeWellbeingResetService, createCounselorBookingService, createWellbeingCheckInService, createWellbeingConversationMessageService, createWellbeingConversationService, createWellnessReportService, listSupportCasesService, readWellbeingConversationService, readWellbeingDashboardService, updateSupportCaseService, updateWellbeingPreferenceService } from '../../../../adapters/services/support/index.js'
+import { careEnrollmentUpdateSchema, careProgramEnrollmentSchema, careProgressCheckInSchema, counselorBookingSchema, supportCaseParamsSchema, supportCaseStatusSchema, supportCircleReviewSchema, wellbeingCheckInSchema, wellbeingConversationSchema, wellbeingHandoffSchema, wellbeingMessageSchema, wellbeingPreferenceSchema, wellbeingResetSchema, wellnessReportSchema } from '../../../validators/support/index.js'
+import { completeWellbeingResetService, createCounselorBookingService, createWellbeingCheckInService, createWellbeingConversationMessageService, createWellbeingConversationService, createWellnessReportService, enrollInStudentCareProgramService, listStudentCareProgramsService, listSupportCasesService, readStudentCareOperationsService, readWellbeingConversationService, readWellbeingDashboardService, recordStudentCareCheckInService, requestWellbeingHumanHandoffService, reviewStudentCareCircleService, updateStudentCareEnrollmentService, updateSupportCaseService, updateTypedSupportCaseService, updateWellbeingPreferenceService } from '../../../../adapters/services/support/index.js'
 async function createWellnessReportController(request: FastifyRequest, reply: FastifyReply) { return reply.code(201).send(await createWellnessReportService(request.authUser?.studentId, requireBody(wellnessReportSchema, request))) }
 async function createCounselorBookingController(request: FastifyRequest, reply: FastifyReply) { return reply.code(201).send(await createCounselorBookingService(request.authUser?.studentId, requireBody(counselorBookingSchema, request))) }
 async function listSupportCasesController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listSupportCasesService(request.query as Record<string, unknown>)) }
@@ -13,6 +13,14 @@ async function completeWellbeingResetController(request: FastifyRequest, reply: 
 async function createWellbeingConversationController(request: FastifyRequest, reply: FastifyReply) { requireBody(wellbeingConversationSchema, request); return reply.code(201).send(await createWellbeingConversationService(request.authUser?.studentId)) }
 async function readWellbeingConversationController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await readWellbeingConversationService(request.authUser?.studentId, id)) }
 async function createWellbeingConversationMessageController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await createWellbeingConversationMessageService(request.authUser?.studentId, id, requireBody(wellbeingMessageSchema, request))) }
+async function requestWellbeingHumanHandoffController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await requestWellbeingHumanHandoffService(request.authUser?.studentId, id, requireBody(wellbeingHandoffSchema, request))) }
+async function listStudentCareProgramsController(request: FastifyRequest, reply: FastifyReply) { return reply.send(await listStudentCareProgramsService(request.authUser?.studentId)) }
+async function enrollInStudentCareProgramController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await enrollInStudentCareProgramService(request.authUser?.studentId, id, requireBody(careProgramEnrollmentSchema, request))) }
+async function recordStudentCareCheckInController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.code(201).send(await recordStudentCareCheckInService(request.authUser?.studentId, id, requireBody(careProgressCheckInSchema, request))) }
+async function readStudentCareOperationsController(_request: FastifyRequest, reply: FastifyReply) { return reply.send(await readStudentCareOperationsService()) }
+async function updateStudentCareEnrollmentController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await updateStudentCareEnrollmentService(id, request.authUser?.id, requireBody(careEnrollmentUpdateSchema, request))) }
+async function updateTypedSupportCaseController(request: FastifyRequest, reply: FastifyReply) { const { type, id } = requireParams(supportCaseParamsSchema, request); return reply.send(await updateTypedSupportCaseService(type, id, requireBody(supportCaseStatusSchema, request))) }
+async function reviewStudentCareCircleController(request: FastifyRequest, reply: FastifyReply) { const { id } = requireParams(idParamSchema, request); return reply.send(await reviewStudentCareCircleService(id, request.authUser?.id, requireBody(supportCircleReviewSchema, request))) }
 
 export {
   createWellnessReportController,
@@ -21,9 +29,17 @@ export {
   createWellbeingCheckInController,
   createWellbeingConversationController,
   createWellbeingConversationMessageController,
+  enrollInStudentCareProgramController,
+  listStudentCareProgramsController,
   listSupportCasesController,
+  readStudentCareOperationsController,
   readWellbeingConversationController,
   readWellbeingDashboardController,
+  recordStudentCareCheckInController,
+  requestWellbeingHumanHandoffController,
+  reviewStudentCareCircleController,
+  updateStudentCareEnrollmentController,
   updateWellbeingPreferenceController,
-  updateSupportCaseController
+  updateSupportCaseController,
+  updateTypedSupportCaseController
 }

@@ -43,11 +43,11 @@ export function CheckoutOrderSummaryRail({
         </article>
         <article>
           <p>Delivery Fee</p>
-          <strong>{totals.deliveryPending ? 'Not yet quoted' : totals.deliveryFee ? formatKes(totals.deliveryFee) : 'Free'}</strong>
+          <strong>{totals.deliveryPending ? 'Not yet quoted' : !totals.hasDelivery ? 'Not applicable' : totals.deliveryFee ? formatKes(totals.deliveryFee) : 'Free'}</strong>
         </article>
       </div>
 
-      {totals.deliveryPending ? <p className="campus-cart-delivery-warning" role="status">Delivery is not included yet. Confirm the delivery price with the seller before paying.</p> : null}
+      {totals.deliveryPending ? <p className="campus-cart-delivery-warning" role="status">Return to your cart and confirm a fulfilment option before paying.</p> : null}
 
       <div className="campus-cart-summary-total">
         <p>Total</p>
@@ -82,6 +82,8 @@ function MiniOrderItem({ item, showImages, showQuantity }) {
     <article>
       <h3>{item.title}</h3>
       {showQuantity ? <p>Qty: {quantity}</p> : null}
+      {item.fulfilment?.method === 'errand_delivery' ? <p>Errander: assigned to the first available student</p> : null}
+      {item.fulfilment?.method === 'free_campus_delivery' ? <p>Free delivery by {item.shopName || 'business'}</p> : null}
       <strong>{formatKes(lineTotal)}</strong>
     </article>
   )

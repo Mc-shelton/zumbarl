@@ -1,5 +1,6 @@
 import { prisma } from '../../../lib/prisma.js'
 import { OPPORTUNITY_APPLICABLE_STATUSES } from '../../../shared/opportunities/opportunityLifecycle.js'
+import { rankOpportunitiesForStudentMode } from '../../../shared/career/studentProgression.js'
 import { canonicalSkillKey } from '../skills/index.js'
 
 function uniqueSkillLevels(skills: Array<Record<string, any>> = []) {
@@ -19,6 +20,12 @@ function canonicalCourseKey(name: string) {
 
 function toProfileHeader(student: Record<string, any> | null) {
   if (!student) return null
+  const managedCampusPage = student.campus?.managedProfile
+  const campusPage = managedCampusPage
+    && managedCampusPage.type === 'campus'
+    && String(managedCampusPage.status).toLowerCase() === 'active'
+    ? { id: managedCampusPage.id, name: managedCampusPage.name, slug: managedCampusPage.slug }
+    : null
   return {
     id: student.id,
     userId: student.userId,
@@ -27,6 +34,7 @@ function toProfileHeader(student: Record<string, any> | null) {
     lastName: student.lastName,
     role: 'Student',
     campusName: student.campus?.name ?? null,
+    campusPage,
     headline: `${student.campus?.name ?? 'Campus'} · Year ${Math.max(new Date().getFullYear() - student.yearJoined + 1, 1)} · ${student.careerPath ?? student.course?.name ?? 'Student'}`,
     location: student.locationCity,
     careerPath: student.careerPath,
@@ -177,7 +185,9 @@ function mapOpportunity(opportunity: Record<string, any>) {
     image: splash.url ?? splash.previewUrl,
     tags: opportunity.skills ?? [],
     href: `/campus/opportunities?opportunity=${opportunity.id}`,
-    actionLabel: 'View opportunity'
+    actionLabel: 'View opportunity',
+    recommendationReason: opportunity.progressionMatch?.reason,
+    progressionMatchScore: opportunity.progressionMatch?.score
   }
 }
 
@@ -339,8 +349,71 @@ class CampusExperienceRepository {
           create: { studentId, skillName, level: 'BEGINNER' }
         })
       }
-      const updated = await tx.studentProfile.findUnique({ where: { id: studentId }, include: { campus: true, course: true, user: true, skillLevels: true } })
+      const updated = await tx.studentProfile.findUnique({
+        where: { id: studentId },
+        include: {
+          campus: { include: { managedProfile: { select: { id: true, type: true, name: true, slug: true, status: true } } } },
+          course: true,
+          user: true,
+          skillLevels: true
+        }
+      })
       return toProfileHeader(updated)
+    })
+  }
+
+  async readStudentKyc(studentId: string | undefined, userId: string | undefined) {
+    if (!studentId || !userId) return null
+    return prisma.studentProfile.findFirst({
+      where: { id: studentId, userId },
+      select: {
+        id: true,
+        kycStatus: true,
+        kycVerifiedAt: true,
+        studentIdNumber: true,
+        user: { select: { name: true, email: true, phone: true, username: true } },
+        kycDocuments: { orderBy: { createdAt: 'desc' } }
+      }
+    })
+  }
+
+  async submitStudentKycDocument(studentId: string | undefined, userId: string | undefined, payload: Record<string, any>) {
+    if (!studentId || !userId) return null
+    const [student, upload] = await Promise.all([
+      prisma.studentProfile.findFirst({ where: { id: studentId, userId }, select: { id: true } }),
+      prisma.uploadedFile.findFirst({
+        where: {
+          id: payload.uploadId,
+          ownerId: userId,
+          status: 'complete',
+          bucket: 'zumbarl-kyc-private',
+          scope: `kyc-${String(payload.documentType).toLowerCase()}`,
+          mimeType: { in: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'] },
+          sizeBytes: { lte: 10 * 1024 * 1024 }
+        }
+      })
+    ])
+    if (!student || !upload) return null
+
+    return prisma.$transaction(async (tx) => {
+      await tx.kycDocument.updateMany({
+        where: { studentId, documentType: payload.documentType, status: { not: 'EXPIRED' } },
+        data: { status: 'EXPIRED' }
+      })
+      const document = await tx.kycDocument.create({
+        data: {
+          studentId,
+          documentType: payload.documentType,
+          fileUrl: upload.url,
+          fileKey: upload.storageKey,
+          status: 'PENDING'
+        }
+      })
+      await tx.studentProfile.update({
+        where: { id: studentId },
+        data: { kycStatus: 'UNDER_REVIEW', kycVerifiedAt: null }
+      })
+      return document
     })
   }
   async listNotifications(userId?: string) {
@@ -408,6 +481,7 @@ class CampusExperienceRepository {
         campus: true,
         course: true,
         zumbarl: true,
+        skillLevels: true,
         wallets: { orderBy: { createdAt: 'asc' } },
         roadmapEnrollments: true,
         pipelineRelationships: true,
@@ -436,7 +510,7 @@ class CampusExperienceRepository {
         },
         include: { company: true },
         orderBy: { createdAt: 'desc' },
-        take: 6
+        take: 18
       }),
       prisma.marketplaceListing.findMany({
         where: { status: 'ACTIVE', ...campusWhere },
@@ -479,7 +553,15 @@ class CampusExperienceRepository {
     const serviceItems = listings
       .filter((listing) => listing.listingType === 'SERVICE' && !isPlaceholderCatalogueTitle(listing.title))
       .map(mapMarketplaceListing)
-    const mappedOpportunities = opportunities.filter((opportunity) => !isPlaceholderCatalogueTitle(opportunity.title)).map(mapOpportunity)
+    const eligibleOpportunities = opportunities.filter((opportunity) => !isPlaceholderCatalogueTitle(opportunity.title))
+    const rankedOpportunities = student
+      ? rankOpportunitiesForStudentMode(eligibleOpportunities, {
+          mode: student.currentMode,
+          skills: student.skillLevels.map((skill) => skill.skillName),
+          careerPath: student.careerPath
+        }).slice(0, 6)
+      : eligibleOpportunities.slice(0, 6)
+    const mappedOpportunities = rankedOpportunities.map(mapOpportunity)
     const mappedRoadmaps = roadmaps.map(mapCareerRoadmap)
     const assistantConfig = grouped.get('assistant')?.[0] ?? {}
     const score = student?.zumbarl
@@ -580,7 +662,7 @@ class CampusExperienceRepository {
       orderBy: { createdAt: 'asc' },
       include: {
         user: true,
-        campus: true,
+        campus: { include: { managedProfile: { select: { id: true, type: true, name: true, slug: true, status: true } } } },
         course: true,
         zumbarl: true,
         skillLevels: true,

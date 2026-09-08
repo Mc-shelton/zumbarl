@@ -8,7 +8,11 @@ const createEscrowSchema = z.object({
   reference: z.string().optional()
 })
 
-const releaseEscrowSchema = z.object({ studentId: z.string(), amount: z.coerce.number().positive() })
+const releaseEscrowSchema = z.object({
+  studentId: z.string(),
+  amount: z.coerce.number().positive(),
+  reference: z.string().min(1).optional()
+})
 
 export {
   createEscrowSchema,

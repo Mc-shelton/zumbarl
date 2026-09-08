@@ -53,6 +53,7 @@ function OpportunityBidForm({
   onMarkDirty,
   onSaveDraft,
   onSubmitProposal,
+  rateGuidance,
   selectedGig,
   submitError,
 }) {
@@ -298,6 +299,20 @@ function OpportunityBidForm({
           ) : (
             <div className="opportunities-bid-field">
               <label htmlFor="bid-price">Your price <b>*</b></label>
+              {rateGuidance ? (
+                <div className="opportunities-rate-guidance" role="note">
+                  <div>
+                    <strong>{rateGuidance.skillName} · {String(rateGuidance.level).toLowerCase()}</strong>
+                    <span>Suggested fixed range: KES {Number(rateGuidance.minimum).toLocaleString('en-KE')}–{Number(rateGuidance.maximum).toLocaleString('en-KE')}</span>
+                    <small>{rateGuidance.basis}. Guidance only—you control your final price.</small>
+                  </div>
+                  <button type="button" onClick={() => {
+                    updateProposal('currency', 'KES')
+                    updateProposal('pricingType', 'fixed')
+                    updateProposal('price', String(rateGuidance.midpoint))
+                  }}>Use KES {Number(rateGuidance.midpoint).toLocaleString('en-KE')}</button>
+                </div>
+              ) : null}
               <div className="opportunities-bid-price-row">
                 <select value={proposal.currency} aria-label="Currency" onChange={(event) => updateProposal('currency', event.target.value)}>
                   <option value="KES">KES</option>

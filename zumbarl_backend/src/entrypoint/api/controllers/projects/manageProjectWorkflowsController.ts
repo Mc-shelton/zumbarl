@@ -99,12 +99,12 @@ async function createMilestoneController(request: FastifyRequest, reply: Fastify
 
 async function fundMilestoneController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.code(201).send(await fundMilestoneService(id))
+  return reply.code(201).send(await fundMilestoneService(id, request.authUser))
 }
 
 async function activateMilestoneController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.send(await activateMilestoneService(id))
+  return reply.send(await activateMilestoneService(id, request.authUser))
 }
 
 async function createProjectTaskController(request: FastifyRequest, reply: FastifyReply) {

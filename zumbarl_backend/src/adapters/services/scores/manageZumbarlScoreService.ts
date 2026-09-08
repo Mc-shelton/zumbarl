@@ -7,6 +7,7 @@ import {
   type LegacyScorePrior,
   type WeightedOutcome
 } from '../../../shared/scores/zumbarlScoreCalculator.js'
+import { refreshStudentProgressionService } from '../career/index.js'
 
 const REFRESH_INTERVAL_DAYS = 18
 
@@ -421,6 +422,7 @@ export async function recordCompletedProjectOutcomes(projectId: string, review: 
     }
 
     await refreshStudentScore(studentId, 'GIG_COMPLETED')
+    await refreshStudentProgressionService(studentId)
     recorded.push(outcome)
   }
   return recorded

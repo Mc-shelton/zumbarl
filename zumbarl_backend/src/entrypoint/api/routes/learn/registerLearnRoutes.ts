@@ -31,8 +31,10 @@ import {
   readKnowledgeRoomController,
   removeKnowledgeManagerController,
   readLearnBaselineController,
+  readRoadmapCoachingPlanController,
   submitLearningPracticeController,
   updateKnowledgeFollowingController,
+  updateRoadmapCoachingFocusController,
   takeDownKnowledgeSpacePostController,
   updateKnowledgeMembershipController,
   updateKnowledgeRoomController,
@@ -80,6 +82,8 @@ async function registerLearnRoutes(app: FastifyInstance) {
   app.post('/roadmaps', { preHandler: students }, createRoadmapController)
   app.get('/roadmaps/:id', { preHandler: students }, readRoadmapController)
   app.post('/roadmaps/:id/lock', { preHandler: students }, lockRoadmapController)
+  app.get('/roadmaps/:id/coaching-plan', { preHandler: students }, readRoadmapCoachingPlanController)
+  app.patch('/roadmaps/:id/coaching-focus', { preHandler: students }, updateRoadmapCoachingFocusController)
   app.post('/roadmaps/:id/evidence', { preHandler: students }, addRoadmapEvidenceController)
   app.post('/roadmaps/:id/practice-submissions', { preHandler: students }, submitLearningPracticeController)
   app.post('/evidence/:id/verify', { preHandler: admins }, verifyRoadmapEvidenceController)

@@ -182,6 +182,51 @@
 .learn-intent-select > span { display: block; font-size: var(--text-caption); font-weight: 800; margin-bottom: 6px; }
 .learn-intent-select select { background: var(--color-surface); border: 1px solid var(--color-border-strong); border-radius: 8px; color: var(--color-text); min-height: 42px; padding: 8px 10px; width: min(360px, 100%); }
 
+.career-coach { background: linear-gradient(145deg, #fff 0%, #faf7fc 100%); border: 1px solid #dcd2e2; border-radius: 16px; box-shadow: var(--shadow-sm); overflow: hidden; }
+.career-coach-header { align-items: center; display: flex; gap: 24px; justify-content: space-between; padding: 22px; }
+.career-coach-header h2 { color: var(--learn-ink); font-size: var(--text-title-sm); margin: 0; }
+.career-coach-header p { color: var(--learn-muted); line-height: 1.45; margin: 7px 0 0; max-width: 670px; }
+.career-coach-level { align-items: center; background: #271d49; border-radius: 13px; color: white; display: grid; flex: 0 0 150px; grid-template-columns: 28px 1fr; padding: 13px 15px; }
+.career-coach-level > svg { grid-row: 1 / 4; height: 22px; width: 22px; }
+.career-coach-level span, .career-coach-level small { font-size: var(--text-caption); opacity: .75; }
+.career-coach-level strong { font-size: var(--text-small); }
+.career-coach-progress { background: #f4eef6; border-block: 1px solid #e3d9e7; display: grid; grid-template-columns: 2fr 1fr 1fr; }
+.career-coach-progress > div { display: grid; gap: 4px; padding: 13px 18px; }
+.career-coach-progress > div + div { border-left: 1px solid #dfd5e4; }
+.career-coach-progress span { color: #76677e; font-size: var(--text-caption); }
+.career-coach-progress strong { color: #32223d; font-size: var(--text-small); }
+.career-coach-progress i { background: #ddd1e2; border-radius: 999px; display: block; height: 5px; margin-top: 4px; overflow: hidden; }
+.career-coach-progress b { background: #76506f; display: block; height: 100%; }
+.career-focus-editor { align-items: end; display: grid; gap: 14px; grid-template-columns: minmax(170px, .8fr) minmax(260px, 1.5fr) 120px auto; padding: 18px 22px; }
+.career-focus-editor h3 { font-size: var(--text-body); margin: 0; }
+.career-focus-editor p { color: var(--learn-muted); font-size: var(--text-caption); line-height: 1.35; margin: 4px 0 0; }
+.career-focus-skills { display: flex; flex-wrap: wrap; gap: 7px; }
+.career-focus-skills button { align-items: center; background: white; border: 1px solid #d9dbea; border-radius: 999px; color: #545b78; cursor: pointer; display: inline-flex; font: inherit; font-size: var(--text-caption); font-weight: 750; gap: 5px; min-height: 34px; padding: 7px 10px; }
+.career-focus-skills button.is-selected { background: #76506f; border-color: #76506f; color: white; }
+.career-focus-editor label { display: grid; gap: 5px; }
+.career-focus-editor label > span { font-size: var(--text-caption); font-weight: 800; }
+.career-focus-editor select { background: white; border: 1px solid var(--color-border-strong); border-radius: 8px; min-height: 42px; padding: 8px; }
+.career-quest-list { display: grid; gap: 8px; grid-template-columns: repeat(3, 1fr); padding: 0 22px 18px; }
+.career-quest-list > a, .career-quest-list > span { align-items: center; background: white; border: 1px solid var(--color-border); border-radius: 10px; color: inherit; display: grid; gap: 2px 8px; grid-template-columns: 34px 1fr auto; padding: 10px; text-decoration: none; }
+.career-quest-list > a > span, .career-quest-list > span > span { align-items: center; background: #f3ebf5; border-radius: 9px; color: #76506f; display: flex; grid-row: 1 / 3; height: 34px; justify-content: center; width: 34px; }
+.career-quest-list .is-complete { background: #e7f7ed; color: #15733d; }
+.career-quest-list strong { font-size: var(--text-caption); }
+.career-quest-list small { color: var(--learn-muted); font-size: 10px; }
+.career-quest-list > a > svg { color: #76506f; grid-column: 3; grid-row: 1 / 3; }
+.career-coach-grid { border-top: 1px solid #e8e1ec; display: grid; grid-template-columns: repeat(2, 1fr); }
+.career-coach-grid > article { min-width: 0; padding: 20px 22px; }
+.career-coach-grid > article:nth-child(even) { border-left: 1px solid #e8e1ec; }
+.career-coach-grid > article:nth-child(n+3) { border-top: 1px solid #e8e1ec; }
+.career-coach-grid h3 { align-items: center; display: flex; font-size: var(--text-body); gap: 8px; margin: 0 0 10px; }
+.career-coach-grid h3 svg { color: #76506f; }
+.career-coach-grid > article > a:not(.career-coach-see-all), .career-coach-grid > article > span { align-items: center; border-top: 1px solid #eff0f5; color: inherit; display: flex; gap: 10px; justify-content: space-between; min-width: 0; padding: 10px 0; text-decoration: none; }
+.career-coach-grid > article > a > span, .career-coach-grid > article > span > span { display: grid; gap: 3px; min-width: 0; }
+.career-coach-grid strong { font-size: var(--text-small); }
+.career-coach-grid small { color: var(--learn-muted); display: block; font-size: var(--text-caption); line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.career-coach-grid > article > p { color: var(--learn-muted); font-size: var(--text-small); line-height: 1.45; }
+.career-coach-grid > article > a > svg { color: #76506f; flex: 0 0 auto; }
+.career-coach-see-all { align-items: center; color: #76506f; display: inline-flex; font-size: var(--text-caption); font-weight: 850; gap: 7px; margin-top: 8px; text-decoration: none; }
+
 .learn-roadmap-panel { padding: 22px; }
 .learn-roadmap-panel header { align-items: center; display: flex; justify-content: space-between; margin-bottom: 18px; }
 .learn-roadmap-panel h2 { font-size: var(--text-title-sm); margin: 0; }
@@ -327,6 +372,9 @@
   .learn-roadmap-tree::before { display: none; }
   .learn-roadmap-node button { min-height: auto; padding: 9px 12px 13px; }
   .learn-next-card { position: static; }
+  .career-focus-editor { grid-template-columns: 1fr 1fr; }
+  .career-focus-editor > div:first-child, .career-focus-skills { grid-column: 1 / -1; }
+  .career-quest-list { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 780px) {
@@ -346,4 +394,10 @@
   .learn-area-switcher { overflow-x: auto; }
   .learn-area-switcher button { flex: 0 0 auto; }
   .learn-area-switcher button small { display: none; }
+  .career-coach-header { align-items: stretch; flex-direction: column; }
+  .career-coach-level { flex-basis: auto; }
+  .career-coach-progress, .career-focus-editor, .career-coach-grid { grid-template-columns: 1fr; }
+  .career-coach-progress > div + div, .career-coach-grid > article:nth-child(even) { border-left: 0; border-top: 1px solid #dfd5e4; }
+  .career-coach-grid > article + article { border-top: 1px solid #e8e1ec; }
+  .career-focus-editor > div:first-child, .career-focus-skills { grid-column: auto; }
 }

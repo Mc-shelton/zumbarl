@@ -30,7 +30,7 @@ function CampusCartPaymentPage() {
           showImages
           totals={orderTotals}
         >
-          <DeliveryEstimateCard />
+          <DeliveryEstimateCard items={cartItems} />
         </CheckoutOrderSummaryRail>
       )}
     >
@@ -46,7 +46,7 @@ function CampusCartPaymentPage() {
       <CheckoutHeader
         breadcrumbs={CHECKOUT_BREADCRUMBS.payment}
         title="Payment"
-        description="Choose your preferred payment method and complete your purchase securely."
+        description="Review your Zumbarl wallet before completing this purchase securely."
       />
       <CheckoutStepper steps={CHECKOUT_STEPS.payment} />
       <PaymentMethodPanel

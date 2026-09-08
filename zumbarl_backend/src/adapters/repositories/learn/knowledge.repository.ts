@@ -1,7 +1,8 @@
 import type { Prisma } from '@prisma/client'
 import { ApiError } from '../../../lib/http.js'
 import { prisma } from '../../../lib/prisma.js'
-import { getOrCreateStudentWallet } from '../../../shared/services/walletLedger.js'
+import { normalizeCurrency, normalizeMoney } from '../../../shared/services/money.js'
+import { creditStudentWallet, debitStudentWallet } from '../../../shared/services/walletLedger.js'
 import { rankWithRecommendations } from '../../services/recommendations/index.js'
 
 const studentSummary = {
@@ -392,60 +393,32 @@ class LearnKnowledgeRepository {
     })
   }
 
-  async purchaseResource(resourceId: string, buyerStudentId: string, amount: number, currency: string) {
+  async purchaseResource(resourceId: string, buyerStudentId: string, _amount: number, _currency: string) {
     await prisma.$transaction(async (tx) => {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`${resourceId}:${buyerStudentId}`}))`
       const resource = await tx.knowledgeResource.findUnique({ where: { id: resourceId } })
       if (!resource || resource.status !== 'PUBLISHED' || resource.accessMode !== 'BUY') {
         throw new ApiError(404, 'Knowledge resource not found', 'NOT_FOUND')
       }
+      if (resource.ownerStudentId === buyerStudentId) throw new ApiError(409, 'You cannot purchase your own resource', 'SELF_PURCHASE_NOT_ALLOWED')
       const existing = await tx.knowledgeResourceAccess.findUnique({
         where: { resourceId_studentId_action: { resourceId, studentId: buyerStudentId, action: 'PURCHASE' } }
       })
       if (existing && ['ACTIVE', 'COMPLETED'].includes(existing.status)) return
-
-      const buyerWallet = await getOrCreateStudentWallet(tx, buyerStudentId)
-      if (buyerWallet.currency !== currency) throw new ApiError(409, 'Wallet currency does not match this resource', 'WALLET_CURRENCY_MISMATCH')
-      const debited = await tx.wallet.updateMany({
-        where: { id: buyerWallet.id, balance: { gte: amount } },
-        data: { balance: { decrement: amount } }
+      const currency = normalizeCurrency(resource.currency || 'KES')
+      const amount = normalizeMoney(resource.price, currency)
+      if (amount <= 0) throw new ApiError(409, 'This resource does not have a valid purchase price', 'RESOURCE_PRICE_INVALID')
+      await debitStudentWallet(tx, buyerStudentId, amount, {
+        type: 'RESOURCE_PURCHASE',
+        currency,
+        description: `Knowledge resource purchase: ${resource.title}`,
+        metadata: { resourceId, spaceId: resource.spaceId, publisherStudentId: resource.ownerStudentId, direction: 'buyer_debit' }
       })
-      if (debited.count !== 1) {
-        throw new ApiError(409, 'Your wallet balance is not enough to buy this resource', 'INSUFFICIENT_WALLET_BALANCE', {
-          required: amount,
-          available: buyerWallet.balance,
-          currency
-        })
-      }
-
-      const publisherWallet = await getOrCreateStudentWallet(tx, resource.ownerStudentId)
-      await tx.wallet.update({ where: { id: publisherWallet.id }, data: { balance: { increment: amount } } })
-      const processedAt = new Date()
-      await tx.transaction.create({
-        data: {
-          walletId: buyerWallet.id,
-          type: 'RESOURCE_PURCHASE',
-          status: 'COMPLETED',
-          amount,
-          netAmount: amount,
-          currency,
-          description: `Knowledge resource purchase: ${resource.title}`,
-          processedAt,
-          metadata: { resourceId, spaceId: resource.spaceId, publisherStudentId: resource.ownerStudentId, direction: 'buyer_debit' }
-        }
-      })
-      await tx.transaction.create({
-        data: {
-          walletId: publisherWallet.id,
-          type: 'RESOURCE_SALE',
-          status: 'COMPLETED',
-          amount,
-          netAmount: amount,
-          currency,
-          description: `Knowledge resource sale: ${resource.title}`,
-          processedAt,
-          metadata: { resourceId, spaceId: resource.spaceId, buyerStudentId, direction: 'publisher_credit' }
-        }
+      await creditStudentWallet(tx, resource.ownerStudentId, amount, {
+        type: 'RESOURCE_SALE',
+        currency,
+        description: `Knowledge resource sale: ${resource.title}`,
+        metadata: { resourceId, spaceId: resource.spaceId, buyerStudentId, direction: 'publisher_credit' }
       })
       await tx.knowledgeResourceAccess.upsert({
         where: { resourceId_studentId_action: { resourceId, studentId: buyerStudentId, action: 'PURCHASE' } },

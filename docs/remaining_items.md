@@ -136,10 +136,12 @@ A per-document review is at the end of this file.
 - [ ] Replace mock roadmap state with API-backed enrollment and progress.
 - [ ] Add real mentor, coaching, program, certification, and opportunity
   recommendation inventory.
-- [ ] Define and enforce skill-level, tier-upgrade, endorsement, and transition
-  pool rules.
-- [ ] Show students why evidence was accepted or rejected and how it affected
-  their career progress.
+- [x] Define and enforce evidence-based skill-level and career-stage gates, with
+  confidence-aware trust proof and editable level-based rate guidance.
+- [x] Show students the verified-work, client-diversity, quality, reliability,
+  confidence, and endorsement gates affecting their next level.
+- [ ] Add supervised Expert/Mentor credential review and formal transition-pool
+  admission decisions; the automated system currently reports eligibility only.
 
 ### Wellness and Safety
 

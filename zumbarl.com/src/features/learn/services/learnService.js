@@ -71,6 +71,18 @@ function readRoadmapRecommendations(enrollmentId) {
     .then((payload) => payload?.data || [])
 }
 
+function readRoadmapCoachingPlan(enrollmentId) {
+  if (!enrollmentId) return Promise.resolve(null)
+  return sendZumbarlApiRequest(`/learn/roadmaps/${encodeURIComponent(enrollmentId)}/coaching-plan`)
+}
+
+function updateRoadmapCoachingFocus(enrollmentId, skillIds, weeklyTarget) {
+  return sendZumbarlApiRequest(`/learn/roadmaps/${encodeURIComponent(enrollmentId)}/coaching-focus`, {
+    method: 'PATCH',
+    body: JSON.stringify({ skillIds, weeklyTarget }),
+  })
+}
+
 function readKnowledgeHub(filters = {}) {
   const params = new URLSearchParams(Object.entries(filters).filter(([, value]) => value && value !== 'all'))
   return sendZumbarlApiRequest(`/learn/knowledge${params.size ? `?${params}` : ''}`).then((response) => {
@@ -292,6 +304,7 @@ export {
   readKnowledgeRoom,
   readKnowledgeSpace,
   readRoadmapEnrollment,
+  readRoadmapCoachingPlan,
   readRoadmapRecommendations,
   removeKnowledgeManager,
   purchaseKnowledgeResource,
@@ -312,5 +325,6 @@ export {
   updateKnowledgeSpace,
   updateKnowledgeSpacePost,
   updateKnowledgeRoom,
+  updateRoadmapCoachingFocus,
   verifyRoadmap,
 }

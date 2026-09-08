@@ -32,6 +32,7 @@ function useCampusProfileViewModel({
   const isExperienceTab = activeTab === 'Experience'
   const isPagesTab = activeTab === 'Pages'
   const isShopTab = activeTab === 'Shop'
+  const isErrandsTab = activeTab === 'Errands'
   const apiPortfolioItems = useMemo(() => (
     (profileExperience?.portfolioItems || []).map((item) => ({
       ...item,
@@ -200,6 +201,7 @@ function useCampusProfileViewModel({
     earningsSummary: profileExperience?.earningsSummary || [],
     hasSkillsResults,
     isExperienceTab,
+    isErrandsTab,
     isMarketingTab,
     isPagesTab,
     isPortfolioDetailOpen,
@@ -212,6 +214,7 @@ function useCampusProfileViewModel({
     portfolioItems,
     portfolioServices,
     profileScore: profileExperience?.score || null,
+    progression: profileExperience?.progression || null,
     selectedPortfolioDetail,
     selectedPortfolioItem,
     selectedPortfolioScorePoints,

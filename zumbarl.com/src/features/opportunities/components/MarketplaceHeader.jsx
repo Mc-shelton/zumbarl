@@ -22,7 +22,15 @@ function MarketplaceSearch() {
   )
 }
 
-function MarketplaceHeader({ isOrdersOpen = false, onOpenOrders, onPostItem }) {
+function MarketplaceHeader({
+  breadcrumbItems = [{ label: 'Opportunities' }, { label: 'Marketplace' }],
+  createLabel = 'Create listing',
+  isOrdersOpen = false,
+  onOpenOrders,
+  onPostItem,
+  subtitle = 'Shop products, book trusted services and order from campus businesses.',
+  title = 'Campus Marketplace',
+}) {
   const canPostItem = hasAccess(ACCESS_KEYS.marketplace.sell)
 
   return (
@@ -31,20 +39,17 @@ function MarketplaceHeader({ isOrdersOpen = false, onOpenOrders, onPostItem }) {
         <div className="opportunities-head-copy">
           <Breadcrumb
             className="opportunities-breadcrumb"
-            items={[
-              { label: 'Opportunities' },
-              { label: 'Marketplace' },
-            ]}
+            items={breadcrumbItems}
           />
-          <h1 className="opportunities-title">Campus Marketplace</h1>
-          <p className="opportunities-subtitle">Shop products, book trusted services and order from campus businesses.</p>
+          <h1 className="opportunities-title">{title}</h1>
+          <p className="opportunities-subtitle">{subtitle}</p>
         </div>
 
         <CampusTopActions
           className="campus-header-actions opportunities-marketplace-actions"
           primaryAction={<div className="opportunities-marketplace-primary-actions">
             <button type="button" className={`opportunities-marketplace-orders-btn${isOrdersOpen ? ' is-active' : ''}`} onClick={onOpenOrders}><FiPackage aria-hidden="true" /> My Orders</button>
-            {canPostItem ? <button type="button" className="opportunities-marketplace-post-btn" onClick={onPostItem}><FiPlus aria-hidden="true" /> Create listing</button> : null}
+            {canPostItem ? <button type="button" className="opportunities-marketplace-post-btn" onClick={onPostItem}><FiPlus aria-hidden="true" /> {createLabel}</button> : null}
           </div>}
           userButtonClassName="opportunities-user-btn"
         />

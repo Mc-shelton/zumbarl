@@ -12,10 +12,12 @@ async function createWellnessReportService(studentId: string | undefined, payloa
 const createCounselorBookingService = (studentId: string | undefined, payload: Record<string, any>) => supportCasesRepository.createCounselorBooking({ ...payload, studentId, status: 'requested' })
 const listSupportCasesService = (query: Record<string, unknown>) => supportCasesRepository.listCases(query)
 async function updateSupportCaseService(id: string, payload: Record<string, any>) { return await supportCasesRepository.updateCase(id, payload) ?? notFound('Support case') }
+async function updateTypedSupportCaseService(type: string, id: string, payload: Record<string, any>) { return await supportCasesRepository.updateTypedCase(type, id, payload) ?? notFound('Support case') }
 
 export {
   createWellnessReportService,
   createCounselorBookingService,
   listSupportCasesService,
-  updateSupportCaseService
+  updateSupportCaseService,
+  updateTypedSupportCaseService
 }

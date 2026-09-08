@@ -1,6 +1,6 @@
 import type { FastifyInstance } from 'fastify'
 import { requireRoles, roleGroups } from '../../../../lib/security.js'
-import { addCampusVendorManagerForManagerController, addCartItemController, cancelBuyerOrderController, clearCartController, confirmOrderReceivedController, createCampusVendorPostController, createCampusVendorPromotionController, createMarketplaceListingController, createMarketplaceOfferController, createMarketplaceShopController, createOrderController, createOwnedMarketplaceListingController, decideMarketplaceOfferController, disputeOrderController, listMarketplaceListingsController, listMarketplaceShopsController, listMyCampusVendorsController, listOrdersController, quoteZumbarlDeliveryController, readCampusVendorProfileController, readCampusVendorWorkspaceController, readCartController, readMarketplaceListingController, readMarketplaceOfferController, readMarketplaceSellerController, readMyMarketplaceInventoryController, readMyPendingMarketplaceOffersController, readZumbarlDeliveryConfigController, recordMarketplaceSellerViewController, removeCampusVendorManagerForManagerController, removeCartItemController, reviewOrderController, searchCampusVendorManagerCandidatesController, searchMarketplaceLocationsController, setCampusVendorFollowingController, startMarketplaceChatController, updateCampusVendorAvailabilityController, updateCampusVendorForManagerController, updateCampusVendorOrderStatusController, updateCampusVendorPostController, updateCartItemFulfilmentController, updateMyMarketplaceShopController, updateOrderStatusController, updateOwnedMarketplaceListingController } from '../../controllers/marketplace/index.js'
+import { addCampusVendorManagerForManagerController, addCartItemController, cancelBuyerOrderController, clearCartController, confirmOrderReceivedController, createCampusVendorPostController, createCampusVendorPromotionController, createMarketplaceListingController, createMarketplaceOfferController, createMarketplaceShopController, createOrderController, createOwnedMarketplaceListingController, createStudentKitchenController, decideMarketplaceOfferController, disputeOrderController, listMarketplaceListingsController, listMarketplaceShopsController, listMyCampusVendorsController, listOrdersController, manageVendorErranderController, progressErrandController, quoteZumbarlDeliveryController, readBuyerDeliveryCodeController, readCampusVendorFinanceController, readCampusVendorProfileController, readCampusVendorWorkspaceController, readCartController, readMarketplaceListingController, readMarketplaceOfferController, readMarketplaceSellerController, readMyErrandsController, readMyMarketplaceInventoryController, readMyPendingMarketplaceOffersController, readZumbarlDeliveryConfigController, recordMarketplaceSellerViewController, registerVendorErranderController, removeCampusVendorManagerForManagerController, removeCartItemController, requestCampusVendorWithdrawalController, respondToErrandController, reviewOrderController, searchCampusVendorManagerCandidatesController, searchMarketplaceLocationsController, setCampusVendorFollowingController, startMarketplaceChatController, updateCampusVendorAvailabilityController, updateCampusVendorForManagerController, updateCampusVendorOrderStatusController, updateCampusVendorPostController, updateCartItemFulfilmentController, updateErranderAvailabilityController, updateMyMarketplaceShopController, updateOrderStatusController, updateOwnedMarketplaceListingController, updateShopErrandsController } from '../../controllers/marketplace/index.js'
 async function registerMarketplaceRoutes(app: FastifyInstance) {
   const students = requireRoles(...roleGroups.student, ...roleGroups.admin)
   app.get('/shops', { preHandler: students }, listMarketplaceShopsController)
@@ -8,12 +8,18 @@ async function registerMarketplaceRoutes(app: FastifyInstance) {
   app.get('/listings', { preHandler: students }, listMarketplaceListingsController)
   app.get('/my/listings', { preHandler: students }, readMyMarketplaceInventoryController)
   app.get('/vendors/me', { preHandler: students }, listMyCampusVendorsController)
+  app.post('/vendors/student-kitchens', { preHandler: students }, createStudentKitchenController)
   app.get('/vendors/:slug', { preHandler: students }, readCampusVendorProfileController)
   app.post('/vendors/:slug/follow', { preHandler: students }, setCampusVendorFollowingController)
   app.delete('/vendors/:slug/follow', { preHandler: students }, setCampusVendorFollowingController)
   app.get('/vendors/:slug/workspace', { preHandler: students }, readCampusVendorWorkspaceController)
+  app.get('/vendors/:slug/finance', { preHandler: students }, readCampusVendorFinanceController)
+  app.post('/vendors/:slug/finance/withdrawals', { preHandler: students }, requestCampusVendorWithdrawalController)
   app.get('/vendors/:slug/manager-candidates', { preHandler: students }, searchCampusVendorManagerCandidatesController)
   app.patch('/vendors/:slug/availability', { preHandler: students }, updateCampusVendorAvailabilityController)
+  app.patch('/vendors/:slug/errands', { preHandler: students }, updateShopErrandsController)
+  app.post('/vendors/:slug/erranders/register', { preHandler: students }, registerVendorErranderController)
+  app.patch('/vendors/:slug/erranders/:studentId', { preHandler: students }, manageVendorErranderController)
   app.post('/vendors/:slug/orders/:id/status', { preHandler: students }, updateCampusVendorOrderStatusController)
   app.post('/vendors/:slug/posts', { preHandler: students }, createCampusVendorPostController)
   app.patch('/vendors/:slug/posts/:postId', { preHandler: students }, updateCampusVendorPostController)
@@ -22,6 +28,10 @@ async function registerMarketplaceRoutes(app: FastifyInstance) {
   app.post('/vendors/:slug/managers', { preHandler: students }, addCampusVendorManagerForManagerController)
   app.delete('/vendors/:slug/managers/:userId', { preHandler: students }, removeCampusVendorManagerForManagerController)
   app.patch('/my/shop', { preHandler: students }, updateMyMarketplaceShopController)
+  app.get('/errands/me', { preHandler: students }, readMyErrandsController)
+  app.patch('/errands/registrations/:id/availability', { preHandler: students }, updateErranderAvailabilityController)
+  app.post('/errands/:id/respond', { preHandler: students }, respondToErrandController)
+  app.patch('/errands/:id/status', { preHandler: students }, progressErrandController)
   app.get('/locations/search', { preHandler: students }, searchMarketplaceLocationsController)
   app.get('/my/offers', { preHandler: students }, readMyPendingMarketplaceOffersController)
   app.patch('/my/offers/:id', { preHandler: students }, decideMarketplaceOfferController)
@@ -43,6 +53,7 @@ async function registerMarketplaceRoutes(app: FastifyInstance) {
   app.post('/delivery/quote', { preHandler: students }, quoteZumbarlDeliveryController)
   app.post('/orders', { preHandler: students }, createOrderController)
   app.get('/orders', { preHandler: students }, listOrdersController)
+  app.get('/orders/:id/delivery-code', { preHandler: students }, readBuyerDeliveryCodeController)
   app.post('/orders/:id/status', { preHandler: students }, updateOrderStatusController)
   app.post('/orders/:id/received', { preHandler: students }, confirmOrderReceivedController)
   app.post('/orders/:id/cancel', { preHandler: students }, cancelBuyerOrderController)

@@ -1,0 +1,61 @@
+.page-inbox { border: 1px solid #e4e1ea; border-radius: 18px; background: #fff; overflow: hidden; }
+.page-inbox-heading { padding: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 1px solid #ece9ef; }
+.page-inbox-heading span { color: #805678; font-size: var(--text-micro); font-weight: 850; letter-spacing: .06em; text-transform: uppercase; }
+.page-inbox-heading h2, .page-inbox-heading p { margin: 0; }
+.page-inbox-heading p { margin-top: 4px; color: #747185; }
+.page-inbox-heading button { border: 1px solid #e0dce7; border-radius: 10px; padding: 9px 12px; display: inline-flex; align-items: center; gap: 7px; color: #565169; background: #fff; font-weight: 750; cursor: pointer; }
+.page-inbox-status { margin: 0; padding: 10px 20px; color: #9a3945; background: #fff3f4; }
+.page-inbox-workspace { min-height: 540px; display: grid; grid-template-columns: minmax(240px, 32%) minmax(0, 1fr); }
+.page-inbox-workspace > aside { padding: 12px; border-right: 1px solid #ece9ef; overflow-y: auto; }
+.page-inbox-workspace > aside > button { width: 100%; border: 0; border-radius: 12px; padding: 10px; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 9px; color: #353241; background: transparent; text-align: left; cursor: pointer; }
+.page-inbox-workspace > aside > button.is-active { background: #f4edf4; }
+.page-inbox-workspace > aside > button > span:nth-child(2) { min-width: 0; display: grid; gap: 3px; }
+.page-inbox-workspace > aside strong, .page-inbox-workspace > aside small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.page-inbox-workspace > aside small { color: #817d8e; }
+.page-inbox-workspace > aside em { min-width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; color: #fff; background: #7c5277; font-size: 11px; font-style: normal; font-weight: 800; }
+.page-inbox-avatar { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; color: #fff; background: #7c5277; font-weight: 850; }
+.page-inbox-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.page-inbox-thread { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.page-inbox-thread > header { padding: 12px 16px; border-bottom: 1px solid #ece9ef; display: flex; align-items: center; gap: 10px; }
+.page-inbox-customer-link { width: fit-content; min-width: 0; display: flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; border-radius: 10px; }
+.page-inbox-customer-link > span:last-child { min-width: 0; display: grid; gap: 2px; }
+.page-inbox-customer-link:not(.is-static):hover strong { color: #6f3f67; text-decoration: underline; text-underline-offset: 3px; }
+.page-inbox-customer-link:not(.is-static):focus-visible { outline: 3px solid rgba(111, 63, 103, .2); outline-offset: 4px; }
+.page-inbox-thread > header small { color: #7f7989; }
+.page-inbox-messages { padding: 20px; display: flex; flex-direction: column; gap: 12px; overflow-y: auto; background: #fcfbfd; }
+.page-inbox-messages article { display: flex; }
+.page-inbox-messages article.is-page { justify-content: flex-end; }
+.page-inbox-messages article > div { max-width: min(78%, 640px); border: 1px solid #e1dde7; border-radius: 4px 14px 14px; padding: 10px 12px; background: #fff; }
+.page-inbox-messages article.is-page > div { border-color: #d8cadb; border-radius: 14px 4px 14px 14px; background: #f3edf4; }
+.page-inbox-messages p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.page-inbox-messages time { display: block; margin-top: 6px; color: #8b8492; font-size: 11px; text-align: right; }
+.page-inbox-order-card { min-width: min(430px, 100%); margin-bottom: 10px; border-radius: 12px; padding: 10px; display: grid; grid-template-columns: 46px minmax(0, 1fr) auto; align-items: center; gap: 11px; color: #302d3b; background: #fff; text-decoration: none; box-shadow: 0 0 0 1px rgba(104, 77, 105, .1); }
+.page-inbox-order-card > span:first-child { width: 46px; height: 46px; border-radius: 10px; display: grid; place-items: center; color: #765071; background: #eee5ef; }
+.page-inbox-order-card img { width: 100%; height: 100%; border-radius: inherit; object-fit: cover; }
+.page-inbox-order-card small, .page-inbox-order-card strong, .page-inbox-order-card b { display: block; }
+.page-inbox-order-card small { color: #806078; font-size: 10px; font-weight: 850; letter-spacing: .06em; }
+.page-inbox-order-card strong { margin-top: 3px; font-size: 16px; }
+.page-inbox-order-card b { margin-top: 3px; color: #16824d; font-size: 12px; text-transform: capitalize; }
+.page-inbox-context-card { min-width: min(430px, 100%); margin-bottom: 0; border-radius: 12px 12px 0 0; padding: 10px; display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; align-items: center; gap: 11px; color: #302d3b; background: #fff; text-align: left; text-decoration: none; box-shadow: 0 0 0 1px rgba(104, 77, 105, .1); }
+.page-inbox-context-card > span:first-child { width: 54px; height: 50px; border-radius: 9px; display: grid; place-items: center; overflow: hidden; color: #765071; background: #eee5ef; }
+.page-inbox-context-card img { width: 100%; height: 100%; object-fit: cover; }
+.page-inbox-context-card small, .page-inbox-context-card strong, .page-inbox-context-card b { display: block; }
+.page-inbox-context-card small { color: #806078; font-size: 10px; font-weight: 850; letter-spacing: .06em; }
+.page-inbox-context-card strong { margin-top: 3px; }
+.page-inbox-context-card b { margin-top: 3px; color: #16824d; font-size: 12px; }
+.page-inbox-offer-actions { margin-bottom: 10px; border-top: 1px solid #ece8ef; border-radius: 0 0 12px 12px; padding: 8px 10px; display: flex; align-items: center; gap: 7px; background: #fff; box-shadow: 0 0 0 1px rgba(104, 77, 105, .1); }
+.page-inbox-offer-actions > span { margin-right: auto; border-radius: 999px; padding: 4px 8px; color: #705baf; background: #f0ecff; font-size: 10px; font-weight: 850; text-transform: uppercase; }
+.page-inbox-offer-actions > span.is-accepted { color: #126b43; background: #e9f8f0; }
+.page-inbox-offer-actions > span.is-declined { color: #963d3d; background: #fff0f0; }
+.page-inbox-offer-actions button { border: 1px solid #dcd7e4; border-radius: 7px; padding: 5px 9px; color: #684662; background: #fff; font-size: 11px; font-weight: 800; cursor: pointer; }
+.page-inbox-offer-actions button:last-child { border-color: #16824d; color: #fff; background: #16824d; }
+.page-inbox-offer-actions button:disabled { opacity: .5; cursor: wait; }
+.page-inbox-thread > form { padding: 12px 14px; border-top: 1px solid #ece9ef; display: grid; grid-template-columns: minmax(0, 1fr) 42px; gap: 9px; }
+.page-inbox-thread > form input { min-width: 0; border: 1px solid #ded9e4; border-radius: 11px; padding: 0 12px; outline: 0; }
+.page-inbox-thread > form button { width: 42px; height: 42px; border: 0; border-radius: 11px; display: grid; place-items: center; color: #fff; background: #3c3948; cursor: pointer; }
+.page-inbox-thread > form button:disabled { opacity: .45; }
+.page-inbox-empty { padding: 28px 16px; display: grid; place-items: center; gap: 6px; color: #7d7888; text-align: center; }
+.page-inbox-empty svg { font-size: 24px; }
+.page-inbox-empty p { margin: 0; }
+.page-inbox-empty.is-thread { place-self: center; }
+@media (max-width: 760px) { .page-inbox-workspace { grid-template-columns: 86px minmax(0, 1fr); } .page-inbox-workspace > aside > button { grid-template-columns: 40px; justify-content: center; } .page-inbox-workspace > aside > button > span:nth-child(2), .page-inbox-workspace > aside > button em, .page-inbox-workspace > aside .page-inbox-empty { display: none; } .page-inbox-order-card { min-width: 0; } }

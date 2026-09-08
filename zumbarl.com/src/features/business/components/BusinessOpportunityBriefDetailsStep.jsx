@@ -11,6 +11,7 @@ import {
   BusinessCreateTextareaField,
 } from './BusinessOpportunityCreateFields'
 import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
+import { ImageCropper } from '../../../components/ui'
 
 const DEFAULT_SPLASH_CROP = {
   positionX: 50,
@@ -56,20 +57,13 @@ function BusinessOpportunitySplashField({ splash, onSplashUploadStateChange, onU
   const isImage = selectedSplash?.type?.startsWith('image/')
   const previewUrl = selectedSplash?.previewUrl || selectedSplash?.url || selectedSplash?.src || ''
   const crop = selectedSplash?.crop || DEFAULT_SPLASH_CROP
-  const cropZoom = Number(crop.zoom) || DEFAULT_SPLASH_CROP.zoom
-  const maxCropShift = ((cropZoom - 1) / (2 * cropZoom)) * 100
-  const translateX = ((50 - Number(crop.positionX || 50)) / 50) * maxCropShift
-  const translateY = ((50 - Number(crop.positionY || 50)) / 50) * maxCropShift
   const cropConfirmed = selectedSplash?.cropConfirmed === true
 
-  function updateSplashCrop(field, value) {
+  function updateSplashCrop(nextCrop) {
     if (!selectedSplash) return
     onUpdateField('opportunitySplash', {
       ...selectedSplash,
-      crop: {
-        ...crop,
-        [field]: Number(value),
-      },
+      crop: { ...crop, ...nextCrop },
       cropConfirmed: true,
     })
   }
@@ -143,26 +137,29 @@ function BusinessOpportunitySplashField({ splash, onSplashUploadStateChange, onU
       {uploadError ? <p className="business-create-upload-error">{uploadError}</p> : null}
       {selectedSplash ? (
         <div className="business-create-splash-cropper">
-          <div className="business-create-splash-preview" aria-label="Opportunity splash card crop preview">
-            {previewFailed ? (
+          {previewFailed ? (
+            <div className="business-create-splash-preview" aria-label="Opportunity splash preview unavailable">
               <div className="business-create-splash-preview-empty">
                 <strong>Preview unavailable</strong>
                 <span>Re-upload the splash so the draft can save a durable preview.</span>
               </div>
-            ) : isImage ? (
-              <img
+            </div>
+          ) : isImage ? (
+              <ImageCropper
                 src={previewUrl}
-                alt=""
-                onError={() => setPreviewFailed(true)}
-                style={{
-                  objectPosition: `${crop.positionX}% ${crop.positionY}%`,
-                  transform: `translate(${translateX}%, ${translateY}%) scale(${cropZoom})`,
-                }}
+                value={crop}
+                onChange={updateSplashCrop}
+                onImageError={() => setPreviewFailed(true)}
+                aspectRatio={16 / 9}
+                aspectLabel="16:9 card · locked"
+                alt="Opportunity splash being cropped"
+                maxStageHeight={320}
               />
             ) : (
-              <video src={previewUrl} muted playsInline onError={() => setPreviewFailed(true)} />
+              <div className="business-create-splash-preview" aria-label="Opportunity video preview">
+                <video src={previewUrl} muted playsInline onError={() => setPreviewFailed(true)} />
+              </div>
             )}
-          </div>
           <div className="business-create-splash-controls">
             <em className="business-create-selected-file">
               <span>{selectedSplash.name} · {formatFileSize(selectedSplash.size)}</span>
@@ -171,42 +168,9 @@ function BusinessOpportunitySplashField({ splash, onSplashUploadStateChange, onU
               </button>
             </em>
             {isImage ? (
-              <>
-                <p className={`business-create-splash-crop-status${cropConfirmed ? ' is-confirmed' : ''}`}>
-                  Crop is applied automatically for opportunity cards.
-                </p>
-                <label>
-                  <span>Horizontal crop</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={crop.positionX}
-                    onChange={(event) => updateSplashCrop('positionX', event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>Vertical crop</span>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={crop.positionY}
-                    onChange={(event) => updateSplashCrop('positionY', event.target.value)}
-                  />
-                </label>
-                <label>
-                  <span>Zoom</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="1.8"
-                    step="0.05"
-                    value={cropZoom}
-                    onChange={(event) => updateSplashCrop('zoom', event.target.value)}
-                  />
-                </label>
-              </>
+              <p className={`business-create-splash-crop-status${cropConfirmed ? ' is-confirmed' : ''}`}>
+                Drag or resize the crop box to choose the opportunity card image.
+              </p>
             ) : (
               <p>Video splash selected. It will be fitted to the opportunity card preview area.</p>
             )}

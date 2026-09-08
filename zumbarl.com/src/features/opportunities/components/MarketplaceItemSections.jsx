@@ -12,8 +12,10 @@ function MarketplaceItemCard({
 }) {
   const isRecent = variant === 'recent'
   const isService = String(item.kind || item.listingType || '').toLowerCase() === 'service'
-  const modeLabel = item.serviceMode === 'order_ahead'
-    ? 'Order ahead'
+  const isUnavailable = item.unavailable || Number(item.stock ?? 1) < 1
+  const unavailableLabel = item.serviceMode === 'order_ahead' ? 'Sold out' : isService ? 'Fully booked' : 'Out of stock'
+  const modeLabel = isUnavailable ? unavailableLabel : item.serviceMode === 'order_ahead'
+    ? 'Order now'
     : item.serviceMode === 'request_quote'
       ? 'Request a quote'
       : 'Book a time'
@@ -30,11 +32,14 @@ function MarketplaceItemCard({
       <div className="opportunities-marketplace-card-image-wrap">
         <img src={item.image} alt={item.title} loading="lazy" />
         {isRecent ? (
-          <button type="button" className={savedItemIds.includes(item.id) ? 'is-saved' : ''} aria-label={`${savedItemIds.includes(item.id) ? 'Remove' : 'Save'} ${item.title}`} aria-pressed={savedItemIds.includes(item.id)} onClick={(event) => { event.stopPropagation(); onToggleSavedItem(item.id) }}>
-            <FiHeart aria-hidden="true" />
-          </button>
+          <>
+            {isUnavailable ? <span className="is-unavailable">{unavailableLabel}</span> : null}
+            <button type="button" className={savedItemIds.includes(item.id) ? 'is-saved' : ''} aria-label={`${savedItemIds.includes(item.id) ? 'Remove' : 'Save'} ${item.title}`} aria-pressed={savedItemIds.includes(item.id)} onClick={(event) => { event.stopPropagation(); onToggleSavedItem(item.id) }}>
+              <FiHeart aria-hidden="true" />
+            </button>
+          </>
         ) : (
-          <span>{item.badge}</span>
+          <span className={isUnavailable ? 'is-unavailable' : undefined}>{item.badge}</span>
         )}
       </div>
 

@@ -329,6 +329,9 @@ async function fundBusinessOpportunityService(
 ) {
   const existing = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
   if (businessId && existing.businessId !== businessId) notFound('Opportunity')
+  if ((payload.method || 'wallet') !== 'wallet') {
+    throw new ApiError(409, 'This payment method cannot fund escrow until its provider confirms the payment. Use the company wallet for now.', 'PAYMENT_PROVIDER_CONFIRMATION_REQUIRED')
+  }
   if (payload.currency && payload.currency !== existing.currency) {
     throw new ApiError(
       400,

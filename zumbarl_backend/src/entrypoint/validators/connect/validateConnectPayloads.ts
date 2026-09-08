@@ -67,7 +67,7 @@ const postEngagementSnapshotSchema = z.object({
   type: z.string().optional(),
   mediaUrls: z.array(z.string()).max(8).default([]),
   mediaEdits: z.array(z.record(z.any())).max(8).default([]),
-  creator: z.object({ id: z.string().optional(), slug: z.string().optional(), profileType: z.string().optional(), name: z.string(), handle: z.string().optional(), avatarUrl: z.string().nullable().optional(), campus: z.string().nullable().optional(), zumbarlPoints: z.coerce.number().nonnegative().optional(), zumbarlTier: z.string().nullable().optional() }).optional(),
+  creator: z.object({ id: z.string().optional(), slug: z.string().optional(), profileType: z.string().optional(), name: z.string(), handle: z.string().optional(), avatarUrl: z.string().nullable().optional(), campus: z.string().nullable().optional(), campusPage: z.object({ id: z.string(), name: z.string(), slug: z.string() }).nullable().optional(), zumbarlPoints: z.coerce.number().nonnegative().optional(), zumbarlTier: z.string().nullable().optional() }).optional(),
   reactionCount: z.coerce.number().int().nonnegative().default(0),
   commentCount: z.coerce.number().int().nonnegative().default(0),
   repostCount: z.coerce.number().int().nonnegative().default(0)

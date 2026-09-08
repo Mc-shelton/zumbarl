@@ -26,6 +26,7 @@ function RealtimeCallAgent() {
   const [activeCall, setActiveCall] = useState(null)
   const [isResponding, setIsResponding] = useState(false)
   const notifiedCallIdRef = useRef('')
+  const incomingCallId = incomingCall?.id
 
   useEffect(() => subscribeToCallOverlay(setActiveCall), [])
 
@@ -77,11 +78,11 @@ function RealtimeCallAgent() {
   }, [])
 
   useEffect(() => {
-    if (!incomingCall) return undefined
+    if (!incomingCallId) return undefined
     playCallRingtone()
     const ringtoneInterval = window.setInterval(playCallRingtone, 2200)
     return () => window.clearInterval(ringtoneInterval)
-  }, [incomingCall?.id])
+  }, [incomingCallId])
 
   useEffect(() => {
     const token = window.localStorage.getItem(AUTH_TOKEN_KEY)
@@ -91,6 +92,11 @@ function RealtimeCallAgent() {
       if (event.type === 'message.created') {
         playMessageSound()
         window.dispatchEvent(new CustomEvent('zumbarl:message-created', { detail: event.data }))
+      } else if (event.type === 'page-message.created') {
+        playMessageSound()
+        window.dispatchEvent(new CustomEvent('zumbarl:page-message-created', { detail: event.data }))
+      } else if (event.type === 'page-conversation.created') {
+        window.dispatchEvent(new CustomEvent('zumbarl:page-conversation-created', { detail: event.data }))
       } else if (event.type === 'message.delivered' || event.type === 'message.read') {
         window.dispatchEvent(new CustomEvent('zumbarl:message-receipt', { detail: event.data }))
       } else if (event.type === 'circle.message.created') {

@@ -20,6 +20,41 @@ const enrollmentGraphInclude = {
   practiceSubmissions: { orderBy: { submittedAt: 'desc' as const } }
 }
 
+function relevanceScore(values: unknown[], terms: string[]) {
+  const haystack = values.flatMap((value) => {
+    if (Array.isArray(value)) return value
+    if (value && typeof value === 'object') return Object.values(value)
+    return [value]
+  }).filter(Boolean).join(' ').toLowerCase()
+  return terms.reduce((score, term) => score + (haystack.includes(term) ? (term.includes(' ') ? 3 : 1) : 0), 0)
+}
+
+function coachingLevel(xp: number) {
+  if (xp >= 850) return { name: 'Career ready', level: 4, floor: 850, next: null }
+  if (xp >= 500) return { name: 'Practitioner', level: 3, floor: 500, next: 850 }
+  if (xp >= 200) return { name: 'Builder', level: 2, floor: 200, next: 500 }
+  return { name: 'Foundation', level: 1, floor: 0, next: 200 }
+}
+
+function consecutiveWeekStreak(dates: Date[]) {
+  const activeWeeks = new Set(dates.map((date) => {
+    const copy = new Date(date)
+    copy.setUTCHours(0, 0, 0, 0)
+    copy.setUTCDate(copy.getUTCDate() - ((copy.getUTCDay() + 6) % 7))
+    return copy.toISOString().slice(0, 10)
+  }))
+  const cursor = new Date()
+  cursor.setUTCHours(0, 0, 0, 0)
+  cursor.setUTCDate(cursor.getUTCDate() - ((cursor.getUTCDay() + 6) % 7))
+  if (!activeWeeks.has(cursor.toISOString().slice(0, 10))) cursor.setUTCDate(cursor.getUTCDate() - 7)
+  let streak = 0
+  while (activeWeeks.has(cursor.toISOString().slice(0, 10))) {
+    streak += 1
+    cursor.setUTCDate(cursor.getUTCDate() - 7)
+  }
+  return streak
+}
+
 class LearnRoadmapsRepository {
   listLadders() {
     return prisma.careerRoadmap.findMany({
@@ -108,6 +143,127 @@ class LearnRoadmapsRepository {
       data: { lockedAt: new Date() },
       include: enrollmentGraphInclude
     })
+  }
+
+  async updateCoachingFocus(id: string, studentId: string, skillIds: string[], weeklyTarget: number) {
+    const enrollment = await this.findStudentEnrollment(id, studentId)
+    if (!enrollment) return null
+    const eligibleSkillIds = new Set(enrollment.roadmap.steps.flatMap((step) => (
+      step.competencies.flatMap((link) => link.competency.skillId ? [link.competency.skillId] : [])
+    )))
+    if (skillIds.some((skillId) => !eligibleSkillIds.has(skillId))) return 'INVALID_SKILL' as const
+    return prisma.studentRoadmapEnrollment.update({
+      where: { id },
+      data: { practiceSkillIds: [...new Set(skillIds)], weeklyPracticeTarget: weeklyTarget, coachingUpdatedAt: new Date() },
+      include: enrollmentGraphInclude
+    })
+  }
+
+  async readCoachingPlan(id: string, studentId: string) {
+    const enrollment = await this.findStudentEnrollment(id, studentId)
+    if (!enrollment) return null
+    const activeStepIds = enrollment.stepProgress.filter((item) => item.status === 'ACTIVE').map((item) => item.stepId)
+    const activeSteps = enrollment.roadmap.steps.filter((step) => activeStepIds.includes(step.id))
+    const competencies = enrollment.roadmap.steps.flatMap((step) => step.competencies.map((link) => link.competency))
+    const defaultSkillIds = activeSteps.flatMap((step) => step.competencies.flatMap((link) => link.competency.skillId ? [link.competency.skillId] : []))
+    const allSkillIds = competencies.flatMap((competency) => competency.skillId ? [competency.skillId] : [])
+    const selectedSkillIds = enrollment.practiceSkillIds.length
+      ? enrollment.practiceSkillIds
+      : [...new Set(defaultSkillIds.length ? defaultSkillIds : allSkillIds)]
+    const skills = [...new Map(competencies.flatMap((competency) => competency.skill ? [[competency.skill.id, competency.skill] as const] : [])).values()]
+    const selectedSkills = skills.filter((skill) => selectedSkillIds.includes(skill.id))
+    const terms = [...new Set(selectedSkills.flatMap((skill) => [skill.name.toLowerCase(), skill.slug.toLowerCase(), ...skill.name.toLowerCase().split(/\W+/).filter((term) => term.length > 2)]))]
+    const selectedCompetencyIds = competencies.filter((item) => item.skillId && selectedSkillIds.includes(item.skillId)).map((item) => item.id)
+    const since = new Date(Date.now() - 12 * 7 * 24 * 60 * 60 * 1000)
+    const [events, companyPosts, relationships, candidates, programs] = await Promise.all([
+      prisma.campusEvent.findMany({
+        where: { status: 'PUBLISHED', startsAt: { gte: new Date() }, OR: [{ campusId: enrollment.roadmap.campusId }, { campusId: null }] },
+        orderBy: { startsAt: 'asc' }, take: 60
+      }),
+      prisma.connectPost.findMany({
+        where: { status: 'published', managedProfile: { companyId: { not: null }, status: 'active' }, createdAt: { gte: since } },
+        include: { managedProfile: { include: { company: { select: { id: true, name: true, logoUrl: true } } } } },
+        orderBy: { createdAt: 'desc' }, take: 60
+      }),
+      prisma.connectRelationship.findMany({
+        where: { type: { in: ['follow', 'connect'] }, OR: [{ actorStudentId: studentId }, { targetStudentId: studentId }] }
+      }),
+      prisma.evergreenCandidate.findMany({
+        where: { studentId, cohort: { status: { in: ['OPEN', 'MATCHING', 'INTERVIEWING', 'PARTIALLY_FILLED'] } } },
+        include: { cohort: { include: { program: { include: { company: true } } } } },
+        orderBy: { matchScore: 'desc' }, take: 6
+      }),
+      prisma.evergreenProgram.findMany({
+        where: {
+          status: 'ACTIVE',
+          cohorts: { some: { status: { in: ['OPEN', 'MATCHING', 'INTERVIEWING', 'PARTIALLY_FILLED'] } } },
+          OR: [
+            { skills: { some: { skillId: { in: selectedSkillIds } } } },
+            { competencies: { some: { competencyId: { in: selectedCompetencyIds } } } }
+          ]
+        },
+        include: { company: true, skills: { include: { skill: true } }, cohorts: { where: { status: { in: ['OPEN', 'MATCHING', 'INTERVIEWING', 'PARTIALLY_FILLED'] } }, orderBy: { placementStartsAt: 'asc' }, take: 1 } },
+        take: 8
+      })
+    ])
+    const networkIds = [...new Set(relationships.flatMap((relationship) => [relationship.actorStudentId, relationship.targetStudentId]).filter((value) => value !== studentId))]
+    const coaches = networkIds.length && selectedSkillIds.length ? await prisma.studentProfile.findMany({
+      where: { id: { in: networkIds }, studentSkills: { some: { skillId: { in: selectedSkillIds } } } },
+      include: { user: { select: { name: true, username: true } }, campus: { select: { name: true } }, studentSkills: { where: { skillId: { in: selectedSkillIds } }, include: { skill: true } } },
+      take: 12
+    }) : []
+    const resources = activeSteps.flatMap((step) => step.resources.map((link) => ({
+      id: link.resource.id, checkpointId: step.id, title: link.resource.title, description: link.resource.description,
+      type: link.resource.resourceType, url: link.resource.url, provider: link.resource.provider
+    })))
+    const opportunities = await this.listRecommendedOpportunities(id, studentId) || []
+    const relevantEvents = events.map((event) => ({ event, score: relevanceScore([event.title, event.description, event.category, event.tags, event.organizerName], terms) }))
+      .filter((item) => item.score > 0).sort((left, right) => right.score - left.score || left.event.startsAt.getTime() - right.event.startsAt.getTime()).slice(0, 6)
+      .map(({ event, score }) => ({ id: event.id, title: event.title, organizerName: event.organizerName, startsAt: event.startsAt, locationName: event.locationName, matchScore: Math.min(100, 55 + score * 10) }))
+    const updates = companyPosts.map((post) => ({ post, score: relevanceScore([post.body, post.tags, post.payload, post.managedProfile?.name], terms) }))
+      .filter((item) => item.score > 0).sort((left, right) => right.score - left.score).slice(0, 6)
+      .map(({ post, score }) => ({ id: post.id, body: post.body, createdAt: post.createdAt, matchScore: Math.min(100, 55 + score * 10), company: { id: post.managedProfile?.company?.id, name: post.managedProfile?.name, slug: post.managedProfile?.slug, avatarUrl: post.managedProfile?.avatarUrl } }))
+    const activityDates = [
+      ...enrollment.evidence.filter((item) => item.verificationStatus === 'VERIFIED').map((item) => item.verifiedAt || item.createdAt),
+      ...enrollment.assessmentAttempts.map((item) => item.completedAt),
+      ...enrollment.practiceSubmissions.map((item) => item.submittedAt)
+    ].filter((item): item is Date => Boolean(item))
+    const xp = enrollment.stepProgress.filter((item) => item.status === 'COMPLETED').length * 120
+      + enrollment.evidence.filter((item) => item.verificationStatus === 'VERIFIED').reduce((total, item) => total + item.scoreAwarded, 0)
+      + enrollment.assessmentAttempts.reduce((total, item) => total + item.score, 0)
+      + enrollment.practiceSubmissions.length * 20
+      + (enrollment.verifiedAt ? 250 : 0)
+    const level = coachingLevel(xp)
+    const weekStart = new Date()
+    weekStart.setHours(0, 0, 0, 0)
+    weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7))
+    const thisWeekPractice = enrollment.practiceSubmissions.filter((item) => item.submittedAt >= weekStart).length
+    const thisWeekEvidence = enrollment.evidence.filter((item) => item.verificationStatus === 'VERIFIED' && (item.verifiedAt || item.createdAt) >= weekStart).length
+    const thisWeekAssessments = enrollment.assessmentAttempts.filter((item) => item.completedAt >= weekStart).length
+    return {
+      enrollmentId: enrollment.id,
+      focus: { availableSkills: skills, selectedSkillIds, weeklyTarget: enrollment.weeklyPracticeTarget, configured: enrollment.practiceSkillIds.length > 0 },
+      game: {
+        xp, level: level.level, levelName: level.name, streakWeeks: consecutiveWeekStreak(activityDates),
+        nextLevelXp: level.next, progressToNextLevel: level.next ? Math.max(0, Math.min(100, Math.round(((xp - level.floor) / (level.next - level.floor)) * 100))) : 100,
+        weeklyProgress: Math.min(enrollment.weeklyPracticeTarget, thisWeekPractice + thisWeekEvidence + thisWeekAssessments),
+        weeklyTarget: enrollment.weeklyPracticeTarget,
+        quests: [
+          { id: 'practice', label: 'Complete one guided practice', complete: thisWeekPractice > 0, href: resources[0] ? `/campus/learn/${id}/checkpoints/${resources[0].checkpointId}/practice/${resources[0].id}` : null },
+          { id: 'evidence', label: 'Finish work that proves a focus skill', complete: thisWeekEvidence > 0, href: '/campus/opportunities' },
+          { id: 'assessment', label: 'Take a checkpoint assessment', complete: thisWeekAssessments > 0, href: activeSteps[0] ? `/campus/learn/${id}/checkpoints/${activeSteps[0].id}/assessment` : null }
+        ]
+      },
+      checkpoint: activeSteps[0] ? { id: activeSteps[0].id, title: activeSteps[0].title } : null,
+      resources, opportunities, events: relevantEvents, companyUpdates: updates,
+      coaches: coaches.map((coach) => ({
+        id: coach.id, name: coach.user.name || `${coach.firstName} ${coach.lastName}`, username: coach.user.username,
+        avatarUrl: coach.avatarUrl, campus: coach.campus.name,
+        skills: coach.studentSkills.map((item) => ({ id: item.skillId, name: item.skill.name, level: item.level, verifiedByGigs: item.verifiedByGigs }))
+      })).sort((left, right) => right.skills.reduce((sum, item) => sum + item.verifiedByGigs, 0) - left.skills.reduce((sum, item) => sum + item.verifiedByGigs, 0)).slice(0, 6),
+      placements: candidates.map((candidate) => ({ id: candidate.id, title: candidate.cohort.program.title, companyName: candidate.cohort.program.company.name, status: candidate.status, matchScore: Number(candidate.matchScore || 0), matchReasons: candidate.matchReasons })),
+      possibilities: programs.map((program) => ({ id: program.id, title: program.title, companyName: program.company.name, placementType: program.placementType, workMode: program.workMode, startsAt: program.cohorts[0]?.placementStartsAt, matchingSkills: program.skills.filter((link) => selectedSkillIds.includes(link.skillId)).map((link) => link.skill.name) }))
+    }
   }
 
   async createEvidence(id: string, studentId: string, payload: Record<string, any>, submittedByUserId?: string) {
@@ -442,10 +598,20 @@ class LearnRoadmapsRepository {
       .filter((progress) => requiredStepIds.has(progress.stepId))
       .every((progress) => progress.evidenceScore + progress.testScore >= enrollment.roadmap.verificationThreshold)
     if (!complete) return { verified: false as const, reason: 'checkpoint_scores_incomplete', roadmap: enrollment }
-    const updated = await prisma.studentRoadmapEnrollment.update({
-      where: { id },
-      data: { status: 'COMPLETED', verifiedAt: new Date(), completedAt: new Date(), progressPercent: 100 },
-      include: enrollmentGraphInclude
+    const updated = await prisma.$transaction(async (tx) => {
+      await tx.studentCompetencyState.updateMany({
+        where: {
+          studentId,
+          competencyId: { in: enrollment.roadmap.steps.flatMap((step) => step.competencies.map((link) => link.competency.id)) },
+          evidenceScore: { gt: 0 }
+        },
+        data: { status: 'VERIFIED', lastCalculatedAt: new Date() }
+      })
+      return tx.studentRoadmapEnrollment.update({
+        where: { id },
+        data: { status: 'COMPLETED', verifiedAt: new Date(), completedAt: new Date(), progressPercent: 100 },
+        include: enrollmentGraphInclude
+      })
     })
     return { verified: true as const, roadmap: updated }
   }

@@ -1,17 +1,52 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
 import { requireBody } from '../../../../lib/http.js'
 import { subscribeToRealtimeEvents } from '../../../../lib/realtimeEvents.js'
-import { createMessageSchema, createProjectGroupMessageSchema, messageQuerySchema } from '../../../validators/connect/index.js'
+import { createMessageSchema, createPageConversationSchema, createPageMessageSchema, createProjectGroupMessageSchema, messageQuerySchema, pageConversationQuerySchema } from '../../../validators/connect/index.js'
 import {
   createMessageService,
   createProjectGroupMessageService,
+  createPageConversationService,
+  createPageMessageService,
   listConversationsService,
+  listMessageNetworkService,
   listMessagesService,
+  listPageConversationsService,
+  listPageMessagesService,
+  listProjectGroupConversationsService,
   listProjectGroupMessagesService
 } from '../../../../adapters/services/connect/index.js'
 
 async function listConversationsController(request: FastifyRequest, reply: FastifyReply) {
   return reply.send(await listConversationsService(request.authUser?.id))
+}
+
+async function listMessageNetworkController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await listMessageNetworkService(request.authUser?.id))
+}
+
+async function listPageConversationsController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await listPageConversationsService(request.authUser?.id, pageConversationQuerySchema.parse(request.query)))
+}
+
+async function createPageConversationController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.code(201).send(await createPageConversationService(
+    request.authUser?.id,
+    requireBody(createPageConversationSchema, request)
+  ))
+}
+
+async function listPageMessagesController(request: FastifyRequest, reply: FastifyReply) {
+  const { conversationId } = request.params as { conversationId: string }
+  return reply.send(await listPageMessagesService(request.authUser?.id, conversationId))
+}
+
+async function createPageMessageController(request: FastifyRequest, reply: FastifyReply) {
+  const { conversationId } = request.params as { conversationId: string }
+  return reply.code(201).send(await createPageMessageService(
+    request.authUser?.id,
+    conversationId,
+    requireBody(createPageMessageSchema, request)
+  ))
 }
 
 async function listMessagesController(request: FastifyRequest, reply: FastifyReply) {
@@ -28,6 +63,10 @@ async function createMessageController(request: FastifyRequest, reply: FastifyRe
 async function listProjectGroupMessagesController(request: FastifyRequest, reply: FastifyReply) {
   const { projectId } = request.params as { projectId: string }
   return reply.send(await listProjectGroupMessagesService(request.authUser?.id, projectId))
+}
+
+async function listProjectGroupConversationsController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await listProjectGroupConversationsService(request.authUser?.id))
 }
 
 async function createProjectGroupMessageController(request: FastifyRequest, reply: FastifyReply) {
@@ -71,9 +110,15 @@ async function realtimeEventsController(request: FastifyRequest, reply: FastifyR
 
 export {
   listConversationsController,
+  listMessageNetworkController,
   listMessagesController,
   createMessageController,
+  listProjectGroupConversationsController,
   listProjectGroupMessagesController,
   createProjectGroupMessageController,
+  listPageConversationsController,
+  createPageConversationController,
+  listPageMessagesController,
+  createPageMessageController,
   realtimeEventsController
 }

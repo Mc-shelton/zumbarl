@@ -8,6 +8,7 @@ import {
   FiCalendar,
   FiChevronRight,
   FiCreditCard,
+  FiCoffee,
   FiFileText,
   FiHeart,
   FiHome,
@@ -50,6 +51,7 @@ const ICON_BY_ID = {
   briefcase: FiBriefcase,
   calendar: FiCalendar,
   "credit-card": FiCreditCard,
+  coffee: FiCoffee,
   file: FiFileText,
   home: FiHome,
   heart: FiHeart,
@@ -204,10 +206,10 @@ function CampusSidebar({
           <button
             type="button"
             className={`campus-profile-card${isProfileCurrent ? " is-current" : ""}`}
-            data-label="Account"
+            data-label={resolvedViewer.name || profileLabel}
             aria-expanded={isAccountMenuOpen}
             aria-current={isProfileCurrent ? "page" : undefined}
-            aria-label="Open account menu"
+            aria-label={`Open ${resolvedViewer.name || profileLabel} account menu`}
             onClick={() => setIsAccountMenuOpen((current) => !current)}
           >
             <img
@@ -310,6 +312,7 @@ function CampusSidebar({
                 <Link to="/campus?compose=story" onClick={() => openMobileComposer("story")}><strong>Story</strong><span>Publish a quick campus moment.</span></Link>
                 <Link to="/campus?compose=event" onClick={() => openMobileComposer("event")}><strong>Event</strong><span>Invite people to something happening nearby.</span></Link>
                 <Link to="/campus/marketplace/listings/new" onClick={() => setIsCreateMenuOpen(false)}><strong>Listing</strong><span>Sell a product or offer a service.</span></Link>
+                <Link to="/campus/marketplace/listings/new?mode=food" onClick={() => setIsCreateMenuOpen(false)}><strong>Home-cooked meal</strong><span>Share today’s plate from your student kitchen.</span></Link>
               </div>
             </section>
           </div>

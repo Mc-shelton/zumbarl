@@ -28,6 +28,60 @@
 .wellbeing-notice button { width: 30px; height: 30px; border: 0; border-radius: 9px; background: transparent; color: #52786e; display: grid; place-items: center; cursor: pointer; }
 .wellbeing-error { padding: 11px 13px; background: #fff0f2; color: #9b4050; font-weight: 700; }
 
+.wellbeing-care-pathways { padding:22px; border:1px solid #e5e1e8; border-radius:20px; background:linear-gradient(145deg,#fff 0 70%,#f5faf9 100%); display:grid; gap:15px; }
+.wellbeing-care-pathways > header { display:flex; align-items:end; justify-content:space-between; gap:16px; }
+.wellbeing-care-pathways > header > div { display:grid; gap:4px; }
+.wellbeing-care-pathways > header span { color:#98718f; font-size:var(--text-caption); font-weight:850; letter-spacing:.1em; text-transform:uppercase; }
+.wellbeing-care-pathways > header h2 { margin:0; color:var(--wb-ink); font-size:var(--text-body-lg); }
+.wellbeing-care-pathways > header p { max-width:650px; margin:0; color:#737486; font-size:var(--text-small); line-height:1.5; }
+.wellbeing-care-pathways > header > em { padding:7px 10px; border-radius:999px; background:#e8f4f1; color:#397a73; font-size:var(--text-caption); font-style:normal; font-weight:800; white-space:nowrap; }
+.wellbeing-care-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.wellbeing-care-grid > article { min-width:0; padding:15px; border:1px solid #e4dfe6; border-radius:16px; background:#fff; display:grid; grid-template-rows:auto minmax(58px,auto) auto 1fr auto; gap:10px; }
+.wellbeing-care-grid > article.is-enrolled { border-color:#b9dcd7; box-shadow:inset 0 3px #4d9b91; }
+.wellbeing-care-grid article > header { display:grid; grid-template-columns:36px minmax(0,1fr) auto; align-items:center; gap:9px; }
+.wellbeing-care-grid article > header > span { width:36px; height:36px; border-radius:11px; background:#f0e7ef; color:var(--wb-purple); display:grid; place-items:center; }
+.wellbeing-care-grid article > header div { min-width:0; display:grid; gap:1px; }
+.wellbeing-care-grid article > header small { color:#8b8491; font-size:10px; }
+.wellbeing-care-grid article h3 { margin:0; color:#343143; font-size:var(--text-small); line-height:1.25; }
+.wellbeing-care-grid article > header em { padding:4px 7px; border-radius:999px; background:#e9f5f2; color:#34786f; font-size:9px; font-style:normal; font-weight:850; text-transform:capitalize; }
+.wellbeing-care-grid article > p { margin:0; color:#6d6b7b; font-size:var(--text-caption); line-height:1.5; }
+.wellbeing-care-provider { padding:8px; border-radius:10px; background:#f8f5f8; color:var(--wb-purple); display:grid; grid-template-columns:20px minmax(0,1fr); align-items:center; gap:7px; }
+.wellbeing-care-provider span { display:grid; gap:1px; }
+.wellbeing-care-provider small { color:#8a8590; font-size:9px; }
+.wellbeing-care-provider strong { overflow:hidden; color:#454151; font-size:10px; text-overflow:ellipsis; white-space:nowrap; }
+.wellbeing-care-grid ol { margin:0; padding-left:20px; color:#686576; display:grid; align-content:start; gap:5px; font-size:10px; }
+.wellbeing-care-grid footer { padding-top:9px; border-top:1px solid #eeeaef; display:grid; gap:8px; }
+.wellbeing-care-grid footer small { color:#84808c; display:flex; align-items:center; gap:5px; font-size:9px; }
+.wellbeing-care-grid footer button { min-height:34px; border:0; border-radius:9px; background:var(--wb-purple); color:#fff; display:flex; align-items:center; justify-content:center; gap:6px; font:inherit; font-size:10px; font-weight:850; cursor:pointer; }
+.wellbeing-care-progress { display:grid; gap:5px; }
+.wellbeing-care-progress > span { height:6px; overflow:hidden; border-radius:999px; background:#ebe8ed; }
+.wellbeing-care-progress i { display:block; height:100%; border-radius:inherit; background:#4d9b91; }
+.wellbeing-care-progress small { color:#747181; font-size:9px; }
+.wellbeing-care-note { padding:8px !important; border-radius:9px; background:#f3faf8; color:#3c756e !important; }
+.wellbeing-care-boundary { padding:10px 12px; border-radius:12px; background:#f8f5f8; color:#6d6876; display:grid; grid-template-columns:22px minmax(0,1fr); gap:8px; }
+.wellbeing-care-boundary > svg { color:var(--wb-purple); }
+.wellbeing-care-boundary p { margin:0; font-size:var(--text-caption); line-height:1.5; }
+.wellbeing-care-boundary strong { color:#454151; }
+
+.wellbeing-care-modal { width:min(660px,100%); }
+.wellbeing-care-steps { padding:12px; border-radius:13px; background:#f8f5f8; display:grid; gap:7px; }
+.wellbeing-care-steps span { color:#5f5b69; display:grid; grid-template-columns:24px minmax(0,1fr); align-items:center; gap:8px; font-size:var(--text-caption); }
+.wellbeing-care-steps i { width:24px; height:24px; border-radius:50%; background:#fff; color:var(--wb-purple); display:grid; place-items:center; font-size:9px; font-style:normal; font-weight:850; }
+.wellbeing-consent { padding:12px; border:1px solid #e3dde5; border-radius:13px; background:#faf8fa; display:grid; grid-template-columns:auto minmax(0,1fr); align-items:start; gap:9px; cursor:pointer; }
+.wellbeing-consent.is-required { border-color:#dcc5d7; background:#fffafd; }
+.wellbeing-consent input { margin-top:3px; accent-color:var(--wb-purple); }
+.wellbeing-consent span { display:grid; gap:3px; }
+.wellbeing-consent strong { color:#454151; font-size:var(--text-small); }
+.wellbeing-consent small { color:#76717e; font-size:var(--text-caption); line-height:1.45; }
+.wellbeing-care-statuses { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.wellbeing-care-statuses label { position:relative; min-height:48px; border:1px solid #e3dfe5; border-radius:12px; background:#fff; display:grid; place-items:center; cursor:pointer; }
+.wellbeing-care-statuses label.is-selected { border-color:var(--wb-purple); background:#f5eef4; color:var(--wb-purple); }
+.wellbeing-care-statuses input { position:absolute; opacity:0; }
+.wellbeing-care-statuses span { font-size:var(--text-small); font-weight:800; }
+.wellbeing-support-activity { padding:18px 20px; border:1px solid #e5e1e8; border-radius:18px; background:#fff; display:grid; gap:12px; }
+.wellbeing-support-activity > header { display:flex; align-items:center; justify-content:space-between; gap:14px; }.wellbeing-support-activity > header > div { display:grid; gap:2px; }.wellbeing-support-activity > header span { color:#98718f; font-size:var(--text-caption); font-weight:850; letter-spacing:.09em; text-transform:uppercase; }.wellbeing-support-activity > header h2 { margin:0; color:var(--wb-ink); font-size:var(--text-body-lg); }.wellbeing-support-activity > header p { margin:0; color:#777282; font-size:var(--text-caption); }.wellbeing-support-activity > header > svg { width:38px; height:38px; padding:10px; border-radius:12px; background:#f0e8ef; color:var(--wb-purple); }
+.wellbeing-support-activity > div { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }.wellbeing-support-activity article { min-width:0; padding:10px; border-radius:12px; background:#faf8fa; display:grid; grid-template-columns:32px minmax(0,1fr) auto; align-items:center; gap:8px; }.wellbeing-support-activity article > span { width:32px; height:32px; border-radius:10px; background:#fff; color:var(--wb-purple); display:grid; place-items:center; }.wellbeing-support-activity article > div { min-width:0; display:grid; gap:2px; }.wellbeing-support-activity article strong { font-size:var(--text-small); }.wellbeing-support-activity article small { overflow:hidden; color:#817b87; font-size:10px; text-overflow:ellipsis; text-transform:capitalize; white-space:nowrap; }.wellbeing-support-activity article em { padding:4px 7px; border-radius:999px; background:#ece8ee; color:#675f6b; font-size:9px; font-style:normal; font-weight:850; text-transform:capitalize; }.wellbeing-support-activity article em.is-confirmed,.wellbeing-support-activity article em.is-resolved,.wellbeing-support-activity article em.is-completed { background:#e5f4ed; color:#31735f; }
+
 .wellbeing-today-grid { display: grid; grid-template-columns: minmax(0,1.42fr) minmax(260px,.78fr); align-items: stretch; gap: 11px; }
 .wellbeing-daily, .wellbeing-pattern-card { min-width: 0; padding: 19px; border: 1px solid #e5e1e8; border-radius: 18px; background: #fff; }
 .wellbeing-daily > header, .wellbeing-pattern-card > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -80,7 +134,10 @@
   .wellbeing-today-grid,.wellbeing-circle-grid,.wellbeing-loading { grid-template-columns:1fr; }.wellbeing-moods { gap:5px; }.wellbeing-moods label { min-height:66px; }.wellbeing-moods b { font-size:20px; }.wellbeing-moods span { font-size:8px; }
   .wellbeing-circles > header { align-items:start; }.wellbeing-loading span:last-child { display:none; }.wellbeing-urgent { grid-template-columns:32px minmax(0,1fr); }.wellbeing-urgent a { grid-column:2; }
   .wellbeing-modal-backdrop { padding:10px; align-items:end; }.wellbeing-modal { max-height:92dvh; padding:18px; border-radius:20px; }.wellbeing-modal > header h2 { font-size:21px; }.wellbeing-topic-grid,.wellbeing-form-row { grid-template-columns:1fr; }.wellbeing-modal > footer { align-items:stretch; flex-direction:column; }.wellbeing-modal > footer button { width:100%; justify-content:center; }.wellbeing-alias { grid-template-columns:40px minmax(0,1fr); }.wellbeing-alias > button { grid-column:2; justify-self:start; }.wellbeing-chat-log { min-height:45dvh; max-height:55dvh; }.wellbeing-message { max-width:90%; }.wellbeing-chat-compose textarea { font-size:16px; }.wellbeing-one-step { grid-template-columns:1fr; }.wellbeing-one-step p { grid-column:1; }.wellbeing-brain-dump { grid-template-columns:1fr; }.wellbeing-brain-dump span { grid-column:1; }
+  .wellbeing-care-pathways { padding:16px; }.wellbeing-care-pathways > header { align-items:start; flex-direction:column; }.wellbeing-care-grid { grid-template-columns:1fr; }.wellbeing-care-statuses,.wellbeing-support-activity > div { grid-template-columns:1fr; }
 }
+
+@media (max-width:980px) and (min-width:761px) { .wellbeing-care-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }.wellbeing-care-grid > article:last-child { grid-column:1/-1; } }
 
 /* Keep circle cards visually level and make active memberships clear entry points. */
 .wellbeing-circle-grid { grid-auto-rows:1fr; }
@@ -195,6 +252,8 @@
 /* Circle cards disclose the people and boundaries behind the word “moderated”. */
 .wellbeing-circle-grid > article { min-height:286px; grid-template-rows:54px minmax(48px,auto) 48px 28px 38px; }
 .wellbeing-circle-grid > article.has-splash { min-height:392px; grid-template-rows:96px 54px minmax(48px,auto) 48px 28px 38px; }
+.wellbeing-circle-grid > article.is-pending { border-style:dashed; background:#fbfafb; }
+.wellbeing-circle-grid > article.is-pending footer > strong { color:#8b6683; font-size:var(--text-caption); }
 .wellbeing-circle-splash { position:relative; height:96px; margin:-16px -16px 0; overflow:hidden; border-radius:15px 15px 9px 9px; background:#f6eff3; }
 .wellbeing-circle-splash::after { content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(35,31,43,.02),rgba(35,31,43,.12)); pointer-events:none; }
 .wellbeing-circle-splash img { width:100%; height:100%; display:block; object-fit:cover; object-position:center 58%; }

@@ -5,7 +5,7 @@ import { formatKes } from '../pricing'
 import { CheckoutFeatureList } from './CheckoutFeatureList'
 import { DeliveryEstimateCard } from './DeliveryEstimateCard'
 
-export function CartSummaryRail({ promoCode, setPromoCode, totals }) {
+export function CartSummaryRail({ items, promoCode, setPromoCode, totals }) {
   const canCheckout = hasAccess(ACCESS_KEYS.cart.checkout)
 
   return (
@@ -19,18 +19,19 @@ export function CartSummaryRail({ promoCode, setPromoCode, totals }) {
         </article>
         <article>
           <p>Delivery Fee</p>
-          <strong>{totals.deliveryPending ? 'Not yet quoted' : totals.deliveryFee ? formatKes(totals.deliveryFee) : 'Free'}</strong>
+          <strong>{totals.deliveryPending ? 'Not yet quoted' : !totals.hasDelivery ? 'Not applicable' : totals.deliveryFee ? formatKes(totals.deliveryFee) : 'Free'}</strong>
         </article>
       </div>
 
-      {totals.deliveryPending ? <p className="campus-cart-delivery-warning" role="status">Delivery has not been included in this total. The seller must confirm a delivery price before payment.</p> : null}
+      {totals.deliveryPending ? <p className="campus-cart-delivery-warning" role="status">Choose and confirm a fulfilment option to include its fee in your total.</p> : null}
+      {totals.unavailableCount ? <p className="campus-cart-stock-warning" role="alert">Remove out-of-stock items before checking out.</p> : null}
 
       <div className="campus-cart-summary-total">
         <p>Total</p>
         <strong>{formatKes(totals.finalTotal)}</strong>
       </div>
 
-      <DeliveryEstimateCard />
+      <DeliveryEstimateCard items={items} />
 
       <form className="campus-cart-promo-row" onSubmit={(event) => event.preventDefault()}>
         <input
@@ -43,12 +44,12 @@ export function CartSummaryRail({ promoCode, setPromoCode, totals }) {
         <button type="submit">Apply</button>
       </form>
 
-      {canCheckout && totals.itemCount > 0 && !totals.deliveryPending ? (
+      {canCheckout && totals.itemCount > 0 && !totals.deliveryPending && !totals.unavailableCount ? (
         <Link to="/campus/cart/payment" className="campus-cart-checkout-btn">
           Proceed to Checkout
           <FiArrowRight aria-hidden="true" />
         </Link>
-      ) : canCheckout && totals.itemCount > 0 ? <button type="button" className="campus-cart-checkout-btn" disabled>Awaiting delivery quote</button> : null}
+      ) : canCheckout && totals.itemCount > 0 ? <button type="button" className="campus-cart-checkout-btn" disabled>{totals.unavailableCount ? 'Item unavailable' : 'Awaiting delivery quote'}</button> : null}
 
       <p className="campus-cart-secure-note">
         <FiLock aria-hidden="true" />

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiBarChart2,
   FiCalendar,
@@ -11,6 +11,7 @@ import {
   FiGlobe,
   FiMail,
   FiMapPin,
+  FiMessageCircle,
   FiPhone,
   FiPlus,
   FiShare2,
@@ -21,11 +22,15 @@ import {
 import { Link, useParams } from "react-router-dom";
 import CampusSidebar from "../components/layout/CampusSidebar";
 import Seo from "../components/Seo";
+import { ImageCropper } from "../components/ui";
+import { cropSquareImageFile } from "../lib/cropSquareImageFile";
 import { uploadZumbarlFile } from "../lib/uploadZumbarlFile";
 import ExplorePostComposer from "../features/explore/components/ExplorePostComposer";
 import ExploreStoryComposer from "../features/explore/components/ExploreStoryComposer";
 import ManagedEntityFeed from "../features/explore/components/ManagedEntityFeed";
+import PageInboxPanel from "../features/messages/components/PageInboxPanel";
 import { createStory } from "../features/explore/services/storyService";
+import { searchMarketplaceLocations } from "../features/opportunities/services/marketplaceInteractionService";
 import {
   createManagedProfilePost,
   listMyManagedProfiles,
@@ -180,6 +185,7 @@ function buildDraft(record) {
     email: record.email || "",
     phone: record.phone || "",
     locationLabel: record.locationLabel || "",
+    avatarUrl: record.avatarUrl || "",
     coverImageUrl: record.coverImageUrl || "",
     detailsEntries: Object.entries(details)
       .filter(([key]) => key !== "tagline")
@@ -207,8 +213,26 @@ export default function ManagedProfilePage() {
   const [isStoryComposerOpen, setIsStoryComposerOpen] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [logoCrop, setLogoCrop] = useState(null);
   const [coverError, setCoverError] = useState("");
   const [editorError, setEditorError] = useState("");
+  const [locationResults, setLocationResults] = useState([]);
+  const [isSearchingLocation, setIsSearchingLocation] = useState(false);
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const locationRequestRef = useRef(0);
+  function applyProfile(record) {
+    setProfile(record);
+    setDraft(buildDraft(record));
+    const label = record.locationLabel || record.campus?.locationLabel || record.campus?.city || "";
+    setSelectedLocation(label ? {
+      label,
+      latitude: record.campus?.latitude ?? null,
+      longitude: record.campus?.longitude ?? null,
+    } : null);
+    setLocationResults([]);
+    setIsSearchingLocation(false);
+  }
   const load = () => {
     setLoadError("");
     return Promise.all([
@@ -216,8 +240,7 @@ export default function ManagedProfilePage() {
       listMyManagedProfiles().catch(() => ({ data: [] })),
     ])
       .then(([record, mine]) => {
-        setProfile(record);
-        setDraft(buildDraft(record));
+        applyProfile(record);
         setCanManage((mine.data || []).some((item) => item.id === record.id));
       })
       .catch((error) => {
@@ -232,8 +255,7 @@ export default function ManagedProfilePage() {
     ])
       .then(([record, mine]) => {
         if (!active) return;
-        setProfile(record);
-        setDraft(buildDraft(record));
+        applyProfile(record);
         setCanManage((mine.data || []).some((item) => item.id === record.id));
       })
       .catch((error) => {
@@ -246,7 +268,35 @@ export default function ManagedProfilePage() {
       active = false;
     };
   }, [profileSlug]);
+  useEffect(() => {
+    const query = String(draft.locationLabel || "").trim();
+    if (!editing || selectedLocation || query.length < 3) return undefined;
+    const requestId = ++locationRequestRef.current;
+    const timer = window.setTimeout(() => {
+      searchMarketplaceLocations(query)
+        .then((response) => {
+          if (requestId === locationRequestRef.current)
+            setLocationResults(response.results || []);
+        })
+        .catch(() => {
+          if (requestId === locationRequestRef.current) setLocationResults([]);
+        })
+        .finally(() => {
+          if (requestId === locationRequestRef.current)
+            setIsSearchingLocation(false);
+        });
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [draft.locationLabel, editing, selectedLocation]);
+  useEffect(() => () => {
+    if (logoCrop?.previewUrl) URL.revokeObjectURL(logoCrop.previewUrl);
+  }, [logoCrop?.previewUrl]);
   const meta = TYPE_META[profile?.type] || TYPE_META.club;
+  const tabs = canManage ? [...meta.tabs, "messages"] : meta.tabs;
+  const pageMessageHref = `/messages?${new URLSearchParams({
+    pageType: "managed_profile",
+    pageId: profile?.id || "",
+  }).toString()}`;
   const sections = useMemo(
     () =>
       Object.entries(profile?.details || {}).filter(
@@ -351,6 +401,51 @@ export default function ManagedProfilePage() {
       setUploadingCover(false);
     }
   }
+  function beginLogoCrop(file) {
+    if (!file || !file.type.startsWith("image/")) {
+      setEditorError("Choose an image file for the page logo.");
+      return;
+    }
+    const previewUrl = URL.createObjectURL(file);
+    const image = new Image();
+    image.onload = () => {
+      setLogoCrop({
+        file,
+        previewUrl,
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+        zoom: 1,
+        positionX: 50,
+        positionY: 50,
+      });
+      setEditorError("");
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(previewUrl);
+      setEditorError("The selected image could not be opened.");
+    };
+    image.src = previewUrl;
+  }
+  async function confirmLogoCrop() {
+    if (!logoCrop) return;
+    setUploadingLogo(true);
+    setEditorError("");
+    try {
+      const croppedFile = await cropSquareImageFile(logoCrop.file, logoCrop);
+      const upload = await uploadZumbarlFile(croppedFile, {
+        scope: "managed-profile",
+        metadata: { managedProfileId: profile.id, purpose: "profile-logo" },
+      });
+      const avatarUrl = upload.url || upload.previewUrl;
+      if (!avatarUrl) throw new Error("The uploaded logo could not be read.");
+      setDraft((current) => ({ ...current, avatarUrl }));
+      setLogoCrop(null);
+    } catch (error) {
+      setEditorError(error.message || "The logo could not be cropped and uploaded.");
+    } finally {
+      setUploadingLogo(false);
+    }
+  }
   async function publishPost(payload) {
     await createManagedProfilePost(profile.id, payload);
     await load();
@@ -417,16 +512,26 @@ export default function ManagedProfilePage() {
     }
     return {
       name: draft.name.trim(),
+      avatarUrl: draft.avatarUrl.trim() || null,
       bio: draft.bio.trim() || null,
       websiteUrl: draft.websiteUrl.trim() || null,
       email: draft.email.trim() || null,
       phone: draft.phone.trim() || null,
       locationLabel: draft.locationLabel.trim() || null,
+      ...(selectedLocation?.latitude !== null && selectedLocation?.latitude !== undefined && selectedLocation?.latitude !== ""
+        && selectedLocation?.longitude !== null && selectedLocation?.longitude !== undefined && selectedLocation?.longitude !== ""
+        && Number.isFinite(Number(selectedLocation.latitude)) && Number.isFinite(Number(selectedLocation.longitude))
+        ? { latitude: Number(selectedLocation.latitude), longitude: Number(selectedLocation.longitude) }
+        : {}),
       details,
     };
   }
   async function save(event) {
     event.preventDefault();
+    if (draft.locationLabel.trim() && !selectedLocation) {
+      setEditorError("Select a location from the matching results before saving.");
+      return;
+    }
     setSavingProfile(true);
     setEditorError("");
     try {
@@ -447,7 +552,7 @@ export default function ManagedProfilePage() {
       </header>
       {posts.length ? (
         <ManagedEntityFeed
-          identity={{ id: profile.id, slug: profile.slug, profileType: profile.type, name: profile.name, handle: `@${profile.handle}`, avatar: profile.avatarUrl, campus: profile.campus?.name || profile.locationLabel }}
+          identity={{ id: profile.id, slug: profile.slug, profileType: profile.type, name: profile.name, handle: `@${profile.handle}`, avatar: profile.avatarUrl, campus: profile.campus?.name || profile.locationLabel, campusPage: profile.type === "campus" ? { id: profile.id, name: profile.name, slug: profile.slug } : null }}
           onEditPost={canManage ? editPost : null}
           posts={posts}
         />
@@ -503,7 +608,7 @@ export default function ManagedProfilePage() {
             </div>
             <header className="managed-profile-hero">
               <img
-                className="managed-profile-avatar"
+                className={`managed-profile-avatar${profile.type === "campus" ? " is-logo" : ""}`}
                 width="120"
                 height="120"
                 src={profile.avatarUrl || "/assets/index/bee_nobg.png"}
@@ -527,6 +632,15 @@ export default function ManagedProfilePage() {
                 </small>
               </div>
               <aside>
+                {canManage ? (
+                  <button onClick={() => switchTab("messages")}>
+                    <FiMessageCircle /> Page inbox
+                  </button>
+                ) : (
+                  <Link to={pageMessageHref}>
+                    <FiMessageCircle /> Message
+                  </Link>
+                )}
                 <button
                   className={
                     profile.isFollowing ? "is-following" : "is-primary"
@@ -566,7 +680,7 @@ export default function ManagedProfilePage() {
             </header>
             <div className="managed-profile-tabs-wrap">
               <nav className="managed-profile-tabs zumbarl-segmented-tabs">
-                {meta.tabs.map((tab) => (
+                {tabs.map((tab) => (
                   <button
                     key={tab}
                     className={activeTab === tab ? "is-active" : ""}
@@ -750,7 +864,7 @@ export default function ManagedProfilePage() {
                         return (
                           <Link
                             className="managed-profile-service-card"
-                            to={`/campus/opportunities/buy-sell?shop=${encodeURIComponent(service.slug || service.id)}`}
+                            to={`/campus/vendors/${encodeURIComponent(service.slug || service.id)}`}
                             key={service.id}
                           >
                             <img
@@ -828,6 +942,13 @@ export default function ManagedProfilePage() {
               </div>
             ) : null}
             {activeTab === "posts" ? activity : null}
+            {activeTab === "messages" && canManage ? (
+              <PageInboxPanel
+                pageId={profile.id}
+                pageName={profile.name}
+                pageType="managed_profile"
+              />
+            ) : null}
             {activeTab === "events" ? (
               <section className="managed-profile-feed managed-profile-connect-feed is-posts-tab">
                 <header className="managed-profile-connect-head">
@@ -846,7 +967,7 @@ export default function ManagedProfilePage() {
                 </header>
                 {eventPosts.length ? (
                   <ManagedEntityFeed
-                    identity={{ id: profile.id, slug: profile.slug, profileType: profile.type, name: profile.name, handle: `@${profile.handle}`, avatar: profile.avatarUrl, campus: profile.campus?.name || profile.locationLabel }}
+                    identity={{ id: profile.id, slug: profile.slug, profileType: profile.type, name: profile.name, handle: `@${profile.handle}`, avatar: profile.avatarUrl, campus: profile.campus?.name || profile.locationLabel, campusPage: profile.type === "campus" ? { id: profile.id, name: profile.name, slug: profile.slug } : null }}
                     onEditPost={canManage ? editPost : null}
                     posts={eventPosts}
                   />
@@ -920,6 +1041,23 @@ export default function ManagedProfilePage() {
                   </header>
                   <section>
                     <h3>Basics</h3>
+                    <div className="managed-profile-logo-field">
+                      <img src={draft.avatarUrl || "/assets/index/bee_nobg.png"} alt="Page logo preview" />
+                      <div>
+                        <strong>Page logo</strong>
+                        <small>Upload a square image. The Zumbarl bee remains the default when no logo is set.</small>
+                        <span>
+                          <label className="managed-profile-logo-upload">
+                            <FiCamera /> Choose logo
+                            <input type="file" accept="image/*" disabled={uploadingLogo} onChange={(event) => {
+                              beginLogoCrop(event.target.files?.[0]);
+                              event.target.value = "";
+                            }} />
+                          </label>
+                          {draft.avatarUrl ? <button type="button" disabled={uploadingLogo} onClick={() => setDraft({ ...draft, avatarUrl: "" })}>Use default bee</button> : null}
+                        </span>
+                      </div>
+                    </div>
                     <label>
                       Page name
                       <input
@@ -989,19 +1127,38 @@ export default function ManagedProfilePage() {
                         }
                       />
                     </label>
-                    <label>
-                      Location
-                      <input
-                        value={draft.locationLabel}
-                        placeholder="e.g. Rongai, Nairobi"
-                        onChange={(event) =>
-                          setDraft({
-                            ...draft,
-                            locationLabel: event.target.value,
-                          })
-                        }
-                      />
-                    </label>
+                    <div className="managed-profile-location-field">
+                      <label htmlFor="managed-profile-location">Location</label>
+                      <div className={`managed-profile-location-input${selectedLocation ? " is-selected" : ""}`}>
+                        <FiMapPin aria-hidden="true" />
+                        <input
+                          id="managed-profile-location"
+                          role="combobox"
+                          aria-autocomplete="list"
+                          aria-expanded={Boolean(locationResults.length)}
+                          value={draft.locationLabel}
+                          placeholder="Search a campus, road, landmark or town"
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setDraft({ ...draft, locationLabel: value });
+                            setSelectedLocation(null);
+                            setLocationResults([]);
+                            setIsSearchingLocation(value.trim().length >= 3);
+                            setEditorError("");
+                          }}
+                        />
+                        {isSearchingLocation ? <span>Searching…</span> : selectedLocation ? <FiCheck aria-label="Location selected" /> : null}
+                      </div>
+                      {locationResults.length ? <div className="managed-profile-location-results" role="listbox">
+                        {locationResults.map((result) => <button key={result.id} type="button" role="option" onClick={() => {
+                          setDraft({ ...draft, locationLabel: result.label });
+                          setSelectedLocation(result);
+                          setLocationResults([]);
+                          setIsSearchingLocation(false);
+                        }}><FiMapPin /><span><strong>{result.label.split(",")[0]}</strong><small>{result.label}</small></span></button>)}
+                      </div> : null}
+                      <small>{selectedLocation ? "Verified campus location selected." : "Type at least 3 characters, then choose a matching location."}</small>
+                    </div>
                   </section>
                   <section>
                     <header>
@@ -1064,11 +1221,28 @@ export default function ManagedProfilePage() {
                     <button type="button" onClick={() => setEditing(false)}>
                       Cancel
                     </button>
-                    <button className="is-primary" disabled={savingProfile}>
+                    <button className="is-primary" disabled={savingProfile || uploadingLogo}>
                       {savingProfile ? "Saving…" : "Save changes"}
                     </button>
                   </footer>
                 </form>
+                {logoCrop ? <section className="managed-profile-logo-cropper" role="dialog" aria-modal="true" aria-labelledby="managed-profile-logo-crop-title">
+                  <header>
+                    <div><span>Page logo</span><h2 id="managed-profile-logo-crop-title">Crop your logo</h2><p>Position the image inside the square. This is how it will appear across Zumbarl.</p></div>
+                    <button type="button" aria-label="Close logo cropper" disabled={uploadingLogo} onClick={() => setLogoCrop(null)}><FiX /></button>
+                  </header>
+                  <div className="managed-profile-logo-crop-body">
+                    <ImageCropper
+                      src={logoCrop.previewUrl}
+                      value={logoCrop}
+                      aspectRatio={1}
+                      aspectLabel="1:1 logo · locked"
+                      alt="Logo being cropped"
+                      onChange={(crop) => setLogoCrop((current) => ({ ...current, ...crop }))}
+                    />
+                  </div>
+                  <footer><button type="button" disabled={uploadingLogo} onClick={() => setLogoCrop(null)}>Cancel</button><button className="is-primary" type="button" disabled={uploadingLogo} onClick={confirmLogoCrop}>{uploadingLogo ? "Cropping & uploading…" : "Crop & use logo"}</button></footer>
+                </section> : null}
               </div>
             ) : null}
           </section>

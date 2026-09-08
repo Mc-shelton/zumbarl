@@ -4,11 +4,14 @@ import { Link, useSearchParams } from 'react-router-dom'
 import CampusSidebar from '../components/layout/CampusSidebar'
 import Seo from '../components/Seo'
 import LearnKnowledgeHub from '../features/learn/components/LearnKnowledgeHub'
+import CareerCoachPanel from '../features/learn/components/CareerCoachPanel'
 import {
   createRoadmap,
   lockRoadmap,
   readLearnExperience,
+  readRoadmapCoachingPlan,
   readRoadmapRecommendations,
+  updateRoadmapCoachingFocus,
   verifyRoadmap,
 } from '../features/learn/services/learnService'
 import '../styles/campus.css'
@@ -35,6 +38,7 @@ function LearnPage() {
   const [activeCheckpointId, setActiveCheckpointId] = useState('')
   const [intent, setIntent] = useState('earn-while-learning')
   const [recommendations, setRecommendations] = useState([])
+  const [coachingPlan, setCoachingPlan] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
@@ -80,6 +84,7 @@ function LearnPage() {
   useEffect(() => {
     if (!enrollment?.id) return
     readRoadmapRecommendations(enrollment.id).then(setRecommendations).catch(() => setRecommendations([]))
+    readRoadmapCoachingPlan(enrollment.id).then(setCoachingPlan).catch(() => setCoachingPlan(null))
   }, [enrollment?.id, enrollment?.updatedAt])
 
   const replaceEnrollment = (updated) => {
@@ -113,6 +118,14 @@ function LearnPage() {
 
   const focusPath = async () => {
     const updated = await runAction(() => lockRoadmap(enrollment.id), 'Opportunity discovery now prioritizes this path.')
+    if (updated) replaceEnrollment(updated)
+  }
+
+  const saveCoachingFocus = async (skillIds, weeklyTarget) => {
+    const updated = await runAction(
+      () => updateRoadmapCoachingFocus(enrollment.id, skillIds, weeklyTarget),
+      'Your coaching plan now follows these practice skills.',
+    )
     if (updated) replaceEnrollment(updated)
   }
 
@@ -215,6 +228,8 @@ function LearnPage() {
                 </label>
               )}
             </section>
+
+            {enrollment && coachingPlan && <CareerCoachPanel key={`${coachingPlan.enrollmentId}:${coachingPlan.focus.selectedSkillIds.join(',')}:${coachingPlan.focus.weeklyTarget}`} plan={coachingPlan} saving={saving} onSave={saveCoachingFocus} />}
 
             <section className="learn-roadmap-panel" aria-labelledby="path-heading">
               <header>

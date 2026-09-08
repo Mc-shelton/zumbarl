@@ -16,6 +16,7 @@ import { addAcceptedOfferToCart, addMarketplaceListingToCart, readMarketplaceSel
 import { getAuthUserSnapshot, hydrateAuthUserFromBackend, subscribeAuthUser } from '../features/auth/services/authUserService'
 import { CAMPUS_BUY_SELL_SEO } from '../features/seo/constants'
 import { normalizeZumbarlFileUrl } from '../lib/normalizeZumbarlFileUrl'
+import { isFoodListing } from '../features/eatery/eateryListings'
 import '../styles/campus.css'
 import '../styles/opportunities.css'
 
@@ -30,6 +31,8 @@ function OpportunitiesBuySellProductPage() {
   const [viewerUserId, setViewerUserId] = useState(() => getAuthUserSnapshot()?.user?.id || '')
   const sellerUsername = productState.item.seller?.username || MARKETPLACE_DEFAULT_SELLER.username
   const isOwner = Boolean(viewerUserId && seller.userId && viewerUserId === seller.userId)
+  const isEateryItem = isFoodListing(productState.item)
+  const isStudentKitchenItem = String(productState.item.shop?.vendorType || '').toLowerCase() === 'student_kitchen'
 
   const productContext = {
     id: productState.item.id,
@@ -75,7 +78,14 @@ function OpportunitiesBuySellProductPage() {
         sellerUsername,
         product: productContext,
       })
-      navigate(`/messages?participantId=${encodeURIComponent(response.seller.userId)}`)
+      if (response.pageConversation?.page) {
+        navigate(`/messages?${new URLSearchParams({
+          pageType: response.pageConversation.page.type,
+          pageId: response.pageConversation.page.id,
+        }).toString()}`)
+      } else {
+        navigate(`/messages?participantId=${encodeURIComponent(response.seller.userId)}`)
+      }
     } catch (requestError) {
       setActionStatus(requestError.message)
       setIsActionPending(false)
@@ -98,8 +108,17 @@ function OpportunitiesBuySellProductPage() {
   }
 
   async function handleViewSellerProfile() {
+    if (productState.item.shop?.entityType === 'campus_vendor' && productState.item.shop?.slug) {
+      const vendorPath = `/campus/vendors/${encodeURIComponent(productState.item.shop.slug)}`
+      navigate(isOwner ? `${vendorPath}/manage` : vendorPath)
+      return
+    }
     if (isOwner) {
       navigate('/campus/profile?tab=shop')
+      return
+    }
+    if (productState.item.shop?.slug) {
+      navigate(`/campus/vendors/${encodeURIComponent(productState.item.shop.slug)}`)
       return
     }
     if (isActionPending) return
@@ -130,7 +149,11 @@ function OpportunitiesBuySellProductPage() {
   async function handleAddToCart(serviceRequest) {
     if (isActionPending) return
     setIsActionPending(true)
-    setActionStatus(serviceRequest ? 'Saving your service request…' : 'Adding item to your cart…')
+    setActionStatus(serviceRequest
+      ? 'Saving your service request…'
+      : productState.item.serviceMode === 'order_ahead'
+        ? 'Preparing your order…'
+        : 'Adding item to your cart…')
     try {
       await addMarketplaceListingToCart(productState.item.id, 1, serviceRequest)
       setIsServiceRequestOpen(false)
@@ -168,11 +191,18 @@ function OpportunitiesBuySellProductPage() {
 
       <div className="campus-stage">
         <div className="campus-shell opportunities-marketplace-shell">
-          <CampusSidebar activeItemId="marketplace" />
+          <CampusSidebar activeItemId={isEateryItem ? 'eatery' : 'marketplace'} />
 
           <section className="campus-main opportunities-main opportunities-marketplace-main opportunities-marketplace-product-main">
-            <MarketplaceHeader onOpenOrders={() => navigate('/campus/opportunities/buy-sell?view=orders')} onPostItem={() => navigate('/campus/marketplace/listings/new')} showSearch={false} />
-            <MarketplaceProductHead isOwner={isOwner} item={productState.item} />
+            <MarketplaceHeader
+              breadcrumbItems={isEateryItem ? [{ label: 'Campus' }, { label: 'Eatery' }] : undefined}
+              createLabel={isEateryItem ? 'List a meal' : 'Create listing'}
+              onOpenOrders={() => navigate('/campus/opportunities/buy-sell?view=orders')}
+              onPostItem={() => navigate(isEateryItem ? '/campus/marketplace/listings/new?mode=food' : '/campus/marketplace/listings/new')}
+              subtitle={isEateryItem ? (isStudentKitchenItem ? 'Place your order, then choose one of the kitchen’s listed campus pickup locations.' : 'Place your order and choose an available in-campus delivery option at checkout.') : undefined}
+              title={isEateryItem ? 'Campus Eatery' : undefined}
+            />
+            <MarketplaceProductHead isEatery={isEateryItem} isOwner={isOwner} item={productState.item} />
             <MarketplaceProductDetails
               activeImage={productState.activeImage}
               activeImageIndex={productState.activeImageIndex}
@@ -220,7 +250,7 @@ function OpportunitiesBuySellProductPage() {
             onSubmit={handleSendOffer}
             seller={seller}
           />
-          {isServiceRequestOpen ? (
+          {isServiceRequestOpen && productState.item.serviceMode !== 'order_ahead' ? (
             <MarketplaceServiceRequestModal
               isPending={isActionPending}
               item={productState.item}

@@ -9,7 +9,6 @@ const DEFAULT_GALLERY_IMAGES = [
 
 export const MARKETPLACE_CATEGORIES = [
   { label: 'Everything', description: 'All campus offers', icon: 'grid', active: true },
-  { label: 'Food & drink', description: 'Order ahead', icon: 'coffee' },
   { label: 'Products', description: 'Buy and collect', icon: 'shopping-bag' },
   { label: 'Book a service', description: 'Choose a time slot', icon: 'calendar' },
   { label: 'Academic help', description: 'Tutors and study help', icon: 'book' },

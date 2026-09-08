@@ -87,6 +87,7 @@ function toBusinessProfile(company: Record<string, any> | null) {
 
 function toStudentProfile(student: Record<string, any> | null) {
   if (!student) return null
+  const managedCampusPage = student.campus?.managedProfile
   return {
     id: student.id,
     userId: student.userId,
@@ -95,6 +96,9 @@ function toStudentProfile(student: Record<string, any> | null) {
     name: [student.firstName, student.lastName].filter(Boolean).join(' '),
     avatarUrl: student.avatarUrl,
     campus: student.campus?.name ?? student.campus ?? 'Unassigned campus',
+    campusPage: managedCampusPage?.type === 'campus' && managedCampusPage.status === 'active'
+      ? { id: managedCampusPage.id, name: managedCampusPage.name, slug: managedCampusPage.slug }
+      : null,
     headline: student.careerPath ?? student.headline ?? 'New Zumbarl student',
     score: Math.round(student.zumbarl?.currentScore ?? student.score ?? 0),
     zumbarlPoints: Math.round(student.zumbarl?.currentScore ?? student.score ?? 0),
@@ -276,7 +280,13 @@ class AuthUsersRepository {
 
   async findStudentProfileById(id?: string) {
     if (!id) return null
-    const student = await prisma.studentProfile.findUnique({ where: { id }, include: { campus: true, zumbarl: true } })
+    const student = await prisma.studentProfile.findUnique({
+      where: { id },
+      include: {
+        campus: { include: { managedProfile: { select: { id: true, type: true, name: true, slug: true, status: true } } } },
+        zumbarl: true
+      }
+    })
     return student ? toStudentProfile(student) : null
   }
 

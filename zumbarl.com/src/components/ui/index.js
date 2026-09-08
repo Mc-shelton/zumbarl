@@ -1,6 +1,7 @@
 export { default as Breadcrumb } from './Breadcrumb'
 export { default as Button } from './Button'
 export { default as ConfirmDialog } from './ConfirmDialog'
+export { default as ImageCropper } from './ImageCropper'
 export { default as MetricCard } from './MetricCard'
 export { default as Pagination } from './Pagination'
 export { default as PersonRow } from './PersonRow'

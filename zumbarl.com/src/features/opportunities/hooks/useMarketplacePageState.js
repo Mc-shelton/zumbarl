@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
   getMarketplaceItemPath,
 } from '../../../data/marketplace'
+import { isFoodListing } from '../../eatery/eateryListings'
 import { listMarketplaceListings, mapMarketplaceApiListing } from '../services/marketplaceInteractionService'
 
 const VIEWER_CAMPUS = 'Kenyatta University'
@@ -88,13 +89,14 @@ function useMarketplacePageState() {
   }, [])
 
   const marketplaceItems = useMemo(() => {
-    const serviceListings = databaseItems.filter(isService)
+    const shopItems = databaseItems.filter((item) => !isFoodListing(item))
+    const serviceListings = shopItems.filter(isService)
     const mergedFeatured = [
       ...serviceListings.slice(0, 4),
-      ...databaseItems.filter((item) => !isService(item)).slice(0, 4),
+      ...shopItems.filter((item) => !isService(item)).slice(0, 4),
     ].filter((item, index, items) => items.findIndex((candidate) => candidate.id === item.id) === index)
     const featuredIds = new Set(mergedFeatured.map((item) => item.id))
-    const mergedRecent = databaseItems.filter((item) => !featuredIds.has(item.id))
+    const mergedRecent = shopItems.filter((item) => !featuredIds.has(item.id))
     return { featured: mergedFeatured, recent: mergedRecent }
   }, [databaseItems])
 

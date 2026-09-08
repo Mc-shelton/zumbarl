@@ -57,13 +57,42 @@ function sendTalkItOutMessage(conversationId, message) {
   })
 }
 
+function requestTalkItOutHandoff(conversationId, payload) {
+  return sendZumbarlApiRequest(`/support/wellbeing/conversations/${encodeURIComponent(conversationId)}/handoff`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+function listStudentCarePrograms() {
+  return sendZumbarlApiRequest('/support/care-programs')
+}
+
+function enrollInStudentCareProgram(programId, payload) {
+  return sendZumbarlApiRequest(`/support/care-programs/${encodeURIComponent(programId)}/enrollments`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+function recordStudentCareCheckIn(enrollmentId, payload) {
+  return sendZumbarlApiRequest(`/support/care-enrollments/${encodeURIComponent(enrollmentId)}/check-ins`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 export {
   completeWellbeingReset,
   createDailyCheckIn,
   createTalkItOutConversation,
+  enrollInStudentCareProgram,
+  listStudentCarePrograms,
   readTalkItOutConversation,
   readWellbeingDashboard,
   requestCounselorSession,
+  requestTalkItOutHandoff,
+  recordStudentCareCheckIn,
   sendTalkItOutMessage,
   submitWellbeingCheckIn,
   updateWellbeingPreferences,

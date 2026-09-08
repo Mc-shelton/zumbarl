@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
   FiChevronDown,
   FiChevronLeft,
@@ -29,6 +29,7 @@ import {
   toggleStoryCommentReaction,
   toggleStoryReaction,
 } from '../services/storyService'
+import { creatorProfilePath } from '../utils/creatorProfilePath'
 
 const DEFAULT_STORY_DURATION = 7000
 const STORY_COMMENTS = [
@@ -51,10 +52,13 @@ function storySnapshot(item, creator) {
     trimStart: item.trimStart || 0,
     trimEnd: item.trimEnd || null,
     creator: {
-      id: creator.id,
+      id: creator.profileId || creator.id,
+      slug: creator.profileSlug || undefined,
+      profileType: creator.profileType || 'student',
       name: creator.name,
       handle: creator.handle,
       campus: creator.campus,
+      campusPage: creator.campusPage || null,
       avatar: creator.avatar,
     },
     visibility: 'campus',
@@ -109,6 +113,15 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
   const listingId = activeItem?.product?.listingId || activeItem?.product?.id || ''
   const productGallery = activeItem?.product?.gallery?.length ? activeItem.product.gallery : [activeItem?.product?.image || activeItem?.media].filter(Boolean)
   const activeProductImage = productGallery[productImageIndex] || productGallery[0]
+  const activeCreatorProfileHref = creatorProfilePath({
+    id: activeCreator?.profileId,
+    slug: activeCreator?.profileSlug,
+    profileType: activeCreator?.profileType,
+    handle: activeCreator?.handle,
+  })
+  const activeCampusHref = activeCreator?.campusPage?.slug
+    ? `/campus/organizations/${encodeURIComponent(activeCreator.campusPage.slug)}`
+    : ''
 
   useEffect(() => {
     if (isOpen && activeCreator?.id && activeItem?.id) onStoryViewed?.(activeCreator.id, activeItem.id)
@@ -589,7 +602,12 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
               <header>
                 <div>
                   {activeItem.storyKind === 'product' ? <FiShoppingBag aria-hidden="true" /> : <FiInfo aria-hidden="true" />}
-                  <span><small>{activeItem.storyKind === 'product' ? 'Featured product' : 'About this creator'}</small><strong>{activeItem.storyKind === 'product' ? activeItem.product?.name : activeCreator.name}</strong></span>
+                  <span>
+                    <small>{activeItem.storyKind === 'product' ? 'Featured product' : 'About this creator'}</small>
+                    {activeItem.storyKind === 'product' || !activeCreatorProfileHref
+                      ? <strong>{activeItem.storyKind === 'product' ? activeItem.product?.name : activeCreator.name}</strong>
+                      : <Link className="explore-story-details-creator-link" to={activeCreatorProfileHref}>{activeCreator.name}</Link>}
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -647,10 +665,16 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
                 </div>
               ) : (
                 <div className="explore-story-creator-detail">
-                  <img src={activeCreator.avatar} alt="" />
-                  <h2>{activeCreator.name}</h2>
-                  <p>{activeCreator.handle}</p>
-                  <span>{activeCreator.campus}</span>
+                  {activeCreatorProfileHref ? <Link className="explore-story-creator-profile-link" to={activeCreatorProfileHref} aria-label={`View ${activeCreator.name}'s profile`}>
+                    <img src={activeCreator.avatar} alt="" />
+                    <h2>{activeCreator.name}</h2>
+                    <p>{activeCreator.handle}</p>
+                  </Link> : <div className="explore-story-creator-profile-link is-static">
+                    <img src={activeCreator.avatar} alt="" />
+                    <h2>{activeCreator.name}</h2>
+                    <p>{activeCreator.handle}</p>
+                  </div>}
+                  {activeCampusHref ? <Link className="explore-story-creator-campus-link" to={activeCampusHref}>{activeCreator.campusPage?.name || activeCreator.campus}</Link> : <span className="explore-story-creator-campus-link is-static">{activeCreator.campus}</span>}
                   <dl>
                     <div><dt>Stories</dt><dd>{activeItems.length}</dd></div>
                     <div><dt>Active story</dt><dd>{itemIndex + 1} of {activeItems.length}</dd></div>

@@ -27,6 +27,7 @@ import {
   CampusVendorProfilePage,
   CampusVendorWorkspacePage,
   ExploreCampusPage,
+  EateryPage,
   HelpPage,
   HomePage,
   KnowledgeSpacePage,
@@ -45,6 +46,7 @@ import {
   StudentInterviewPage,
   SuperAdminPage,
   SupportCirclePage,
+  StudentCareOperationsPage,
   WellbeingPage,
   EvergreenWorkspacePage,
 } from "./routePages";
@@ -102,6 +104,11 @@ export const APP_ROUTES = [
     path: "/campus/wellbeing",
     access: ACCESS_KEYS.campus.wellness,
     element: <WellbeingPage />,
+  },
+  {
+    path: "/campus/eatery",
+    access: ACCESS_KEYS.marketplace.view,
+    element: <EateryPage />,
   },
   {
     path: "/campus/wellbeing/circles/:groupId",
@@ -355,6 +362,11 @@ export const APP_ROUTES = [
     path: "/admin/super-admin",
     access: ACCESS_KEYS.platform.all,
     element: <SuperAdminPage />,
+  },
+  {
+    path: "/admin/student-care",
+    access: ACCESS_KEYS.safety.reports,
+    element: <StudentCareOperationsPage />,
   },
   {
     path: "/admin/evergreen/reviews",

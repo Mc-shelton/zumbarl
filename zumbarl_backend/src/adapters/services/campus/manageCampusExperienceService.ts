@@ -2,6 +2,8 @@ import { notFound } from '../../../lib/http.js'
 import { campusExperienceRepository } from '../../repositories/campus/index.js'
 import { generateAssistantReply, isAssistantAiEnabled } from '../ai/index.js'
 import { readStudentScoreSnapshot } from '../scores/index.js'
+import { readStudentProgressionService, updateStudentProgressionModeService as updateProgressionMode } from '../career/index.js'
+import { evaluateStudentKyc, STUDENT_KYC_REQUIREMENTS } from '../../../shared/services/studentKyc.js'
 
 const KIND_LABEL: Record<string, string> = {
   gig: 'gig',
@@ -72,7 +74,20 @@ const markUserNotificationReadService = async (userId: string | undefined, notif
 const markAllUserNotificationsReadService = (userId: string | undefined) => campusExperienceRepository.markAllNotificationsRead(userId)
 
 async function readStudentProfileExperienceService(studentId: string | undefined) {
-  return await campusExperienceRepository.readProfileExperience(studentId) ?? notFound('Student profile')
+  const experience = await campusExperienceRepository.readProfileExperience(studentId) ?? notFound('Student profile')
+  const progression = experience.header?.id
+    ? await readStudentProgressionService(experience.header.id)
+    : null
+  const progressionSkills = new Map((progression?.skills || []).map((skill) => [skill.key, skill]))
+  return {
+    ...experience,
+    progression,
+    skills: experience.skills.map((skill) => {
+      const key = String(skill.name || '').trim().toLowerCase().replace(/[^a-z0-9+#.]+/g, '')
+      const progress = progressionSkills.get(key)
+      return progress ? { ...skill, ...progress, evidence: progress.evidence } : skill
+    })
+  }
 }
 async function readStudentProfileScoreService(studentId: string | undefined) {
   if (!studentId) return notFound('Student profile')
@@ -80,6 +95,40 @@ async function readStudentProfileScoreService(studentId: string | undefined) {
 }
 async function updateStudentProfileService(studentId: string | undefined, payload: Record<string, any>) {
   return await campusExperienceRepository.updateProfile(studentId, payload) ?? notFound('Student profile')
+}
+async function updateStudentProgressionModeService(studentId: string | undefined, mode: 'EARN' | 'BALANCED' | 'CAREER') {
+  if (!studentId) return notFound('Student profile')
+  return await updateProgressionMode(studentId, mode) ?? notFound('Student profile')
+}
+async function readMyStudentKycService(studentId: string | undefined, userId: string | undefined) {
+  const student = await campusExperienceRepository.readStudentKyc(studentId, userId) ?? notFound('Student profile')
+  const activeDocuments = student.kycDocuments.filter((document) => document.status !== 'EXPIRED')
+  const documentLabels = new Map<string, string>(STUDENT_KYC_REQUIREMENTS.flatMap((requirement) => requirement.documentTypes.map((type) => [type, requirement.label] as [string, string])))
+  return {
+    status: String(student.kycStatus).toLowerCase(),
+    verifiedAt: student.kycVerifiedAt,
+    studentIdNumber: student.studentIdNumber,
+    account: student.user,
+    documents: activeDocuments.map((document) => ({
+      id: document.id,
+      documentType: document.documentType,
+      label: documentLabels.get(document.documentType) || document.documentType.replaceAll('_', ' '),
+      status: String(document.status).toLowerCase(),
+      fileName: document.fileKey.split('/').at(-1),
+      expiresAt: document.expiresAt,
+      rejectionReason: document.rejectionReason,
+      submittedAt: document.createdAt
+    })),
+    eligibility: {
+      identity: evaluateStudentKyc(student.kycStatus, activeDocuments, 'identity'),
+      business: evaluateStudentKyc(student.kycStatus, activeDocuments, 'business'),
+      studentKitchen: evaluateStudentKyc(student.kycStatus, activeDocuments, 'student_kitchen')
+    }
+  }
+}
+async function submitMyStudentKycDocumentService(studentId: string | undefined, userId: string | undefined, payload: Record<string, any>) {
+  await campusExperienceRepository.submitStudentKycDocument(studentId, userId, payload) ?? notFound('Student profile or private KYC upload')
+  return readMyStudentKycService(studentId, userId)
 }
 
 export {
@@ -89,7 +138,10 @@ export {
   readCampusHomeExperienceService,
   readStudentProfileScoreService,
   readStudentProfileExperienceService,
+  readMyStudentKycService,
+  submitMyStudentKycDocumentService,
   runCampusAssistantQueryService
   ,updateStudentProfileService,
+  updateStudentProgressionModeService,
   type AssistantHistoryItem
 }

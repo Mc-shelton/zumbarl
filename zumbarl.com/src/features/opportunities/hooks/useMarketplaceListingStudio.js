@@ -5,6 +5,7 @@ import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
 import { createMarketplaceListing, createMarketplaceListingForShop, readCampusVendorWorkspace, readMarketplaceListing, updateMarketplaceListing } from '../services/marketplaceInteractionService'
 
 const DRAFT_STORAGE_KEY = 'zumbarl.marketplaceListingDraft.v1'
+const FOOD_CATEGORY_VALUES = ['Meals', 'Snacks', 'Drinks', 'Baked goods', 'Fresh food', 'Other food']
 
 const MARKETPLACE_LISTING_STEPS = [
   { id: 'basics', label: 'Listing basics', meta: 'Type, title & description' },
@@ -122,6 +123,7 @@ function getReadinessChecks(form, foodMode, steps) {
 
 function toPayload(form, status, { foodMode = false, vendorContext = null } = {}) {
   if (foodMode) {
+    const isStudentKitchen = vendorContext?.type === 'student_kitchen'
     return {
       title: form.title.trim(),
       subtitle: form.subtitle.trim(),
@@ -136,11 +138,13 @@ function toPayload(form, status, { foodMode = false, vendorContext = null } = {}
       currency: form.currency,
       stock: Number(form.stock) || 0,
       negotiable: false,
-      deliveryOptions: ['Campus pickup'],
+      deliveryOptions: isStudentKitchen ? ['Campus pickup'] : [],
       locationLabel: vendorContext?.locationLabel || vendorContext?.campus || 'Campus pickup',
       ...(vendorContext?.latitude != null ? { latitude: Number(vendorContext.latitude) } : {}),
       ...(vendorContext?.longitude != null ? { longitude: Number(vendorContext.longitude) } : {}),
-      pickupInstructions: `Collect from ${vendorContext?.name || 'the vendor'} on campus.`,
+      pickupInstructions: isStudentKitchen
+        ? `Choose one of ${vendorContext?.name || 'the kitchen'}'s listed campus pickup locations at checkout.`
+        : 'This campus eatery does not offer customer pickup. Choose an available delivery option at checkout.',
       returnPolicy: 'Food orders can only be cancelled before preparation begins.',
       inventoryType: 'food',
       foodType: form.foodType,
@@ -191,17 +195,33 @@ function useMarketplaceListingStudio() {
   const [searchParams] = useSearchParams()
   const vendorId = searchParams.get('vendorId') || ''
   const vendorSlug = searchParams.get('vendorSlug') || ''
+  const requestedFoodMode = searchParams.get('mode') === 'food'
+  const draftStorageKey = vendorId ? `${DRAFT_STORAGE_KEY}.vendor.${vendorId}` : requestedFoodMode ? `${DRAFT_STORAGE_KEY}.food` : DRAFT_STORAGE_KEY
   const [activeStepRaw, setActiveStep] = useState(1)
-  const [form, setForm] = useState(() => listingId ? DEFAULT_FORM : readLocalDraft())
+  const [form, setForm] = useState(() => {
+    const initial = listingId ? DEFAULT_FORM : readLocalDraft(draftStorageKey)
+    if (!requestedFoodMode || listingId || vendorId) return initial
+    return {
+      ...initial,
+      kind: 'service',
+      serviceMode: 'order_ahead',
+      inventoryType: 'food',
+      category: initial.category === DEFAULT_FORM.category ? 'Meals' : initial.category,
+      deliveryOptions: ['Campus pickup'],
+      negotiable: false,
+      campusOnly: true,
+      locationLabel: initial.locationLabel || 'Campus pickup',
+    }
+  })
   const [savedListingId, setSavedListingId] = useState(listingId)
-  const [isLoading, setIsLoading] = useState(Boolean(listingId))
+  const [isLoading, setIsLoading] = useState(Boolean(listingId || (vendorId && vendorSlug)))
   const [isSaving, setIsSaving] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [isDirty, setIsDirty] = useState(false)
-  const [foodMode, setFoodMode] = useState(false)
-  const [vendorContext, setVendorContext] = useState(null)
+  const [foodMode, setFoodMode] = useState(requestedFoodMode)
+  const [vendorContext, setVendorContext] = useState(() => requestedFoodMode ? { name: 'your student kitchen', locationLabel: 'Campus pickup' } : null)
 
   useEffect(() => {
     if (!listingId) return undefined
@@ -215,7 +235,7 @@ function useMarketplaceListingStudio() {
         setIsLoading(false)
         if (String(listing.inventoryType || '') === 'food') {
           setFoodMode(true)
-          setVendorContext({ name: response.shop?.name || '', locationLabel: listing.locationLabel || '', latitude: listing.latitude ?? null, longitude: listing.longitude ?? null, campus: response.shop?.campus || '' })
+          setVendorContext({ name: response.shop?.name || '', type: response.shop?.vendorType || '', locationLabel: listing.locationLabel || '', pickupSpots: response.shop?.pickupSpots || [], latitude: listing.latitude ?? null, longitude: listing.longitude ?? null, campus: response.shop?.campus || '' })
         }
       })
       .catch((requestError) => {
@@ -235,27 +255,35 @@ function useMarketplaceListingStudio() {
       .then((workspace) => {
         if (cancelled || !workspace?.shop) return
         const shop = workspace.shop
-        const context = { id: shop.id, name: shop.name || '', slug: shop.slug || vendorSlug, type: shop.type || 'service', locationLabel: shop.locationLabel || shop.campus || '', latitude: shop.latitude ?? null, longitude: shop.longitude ?? null, campus: shop.campus || '' }
+        const context = { id: shop.id, name: shop.name || '', slug: shop.slug || vendorSlug, type: shop.type || 'service', locationLabel: shop.locationLabel || shop.campus || '', pickupSpots: shop.pickupSpots || [], latitude: shop.latitude ?? null, longitude: shop.longitude ?? null, campus: shop.campus || '' }
         setVendorContext(context)
-        if (shop.type !== 'hotel') return
+        if (!['hotel', 'student_kitchen'].includes(String(shop.type).toLowerCase())) return
         setFoodMode(true)
         setForm((current) => ({
           ...current,
-          category: current.category === DEFAULT_FORM.category ? 'Meals' : current.category,
-          deliveryOptions: ['Campus pickup'],
+          kind: 'service',
+          serviceMode: 'order_ahead',
+          inventoryType: 'food',
+          category: FOOD_CATEGORY_VALUES.includes(current.category) ? current.category : 'Meals',
+          deliveryOptions: context.type === 'student_kitchen' ? ['Campus pickup'] : [],
           negotiable: false,
           campusOnly: true,
           ...(current.locationLabel.trim() === '' && context.locationLabel ? { locationLabel: context.locationLabel } : {}),
         }))
       })
-      .catch(() => undefined)
+      .catch((requestError) => {
+        if (!cancelled) setError(requestError.message || 'The selected kitchen could not be loaded.')
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
     return () => { cancelled = true }
   }, [vendorId, vendorSlug, savedListingId])
 
   useEffect(() => {
     if (savedListingId || typeof window === 'undefined') return
-    window.localStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(form))
-  }, [form, savedListingId])
+    window.localStorage.setItem(draftStorageKey, JSON.stringify(form))
+  }, [draftStorageKey, form, savedListingId])
 
   useEffect(() => {
     const warnBeforeUnload = (event) => {
@@ -359,7 +387,7 @@ function useMarketplaceListingStudio() {
       setSavedListingId(listing.id)
       setForm(mapListingToForm(listing))
       setIsDirty(false)
-      window.localStorage.removeItem(DRAFT_STORAGE_KEY)
+      window.localStorage.removeItem(draftStorageKey)
       return listing
     } catch (requestError) {
       setError(requestError.message || 'Could not save this listing.')
@@ -385,7 +413,7 @@ function useMarketplaceListingStudio() {
       return
     }
     const listing = await persist('ACTIVE')
-    if (listing) navigate(getMarketplaceItemPath(listing.id))
+    if (listing) navigate(foodMode ? `/campus/eatery?source=student-kitchens` : getMarketplaceItemPath(listing.id))
   }
 
   function cancel() {
@@ -424,6 +452,7 @@ function useMarketplaceListingStudio() {
     uploadImages,
     vendorMode: Boolean(vendorId),
     vendorName: vendorContext?.name || '',
+    vendorType: vendorContext?.type || '',
     vendorSlug,
   }
 }

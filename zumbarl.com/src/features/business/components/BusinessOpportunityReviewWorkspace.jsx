@@ -25,7 +25,7 @@ import {
   FiX,
 } from 'react-icons/fi'
 import { Button, MetricCard, PersonRow, StatusPill } from '../../../components/ui'
-import { listBackendBusinessActivity } from '../services/persistBusinessOpportunity'
+import { listBackendBusinessActivity, listBackendFinanceWallets } from '../services/persistBusinessOpportunity'
 import { useDeliverableTasks } from '../../projects/hooks/useDeliverableTasks'
 import BusinessProjectSettingsPanel from './BusinessProjectSettingsPanel'
 import DeliverableRoom from '../../projects/components/DeliverableRoom'
@@ -1357,7 +1357,28 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
   const [selectedCardId, setSelectedCardId] = useState('visa-8421')
   const [isCompletingPayment, setIsCompletingPayment] = useState(false)
   const [paymentError, setPaymentError] = useState('')
+  const [companyWallet, setCompanyWallet] = useState(null)
+  const [walletLoading, setWalletLoading] = useState(false)
   const [paymentReference] = useState(() => `opportunity-payment-${opportunity?.backendId || opportunity?.id || 'draft'}-${Date.now()}`)
+
+  useEffect(() => {
+    if (!isOpen) return undefined
+    let active = true
+    setWalletLoading(true)
+    listBackendFinanceWallets()
+      .then((response) => {
+        if (!active) return
+        const wallets = Array.isArray(response?.data) ? response.data : []
+        setCompanyWallet(wallets.find((wallet) => wallet.type === 'COMPANY' || wallet.companyId) || null)
+      })
+      .catch(() => {
+        if (active) setCompanyWallet(null)
+      })
+      .finally(() => {
+        if (active) setWalletLoading(false)
+      })
+    return () => { active = false }
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -1371,7 +1392,11 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
       detailCopy: 'Confirm that you want to fund this opportunity from your wallet.',
       detailTitle: 'Use your Zumbarl wallet balance',
       label: 'Zumbarl Wallet',
-      meta: 'Available Balance: KES 32,450',
+      meta: walletLoading
+        ? 'Loading company wallet balance…'
+        : companyWallet
+          ? `Available Balance: ${companyWallet.currency} ${Number(companyWallet.availableBalance ?? companyWallet.balance ?? 0).toLocaleString()}`
+          : 'Company wallet unavailable',
       nextLabel: 'Next: Wallet Confirmation',
       stepLabel: 'Wallet Confirmation',
       summary: 'Fund escrow instantly from your Zumbarl wallet.',
@@ -1416,6 +1441,9 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
   const fallbackBudgetTotal = getCurrencyAmount(opportunity.budget || opportunity.budgetAmount)
   const paymentBudgetTotal = isEscrowTopUp ? Number(fundingAmount || 0) : scopedBudgetTotal || fallbackBudgetTotal
   const paymentBudgetLabel = formatKesAmount(paymentBudgetTotal)
+  const walletBalance = Number(companyWallet?.availableBalance ?? companyWallet?.balance ?? 0)
+  const walletCurrencyMatches = !companyWallet || String(companyWallet.currency || 'KES').toUpperCase() === String(opportunity.currency || 'KES').toUpperCase()
+  const walletInsufficient = paymentMethod === 'wallet' && Boolean(companyWallet) && (!walletCurrencyMatches || walletBalance < paymentBudgetTotal)
   const skills = getSkillList(opportunity)
   const modalObjective = opportunity.opportunityType || type
   const modalDeadline = opportunity.deadline === 'Rolling' ? 'Rolling' : formatOpportunityDate(opportunity.deadline, 'Rolling')
@@ -1433,6 +1461,7 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
       await completeFunding?.(opportunity, {
         amount: paymentBudgetTotal,
         currency: opportunity.currency || 'KES',
+        method: paymentMethod === 'mobile-money' ? 'mobile_money' : paymentMethod,
         reference: paymentReference,
       })
       onClose()
@@ -1522,8 +1551,8 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
                       </header>
                       <label>
                         <span>Wallet Balance</span>
-                        <div><strong>KES</strong><input type="text" defaultValue="32,450" readOnly /><StatusPill tone="green">Enough funds</StatusPill></div>
-                        <em>{paymentBudgetLabel} will move into escrow after confirmation.</em>
+                        <div><strong>{companyWallet?.currency || 'KES'}</strong><input type="text" value={walletLoading ? 'Loading…' : companyWallet ? walletBalance.toLocaleString() : 'Unavailable'} readOnly /></div>
+                        <em>{walletInsufficient ? 'Add funds to this company wallet before confirming.' : `${paymentBudgetLabel} will move into escrow after confirmation.`}</em>
                       </label>
                     </section>
                   ) : paymentMethod === 'mobile-money' ? (
@@ -1606,29 +1635,29 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
                   <input type="radio" name="publish-payment-method" checked={paymentMethod === 'wallet'} onChange={() => setPaymentMethod('wallet')} />
                   <span><FiCreditCard aria-hidden="true" /></span>
                   <strong>Pay with Wallet <em>(Recommended)</em></strong>
-                  <small>Use your existing Zumbarl wallet balance.</small>
-                  <b>Available Balance<br />KES 32,450</b>
+                  <small>Your live company-wallet balance is checked when you confirm.</small>
+                  <b>Real-time<br />balance check</b>
                 </label>
-                <label className={paymentMethod === 'mobile-money' ? 'is-selected' : ''}>
-                  <input type="radio" name="publish-payment-method" checked={paymentMethod === 'mobile-money'} onChange={() => setPaymentMethod('mobile-money')} />
+                <label aria-disabled="true">
+                  <input type="radio" name="publish-payment-method" disabled />
                   <span><FiCreditCard aria-hidden="true" /></span>
                   <strong>Mobile Money STK Push</strong>
-                  <small>Send an M-Pesa payment request to your phone.</small>
-                  <b>Processing Time<br />Instant</b>
+                  <small>Provider confirmation is being connected.</small>
+                  <b>Coming<br />soon</b>
                 </label>
-                <label className={paymentMethod === 'bank' ? 'is-selected' : ''}>
-                  <input type="radio" name="publish-payment-method" checked={paymentMethod === 'bank'} onChange={() => setPaymentMethod('bank')} />
+                <label aria-disabled="true">
+                  <input type="radio" name="publish-payment-method" disabled />
                   <span><FiCreditCard aria-hidden="true" /></span>
                   <strong>Bank Transfer</strong>
-                  <small>Make payment directly to our bank account.</small>
-                  <b>Processing Time<br />1-2 hours</b>
+                  <small>Finance verification is being connected.</small>
+                  <b>Coming<br />soon</b>
                 </label>
-                <label className={paymentMethod === 'card' ? 'is-selected' : ''}>
-                  <input type="radio" name="publish-payment-method" checked={paymentMethod === 'card'} onChange={() => setPaymentMethod('card')} />
+                <label aria-disabled="true">
+                  <input type="radio" name="publish-payment-method" disabled />
                   <span><FiCreditCard aria-hidden="true" /></span>
                   <strong>Pay with Card</strong>
-                  <small>Pay securely using Visa, Mastercard or other cards.</small>
-                  <b>Processing Time<br />Instant</b>
+                  <small>Card settlement is being connected.</small>
+                  <b>Coming<br />soon</b>
                 </label>
               </div>
               <aside>
@@ -1721,7 +1750,7 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
           {paymentError ? <p role="alert">{paymentError}</p> : null}
           <Button
             tone="brand"
-            disabled={isCompletingPayment || paymentBudgetTotal <= 0}
+            disabled={isCompletingPayment || paymentBudgetTotal <= 0 || (publishStep === 3 && walletInsufficient)}
             onClick={publishStep === 3 ? completePaymentAndPublish : () => setPublishStep(Math.min(3, publishStep + 1))}
           >
             {isCompletingPayment

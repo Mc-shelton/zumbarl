@@ -12,7 +12,12 @@ const baseRegistration = {
 
 describe('public registration roles', () => {
   it.each(['STUDENT_STANDARD', 'student'] as const)('allows the public student role %s', (role) => {
-    expect(registerUserSchema.safeParse({ ...baseRegistration, role }).success).toBe(true)
+    expect(registerUserSchema.safeParse({
+      ...baseRegistration,
+      role,
+      yearJoined: new Date().getFullYear(),
+      course: { id: 'test-course' }
+    }).success).toBe(true)
   })
 
   it.each(['COMPANY_STANDARD', 'business'] as const)('allows the public company role %s with a business name', (role) => {

@@ -143,7 +143,7 @@ class EvergreenRepository {
       include: {
         user: { select: { role: true } },
         roadmapEnrollments: { where: { verifiedAt: { not: null } }, include: { roadmap: true } },
-        competencyStates: { where: { status: 'VERIFIED' }, include: { competency: true } },
+        competencyStates: { where: { status: { in: ['VERIFIED', 'EVIDENCE_VERIFIED'] }, evidenceScore: { gt: 0 } }, include: { competency: true } },
         placementAvailability: true,
         activePlacementLock: true
       }

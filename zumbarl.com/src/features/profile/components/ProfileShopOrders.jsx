@@ -19,6 +19,7 @@ const NEXT_STATUS = {
   seller_confirmation: 'confirmed', confirmed: 'packaging', packaging: 'ready',
   ready: 'in_transit', in_transit: 'delivered',
 }
+const PROGRESS_STEPS = ['confirmed', 'packaging', 'ready', 'in_transit', 'delivered', 'completed']
 
 const CANCELLED = new Set(['cancelled', 'cannot_fulfil'])
 const TERMINAL = new Set(['completed', ...CANCELLED])
@@ -50,11 +51,12 @@ function label(value = '') {
   return value.replaceAll('_', ' ').replace(/^./, (letter) => letter.toUpperCase())
 }
 
-function ProfileShopOrders({ backLabel = 'Shop', description = 'Confirm paid orders, prepare items and coordinate every handoff.', error = '', eyebrow = 'Seller workspace', isLoading, orders, onBack, onMessageBuyer, onRefresh, onUpdateStatus, title = 'Orders & fulfilment', updatingOrderId }) {
+function ProfileShopOrders({ backLabel = 'Shop', description = 'Confirm paid orders, prepare items and coordinate every handoff.', error = '', eyebrow = 'Seller workspace', initialOrderId = '', isLoading, orders, onBack, onMessageBuyer, onRefresh, onUpdateStatus, title = 'Orders & fulfilment', updatingOrderId }) {
   const [filter, setFilter] = useState('active')
-  const [selectedId, setSelectedId] = useState('')
+  const [selectedId, setSelectedId] = useState(initialOrderId)
   const filtered = useMemo(() => orders.filter((order) => matchesFilter(order, filter)), [filter, orders])
   const selected = filtered.find((order) => order.id === selectedId) || filtered[0] || null
+  const selectedUsesErrander = Boolean(selected?.items?.some((item) => item.fulfilment?.method === 'errand_delivery'))
   const counts = useMemo(() => Object.fromEntries(FILTERS.map(([key]) => [key, orders.filter((order) => matchesFilter(order, key)).length])), [orders])
 
   return (
@@ -91,17 +93,18 @@ function ProfileShopOrders({ backLabel = 'Shop', description = 'Confirm paid ord
               return <button type="button" className={selected?.id === order.id ? 'is-selected' : ''} key={order.id} onClick={() => setSelectedId(order.id)}>
                 <img src={first.image || '/assets/index/bee_nobg.png'} alt="" />
                 <span><small>#{order.id.slice(-8).toUpperCase()}</small><strong>{first.title || 'Marketplace order'}{order.items?.length > 1 ? ` +${order.items.length - 1}` : ''}</strong><em>{units} item{units === 1 ? '' : 's'} · {order.handoffType === 'drop-off' ? 'Delivery' : 'Pickup'}</em></span>
-                <span><b>{money(order.totalAmount, order.currency)}</b><i className={`is-${order.fulfillmentStatus}`}>{statusLabel(order.fulfillmentStatus)}</i></span>
+                <span><b>{money(order.sellerAmount ?? order.totalAmount, order.currency)}</b><i className={`is-${order.fulfillmentStatus}`}>{statusLabel(order.fulfillmentStatus)}</i></span>
               </button>
             })}
           </div>
 
           {selected ? <article className="campus-shop-order-detail">
-            <header><div><span>ORDER #{selected.id.slice(-8).toUpperCase()}</span><h3>{statusLabel(selected.fulfillmentStatus)}</h3><p>{selected.createdAt ? new Date(selected.createdAt).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }) : 'Recently placed'} · {selected.fulfillmentStatus === 'delivered' ? 'Payment held in escrow' : `Payment ${label(selected.status)}`}</p></div><strong>{money(selected.totalAmount, selected.currency)}</strong></header>
+            <header><div><span>ORDER #{selected.id.slice(-8).toUpperCase()}</span><h3>{statusLabel(selected.fulfillmentStatus)}</h3><p>{selected.createdAt ? new Date(selected.createdAt).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }) : 'Recently placed'} · {selected.fulfillmentStatus === 'delivered' ? 'Payment held in escrow' : `Payment ${label(selected.status)}`}</p></div><strong>{money(selected.sellerAmount ?? selected.totalAmount, selected.currency)}</strong></header>
             {selected.fulfillmentStatus === 'delivered' ? <div className="campus-shop-orders-notice"><FiClock /><p><strong>Waiting for the buyer to confirm receipt.</strong> {escrowReleaseMessage(selected)}</p></div> : null}
+            {selectedUsesErrander && ['ready', 'in_transit'].includes(selected.fulfillmentStatus) ? <div className="campus-shop-orders-notice"><FiTruck /><p><strong>{selected.fulfillmentStatus === 'ready' ? 'Waiting for the errander to collect.' : 'The errander is delivering this order.'}</strong> The assigned errander now controls pickup and delivery status.</p></div> : null}
             {!CANCELLED.has(selected.fulfillmentStatus) ? <div className="campus-shop-order-progress">
-              {['confirmed', 'packaging', 'ready', 'in_transit', 'delivered', 'completed'].map((step, index) => {
-                const current = ['seller_confirmation', 'confirmed', 'packaging', 'ready', 'in_transit', 'delivered', 'completed'].indexOf(selected.fulfillmentStatus)
+              {PROGRESS_STEPS.map((step, index) => {
+                const current = PROGRESS_STEPS.indexOf(selected.fulfillmentStatus)
                 return <span className={current > index ? 'is-done' : current === index ? 'is-current' : ''} key={step}><i>{current > index ? <FiCheck /> : index + 1}</i><small>{label(step)}</small></span>
               })}
             </div> : null}
@@ -110,7 +113,7 @@ function ProfileShopOrders({ backLabel = 'Shop', description = 'Confirm paid ord
             <footer>
               <button type="button" onClick={() => onMessageBuyer(selected)}><FiMessageCircle /> Message buyer</button>
               {SELLER_CAN_CANCEL.has(selected.fulfillmentStatus) ? <button type="button" className="is-danger" disabled={updatingOrderId === selected.id} onClick={() => onUpdateStatus(selected, 'cannot_fulfil')}><FiX /> Cannot fulfil</button> : null}
-              {NEXT_STATUS[selected.fulfillmentStatus] ? <button type="button" className="is-primary" disabled={updatingOrderId === selected.id} onClick={() => onUpdateStatus(selected, NEXT_STATUS[selected.fulfillmentStatus])}>{updatingOrderId === selected.id ? 'Updating…' : STEPS.find(([status]) => status === selected.fulfillmentStatus)?.[1]} <FiCheck /></button> : null}
+              {NEXT_STATUS[selected.fulfillmentStatus] && !(selectedUsesErrander && ['ready', 'in_transit'].includes(selected.fulfillmentStatus)) ? <button type="button" className="is-primary" disabled={updatingOrderId === selected.id} onClick={() => onUpdateStatus(selected, NEXT_STATUS[selected.fulfillmentStatus])}>{updatingOrderId === selected.id ? 'Updating…' : STEPS.find(([status]) => status === selected.fulfillmentStatus)?.[1]} <FiCheck /></button> : null}
             </footer>
           </article> : null}
         </div>

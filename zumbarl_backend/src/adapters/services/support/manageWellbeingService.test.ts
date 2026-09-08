@@ -31,4 +31,14 @@ describe('wellbeing safety and pattern helpers', () => {
     ])
     expect(pattern.suggestion.href).toBe('/campus/opportunities')
   })
+
+  it('offers a private care pathway for repeated substance-use context', () => {
+    const now = new Date()
+    const pattern = patternFromCheckIns([
+      { mood: 'meh', stressors: ['substance_use'], sleep: '6_8', createdAt: now },
+      { mood: 'okay', stressors: ['substance_use'], sleep: '6_8', createdAt: new Date(now.getTime() - 86400000) },
+    ])
+    expect(pattern.suggestion).toMatchObject({ kind: 'care', id: 'care' })
+    expect(pattern.message).toContain('without blame')
+  })
 })

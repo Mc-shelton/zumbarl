@@ -110,7 +110,7 @@ const roleGroups = {
   finance: ['admin', 'SUPER_ADMIN', 'FINANCE_OFFICER'] as Role[],
   moderator: ['admin', 'moderator', 'SUPER_ADMIN', 'CONTENT_MODERATOR'] as Role[],
   student: ['student', 'STUDENT_STANDARD', 'STUDENT_TRANSITION', 'STUDENT_ALUMNI', 'CAMPUS_AMBASSADOR'] as Role[],
-  support: ['support', 'admin', 'SAFETY_OFFICER', 'SUPER_ADMIN'] as Role[]
+  support: ['support', 'admin', 'SAFETY_OFFICER', 'OPERATIONS_MANAGER', 'SUPER_ADMIN'] as Role[]
 }
 
 export {

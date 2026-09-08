@@ -1,8 +1,10 @@
 import { Prisma } from '@prisma/client'
 import { nanoid } from 'nanoid'
-import { pageEnvelope } from '../../../lib/http.js'
+import { ApiError, pageEnvelope } from '../../../lib/http.js'
 import { prisma } from '../../../lib/prisma.js'
 import { runPrismaRecordTransaction } from '../../../shared/repositories/index.js'
+import { normalizeCurrency, normalizeMoney } from '../../../shared/services/money.js'
+import { creditStudentWallet, debitCompanyWallet } from '../../../shared/services/walletLedger.js'
 
 function jsonInput(value: unknown): Prisma.InputJsonValue {
   return JSON.parse(JSON.stringify(value ?? {})) as Prisma.InputJsonValue
@@ -348,6 +350,11 @@ class MarketingCampaignsRepository {
   }
 
   async publishCampaign(id: string) {
+    const current = await prisma.marketingCampaign.findUnique({ where: { id } })
+    if (!current) return null
+    if (!['funded', 'active', 'published'].includes(current.status)) {
+      throw new ApiError(409, 'Fund this campaign before publishing it', 'CAMPAIGN_FUNDING_REQUIRED')
+    }
     const campaign = await this.updateCampaign(id, { status: 'published', inviteOnlyUntil: null })
     if (!campaign) return null
     await this.syncZumbarlAd(id)
@@ -391,14 +398,33 @@ class MarketingCampaignsRepository {
 
   fundCampaign(id: string) {
     return runPrismaRecordTransaction(async (createRepository, tx) => {
+      await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', id)
       const campaign = await tx.marketingCampaign.findUnique({ where: { id } })
       if (!campaign) return null
-      const escrow = await createRepository('escrows').create({
+      if (!campaign.businessId) throw new ApiError(409, 'A company wallet is required to fund this campaign', 'COMPANY_WALLET_REQUIRED')
+      const transactionEscrows = createRepository('escrows')
+      const existing = (await transactionEscrows.listAll((item) => item.scope === 'campaign' && item.scopeId === id && ['funded', 'partially_released'].includes(item.status)))[0]
+      if (existing) return existing
+      const currency = normalizeCurrency(campaign.currency || 'KES')
+      const amount = normalizeMoney(campaign.budgetAmount, currency)
+      if (amount <= 0) throw new ApiError(409, 'Set a positive campaign budget before funding it', 'CAMPAIGN_BUDGET_REQUIRED')
+      await debitCompanyWallet(tx, campaign.businessId, amount, {
+        type: 'ESCROW_HOLD',
+        currency,
+        reference: `campaign-funding:${id}`,
+        description: `Campaign escrow funding: ${campaign.title}`,
+        metadata: { campaignId: id, balanceKind: 'available' }
+      })
+      const escrow = await transactionEscrows.create({
         scope: 'campaign',
         scopeId: id,
-        amount: campaign.budgetAmount,
-        currency: campaign.currency,
-        status: 'funded'
+        businessId: campaign.businessId,
+        amount,
+        remainingAmount: amount,
+        currency,
+        source: 'company_wallet',
+        status: 'funded',
+        reference: `campaign-funding:${id}`
       })
       await tx.marketingCampaign.update({ where: { id }, data: { status: 'funded' } })
       return escrow
@@ -431,7 +457,7 @@ class MarketingCampaignsRepository {
           const existing = await tx.marketingCampaignAcceptance.findUnique({ where: { campaignId_studentId: { campaignId: id, studentId: acceptedStudentId } } })
           const campaignPayload = payloadObject(campaign.payload)
           const destinationUrl = typeof campaignPayload.destinationUrl === 'string' ? campaignPayload.destinationUrl : null
-          if (existing?.status === 'accepted') {
+          if (existing && ['accepted', 'paid'].includes(existing.status)) {
             if (existing.trackingToken) return acceptanceRecord(existing)
             return acceptanceRecord(await tx.marketingCampaignAcceptance.update({
               where: { id: existing.id },
@@ -559,9 +585,49 @@ class MarketingCampaignsRepository {
 
   endorseCampaigners(id: string, payload: Record<string, any>) {
     return runPrismaRecordTransaction(async (createRepository, tx) => {
+      await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', id)
       const campaign = await tx.marketingCampaign.findUnique({ where: { id } })
       if (!campaign) return null
       const evidence = createRepository('evidence')
+      const transactionEscrows = createRepository('escrows')
+      const transactionPayouts = createRepository('payouts')
+      const escrow = (await transactionEscrows.listAll((item) => item.scope === 'campaign' && item.scopeId === id && ['funded', 'partially_released'].includes(item.status)))[0]
+      if (!escrow) throw new ApiError(409, 'Campaign escrow is not funded', 'CAMPAIGN_FUNDING_REQUIRED')
+      const currency = normalizeCurrency(campaign.currency || 'KES')
+      let remaining = normalizeMoney(escrow.remainingAmount ?? escrow.amount, currency)
+      const studentIds: string[] = [...new Set<string>((payload.studentIds as unknown[]).map((value) => String(value)))]
+      const [acceptances, proofs, existingPayouts] = await Promise.all([
+        tx.marketingCampaignAcceptance.findMany({ where: { campaignId: id, studentId: { in: studentIds }, status: { in: ['accepted', 'paid'] } } }),
+        tx.marketingCampaignProof.findMany({ where: { campaignId: id, studentId: { in: studentIds } }, select: { studentId: true } }),
+        transactionPayouts.listAll((item) => item.campaignId === id && studentIds.includes(String(item.studentId)))
+      ])
+      const proofStudents = new Set(proofs.map((proof) => proof.studentId).filter(Boolean))
+      const paidStudents = new Set(existingPayouts.filter((payout) => payout.status === 'paid').map((payout) => String(payout.studentId)))
+      const campaignPayouts = []
+      for (const acceptance of acceptances) {
+        if (paidStudents.has(acceptance.studentId)) continue
+        if (!proofStudents.has(acceptance.studentId)) throw new ApiError(409, 'A campaigner must submit proof before payout approval', 'CAMPAIGN_PROOF_REQUIRED', { studentId: acceptance.studentId })
+        const amount = normalizeMoney(acceptance.payoutAmount, currency)
+        if (amount <= 0 || amount > remaining) throw new ApiError(409, 'Campaign escrow cannot cover this payout', 'CAMPAIGN_ESCROW_AMOUNT_EXCEEDED', { amount, remaining, currency })
+        const payout = await transactionPayouts.create({
+          campaignId: id,
+          acceptanceId: acceptance.id,
+          studentId: acceptance.studentId,
+          amount,
+          currency,
+          status: 'paid',
+          paidAt: new Date().toISOString()
+        })
+        await creditStudentWallet(tx, acceptance.studentId, amount, {
+          currency,
+          reference: `campaign-payout:${payout.id}`,
+          description: `Campaign payout: ${campaign.title}`,
+          metadata: { campaignId: id, acceptanceId: acceptance.id, payoutId: payout.id }
+        })
+        await tx.marketingCampaignAcceptance.update({ where: { id: acceptance.id }, data: { status: 'paid' } })
+        remaining = normalizeMoney(remaining - amount, currency)
+        campaignPayouts.push(payout)
+      }
       const endorsements = await Promise.all(payload.studentIds.map((studentId: string) => evidence.create({
         source: 'marketing-campaign', sourceId: id, studentId, type: 'endorsement', note: payload.note, verified: true
       })))
@@ -569,7 +635,12 @@ class MarketingCampaignsRepository {
         where: { id },
         data: { workflow: jsonInput({ ...payloadObject(campaign.workflow), endorsed: true }) }
       })
-      return { endorsements }
+      await transactionEscrows.updateById(escrow.id, {
+        remainingAmount: remaining,
+        status: remaining === 0 ? 'released' : 'partially_released',
+        ...(remaining === 0 ? { releasedAt: new Date().toISOString() } : {})
+      })
+      return { endorsements, payouts: campaignPayouts }
     })
   }
 }

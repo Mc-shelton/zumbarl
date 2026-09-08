@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import Seo from "../components/Seo";
 import {
   addManagedProfileManager,
@@ -8,6 +9,7 @@ import {
 import {
   createCampusVendor,
   updateCampusVendor,
+  reviewStudentKitchen,
   addCampusVendorManager,
   removeCampusVendorManager,
   listZumbarlAds,
@@ -16,6 +18,7 @@ import {
   readSuperAdminAnalytics,
   readSuperAdminAuditLogs,
   readSuperAdminConfiguration,
+  readAcademicCatalog,
   readSuperAdminContent,
   readSuperAdminDashboard,
   readSuperAdminFinance,
@@ -26,8 +29,13 @@ import {
   recordSuperAdminFinancialAction,
   recordSuperAdminGigAction,
   readCampusVendorManagement,
+  readSuperAdminKycDocument,
+  reviewSuperAdminKyc,
   revokeSuperAdminSessions,
   updateSuperAdminAccount,
+  updateAcademicCampus,
+  updateAcademicCourse,
+  updateAcademicUnit,
   writeSuperAdminConfiguration,
   writeSuperAdminScoreConfiguration,
 } from "../features/admin/services/superAdminService";
@@ -36,6 +44,7 @@ import "../styles/business.css";
 const MODULES = [
   { id: "overview", label: "Overview" },
   { id: "accounts", label: "Accounts" },
+  { id: "kyc", label: "KYC Review" },
   { id: "finance", label: "Finance" },
   { id: "gigs", label: "Gigs" },
   { id: "score", label: "Score" },
@@ -43,6 +52,7 @@ const MODULES = [
   { id: "content", label: "Content" },
   { id: "pages", label: "Pages" },
   { id: "ads", label: "Zumbarl Ads" },
+  { id: "catalog", label: "Academic Data" },
   { id: "configuration", label: "Config" },
   { id: "analytics", label: "Analytics" },
   { id: "audit", label: "Audit" },
@@ -145,19 +155,16 @@ function AccountsPanel({ accounts, onRefresh, onAction }) {
             </tr>
           </thead>
           <tbody>
-            {(accounts?.data || []).map((user) => (
-              <tr key={user.id}>
+            {(accounts?.data || []).map((user) => {
+              const kycStatus = user.studentProfile?.kycStatus || user.companyContact?.company?.kycStatus || "PENDING";
+              return <tr key={user.id}>
                 <td>
                   <strong>{user.name || user.email}</strong>
                   <span>{user.email}</span>
                 </td>
                 <td>{user.role}</td>
                 <td>{user.isActive === false ? "Suspended" : "Active"}</td>
-                <td>
-                  {user.studentProfile?.kycStatus ||
-                    user.companyContact?.company?.kycStatus ||
-                    "Pending"}
-                </td>
+                <td><div className="super-admin-kyc-cell"><strong>{String(kycStatus).replaceAll("_", " ")}</strong>{user.studentProfile ? <small>Review in the KYC Review page</small> : null}</div></td>
                 <td>
                   <button
                     type="button"
@@ -187,7 +194,7 @@ function AccountsPanel({ accounts, onRefresh, onAction }) {
                   </button>
                 </td>
               </tr>
-            ))}
+            })}
           </tbody>
         </table>
       </div>
@@ -198,6 +205,114 @@ function AccountsPanel({ accounts, onRefresh, onAction }) {
       >
         Refresh accounts
       </button>
+    </Panel>
+  );
+}
+
+const REQUIRED_STUDENT_KYC_DOCUMENTS = [
+  { type: "NATIONAL_ID", label: "National ID" },
+  { type: "STUDENT_ID", label: "Student ID" },
+];
+
+function KycReviewPanel({ accounts, onRefresh, onAction }) {
+  const [filter, setFilter] = useState("pending");
+  const [viewingDocumentId, setViewingDocumentId] = useState("");
+  const [reviewingUserId, setReviewingUserId] = useState("");
+  const students = (accounts?.data || []).filter((user) => user.studentProfile);
+  const statusOf = (user) => String(user.studentProfile?.kycStatus || "PENDING").toUpperCase();
+  const pending = students.filter((user) => statusOf(user) === "UNDER_REVIEW");
+  const approved = students.filter((user) => statusOf(user) === "APPROVED");
+  const rejected = students.filter((user) => statusOf(user) === "REJECTED");
+  const visible = filter === "pending"
+    ? pending
+    : filter === "reviewed"
+      ? students.filter((user) => ["APPROVED", "REJECTED"].includes(statusOf(user)))
+      : students;
+
+  async function viewKycDocument(userId, documentId) {
+    const previewWindow = window.open("", "_blank");
+    if (previewWindow) previewWindow.opener = null;
+    setViewingDocumentId(documentId);
+    try {
+      const blob = await readSuperAdminKycDocument(userId, documentId);
+      const objectUrl = URL.createObjectURL(blob);
+      if (previewWindow) previewWindow.location.href = objectUrl;
+      else window.open(objectUrl, "_blank", "noopener,noreferrer");
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (error) {
+      previewWindow?.close();
+      window.alert(error.message || "The KYC document could not be opened.");
+    } finally {
+      setViewingDocumentId("");
+    }
+  }
+
+  async function review(user, status) {
+    const reason = status === "REJECTED"
+      ? window.prompt(`Why is ${user.name || user.email}'s KYC being rejected?`)
+      : "National ID and Student ID reviewed and approved by platform admin.";
+    if (!reason?.trim()) return;
+    setReviewingUserId(user.id);
+    try {
+      await onAction(() => reviewSuperAdminKyc(user.id, { status, reason: reason.trim() }));
+    } finally {
+      setReviewingUserId("");
+    }
+  }
+
+  return (
+    <Panel
+      title="Student KYC Review"
+      eyebrow="Identity verification queue"
+      actions={<button className="super-admin-secondary-btn" type="button" onClick={onRefresh}>Refresh queue</button>}
+    >
+      <section className="super-admin-metrics-grid compact">
+        <MetricTile label="Pending review" value={pending.length} />
+        <MetricTile label="Approved" value={approved.length} />
+        <MetricTile label="Rejected" value={rejected.length} />
+      </section>
+      <p className="super-admin-boundary-note">Review both required documents before making a decision. KYC documents open through authenticated private storage and are not exposed as public links.</p>
+      <nav className="super-admin-kyc-filters" aria-label="KYC review filters">
+        {[{ id: "pending", label: `Pending (${pending.length})` }, { id: "reviewed", label: "Reviewed" }, { id: "all", label: "All students" }].map((item) => <button type="button" key={item.id} className={filter === item.id ? "is-active" : ""} onClick={() => setFilter(item.id)}>{item.label}</button>)}
+      </nav>
+      <div className="super-admin-kyc-review-list">
+        {visible.map((user) => {
+          const profile = user.studentProfile;
+          const documents = profile.kycDocuments || [];
+          const documentsByType = new Map(documents.map((document) => [document.documentType, document]));
+          const status = statusOf(user);
+          const hasRequiredDocuments = REQUIRED_STUDENT_KYC_DOCUMENTS.every((requirement) => documentsByType.has(requirement.type));
+          const canReview = status === "UNDER_REVIEW";
+          const latestSubmission = documents.reduce((latest, document) => !latest || new Date(document.createdAt) > new Date(latest) ? document.createdAt : latest, null);
+          return <article key={user.id} className="super-admin-kyc-review-card">
+            <header>
+              <div className="super-admin-kyc-applicant-avatar">{String(user.name || user.email || "S").slice(0, 1).toUpperCase()}</div>
+              <div><h3>{user.name || `${profile.firstName} ${profile.lastName}`}</h3><p>{user.email}{user.username ? ` · @${String(user.username).replace(/^@/, "")}` : ""}</p></div>
+              <span className={`super-admin-kyc-status is-${status.toLowerCase()}`}>{status.replaceAll("_", " ")}</span>
+            </header>
+            <div className="super-admin-kyc-applicant-meta">
+              <span><small>Student ID number</small><strong>{profile.studentIdNumber || "Not provided"}</strong></span>
+              <span><small>Account status</small><strong>{user.isVerified ? "Verified" : "Not verified"}</strong></span>
+              <span><small>Submitted</small><strong>{latestSubmission ? new Date(latestSubmission).toLocaleString("en-KE", { dateStyle: "medium", timeStyle: "short" }) : "No submission"}</strong></span>
+            </div>
+            <section className="super-admin-kyc-documents" aria-label={`${user.name || "Student"} documents`}>
+              {REQUIRED_STUDENT_KYC_DOCUMENTS.map((requirement) => {
+                const document = documentsByType.get(requirement.type);
+                return <div key={requirement.type} className={document ? "is-submitted" : "is-missing"}>
+                  <span><strong>{requirement.label}</strong><small>{document ? String(document.status).replaceAll("_", " ") : "Missing"}</small></span>
+                  {document ? <button type="button" disabled={viewingDocumentId === document.id} onClick={() => viewKycDocument(user.id, document.id)}>{viewingDocumentId === document.id ? "Opening…" : "View document"}</button> : null}
+                </div>;
+              })}
+            </section>
+            {canReview && !hasRequiredDocuments ? <p className="super-admin-kyc-incomplete">Approval is locked until both required documents are submitted.</p> : null}
+            {canReview ? <footer>
+              <button type="button" className="is-reject" disabled={reviewingUserId === user.id} onClick={() => review(user, "REJECTED")}>Reject KYC</button>
+              <button type="button" className="is-approve" disabled={!hasRequiredDocuments || reviewingUserId === user.id} onClick={() => review(user, "APPROVED")}>Approve KYC</button>
+            </footer> : null}
+          </article>;
+        })}
+        {!visible.length ? <div className="super-admin-kyc-empty"><strong>No KYC submissions here</strong><span>{filter === "pending" ? "New student submissions will appear in this review queue." : "No students match this filter."}</span></div> : null}
+      </div>
     </Panel>
   );
 }
@@ -281,21 +396,26 @@ function ZumbarlAdsPanel({ ads, onAction }) {
 
 function ManagedPagesPanel({ accounts, onAction }) {
   const [campuses, setCampuses] = useState([]);
+  const [academicCampuses, setAcademicCampuses] = useState([]);
   const [vendors, setVendors] = useState([]);
-  const [campusForm, setCampusForm] = useState({ name: "", slug: "", managerId: "", managerRole: "admin", bio: "" });
-  const [serviceForm, setServiceForm] = useState({ type: "hotel", name: "", slug: "", campusId: "", managerId: "", managerRole: "editor", bio: "" });
+  const [campusForm, setCampusForm] = useState({ campusId: "", name: "", slug: "", managerId: "", managerRole: "admin", bio: "" });
+  const [serviceForm, setServiceForm] = useState({ type: "hotel", name: "", slug: "", campusId: "", managerId: "", managerRole: "editor", bio: "", deliveryFee: "100" });
   const [notice, setNotice] = useState("");
   const [editingCampus, setEditingCampus] = useState(null);
   const [editingVendor, setEditingVendor] = useState(null);
+  const [reviewingKitchenId, setReviewingKitchenId] = useState("");
+  const [removingCampusManagerId, setRemovingCampusManagerId] = useState("");
 
   const users = accounts?.data || [];
   const vendorManagers = users.filter((user) => user.studentProfile?.id);
+  const pendingKitchens = vendors.filter((vendor) => vendor.type === "student_kitchen" && String(vendor.approvalStatus || vendor.status).toLowerCase() === "pending");
 
   useEffect(() => {
-    readCampusVendorManagement()
-      .then((response) => {
-        setCampuses(response?.campuses || []);
-        setVendors(response?.vendors || []);
+    Promise.all([readCampusVendorManagement(), readAcademicCatalog()])
+      .then(([management, catalog]) => {
+        setCampuses(management?.campuses || []);
+        setVendors(management?.vendors || []);
+        setAcademicCampuses(catalog?.campuses || []);
       })
       .catch(() => {});
   }, []);
@@ -310,6 +430,7 @@ function ManagedPagesPanel({ accounts, onAction }) {
       slug,
       handle: slug.replaceAll("-", "_").slice(0, 40),
       bio: form.bio,
+      campusId: type === "campus" ? form.campusId : undefined,
       details: parent ? { campusManagedProfileId: parent.id, campusName: parent.name } : {},
     });
     if (form.managerId) await addManagedProfileManager(page.id, { email: users.find((user) => user.id === form.managerId)?.email, role: form.managerRole });
@@ -321,7 +442,7 @@ function ManagedPagesPanel({ accounts, onAction }) {
     try {
       const page = await createPage(campusForm, "campus");
       setCampuses((current) => [...current, page]);
-      setCampusForm({ name: "", slug: "", managerId: "", managerRole: "admin", bio: "" });
+      setCampusForm({ campusId: "", name: "", slug: "", managerId: "", managerRole: "admin", bio: "" });
       setNotice(`${page.name} was created and assigned.`);
       onAction(() => Promise.resolve());
     } catch (requestError) { setNotice(requestError.message || "Campus page could not be created."); }
@@ -338,9 +459,10 @@ function ManagedPagesPanel({ accounts, onAction }) {
         campusManagedProfileId: parent.id,
         managerUserId: serviceForm.managerId,
         description: serviceForm.bio,
+        deliveryFee: Number(serviceForm.deliveryFee || 0),
       });
       setVendors((current) => [...current, vendor]);
-      setServiceForm({ type: "hotel", name: "", slug: "", campusId: "", managerId: "", managerRole: "editor", bio: "" });
+      setServiceForm({ type: "hotel", name: "", slug: "", campusId: "", managerId: "", managerRole: "editor", bio: "", deliveryFee: "100" });
       setNotice(`${vendor.name} is now a vendor under ${parent.name}. Its manager can run inventory, orders, posts, and promotions.`);
       onAction(() => Promise.resolve());
     } catch (requestError) { setNotice(requestError.message || "The campus vendor could not be created."); }
@@ -352,22 +474,30 @@ function ManagedPagesPanel({ accounts, onAction }) {
     if (!user) return;
     try {
       await addManagedProfileManager(editingCampus.id, { email: user.email, role: editingCampus.managerRole });
+      const managers = [...(editingCampus.managers || []).filter((manager) => manager.user?.id !== user.id), { role: editingCampus.managerRole, user }];
       setCampuses((current) => current.map((campus) => campus.id === editingCampus.id
-        ? { ...campus, managers: [...(campus.managers || []).filter((manager) => manager.user?.id !== user.id), { role: editingCampus.managerRole, user }] }
+        ? { ...campus, managers }
         : campus));
-      setEditingCampus((current) => ({ ...current, managerId: "" }));
+      setEditingCampus((current) => ({ ...current, managers, managerId: "" }));
       setNotice(`${user.name || user.email} is now assigned to ${editingCampus.name}.`);
     } catch (requestError) { setNotice(requestError.message || "The manager could not be assigned."); }
   }
 
   async function unassignManager(campus, manager) {
+    setRemovingCampusManagerId(manager.user.id);
     try {
       await removeManagedProfileManager(campus.id, manager.user.id);
+      const managers = (campus.managers || []).filter((candidate) => candidate.user?.id !== manager.user.id);
       setCampuses((current) => current.map((item) => item.id === campus.id
-        ? { ...item, managers: (item.managers || []).filter((candidate) => candidate.user?.id !== manager.user.id) }
+        ? { ...item, managers }
         : item));
+      setEditingCampus((current) => current?.id === campus.id ? { ...current, managers } : current);
       setNotice(`${manager.user.name || manager.user.email} was removed from ${campus.name}.`);
-    } catch (requestError) { setNotice(requestError.message || "The manager could not be removed."); }
+    } catch (requestError) {
+      setNotice(requestError.message || "The manager could not be removed.");
+    } finally {
+      setRemovingCampusManagerId("");
+    }
   }
 
   async function saveVendor(event) {
@@ -377,6 +507,7 @@ function ManagedPagesPanel({ accounts, onAction }) {
         name: editingVendor.name,
         type: editingVendor.type,
         description: editingVendor.description || null,
+        deliveryFee: Number(editingVendor.errandFee || 0),
         locationLabel: editingVendor.locationLabel || null,
         campusManagedProfileId: editingVendor.campusManagedProfileId,
       });
@@ -409,6 +540,23 @@ function ManagedPagesPanel({ accounts, onAction }) {
     } catch (requestError) { setNotice(requestError.message || "The vendor assignment could not be removed."); }
   }
 
+  async function reviewKitchen(kitchen, decision) {
+    setReviewingKitchenId(kitchen.id);
+    try {
+      const updated = await reviewStudentKitchen(kitchen.id, {
+        decision,
+        reason: decision === "approved" ? "Kitchen page approved by platform admin." : "Kitchen page requires changes before approval.",
+      });
+      setVendors((current) => current.map((vendor) => vendor.id === updated.id ? updated : vendor));
+      setNotice(`${updated.name} was ${decision}.`);
+      onAction(() => Promise.resolve());
+    } catch (requestError) {
+      setNotice(requestError.message || "The student kitchen review could not be saved.");
+    } finally {
+      setReviewingKitchenId("");
+    }
+  }
+
   const managerFields = (form, setter, candidates = users) => (
     <>
       <label><span>Assign manager</span><select required value={form.managerId} onChange={(event) => update(setter, "managerId", event.target.value)}><option value="">Select a user</option>{candidates.map((user) => <option key={user.id} value={user.id}>{user.name || user.email} · {user.email}</option>)}</select></label>
@@ -419,13 +567,168 @@ function ManagedPagesPanel({ accounts, onAction }) {
   return <Panel title="Campus Pages & Vendors" eyebrow="Campus identities and operating vendors">
     <p className="super-admin-boundary-note">Create verified campus pages here. Hotels, barber shops, and other services are linked vendors with their own inventory, orders, posts, and promotions—not child pages.</p>
     {notice ? <p className="super-admin-boundary-note">{notice}</p> : null}
+    <section className="super-admin-kitchen-review">
+      <header><div><span>Student-owned pages</span><h3>Student kitchen approvals</h3></div><strong>{pendingKitchens.length} pending</strong></header>
+      {pendingKitchens.length ? <div className="super-admin-kitchen-review-list">{pendingKitchens.map((kitchen) => {
+        const owner = kitchen.ownerDetails || kitchen.manager || {};
+        const contact = kitchen.contact || {};
+        const approvalBlockers = [
+          !owner.kycReady ? "Approve the National ID and Student ID documents" : null,
+        ].filter(Boolean);
+        const canApprove = approvalBlockers.length === 0;
+        return <article key={kitchen.id}>
+          <header>
+            <span className="super-admin-kitchen-avatar">{String(kitchen.name || "K").slice(0, 1).toUpperCase()}</span>
+            <div><h4>{kitchen.name}</h4><p>{kitchen.campus?.name || kitchen.campus || "Campus"} · {kitchen.locationLabel || "Pickup location not provided"}</p></div>
+            <em>Pending approval</em>
+          </header>
+          <p className="super-admin-kitchen-description">{kitchen.description || "No kitchen description was provided."}</p>
+          <div className="super-admin-kitchen-details">
+            <section><span>Student owner</span><strong>{owner.name || "Student owner"}</strong><small>{owner.username ? `@${String(owner.username).replace(/^@/, "")}` : "No username"} · Student ID: {owner.studentIdNumber || "Not provided"}</small></section>
+            <section><span>Owner contact</span><strong>{owner.email ? <a href={`mailto:${owner.email}`}>{owner.email}</a> : "Email not provided"}</strong><small>{owner.phone ? <a href={`tel:${owner.phone}`}>{owner.phone}</a> : "Phone not provided"}</small></section>
+            <section><span>Kitchen contact</span><strong>{contact.email ? <a href={`mailto:${contact.email}`}>{contact.email}</a> : "Uses owner email"}</strong><small>{contact.phone ? <a href={`tel:${contact.phone}`}>{contact.phone}</a> : "Uses owner phone"}</small></section>
+            <section><span>Account checks</span><strong>KYC: {owner.kycReady ? "APPROVED" : "INCOMPLETE"}</strong><small>{owner.isVerified ? "Verified Zumbarl account" : "Account not verified"} · Submitted {kitchen.submittedAt ? new Date(kitchen.submittedAt).toLocaleDateString("en-KE", { dateStyle: "medium" }) : "recently"}</small></section>
+          </div>
+          <section className="super-admin-kitchen-admins"><span>Page administrators & contacts</span>{(kitchen.managers || []).map((manager) => <div key={manager.user.id}><strong>{manager.user.name || manager.user.email}</strong><small>{manager.role} · <a href={`mailto:${manager.user.email}`}>{manager.user.email}</a>{manager.user.phone ? <> · <a href={`tel:${manager.user.phone}`}>{manager.user.phone}</a></> : null}</small></div>)}</section>
+          {approvalBlockers.length ? <p className="super-admin-kitchen-approval-lock"><strong>Approval locked</strong><span>{approvalBlockers.join(" · ")}</span></p> : null}
+          <footer className="super-admin-kitchen-review-actions"><button type="button" disabled={reviewingKitchenId === kitchen.id} onClick={() => reviewKitchen(kitchen, "rejected")}>Reject</button><button className={`is-approve${canApprove ? "" : " is-locked"}`} title={canApprove ? "Approve this kitchen" : approvalBlockers.join(". ")} type="button" disabled={!canApprove || reviewingKitchenId === kitchen.id} onClick={() => reviewKitchen(kitchen, "approved")}>Approve kitchen</button></footer>
+        </article>;
+      })}</div> : <p>No student kitchens are waiting for review.</p>}
+    </section>
     <div className="super-admin-page-management-grid">
-      <form className="super-admin-action-form" onSubmit={submitCampus}><h3>Create campus page</h3><label><span>Campus name</span><input required value={campusForm.name} onChange={(event) => update(setCampusForm, "name", event.target.value)} placeholder="e.g. Zetech University" /></label><label><span>Slug (optional)</span><input value={campusForm.slug} onChange={(event) => update(setCampusForm, "slug", event.target.value)} placeholder="zetech-university" /></label><label><span>Description</span><textarea value={campusForm.bio} onChange={(event) => update(setCampusForm, "bio", event.target.value)} /></label>{managerFields(campusForm, setCampusForm)}<button type="submit">Create campus page</button></form>
-      <form className="super-admin-action-form" onSubmit={submitService}><h3>Create campus vendor</h3><label><span>Vendor type</span><select value={serviceForm.type} onChange={(event) => update(setServiceForm, "type", event.target.value)}><option value="hotel">Hotel</option><option value="barber_shop">Barber shop</option><option value="service">Other campus service</option></select></label><label><span>Vendor name</span><input required value={serviceForm.name} onChange={(event) => update(setServiceForm, "name", event.target.value)} placeholder="e.g. Zetech Campus Hotel" /></label><label><span>Campus page</span><select required value={serviceForm.campusId} onChange={(event) => update(setServiceForm, "campusId", event.target.value)}><option value="">Select a campus page</option>{campuses.map((campus) => <option key={campus.id} value={campus.id}>{campus.name}</option>)}</select></label><label><span>Description</span><textarea value={serviceForm.bio} onChange={(event) => update(setServiceForm, "bio", event.target.value)} /></label>{managerFields(serviceForm, setServiceForm, vendorManagers)}<button type="submit">Create vendor</button></form>
+      <form className="super-admin-action-form" onSubmit={submitCampus}><h3>Create campus page</h3><label><span>University</span><select required value={campusForm.campusId} onChange={(event) => { const selected = academicCampuses.find((campus) => campus.id === event.target.value); setCampusForm((current) => ({ ...current, campusId: event.target.value, name: selected?.name || "", slug: slugify(selected?.name || "") })); }}><option value="">Select a university</option>{academicCampuses.filter((campus) => !campus.managedProfile).map((campus) => <option key={campus.id} value={campus.id}>{campus.name}{campus.branch ? ` · ${campus.branch}` : ""}</option>)}</select><small>The page name and university relationship come from this selection.</small></label><label><span>Slug (optional)</span><input value={campusForm.slug} onChange={(event) => update(setCampusForm, "slug", event.target.value)} placeholder="zetech-university" /></label><label><span>Description</span><textarea value={campusForm.bio} onChange={(event) => update(setCampusForm, "bio", event.target.value)} /></label>{managerFields(campusForm, setCampusForm)}<button type="submit">Create campus page</button></form>
+      <form className="super-admin-action-form" onSubmit={submitService}><h3>Create campus vendor</h3><label><span>Vendor type</span><select value={serviceForm.type} onChange={(event) => update(setServiceForm, "type", event.target.value)}><option value="hotel">Hotel</option><option value="barber_shop">Barber shop</option><option value="service">Other campus service</option></select></label><label><span>Vendor name</span><input required value={serviceForm.name} onChange={(event) => update(setServiceForm, "name", event.target.value)} placeholder="e.g. Zetech Campus Hotel" /></label><label><span>Campus page</span><select required value={serviceForm.campusId} onChange={(event) => update(setServiceForm, "campusId", event.target.value)}><option value="">Select a campus page</option>{campuses.map((campus) => <option key={campus.id} value={campus.id}>{campus.name}</option>)}</select></label><label><span>Errand delivery pay (KSh)</span><input max="5000" min="0" required step="1" type="number" value={serviceForm.deliveryFee} onChange={(event) => update(setServiceForm, "deliveryFee", event.target.value)} /><small>Every errander receives this amount after a completed delivery.</small></label><label><span>Description</span><textarea value={serviceForm.bio} onChange={(event) => update(setServiceForm, "bio", event.target.value)} /></label>{managerFields(serviceForm, setServiceForm, vendorManagers)}<button type="submit">Create vendor</button></form>
     </div>
     {campuses.length ? <div className="super-admin-boundary-grid">{campuses.map((campus) => { const campusVendors = vendors.filter((vendor) => vendor.campusManagedProfileId === campus.id); return <article key={campus.id}><strong>{campus.name}</strong><span>{campusVendors.length ? `${campusVendors.length} linked vendor${campusVendors.length === 1 ? "" : "s"}` : "No vendors linked yet."}</span>{campusVendors.length ? <div className="super-admin-vendor-list">{campusVendors.map((vendor) => <div key={vendor.id}><span><b>{vendor.name}</b><small>{String(vendor.type).replaceAll("_", " ")} · {vendor._count?.listings || 0} inventory items</small></span><span className="super-admin-vendor-actions"><em>Vendor</em><button type="button" onClick={() => setEditingVendor({ ...vendor, assignmentUserId: "", assignmentRole: "editor" })}>Edit vendor</button></span></div>)}</div> : null}<button type="button" onClick={() => setEditingCampus({ ...campus, managerId: "", managerRole: "editor" })}>Edit campus assignments</button></article>; })}</div> : null}
-    {editingCampus ? <div className="super-admin-assignment-editor"><header><div><span>Manager assignments</span><h3>{editingCampus.name}</h3></div><button type="button" onClick={() => setEditingCampus(null)}>Close</button></header><div className="super-admin-assignment-list">{(editingCampus.managers || []).map((manager) => <div key={manager.user.id}><span><strong>{manager.user.name || manager.user.email}</strong><small>{manager.user.email} · {manager.role}</small></span>{manager.role === "owner" ? <em>Owner</em> : <button type="button" onClick={() => unassignManager(editingCampus, manager)}>Remove</button>}</div>)}{!(editingCampus.managers || []).length ? <p>No managers assigned yet.</p> : null}</div><form className="super-admin-assignment-form" onSubmit={assignManager}><label><span>Add user</span><select required value={editingCampus.managerId} onChange={(event) => setEditingCampus((current) => ({ ...current, managerId: event.target.value }))}><option value="">Select a user</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name || user.email} · {user.email}</option>)}</select></label><label><span>Role</span><select value={editingCampus.managerRole} onChange={(event) => setEditingCampus((current) => ({ ...current, managerRole: event.target.value }))}><option value="admin">Admin</option><option value="editor">Editor</option></select></label><button type="submit">Assign manager</button></form></div> : null}
-    {editingVendor ? <div className="super-admin-assignment-editor"><header><div><span>Vendor settings & assignments</span><h3>{editingVendor.name}</h3></div><button type="button" onClick={() => setEditingVendor(null)}>Close</button></header><form className="super-admin-assignment-form super-admin-vendor-edit-form" onSubmit={saveVendor}><label><span>Vendor name</span><input required value={editingVendor.name} onChange={(event) => setEditingVendor((current) => ({ ...current, name: event.target.value }))} /></label><label><span>Vendor type</span><select value={editingVendor.type} onChange={(event) => setEditingVendor((current) => ({ ...current, type: event.target.value }))}><option value="hotel">Hotel</option><option value="barber_shop">Barber shop</option><option value="service">Other service</option></select></label><label><span>Campus</span><select value={editingVendor.campusManagedProfileId} onChange={(event) => setEditingVendor((current) => ({ ...current, campusManagedProfileId: event.target.value }))}>{campuses.map((campus) => <option key={campus.id} value={campus.id}>{campus.name}</option>)}</select></label><label><span>Location</span><input value={editingVendor.locationLabel || ""} onChange={(event) => setEditingVendor((current) => ({ ...current, locationLabel: event.target.value }))} /></label><label><span>Description</span><textarea value={editingVendor.description || ""} onChange={(event) => setEditingVendor((current) => ({ ...current, description: event.target.value }))} /></label><button type="submit">Save vendor</button></form><div className="super-admin-assignment-list">{(editingVendor.managers || []).map((manager) => <div key={manager.user.id}><span><strong>{manager.user.name || manager.user.email}</strong><small>{manager.user.email} · {manager.role}</small></span>{manager.role === "owner" ? <em>Owner</em> : <button type="button" onClick={() => unassignVendorManager(manager)}>Remove</button>}</div>)}</div><form className="super-admin-assignment-form" onSubmit={assignVendorManager}><label><span>Add or change operator</span><select required value={editingVendor.assignmentUserId} onChange={(event) => setEditingVendor((current) => ({ ...current, assignmentUserId: event.target.value }))}><option value="">Select a user</option>{vendorManagers.map((user) => <option key={user.id} value={user.id}>{user.name || user.email} · {user.email}</option>)}</select></label><label><span>Vendor role</span><select value={editingVendor.assignmentRole} onChange={(event) => setEditingVendor((current) => ({ ...current, assignmentRole: event.target.value }))}><option value="admin">Admin</option><option value="editor">Editor</option></select></label><button type="submit">Save assignment</button></form></div> : null}
+    {editingCampus ? <div className="super-admin-assignment-editor"><header><div><span>Manager assignments</span><h3>{editingCampus.name}</h3></div><button type="button" onClick={() => setEditingCampus(null)}>Close</button></header><div className="super-admin-assignment-list">{(editingCampus.managers || []).map((manager) => <div key={manager.user.id}><span><strong>{manager.user.name || manager.user.email}</strong><small>{manager.user.email} · {manager.role}</small></span>{manager.role === "owner" ? <em>Owner</em> : <button type="button" disabled={removingCampusManagerId === manager.user.id} onClick={() => unassignManager(editingCampus, manager)}>{removingCampusManagerId === manager.user.id ? "Removing…" : "Remove"}</button>}</div>)}{!(editingCampus.managers || []).length ? <p>No managers assigned yet.</p> : null}</div><form className="super-admin-assignment-form" onSubmit={assignManager}><label><span>Add user</span><select required value={editingCampus.managerId} onChange={(event) => setEditingCampus((current) => ({ ...current, managerId: event.target.value }))}><option value="">Select a user</option>{users.map((user) => <option key={user.id} value={user.id}>{user.name || user.email} · {user.email}</option>)}</select></label><label><span>Role</span><select value={editingCampus.managerRole} onChange={(event) => setEditingCampus((current) => ({ ...current, managerRole: event.target.value }))}><option value="admin">Admin</option><option value="editor">Editor</option></select></label><button type="submit">Assign manager</button></form></div> : null}
+    {editingVendor ? <div className="super-admin-assignment-editor"><header><div><span>Vendor settings & assignments</span><h3>{editingVendor.name}</h3></div><button type="button" onClick={() => setEditingVendor(null)}>Close</button></header><form className="super-admin-assignment-form super-admin-vendor-edit-form" onSubmit={saveVendor}><label><span>Vendor name</span><input required value={editingVendor.name} onChange={(event) => setEditingVendor((current) => ({ ...current, name: event.target.value }))} /></label><label><span>Vendor type</span><select value={editingVendor.type} onChange={(event) => setEditingVendor((current) => ({ ...current, type: event.target.value }))}><option value="hotel">Hotel</option><option value="student_kitchen">Student kitchen</option><option value="barber_shop">Barber shop</option><option value="service">Other service</option></select></label><label><span>Campus</span><select value={editingVendor.campusManagedProfileId || ""} onChange={(event) => setEditingVendor((current) => ({ ...current, campusManagedProfileId: event.target.value }))}>{campuses.map((campus) => <option key={campus.id} value={campus.id}>{campus.name}</option>)}</select></label><label><span>Location</span><input value={editingVendor.locationLabel || ""} onChange={(event) => setEditingVendor((current) => ({ ...current, locationLabel: event.target.value }))} /></label><label><span>Errand delivery pay (KSh)</span><input max="5000" min="0" required step="1" type="number" value={editingVendor.errandFee ?? ""} onChange={(event) => setEditingVendor((current) => ({ ...current, errandFee: event.target.value }))} /></label><label><span>Description</span><textarea value={editingVendor.description || ""} onChange={(event) => setEditingVendor((current) => ({ ...current, description: event.target.value }))} /></label><button type="submit">Save vendor</button></form><div className="super-admin-assignment-list">{(editingVendor.managers || []).map((manager) => <div key={manager.user.id}><span><strong>{manager.user.name || manager.user.email}</strong><small>{manager.user.email} · {manager.role}</small></span>{manager.role === "owner" ? <em>Owner</em> : <button type="button" onClick={() => unassignVendorManager(manager)}>Remove</button>}</div>)}</div><form className="super-admin-assignment-form" onSubmit={assignVendorManager}><label><span>Add or change operator</span><select required value={editingVendor.assignmentUserId} onChange={(event) => setEditingVendor((current) => ({ ...current, assignmentUserId: event.target.value }))}><option value="">Select a user</option>{vendorManagers.map((user) => <option key={user.id} value={user.id}>{user.name || user.email} · {user.email}</option>)}</select></label><label><span>Vendor role</span><select value={editingVendor.assignmentRole} onChange={(event) => setEditingVendor((current) => ({ ...current, assignmentRole: event.target.value }))}><option value="admin">Admin</option><option value="editor">Editor</option></select></label><button type="submit">Save assignment</button></form></div> : null}
+  </Panel>;
+}
+
+const ACADEMIC_CATALOG_SECTIONS = [
+  { id: "campuses", label: "Institutions & campuses" },
+  { id: "courses", label: "Courses" },
+  { id: "units", label: "Units" },
+];
+
+function AcademicCatalogPanel({ catalog, onRefresh }) {
+  const [section, setSection] = useState("campuses");
+  const [query, setQuery] = useState("");
+  const [editing, setEditing] = useState(null);
+  const [notice, setNotice] = useState("");
+  const [error, setError] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const records = catalog?.[section] || [];
+  const visibleRecords = records.filter((record) => {
+    const searchable = section === "campuses"
+      ? [record.name, record.branch, record.city, record.locationLabel]
+      : [record.name, record.category];
+    return searchable.filter(Boolean).join(" ").toLowerCase().includes(query.trim().toLowerCase());
+  });
+
+  function editRecord(type, record) {
+    setError("");
+    setNotice("");
+    if (type === "campuses") {
+      setEditing({ type, id: record.id, name: record.name, branch: record.branch || "", city: record.city, locationLabel: record.locationLabel || "", latitude: record.latitude ?? "", longitude: record.longitude ?? "", isActive: record.isActive, reason: "" });
+    } else if (type === "courses") {
+      setEditing({ type, id: record.id, name: record.name, category: record.category, duration: record.duration, reason: "" });
+    } else {
+      setEditing({ type, id: record.id, name: record.name, reason: "" });
+    }
+  }
+
+  function updateEditing(name, value) {
+    setEditing((current) => ({ ...current, [name]: value }));
+  }
+
+  async function saveRecord(event) {
+    event.preventDefault();
+    setError("");
+    setNotice("");
+    setIsSaving(true);
+    try {
+      if (editing.type === "campuses") {
+        await updateAcademicCampus(editing.id, {
+          name: editing.name,
+          branch: editing.branch.trim() || null,
+          city: editing.city,
+          locationLabel: editing.locationLabel.trim() || null,
+          latitude: editing.latitude === "" ? null : Number(editing.latitude),
+          longitude: editing.longitude === "" ? null : Number(editing.longitude),
+          isActive: editing.isActive,
+          reason: editing.reason,
+        });
+      } else if (editing.type === "courses") {
+        await updateAcademicCourse(editing.id, { name: editing.name, category: editing.category, duration: Number(editing.duration), reason: editing.reason });
+      } else {
+        await updateAcademicUnit(editing.id, { name: editing.name, reason: editing.reason });
+      }
+      setNotice(`${editing.name} was updated. Linked student and learning records keep the same database relationship.`);
+      setEditing(null);
+      await onRefresh();
+    } catch (requestError) {
+      setError(requestError.message || "The academic record could not be updated.");
+    } finally {
+      setIsSaving(false);
+    }
+  }
+
+  const studentSummary = (record) => {
+    const count = record._count?.students || 0;
+    const names = (record.students || []).map((student) => `${student.firstName} ${student.lastName}`.trim()).join(", ");
+    return names ? `${count} student${count === 1 ? "" : "s"} · ${names}${count > (record.students || []).length ? "…" : ""}` : `${count} student${count === 1 ? "" : "s"}`;
+  };
+
+  return <Panel title="Academic Data" eyebrow="Registration-created catalog records" actions={<button className="super-admin-secondary-btn" type="button" onClick={onRefresh}>Refresh catalog</button>}>
+    <p className="super-admin-boundary-note">Students can add a missing institution or course during registration, and contributors can introduce units through Learn resources. Review and correct those database records here; edits retain all linked students and resources.</p>
+    {notice ? <p className="super-admin-catalog-notice" role="status">{notice}</p> : null}
+    {error ? <p className="super-admin-error" role="alert">{error}</p> : null}
+    <section className="super-admin-metrics-grid compact">
+      <MetricTile label="Institutions & campuses" value={catalog?.campuses?.length} />
+      <MetricTile label="Courses" value={catalog?.courses?.length} />
+      <MetricTile label="Units" value={catalog?.units?.length} />
+    </section>
+    <div className="super-admin-catalog-toolbar">
+      <nav className="super-admin-kyc-filters" aria-label="Academic catalog sections">
+        {ACADEMIC_CATALOG_SECTIONS.map((item) => <button type="button" key={item.id} className={section === item.id ? "is-active" : ""} onClick={() => { setSection(item.id); setQuery(""); setEditing(null); }}>{item.label}</button>)}
+      </nav>
+      <label><span className="sr-only">Search academic data</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder={`Search ${section === "campuses" ? "institutions or campuses" : section}`} /></label>
+    </div>
+    <div className="super-admin-table-wrap">
+      <table className="super-admin-table super-admin-catalog-table">
+        <thead><tr>{section === "campuses" ? <><th>Institution</th><th>Location</th><th>Status</th><th>Linked records</th></> : section === "courses" ? <><th>Course</th><th>Category</th><th>Duration</th><th>Linked students</th></> : <><th>Unit</th><th>Normalized key</th><th>Learning resources</th></>}<th>Action</th></tr></thead>
+        <tbody>
+          {visibleRecords.map((record) => <tr key={record.id}>
+            {section === "campuses" ? <><td><strong>{record.name}</strong><span>{record.branch || "No branch specified"}</span></td><td>{record.city}<span>{record.locationLabel || "No precise location"}</span></td><td><strong>{record.isActive ? "Active" : "Hidden"}</strong><span>{record.managedProfile ? `Public page: ${record.managedProfile.name}` : "No linked public page"}</span></td><td><strong>{studentSummary(record)}</strong></td></> : null}
+            {section === "courses" ? <><td><strong>{record.name}</strong></td><td>{record.category}</td><td>{record.duration} year{record.duration === 1 ? "" : "s"}</td><td><strong>{studentSummary(record)}</strong></td></> : null}
+            {section === "units" ? <><td><strong>{record.name}</strong></td><td>{record.normalizedName}</td><td>{record._count?.resources || 0} resource{record._count?.resources === 1 ? "" : "s"}</td></> : null}
+            <td><button type="button" onClick={() => editRecord(section, record)}>Edit</button></td>
+          </tr>)}
+          {!visibleRecords.length ? <tr><td colSpan="5">No matching academic records.</td></tr> : null}
+        </tbody>
+      </table>
+    </div>
+    {editing ? <div className="super-admin-assignment-editor super-admin-catalog-editor">
+      <header><div><span>Edit {editing.type === "campuses" ? "institution or campus" : editing.type === "courses" ? "course" : "unit"}</span><h3>{editing.name}</h3></div><button type="button" onClick={() => setEditing(null)}>Close</button></header>
+      <form className="super-admin-assignment-form super-admin-catalog-edit-form" onSubmit={saveRecord}>
+        <label><span>Name</span><input required minLength="2" value={editing.name} onChange={(event) => updateEditing("name", event.target.value)} /></label>
+        {editing.type === "campuses" ? <>
+          <label><span>Branch or campus</span><input value={editing.branch} onChange={(event) => updateEditing("branch", event.target.value)} placeholder="Optional" /></label>
+          <label><span>City</span><input required value={editing.city} onChange={(event) => updateEditing("city", event.target.value)} /></label>
+          <label><span>Full location</span><input value={editing.locationLabel} onChange={(event) => updateEditing("locationLabel", event.target.value)} placeholder="Optional" /></label>
+          <label><span>Latitude</span><input type="number" step="any" min="-90" max="90" value={editing.latitude} onChange={(event) => updateEditing("latitude", event.target.value)} /></label>
+          <label><span>Longitude</span><input type="number" step="any" min="-180" max="180" value={editing.longitude} onChange={(event) => updateEditing("longitude", event.target.value)} /></label>
+          <label><span>Registration visibility</span><select value={editing.isActive ? "active" : "hidden"} onChange={(event) => updateEditing("isActive", event.target.value === "active")}><option value="active">Active — students can select it</option><option value="hidden">Hidden — existing links remain</option></select></label>
+        </> : null}
+        {editing.type === "courses" ? <>
+          <label><span>Category</span><select value={editing.category} onChange={(event) => updateEditing("category", event.target.value)}><option value="STEM">STEM</option><option value="BUSINESS">Business</option><option value="COMMERCE">Commerce</option><option value="ARTS">Arts or humanities</option><option value="OTHER">Other</option></select></label>
+          <label><span>Duration</span><select value={editing.duration} onChange={(event) => updateEditing("duration", event.target.value)}>{Array.from({ length: 10 }, (_, index) => index + 1).map((years) => <option key={years} value={years}>{years} year{years === 1 ? "" : "s"}</option>)}</select></label>
+        </> : null}
+        <label className="is-wide"><span>Reason for change</span><textarea required minLength="3" value={editing.reason} onChange={(event) => updateEditing("reason", event.target.value)} placeholder="Recorded in the audit log" /></label>
+        <button type="submit" disabled={isSaving}>{isSaving ? "Saving…" : "Save academic record"}</button>
+      </form>
+    </div> : null}
   </Panel>;
 }
 
@@ -454,12 +757,13 @@ function SuperAdminPage() {
         safety: readSuperAdminSafetyMetrics,
         content: readSuperAdminContent,
         ads: listZumbarlAds,
+        catalog: readAcademicCatalog,
         configuration: readSuperAdminConfiguration,
         analytics: readSuperAdminAnalytics,
         audit: readSuperAdminAuditLogs,
       };
-      if (moduleId === "accounts" || moduleId === "pages") {
-        const response = await listSuperAdminAccounts("?pageSize=25");
+      if (moduleId === "accounts" || moduleId === "pages" || moduleId === "kyc") {
+        const response = await listSuperAdminAccounts(moduleId === "kyc" ? "?pageSize=100" : "?pageSize=25");
         setAccounts(response);
       } else if (loaders[moduleId]) {
         const response = await loaders[moduleId]();
@@ -580,6 +884,14 @@ function SuperAdminPage() {
           <AccountsPanel
             accounts={accounts}
             onRefresh={() => loadModule("accounts")}
+            onAction={performAction}
+          />
+        ) : null}
+
+        {activeModule === "kyc" ? (
+          <KycReviewPanel
+            accounts={accounts}
+            onRefresh={() => loadModule("kyc")}
             onAction={performAction}
           />
         ) : null}
@@ -728,6 +1040,9 @@ function SuperAdminPage() {
               This module intentionally does not expose individual report
               content.
             </p>
+            <Link className="super-admin-secondary-btn" to="/admin/student-care">
+              Open restricted Student Care workspace
+            </Link>
           </Panel>
         ) : null}
 
@@ -781,6 +1096,10 @@ function SuperAdminPage() {
 
         {activeModule === "pages" ? (
           <ManagedPagesPanel accounts={accounts} onAction={performAction} />
+        ) : null}
+
+        {activeModule === "catalog" ? (
+          <AcademicCatalogPanel catalog={activePayload} onRefresh={() => loadModule("catalog")} />
         ) : null}
 
         {activeModule === "configuration" ? (

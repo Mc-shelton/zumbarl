@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { Buffer } from 'node:buffer'
 import { ApiError, notFound } from '../../../lib/http.js'
 import { env } from '../../../config/env.js'
 import { emitRealtimeEvent } from '../../../lib/realtimeEvents.js'
@@ -260,12 +261,13 @@ async function submitPostForAnnouncementService(id: string, studentId: string | 
 }
 const listAnnouncementRequestsService = () => connectCommunityRepository.listAnnouncementRequests()
 async function decideAnnouncementRequestService(id: string, adminUserId: string | undefined, payload: Record<string, any>) { const post = await connectCommunityRepository.findPost(id) ?? notFound('Post'); if (post.announcementRequest?.status !== 'pending') throw new ApiError(409, 'This request is no longer pending', 'ANNOUNCEMENT_NOT_PENDING'); return connectCommunityRepository.updatePost(id, { announcementRequest: { ...post.announcementRequest, status: payload.decision, reviewNote: payload.note, reviewedAt: new Date().toISOString(), reviewedByUserId: adminUserId } }) }
-const createGroupService = (studentId: string | undefined, payload: Record<string, any>) => connectCommunityRepository.createGroup({ ...payload, ownerStudentId: studentId, status: 'active', walletBalance: 0 })
+const createGroupService = (studentId: string | undefined, payload: Record<string, any>) => connectCommunityRepository.createGroup({ ...payload, ownerStudentId: studentId, status: payload.category === 'support-circle' ? 'pending-review' : 'active', walletBalance: 0 })
 const listGroupsService = (query: Record<string, unknown>, studentId?: string) => connectCommunityRepository.listGroups(query, studentId)
 async function readSupportCircleService(id: string, studentId?: string) {
   const actor = requireStudentId(studentId)
   const group: any = await connectCommunityRepository.findGroupForViewer(id, actor) ?? notFound('Support circle')
   if (group.category !== 'support-circle') throw new ApiError(404, 'Support circle not found', 'NOT_FOUND')
+  if (group.status !== 'active' && group.ownerStudentId !== actor) throw new ApiError(404, 'Support circle not found', 'NOT_FOUND')
   const viewerCanManage = canManageSupportCircle(group, actor)
   const storedMessages = group.viewerMembership ? await connectCommunityRepository.listGroupMessages(id, actor) : []
   const messages = await withAudioParticipantCounts(storedMessages)
@@ -481,8 +483,8 @@ async function updateSupportCircleAudioPresenceService(id: string, studentId: st
   }
 }
 async function readTagContextService(type: string, id: string) { return { type, entity: await connectCommunityRepository.findTagEntity(type, id) } }
-async function joinGroupService(id: string, studentId: string | undefined, payload: Record<string, any> = {}) { await connectCommunityRepository.findGroup(id) ?? notFound('Group'); return connectCommunityRepository.createMembership({ groupId: id, studentId, status: 'active', role: 'member', ...payload }) }
-async function contributeToChamaService(id: string, studentId: string | undefined, payload: Record<string, any>) { return await connectCommunityRepository.contributeToChama(id, studentId, payload) ?? notFound('Group') }
+async function joinGroupService(id: string, studentId: string | undefined, payload: Record<string, any> = {}) { const group = await connectCommunityRepository.findGroup(id) ?? notFound('Group'); if (group.status !== 'active') throw new ApiError(409, 'This group is still awaiting review', 'GROUP_NOT_ACTIVE'); return connectCommunityRepository.createMembership({ groupId: id, studentId, status: 'active', role: 'member', ...payload }) }
+async function contributeToChamaService(id: string, studentId: string | undefined, payload: Record<string, any>) { return await connectCommunityRepository.contributeToChama(id, requireStudentId(studentId), payload) ?? notFound('Group') }
 
 export {
   listConnectFeedService,

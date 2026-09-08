@@ -92,9 +92,9 @@ export const DELIVERY_ESTIMATE = {
 }
 
 export const PAYMENT_SUMMARY = {
-  method: 'Card Payment',
-  card: 'Select a payment method',
-  brand: 'PAY',
+  method: 'Zumbarl Wallet',
+  card: 'Balance checked when placing order',
+  brand: 'WALLET',
 }
 
 export const ORDER_ID = ''
