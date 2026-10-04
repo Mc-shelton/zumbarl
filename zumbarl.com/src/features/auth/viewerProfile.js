@@ -12,15 +12,21 @@ import {
 import { normalizeZumbarlFileUrl } from '../../lib/normalizeZumbarlFileUrl'
 
 const STUDENT_VIEWER = {
-  name: 'Zumbarl Student',
-  avatar: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-  role: 'Student',
+  name: 'Student account',
+  avatar: '/assets/index/bee_nobg.png',
+  role: 'Student account',
 }
 
 const BUSINESS_VIEWER = {
   name: 'Your Business',
   avatar: '/assets/index/bee_nobg.png',
   role: 'Business Account',
+}
+
+const ACCOUNT_VIEWER = {
+  name: 'Account',
+  avatar: '/assets/index/bee_nobg.png',
+  role: 'Signed out',
 }
 
 function createInitials(name = '') {
@@ -73,12 +79,15 @@ function getRealViewerDetails(roleSide) {
       || user?.avatar,
     ),
     campus: authSnapshot?.student?.campus,
+    gender: authSnapshot?.student?.gender,
   })
 }
 
 function getCurrentViewerProfile(override = {}) {
   const role = getCurrentLoginRole()
-  const baseViewer = role.side === 'company' ? BUSINESS_VIEWER : STUDENT_VIEWER
+  const baseViewer = role.side === 'company'
+    ? BUSINESS_VIEWER
+    : role.side === 'student' ? STUDENT_VIEWER : ACCOUNT_VIEWER
   const realDetails = getRealViewerDetails(role.side)
   const viewer = {
     ...baseViewer,

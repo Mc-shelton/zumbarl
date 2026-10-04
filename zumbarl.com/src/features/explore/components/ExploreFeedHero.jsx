@@ -38,17 +38,18 @@ function ExploreFeedHero({
 
       <header className="explore-campus-feed-hero-head">
         <div>
+          <span className="explore-campus-feed-eyebrow">Campus pulse</span>
           <h1>Explore Campus</h1>
           <p>
             {isHome
-              ? 'Catch up with your people, discover what is happening, and turn campus connections into real opportunities.'
-              : 'Discover stories, people, groups, and campus moments beyond the accounts you already follow.'}
+              ? 'See what’s happening, find your people, and turn campus moments into opportunities.'
+              : 'Find your people, campus moments, and new opportunities.'}
           </p>
         </div>
         <div className="explore-campus-feed-hero-actions">
           <button type="button" className="explore-campus-ghost-btn" onClick={onPrepareProfile}>
             <FiSliders aria-hidden="true" />
-            Tune my feed
+            Tune feed
           </button>
         </div>
       </header>
@@ -59,10 +60,14 @@ function ExploreFeedHero({
             {filter}
           </button>
         ))}
+        <button type="button" className="explore-campus-tune-tab" onClick={onPrepareProfile}>
+          <FiSliders aria-hidden="true" />
+          Tune
+        </button>
       </nav>
 
       <section className={`explore-campus-stories${areStoriesVisible ? '' : ' is-hidden'}`} aria-label="Stories">
-        <header className="explore-story-directory-head"><h2>Stories</h2><nav aria-label="Story categories">{[['all', 'All'], ['people', 'People'], ['pages', 'Pages'], ['groups', 'Groups'], ['libraries', 'Libraries']].map(([id, label]) => <button type="button" key={id} className={storyFilter === id ? 'is-active' : ''} onClick={() => setStoryFilter(id)}>{label}</button>)}</nav></header>
+        <header className="explore-story-directory-head"><h2>Campus stories <span>24h</span></h2><nav aria-label="Story categories">{[['all', 'All'], ['people', 'People'], ['pages', 'Pages'], ['groups', 'Groups'], ['libraries', 'Libraries']].map(([id, label]) => <button type="button" key={id} className={storyFilter === id ? 'is-active' : ''} onClick={() => setStoryFilter(id)}>{label}</button>)}</nav></header>
         <div className="explore-campus-stories-row">
           <button type="button" className="explore-campus-story-item explore-campus-story-add" onClick={onPublishStory} aria-label="Add a story">
             <div className="explore-campus-story-avatar is-own"><span className="explore-campus-story-add-icon">+</span><span className="explore-campus-story-plus">+</span></div>

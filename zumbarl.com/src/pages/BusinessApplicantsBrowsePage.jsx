@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react'
 import {
   FiArrowRight,
   FiBriefcase,
@@ -23,227 +24,79 @@ import {
   BROWSE_RELATIONSHIP_FILTERS,
   useBusinessBrowseStudents,
 } from '../features/business/hooks/useBusinessBrowseStudents'
+import { listBusinessTalent } from '../features/business/services/readBusinessDashboard'
 import '../styles/campus.css'
 import '../styles/business.css'
 
-const STUDENT_SERVICES = [
-  {
-    id: 'service-social-pack',
-    title: 'Social campaign content pack',
-    student: 'Wanjiru M.',
-    meta: 'Reels, stories, captions and Canva source files',
-    price: 'from KES 8,500',
-    image: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp',
-    tags: ['Social Media', 'Canva', 'Fast turnaround'],
-  },
-  {
-    id: 'service-landing-page',
-    title: 'Landing page UI audit',
-    student: 'Brian Otieno',
-    meta: 'UX review, wireframe notes and conversion fixes',
-    price: 'from KES 12,000',
-    image: '/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp',
-    tags: ['UI/UX', 'Figma', 'Conversion'],
-  },
-  {
-    id: 'service-video-edit',
-    title: 'Short-form video editing sprint',
-    student: 'Study With Lynn',
-    meta: 'TikTok, Reels and YouTube Shorts edits',
-    price: 'from KES 6,000',
-    image: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-    tags: ['Video Editing', 'TikTok', 'Analytics'],
-  },
-]
-
 const BROWSE_CATEGORIES = [
-  { id: 'all', label: 'All Categories', count: 248, icon: FiUsers },
-  { id: 'design', label: 'Design & Creative', count: 44, icon: FiStar },
-  { id: 'development', label: 'Development', count: 38, icon: FiZap },
-  { id: 'marketing', label: 'Marketing', count: 52, icon: FiTrendingUp },
-  { id: 'writing', label: 'Writing & Content', count: 31, icon: FiBriefcase },
-  { id: 'video', label: 'Video & Animation', count: 29, icon: FiCheckCircle },
+  { id: 'all', label: 'All Categories', icon: FiUsers },
+  { id: 'design', label: 'Design & Creative', icon: FiStar },
+  { id: 'development', label: 'Development', icon: FiZap },
+  { id: 'marketing', label: 'Marketing', icon: FiTrendingUp },
+  { id: 'writing', label: 'Writing & Content', icon: FiBriefcase },
+  { id: 'video', label: 'Video & Animation', icon: FiCheckCircle },
 ]
 
-const PROFILE_STORIES = [
-  {
-    id: 'story-aisha',
-    student: 'Aisha Mwangi',
-    handle: '@aisha_creates',
-    role: 'Brand content creator',
-    location: 'Nairobi, Kenya',
-    availability: 'Available',
-    bio: 'Content creator helping brands communicate clearly with campus audiences.',
-    tags: ['Social Media', 'Canva', 'Copywriting', '+2'],
-    story: 'Completed 3 campaigns with Zetech Studios and kept revision cycles under 24 hours.',
-    image: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp',
-    profileImage: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp',
-    status: 'New',
-  },
-  {
-    id: 'story-kevin',
-    student: 'Kevin The Creator',
-    handle: '@kevinthego',
-    role: 'TikTok creator',
-    location: 'Nairobi, Kenya',
-    availability: 'Available',
-    bio: 'Short-form creator and developer building clean product demos for businesses.',
-    tags: ['TikTok', 'Video Editing', 'React', '+2'],
-    story: 'Moved from applicant to repeat collaborator after a high-performing launch video.',
-    image: '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
-    profileImage: '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
-    status: 'Repeat',
-  },
-  {
-    id: 'story-grace',
-    student: 'Grace Wanjiku',
-    handle: '@grace.launch',
-    role: 'Launch assistant',
-    location: 'Mombasa, Kenya',
-    availability: 'Available soon',
-    bio: 'Launch assistant with strong proof collection, reporting and client communication.',
-    tags: ['Activation', 'Reporting', 'Proof', '+1'],
-    story: 'Strong delivery on hybrid workflows with clean proof, files and performance notes.',
-    image: '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp',
-    profileImage: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-    status: 'Reviewed',
-  },
-]
+const DEFAULT_STUDENT_IMAGE = '/assets/index/bee_nobg.png'
 
-const STUDENT_GROUPS = [
-  {
-    id: 'worked-before',
-    title: 'Worked With Before',
-    description: 'Students who already have relationship history, reviews or delivery proof with your company.',
-    icon: FiCheckCircle,
-    students: [
-      {
-        id: 'aisha-mwangi',
-        name: 'Aisha Mwangi',
-        handle: '@aisha_creates',
-        headline: 'Social media creator · Kenyatta University',
-        location: 'Nairobi, Kenya',
-        bio: 'Social media creator helping brands communicate clearly with campus audiences.',
-        status: 'Worked with you',
-        score: '82',
-        match: '96% match',
-        availability: 'Available this week',
-        image: '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp',
-        feature: 'Campus brand launch story',
-        featureMeta: '0:45',
-        tags: ['Social Media', 'Copywriting', 'Canva'],
-        services: ['Content calendar · KES 5,000', 'Reels pack · KES 8,500'],
-        tone: 'green',
-      },
-      {
-        id: 'kevin-creator',
-        name: 'Kevin The Creator',
-        handle: '@kevinthego',
-        headline: 'Video storyteller · USIU Africa',
-        location: 'Nairobi, Kenya',
-        bio: 'Full-stack developer and creator building modern web demos and launch content.',
-        status: 'Repeat',
-        score: '78',
-        match: '91% match',
-        availability: 'Open to interviews',
-        image: '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp',
-        feature: 'TikTok product demo reel',
-        featureMeta: '0:38',
-        tags: ['TikTok', 'Video Editing', 'Campus Events'],
-        services: ['Video edit · KES 6,000', 'Launch reel · KES 9,000'],
-        tone: 'purple',
-      },
-    ],
-  },
-  {
-    id: 'best-matches',
-    title: 'Best Matches For Your Opportunities',
-    description: 'Students whose skills, availability and portfolio align with your active briefs.',
-    icon: FiStar,
-    students: [
-      {
-        id: 'wanjiru-m',
-        name: 'Wanjiru M.',
-        handle: '@wanjiru_creates',
-        headline: 'Instagram creator · Nairobi, Kenya',
-        location: 'Nairobi, Kenya',
-        bio: 'UI/UX designer passionate about creating beautiful, user-centered digital experiences.',
-        status: 'New',
-        score: '74',
-        match: '94% match',
-        availability: 'Shortlist ready',
-        image: '/assets/index/business_page_images/optimized/cowomen-ZKHksse8tUU-unsplash.webp',
-        feature: 'Instagram growth process',
-        featureMeta: '0:52',
-        tags: ['Instagram', 'Analytics', 'Brand Voice'],
-        services: ['Social audit · KES 4,500', 'Content pack · KES 8,500'],
-        tone: 'blue',
-      },
-      {
-        id: 'study-with-lynn',
-        name: 'Study With Lynn',
-        handle: '@studywithlynn',
-        headline: 'Education creator · Marketing & Design',
-        location: 'Nakuru, Kenya',
-        bio: 'Content writer and researcher helping brands communicate clearly and effectively.',
-        status: 'New',
-        score: '77',
-        match: '89% match',
-        availability: 'Available in 3 days',
-        image: '/assets/index/business_page_images/optimized/reza-permadi-7SkqWc6VsZ4-unsplash.webp',
-        feature: 'Education content sprint',
-        featureMeta: '0:41',
-        tags: ['Education', 'Short-form Video', 'Reporting'],
-        services: ['Script pack · KES 3,500', 'Shorts edit · KES 6,000'],
-        tone: 'green',
-      },
-    ],
-  },
-  {
-    id: 'rising',
-    title: 'Rising Students',
-    description: 'Newer talent with strong response speed, portfolio quality and campus engagement signals.',
-    icon: FiTrendingUp,
-    students: [
-      {
-        id: 'mindset-mentor',
-        name: 'Mindset Mentor',
-        handle: '@mindset.mentor',
-        headline: 'Wellness and campus growth creator',
-        location: 'Mombasa, Kenya',
-        bio: 'Digital marketer helping brands grow their presence and reach the right audience.',
-        status: 'Rising',
-        score: '69',
-        match: '83% match',
-        availability: 'Needs first interview',
-        image: '/assets/index/business_page_images/optimized/0xk-y5n-nhkRd7U-unsplash.webp',
-        feature: 'Wellness content series',
-        featureMeta: '0:50',
-        tags: ['Wellness', 'TikTok', 'Community'],
-        services: ['Community post set · KES 4,000', 'TikTok idea bank · KES 5,500'],
-        tone: 'orange',
-      },
-      {
-        id: 'campus-talks',
-        name: 'Campus Talks KE',
-        handle: '@campustalks.ke',
-        headline: 'Campus news and activation team',
-        location: 'Eldoret, Kenya',
-        bio: 'Campus activation team creating event stories, proof and brand visibility.',
-        status: 'Team',
-        score: '72',
-        match: '87% match',
-        availability: 'Team available',
-        image: '/assets/index/business_page_images/optimized/annie-spratt-hCb3lIB8L8E-unsplash.webp',
-        feature: 'Campus activation recap',
-        featureMeta: '0:28',
-        tags: ['Activation', 'Events', 'YouTube'],
-        services: ['Event recap · KES 10,000', 'Campus activation · KES 15,000'],
-        tone: 'purple',
-      },
-    ],
-  },
-]
+function formatServicePrice(service) {
+  const amount = Number(service.priceAmount)
+  if (!Number.isFinite(amount)) return 'Price on request'
+  return new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency: service.currency || 'KES',
+    maximumFractionDigits: 0,
+  }).format(amount)
+}
+
+function toBrowseStudent(student) {
+  const portfolio = student.portfolio || []
+  const services = student.services || []
+  return {
+    ...student,
+    availability: student.availability || 'Availability not set',
+    bio: student.bio || 'This student has not added a bio yet.',
+    feature: portfolio[0]?.title || 'View student profile',
+    featureMeta: portfolio.length
+      ? `${portfolio.length} published portfolio item${portfolio.length === 1 ? '' : 's'}`
+      : 'Profile',
+    image: student.image || portfolio[0]?.image || DEFAULT_STUDENT_IMAGE,
+    location: student.location || 'Location not set',
+    match: `${Number(student.match || 0)}% match`,
+    services: services.map((service) => `${service.title} · ${formatServicePrice(service)}`),
+    tags: student.tags || [],
+  }
+}
+
+function buildStudentGroups(students) {
+  const normalized = students.map(toBrowseStudent)
+  const workedBefore = normalized.filter((student) => ['Worked with you', 'Repeat'].includes(student.status))
+  const newStudents = normalized.filter((student) => !['Worked with you', 'Repeat'].includes(student.status))
+
+  return [
+    {
+      id: 'worked-before',
+      title: 'Worked With Before',
+      description: 'Students with delivery history recorded for your company.',
+      icon: FiCheckCircle,
+      students: workedBefore,
+    },
+    {
+      id: 'best-matches',
+      title: 'Best Matches For Your Opportunities',
+      description: 'Available students ranked from current profile, skills, and company relationship signals.',
+      icon: FiStar,
+      students: newStudents.filter((student) => Number(student.score) >= 70),
+    },
+    {
+      id: 'rising',
+      title: 'Rising Students',
+      description: 'New talent building profile strength, services, and published portfolio work.',
+      icon: FiTrendingUp,
+      students: newStudents.filter((student) => Number(student.score) < 70),
+    },
+  ].filter((group) => group.students.length)
+}
 
 function BusinessBrowseProfileSummary({
   availability,
@@ -277,9 +130,11 @@ function BusinessBrowseProfileSummary({
 }
 
 function BusinessStudentCard({ student }) {
+  const profileHref = `/business/applicant-profile/${encodeURIComponent(student.id)}`
+
   return (
     <article className="business-browse-student-card">
-      <Link className="business-browse-student-media" to="/business/applicant-profile">
+      <Link className="business-browse-student-media" to={profileHref}>
         <img src={student.image} alt="" />
         <span>Story</span>
         <strong>{student.feature}</strong>
@@ -307,7 +162,7 @@ function BusinessStudentCard({ student }) {
             <div><dt>Score</dt><dd>{student.score}</dd></div>
             <div><dt>Availability</dt><dd>{student.availability}</dd></div>
           </dl>
-          <Link to="/business/applicant-profile">
+          <Link to={profileHref}>
             View profile
             <FiArrowRight aria-hidden="true" />
           </Link>
@@ -321,10 +176,51 @@ function BusinessApplicantsBrowsePage() {
   const [searchParams] = useSearchParams()
   const sourceCampaignId = searchParams.get('campaignId') || ''
   const sourceCampaignTitle = searchParams.get('campaignTitle') || ''
-  const browse = useBusinessBrowseStudents(STUDENT_GROUPS, {
+  const [students, setStudents] = useState([])
+  const [talentError, setTalentError] = useState('')
+  const [isTalentLoading, setIsTalentLoading] = useState(true)
+  const [reloadKey, setReloadKey] = useState(0)
+  const studentGroups = useMemo(() => buildStudentGroups(students), [students])
+  const promotedServices = useMemo(() => students.flatMap((student) => (
+    (student.services || []).map((service) => ({
+      ...service,
+      image: student.image || student.portfolio?.[0]?.image || DEFAULT_STUDENT_IMAGE,
+      meta: student.bio || student.headline || 'Student service',
+      profileHref: `/business/applicant-profile/${encodeURIComponent(student.id)}`,
+      student: student.name,
+      tags: student.tags || [],
+    }))
+  )).slice(0, 6), [students])
+  const profileStories = useMemo(() => students.flatMap((student) => (
+    (student.portfolio || []).map((portfolio) => ({
+      ...student,
+      id: portfolio.id,
+      image: portfolio.image || student.image || DEFAULT_STUDENT_IMAGE,
+      profileHref: `/business/applicant-profile/${encodeURIComponent(student.id)}`,
+      profileImage: student.image || DEFAULT_STUDENT_IMAGE,
+      role: student.headline || 'Student creator',
+      story: portfolio.description || portfolio.title,
+    }))
+  )).slice(0, 6), [students])
+  const browse = useBusinessBrowseStudents(studentGroups, {
     categoryId: searchParams.get('category') || 'all',
     quickFilters: searchParams.getAll('quick'),
   })
+
+  useEffect(() => {
+    let isMounted = true
+    listBusinessTalent()
+      .then((response) => {
+        if (isMounted) setStudents(Array.isArray(response?.data) ? response.data : [])
+      })
+      .catch((error) => {
+        if (isMounted) setTalentError(error.message || 'Students could not be loaded.')
+      })
+      .finally(() => {
+        if (isMounted) setIsTalentLoading(false)
+      })
+    return () => { isMounted = false }
+  }, [reloadKey])
 
   return (
     <main className="campus-page business-workspace-page business-applicants-browse-page">
@@ -353,6 +249,19 @@ function BusinessApplicantsBrowsePage() {
               primaryActionHref="/business/opportunities/create"
               primaryActionLabel="Create Opportunity"
             />
+
+            {isTalentLoading ? (
+              <section className="business-profile-card" aria-live="polite">
+                <p>Loading live student profiles…</p>
+              </section>
+            ) : null}
+            {talentError ? (
+              <section className="business-profile-card" role="alert">
+                <h2>Student profiles are unavailable</h2>
+                <p>{talentError}</p>
+                <button type="button" className="business-link-btn" onClick={() => { setIsTalentLoading(true); setTalentError(''); setReloadKey((value) => value + 1) }}>Try again</button>
+              </section>
+            ) : null}
 
             {sourceCampaignId ? (
               <section className="business-profile-card business-browse-campaign-context">
@@ -444,17 +353,18 @@ function BusinessApplicantsBrowsePage() {
                 <Link to="/business/services" className="business-link-btn">Browse services</Link>
               </header>
               <div>
-                {STUDENT_SERVICES.map((service) => (
+                {promotedServices.map((service) => (
                   <article key={service.id}>
                     <img src={service.image} alt="" />
                     <div>
-                      <h3>{service.title}</h3>
+                      <h3><Link to={service.profileHref}>{service.title}</Link></h3>
                       <p>{service.student} · {service.meta}</p>
-                      <strong>{service.price}</strong>
-                      <div>{service.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
+                      <strong>{formatServicePrice(service)}</strong>
+                      <div>{service.tags.slice(0, 4).map((tag) => <span key={tag}>{tag}</span>)}</div>
                     </div>
                   </article>
                 ))}
+                {!isTalentLoading && !talentError && !promotedServices.length ? <p>No students have published active services yet.</p> : null}
               </div>
             </section>
 
@@ -467,8 +377,8 @@ function BusinessApplicantsBrowsePage() {
                 <button type="button" className="business-workspace-filter">Recent stories</button>
               </header>
               <div>
-                {PROFILE_STORIES.map((story) => (
-                  <Link key={story.id} to="/business/applicant-profile">
+                {profileStories.map((story) => (
+                  <Link key={story.id} to={story.profileHref}>
                     <img src={story.image} alt="" />
                     <span>{story.role}</span>
                     <BusinessBrowseProfileSummary
@@ -477,13 +387,14 @@ function BusinessApplicantsBrowsePage() {
                       handle={story.handle}
                       image={story.profileImage}
                       location={story.location}
-                      name={story.student}
+                      name={story.name}
                       status={story.status}
                       tags={story.tags}
                     />
                     <strong>{story.story}</strong>
                   </Link>
                 ))}
+                {!isTalentLoading && !talentError && !profileStories.length ? <p>No published portfolio stories are available yet.</p> : null}
               </div>
             </section>
 
@@ -501,7 +412,7 @@ function BusinessApplicantsBrowsePage() {
                           <p>{group.description}</p>
                         </div>
                       </div>
-                      <Link to="/business/applicant-profile" className="business-link-btn">View group</Link>
+                      <span>{group.students.length} student{group.students.length === 1 ? '' : 's'}</span>
                     </header>
                     <div>
                       {group.students.map((student) => <BusinessStudentCard key={student.id} student={student} />)}
@@ -509,7 +420,7 @@ function BusinessApplicantsBrowsePage() {
                   </section>
                 )
               })}
-              {!browse.visibleGroups.length ? (
+              {!isTalentLoading && !talentError && !browse.visibleGroups.length ? (
                 <section className="business-profile-card business-browse-group-card" aria-live="polite">
                   <header>
                     <div>

@@ -25,11 +25,18 @@ function readLearnExperience() {
   }))
 }
 
-function createRoadmap(ladderId, intent) {
+function createRoadmap(ladderOrPayload, intent) {
+  const payload = typeof ladderOrPayload === 'string' ? { ladderId: ladderOrPayload, intent } : ladderOrPayload
   return sendZumbarlApiRequest('/learn/roadmaps', {
     method: 'POST',
-    body: JSON.stringify({ ladderId, intent }),
+    body: JSON.stringify(payload),
   })
+}
+
+function searchLearningPaths(query = '') {
+  const params = new URLSearchParams()
+  if (query.trim()) params.set('q', query.trim())
+  return sendZumbarlApiRequest(`/learn/ladders${params.size ? `?${params}` : ''}`).then((payload) => payload?.data || [])
 }
 
 function readRoadmapEnrollment(enrollmentId) {
@@ -80,6 +87,24 @@ function updateRoadmapCoachingFocus(enrollmentId, skillIds, weeklyTarget) {
   return sendZumbarlApiRequest(`/learn/roadmaps/${encodeURIComponent(enrollmentId)}/coaching-focus`, {
     method: 'PATCH',
     body: JSON.stringify({ skillIds, weeklyTarget }),
+  })
+}
+
+function refreshRoadmapResources(enrollmentId) {
+  return sendZumbarlApiRequest(`/learn/roadmaps/${encodeURIComponent(enrollmentId)}/resources/refresh`, { method: 'POST' })
+}
+
+function updateRoadmapResourceProgress(enrollmentId, resourceId, progressPercent) {
+  return sendZumbarlApiRequest(`/learn/roadmaps/${encodeURIComponent(enrollmentId)}/resources/${encodeURIComponent(resourceId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ progressPercent }),
+  })
+}
+
+function updateRoadmapResourceSelection(enrollmentId, resourceId, selected) {
+  return sendZumbarlApiRequest(`/learn/roadmaps/${encodeURIComponent(enrollmentId)}/resources/${encodeURIComponent(resourceId)}/selection`, {
+    method: 'PATCH',
+    body: JSON.stringify({ selected }),
   })
 }
 
@@ -227,6 +252,12 @@ function createKnowledgeResource(payload) {
   return sendZumbarlApiRequest('/learn/knowledge/resources', { method: 'POST', body: JSON.stringify(payload) })
 }
 
+function updateKnowledgeResource(resourceId, payload) {
+  return sendZumbarlApiRequest(`/learn/knowledge/resources/${encodeURIComponent(resourceId)}`, {
+    method: 'PATCH', body: JSON.stringify(payload),
+  })
+}
+
 function searchKnowledgeUnits(query) {
   return sendZumbarlApiRequest(`/learn/knowledge/units?q=${encodeURIComponent(query || '')}`)
 }
@@ -306,6 +337,7 @@ export {
   readRoadmapEnrollment,
   readRoadmapCoachingPlan,
   readRoadmapRecommendations,
+  refreshRoadmapResources,
   removeKnowledgeManager,
   purchaseKnowledgeResource,
   recordKnowledgeResourceDownload,
@@ -318,13 +350,17 @@ export {
   searchKnowledgeUnits,
   submitLearningPractice,
   submitRoadmapEvidence,
+  searchLearningPaths,
   takeDownKnowledgeSpacePost,
   setKnowledgeSpaceFollowing,
   setKnowledgeSpaceMembership,
   setKnowledgeRoomMembership,
   updateKnowledgeSpace,
+  updateKnowledgeResource,
   updateKnowledgeSpacePost,
   updateKnowledgeRoom,
   updateRoadmapCoachingFocus,
+  updateRoadmapResourceProgress,
+  updateRoadmapResourceSelection,
   verifyRoadmap,
 }

@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  FiMessageCircle,
   FiMessageSquare,
   FiPhone,
+  FiSearch,
   FiSend,
-  FiSettings,
   FiUsers,
   FiVideo,
 } from 'react-icons/fi'
@@ -17,19 +18,35 @@ import {
   sendProjectGroupMessage,
 } from '../services/messageService'
 import { playCallRingtone, playMessageSentSound } from '../../communications/services/communicationSounds'
+import { useViewerProfile } from '../../auth/viewerProfile'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
-import '../../../styles/business.css'
-
-const FALLBACK_AVATAR = '/assets/index/bee_nobg.png'
+import '../../../styles/messages.css'
 
 function avatarSource(value) {
-  return normalizeZumbarlFileUrl(value) || FALLBACK_AVATAR
+  return normalizeZumbarlFileUrl(value)
+}
+
+function formatTime(value) {
+  const date = value ? new Date(value) : null
+  return date && Number.isFinite(date.getTime())
+    ? date.toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit' })
+    : ''
+}
+
+function conversationTime(value) {
+  if (!value) return ''
+  const date = new Date(value)
+  if (!Number.isFinite(date.getTime())) return ''
+  return date.toDateString() === new Date().toDateString()
+    ? formatTime(value)
+    : date.toLocaleDateString('en-KE', { month: 'short', day: 'numeric' })
 }
 
 // The project conversation, shared by the business review workspace and the
 // student project workspace. Both sides talk in the same thread, so both must
 // render it from the same component rather than one real view and one mock.
 function ProjectConversationPanel({ conversation = null, opportunity = null, participants = [], projectId = null }) {
+  const viewerProfile = useViewerProfile()
   const [activeCall, setActiveCall] = useState(null)
   const [callMessage, setCallMessage] = useState('')
   const [conversations, setConversations] = useState([])
@@ -43,6 +60,7 @@ function ProjectConversationPanel({ conversation = null, opportunity = null, par
   const [loadedConversationId, setLoadedConversationId] = useState('')
   const [loadedGroupId, setLoadedGroupId] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const chatBodyRef = useRef(null)
   const opportunityId = conversation?.opportunityId || opportunity?.backendId || null
   const groupConversationId = projectId ? `project-group:${projectId}` : ''
   const preferredConversationId = conversation
@@ -99,6 +117,14 @@ function ProjectConversationPanel({ conversation = null, opportunity = null, par
     if (!query) return true
     return `${item.participant.name || ''} ${item.latestMessage?.body || ''}`.toLowerCase().includes(query)
   })
+
+  useEffect(() => {
+    if (isLoadingMessages || !chatBodyRef.current) return undefined
+    const frameId = window.requestAnimationFrame(() => {
+      chatBodyRef.current?.scrollTo({ top: chatBodyRef.current.scrollHeight, behavior: 'smooth' })
+    })
+    return () => window.cancelAnimationFrame(frameId)
+  }, [activeConversation?.id, displayedMessages.length, isLoadingMessages])
 
   const loadOpportunityConversations = useCallback(async (preferredId = preferredConversationId) => {
     const response = await listConversations()
@@ -225,26 +251,40 @@ function ProjectConversationPanel({ conversation = null, opportunity = null, par
     if (!activeCall?.id || activeCall.status !== 'ringing') return undefined
     playCallRingtone()
     const ringtoneIntervalId = window.setInterval(playCallRingtone, 2200)
-    const intervalId = window.setInterval(async () => {
+
+    const applyCallStatus = (status) => {
+      const nextCall = { ...activeCall, status }
+      if (status === 'accepted') {
+        setActiveCall(null)
+        setCallMessage('')
+        openCallOverlay(nextCall)
+      } else if (status !== 'ringing') {
+        setActiveCall(null)
+        setCallMessage(`Call ${status}.`)
+      }
+    }
+    const handleCallUpdate = (event) => {
+      if (event.detail?.id === activeCall.id) applyCallStatus(event.detail.status)
+    }
+    const reconcileCall = async () => {
       try {
         const call = await readCall(activeCall.id)
-        setActiveCall(call)
-        if (call.status === 'accepted') {
-          setActiveCall(null)
-          setCallMessage('')
-          openCallOverlay(call)
-        } else if (call.status !== 'ringing') {
-          setCallMessage(`Call ${call.status}.`)
-        }
+        applyCallStatus(call.status)
       } catch (error) {
         setCallMessage(error.message)
       }
-    }, 1500)
+    }
+    const expiryDelay = Math.max(0, new Date(activeCall.expiresAt).getTime() - Date.now())
+    const expiryTimeoutId = window.setTimeout(() => applyCallStatus('missed'), expiryDelay)
+    window.addEventListener('zumbarl:call-updated', handleCallUpdate)
+    window.addEventListener('zumbarl:realtime-connected', reconcileCall)
     return () => {
       window.clearInterval(ringtoneIntervalId)
-      window.clearInterval(intervalId)
+      window.clearTimeout(expiryTimeoutId)
+      window.removeEventListener('zumbarl:call-updated', handleCallUpdate)
+      window.removeEventListener('zumbarl:realtime-connected', reconcileCall)
     }
-  }, [activeCall?.id, activeCall?.status])
+  }, [activeCall])
 
   async function startCall(callType) {
     if (!activeConversation?.participant?.id || activeConversation.isGroup) {
@@ -302,98 +342,128 @@ function ProjectConversationPanel({ conversation = null, opportunity = null, par
   }
 
   return (
-    <section className="business-review-messages-grid">
-      <aside className="business-review-message-list">
-        <h3>Project messages</h3>
-        <label>
-          <FiMessageSquare aria-hidden="true" />
-          <input
-            type="search"
-            value={conversationQuery}
-            placeholder="Search conversations"
-            onChange={(event) => setConversationQuery(event.target.value)}
-          />
-        </label>
-        {visibleConversations.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            className={item.id === activeConversation?.id ? 'is-active' : ''}
-            onClick={() => setActiveConversationId(item.id)}
-          >
-            {item.isGroup ? (
-              <span className="business-review-group-avatar"><FiUsers aria-hidden="true" /></span>
-            ) : <img src={avatarSource(item.participant.avatarUrl)} alt="" />}
-            <span>
-              <strong>{item.participant.name}</strong>
-              <em>{item.latestMessage?.body || (item.isGroup ? 'Start the group conversation' : 'Start a conversation')}</em>
-            </span>
-            {item.unreadCount ? <small>{item.unreadCount}</small> : null}
-          </button>
-        ))}
-        {isLoadingConversations ? <p>Loading project conversations…</p> : null}
-        {!isLoadingConversations && !visibleConversations.length ? (
-          <p>{availableConversations.length ? 'No conversations match your search.' : 'No project participants are available yet.'}</p>
-        ) : null}
+    <section className="messages-workspace project-messages-workspace">
+      <aside className="messages-conversations" aria-label="Project conversations">
+        <div className="messages-search-row project-messages-search-row">
+          <label className="messages-search">
+            <FiSearch aria-hidden="true" />
+            <input
+              type="search"
+              value={conversationQuery}
+              placeholder="Search conversations"
+              onChange={(event) => setConversationQuery(event.target.value)}
+            />
+          </label>
+        </div>
+        <div className="messages-conversation-list">
+          {visibleConversations.map((item) => {
+            const avatar = avatarSource(item.participant.avatarUrl)
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={`messages-conversation-row${item.id === activeConversation?.id ? ' is-active' : ''}`}
+                onClick={() => setActiveConversationId(item.id)}
+              >
+                <span className={`messages-avatar is-${item.isGroup ? 'group' : 'personal'}`}>
+                  {item.isGroup
+                    ? <FiUsers aria-hidden="true" />
+                    : avatar
+                      ? <img src={avatar} alt="" />
+                      : item.participant.name?.slice(0, 1) || '?'}
+                </span>
+                <span className="messages-conversation-copy">
+                  <span className="messages-conversation-title">
+                    <strong>{item.participant.name}</strong>
+                    <time dateTime={item.latestMessage?.createdAt}>{conversationTime(item.latestMessage?.createdAt)}</time>
+                  </span>
+                  <i className={`messages-kind-label is-${item.isGroup ? 'group' : 'personal'}`}>
+                    {item.isGroup ? item.participant.role : item.participant.role || 'Project participant'}
+                  </i>
+                  <small>{item.latestMessage?.body || (item.isGroup ? 'Start the group conversation' : 'Start a conversation')}</small>
+                </span>
+                {item.unreadCount ? <em aria-label={`${item.unreadCount} unread`}>{item.unreadCount > 99 ? '99+' : item.unreadCount}</em> : null}
+              </button>
+            )
+          })}
+          {isLoadingConversations ? <p className="project-messages-loading">Loading project conversations…</p> : null}
+          {!isLoadingConversations && !visibleConversations.length ? (
+            <div className="messages-empty-list">
+              <FiMessageCircle aria-hidden="true" />
+              <strong>{availableConversations.length ? 'No matching conversations' : 'No project conversations yet'}</strong>
+              <p>{availableConversations.length ? 'Try another name or message.' : 'Project participants will appear here when they join.'}</p>
+            </div>
+          ) : null}
+        </div>
       </aside>
 
       {activeConversation ? (
-        <section className="business-review-chat">
-          <header className={activeConversation.isGroup ? 'is-group' : ''}>
-            {activeConversation.isGroup ? (
-              <span className="business-review-group-avatar"><FiUsers aria-hidden="true" /></span>
-            ) : <img src={avatarSource(activeConversation.participant.avatarUrl)} alt="" />}
-            <div>
-              <h3>{activeConversation.participant.name || 'Student applicant'}</h3>
-              <p>{activeConversation.isGroup ? activeConversation.participant.role : opportunity?.title || 'Project conversation'}</p>
+        <section className="messages-thread">
+          <header>
+            <div className="messages-participant-link is-static">
+              <span className={`messages-avatar${activeConversation.isGroup ? ' is-group' : ''}`}>
+                {activeConversation.isGroup
+                  ? <FiUsers aria-hidden="true" />
+                  : avatarSource(activeConversation.participant.avatarUrl)
+                    ? <img src={avatarSource(activeConversation.participant.avatarUrl)} alt="" />
+                    : activeConversation.participant.name?.slice(0, 1) || '?'}
+              </span>
+              <span>
+                <h2>{activeConversation.participant.name || 'Project participant'}</h2>
+                <p>{activeConversation.isGroup ? activeConversation.participant.role : opportunity?.title || 'Project conversation'}</p>
+              </span>
             </div>
             {!activeConversation.isGroup ? (
-              <>
-                <button type="button" aria-label="Call" onClick={() => startCall('audio')}><FiPhone aria-hidden="true" /></button>
-                <button type="button" aria-label="Video call" onClick={() => startCall('video')}><FiVideo aria-hidden="true" /></button>
-              </>
-            ) : null}
-            <button type="button" aria-label="Thread info"><FiSettings aria-hidden="true" /></button>
-          </header>
-
-          <div className="business-review-chat-body">
-            {callMessage ? (
-              <div className="business-call-status" role="status">
-                <span>{callMessage}</span>
-                {activeCall?.status === 'ringing' ? <button type="button" onClick={stopCalling}>Cancel</button> : null}
+              <div className="messages-call-actions">
+                <button type="button" aria-label="Start audio call" onClick={() => startCall('audio')}><FiPhone aria-hidden="true" /></button>
+                <button type="button" aria-label="Start video call" onClick={() => startCall('video')}><FiVideo aria-hidden="true" /></button>
               </div>
             ) : null}
-            <p className="business-review-chat-start">
+          </header>
+
+          {callMessage ? (
+            <p className="messages-call-status" role="status">
+              <span>{callMessage}</span>
+              {activeCall?.status === 'ringing' ? <button type="button" onClick={stopCalling}>Cancel</button> : null}
+            </p>
+          ) : null}
+
+          <div ref={chatBodyRef} className="messages-thread-body" aria-live="polite">
+            <p className="project-messages-thread-note">
               {activeConversation.isGroup
                 ? 'This group includes the business and all active project members.'
                 : `This is the beginning of your conversation for ${opportunity?.title || 'this project'}.`}
             </p>
-            {isLoadingMessages ? <p className="business-review-chat-loading">Loading messages…</p> : null}
+            {isLoadingMessages ? <p className="project-messages-loading">Loading messages…</p> : null}
             {displayedMessages.map((message) => {
               const isMine = activeConversation.isGroup
                 ? message.isMine
                 : message.senderId !== activeConversation.participant.id
-              const senderName = activeConversation.isGroup
-                ? message.sender?.name || 'Project participant'
-                : activeConversation.participant.name
-              const senderAvatar = activeConversation.isGroup
-                ? message.sender?.avatarUrl
-                : activeConversation.participant.avatarUrl
+              const sender = activeConversation.isGroup ? message.sender : activeConversation.participant
+              const senderName = sender?.name || 'Project participant'
+              const senderAvatar = avatarSource(sender?.avatarUrl)
               return (
                 <article key={message.id} className={isMine ? 'is-mine' : ''}>
-                  {!isMine ? <img src={avatarSource(senderAvatar)} alt="" /> : null}
+                  {!isMine ? (
+                    <span className="messages-message-avatar">
+                      {senderAvatar ? <img src={senderAvatar} alt="" /> : senderName.slice(0, 1)}
+                    </span>
+                  ) : null}
                   <div>
-                    <p>
-                      <strong>{isMine ? 'You' : senderName}</strong>
-                      <span>
-                        {new Date(message.createdAt).toLocaleTimeString('en-KE', { hour: 'numeric', minute: '2-digit' })}
-                        {isMine && !activeConversation.isGroup
-                          ? ` · ${message.isRead ? 'Read' : message.deliveredAt ? 'Delivered' : 'Sent'}`
-                          : ''}
-                      </span>
-                    </p>
-                    <div className="business-review-chat-bubble">{message.body}</div>
+                    {activeConversation.isGroup && !isMine ? <strong className="project-message-sender">{senderName}</strong> : null}
+                    <p>{message.body}</p>
+                    <time dateTime={message.createdAt}>
+                      {formatTime(message.createdAt)}
+                      {isMine && !activeConversation.isGroup
+                        ? ` · ${message.isRead ? 'Read' : message.deliveredAt ? 'Delivered' : 'Sent'}`
+                        : ''}
+                    </time>
                   </div>
+                  {isMine ? (
+                    <span className="messages-message-avatar">
+                      {viewerProfile.avatar ? <img src={viewerProfile.avatar} alt="" /> : viewerProfile.initials}
+                    </span>
+                  ) : null}
                 </article>
               )
             })}
@@ -404,19 +474,21 @@ function ProjectConversationPanel({ conversation = null, opportunity = null, par
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               placeholder={activeConversation.isGroup ? 'Message the project group' : `Message ${activeConversation.participant.name}`}
-              aria-label="Opportunity message"
+              aria-label="Message"
             />
-            <button type="submit" className="business-profile-primary-btn" aria-label="Send opportunity message" disabled={!draft.trim() || isSending}>
+            <button type="submit" aria-label="Send message" disabled={!draft.trim() || isSending}>
               <FiSend aria-hidden="true" />
             </button>
           </form>
-          {messageError ? <p className="business-message-error" role="alert">{messageError}</p> : null}
+          {messageError ? <p className="messages-error project-messages-error" role="alert">{messageError}</p> : null}
         </section>
       ) : (
-        <section className="business-review-chat business-review-chat-empty">
-          <FiMessageSquare aria-hidden="true" />
-          <h3>No conversation selected</h3>
-          <p>A conversation with a project participant will appear here when messaging begins.</p>
+        <section className="messages-thread">
+          <div className="messages-empty-thread">
+            <FiMessageSquare aria-hidden="true" />
+            <h2>No conversation selected</h2>
+            <p>A conversation with a project participant will appear here when messaging begins.</p>
+          </div>
         </section>
       )}
     </section>

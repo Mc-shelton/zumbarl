@@ -52,7 +52,6 @@ export function useBusinessMarketingCampaign(campaignId) {
     ),
     error,
     isLoading,
-    isPaused: false,
     onChangeTab: setActiveTab,
     onEndorseTopCampaigners: async () => {
       const studentIds = [
@@ -73,7 +72,6 @@ export function useBusinessMarketingCampaign(campaignId) {
       await generateBusinessMarketingCampaignStats(campaignId);
       await reload();
     },
-    onSubmitProof: () => {},
     onTogglePause: async () => {
       if (campaign?.status === "Draft") {
         await publishBusinessMarketingCampaign(campaignId);

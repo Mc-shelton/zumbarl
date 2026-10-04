@@ -1,14 +1,32 @@
 import { FiArrowRight, FiCheck, FiClock, FiTruck } from 'react-icons/fi'
-import {
-  CUSTOMER_DETAILS,
-  DELIVERY_ESTIMATE,
-  ORDER_ID,
-  ORDER_TIMELINE_ITEMS,
-  PAYMENT_SUMMARY,
-} from '../checkoutData'
 import { formatKes } from '../pricing'
 
-export function OrderPlacedPanel({ onContinueShopping, onViewOrders, totals }) {
+const TIMELINE = [
+  { id: 'seller_confirmation', title: 'Awaiting seller confirmation', detail: 'The seller is checking availability.' },
+  { id: 'packaging', title: 'Preparing your order', detail: 'The seller is preparing the items or service.' },
+  { id: 'ready', title: 'Ready for handoff', detail: 'Your order is ready for pickup or delivery.' },
+  { id: 'delivered', title: 'Delivered', detail: 'Confirm receipt from My Orders when the handoff is complete.' },
+]
+
+function buildTimeline(status) {
+  const stageIndex = ['seller_confirmation'].includes(status)
+    ? 0
+    : ['confirmed', 'packaging'].includes(status)
+      ? 1
+      : ['ready', 'in_transit'].includes(status)
+        ? 2
+        : ['delivered', 'completed'].includes(status)
+          ? 3
+          : 0
+  return TIMELINE.map((item, index) => ({
+    ...item,
+    state: index < stageIndex || (stageIndex === TIMELINE.length - 1 && index === stageIndex) ? 'done' : index === stageIndex ? 'active' : 'pending',
+  }))
+}
+
+export function OrderPlacedPanel({ onContinueShopping, onViewOrders, order, totals }) {
+  const timeline = buildTimeline(order.fulfillmentStatus)
+
   return (
     <section className="campus-checkout-panel campus-order-placed-stack">
       <article className="campus-order-placed-hero">
@@ -17,32 +35,28 @@ export function OrderPlacedPanel({ onContinueShopping, onViewOrders, totals }) {
         </span>
         <div>
           <h2>Thank you! Your order has been placed.</h2>
-          <p>
-            We&apos;ve sent a confirmation to <strong>{CUSTOMER_DETAILS.email}</strong> and will update you as your
-            order moves.
-          </p>
+          <p>Your payment is held securely while the seller confirms and fulfils the order.</p>
         </div>
-        <p className="campus-order-placed-order-id">Order ID: {ORDER_ID}</p>
+        <p className="campus-order-placed-order-id">Order ID: {order.id}</p>
       </article>
 
       <section className="campus-order-placed-meta-grid" aria-label="Order details">
         <article className="campus-order-placed-meta-card">
-          <h3>Delivery Address</h3>
-          <p>{CUSTOMER_DETAILS.name}</p>
-          <p>{DELIVERY_ESTIMATE.addressSummary}</p>
-          <p>{CUSTOMER_DETAILS.phone}</p>
+          <h3>Fulfilment</h3>
+          <p>{order.buyerName || 'Signed-in student'}</p>
+          <p>{order.handoffSpot || 'See item fulfilment details in My Orders'}</p>
+          <p>{String(order.handoffType || 'handoff').replace(/_/g, ' ')}</p>
         </article>
         <article className="campus-order-placed-meta-card">
           <h3>Payment Method</h3>
-          <p>{PAYMENT_SUMMARY.method}</p>
-          <p>{PAYMENT_SUMMARY.card}</p>
-          <p>Paid {formatKes(totals.finalTotal)}</p>
+          <p>Zumbarl Wallet</p>
+          <p>{order.status === 'paid' ? 'Payment held in escrow' : String(order.status || 'Processing')}</p>
+          <p>{formatKes(totals.finalTotal)}</p>
         </article>
         <article className="campus-order-placed-meta-card">
-          <h3>Estimated Delivery</h3>
-          <p>{DELIVERY_ESTIMATE.dateRange}</p>
-          <p>{DELIVERY_ESTIMATE.location}</p>
-          <p>Standard campus delivery</p>
+          <h3>Current Status</h3>
+          <p>{String(order.fulfillmentStatus || 'seller_confirmation').replace(/_/g, ' ')}</p>
+          <p>Live updates are available in My Orders.</p>
         </article>
       </section>
 
@@ -53,7 +67,7 @@ export function OrderPlacedPanel({ onContinueShopping, onViewOrders, totals }) {
         </header>
 
         <div className="campus-order-placed-timeline-list">
-          {ORDER_TIMELINE_ITEMS.map((item) => (
+          {timeline.map((item) => (
             <TimelineItem key={item.id} item={item} />
           ))}
         </div>

@@ -4,8 +4,38 @@ import {
   getScoreFillColor,
 } from '../constants'
 
-function ProfileOverviewPanel({ achievements = [], earningsSummary = [], endorsements = [], score = null, workHighlights = [] }) {
+const fallbackWorkImage = '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp'
+
+function groupEarnings(entries) {
+  return Object.values(entries.reduce((groups, entry) => {
+    const label = entry.label || entry.title || 'Earning'
+    const value = String(entry.value || '')
+    const amount = Number(value.replace(/[^\d.-]/g, '')) || 0
+    const currency = value.match(/^[^\d-]+/)?.[0].trim() || 'KES'
+    const key = label.toLowerCase()
+    const current = groups[key] || { count: 0, currency, label, total: 0 }
+    current.count += 1
+    current.total += amount
+    groups[key] = current
+    return groups
+  }, {})).map((entry) => ({
+    ...entry,
+    label: entry.count > 1 && /^payout for completed deliverable$/i.test(entry.label)
+      ? 'Completed deliverables'
+      : entry.label,
+    value: `${entry.currency} ${entry.total.toLocaleString('en-KE')}`,
+  }))
+}
+
+function formatShortDate(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat('en-KE', { day: 'numeric', month: 'short', year: 'numeric' }).format(date)
+}
+
+function ProfileOverviewPanel({ achievements = [], earningsSummary = [], endorsements = [], onOpenPortfolio, score = null, workHighlights = [] }) {
   const [showScoreExplanation, setShowScoreExplanation] = useState(false)
+  const groupedEarnings = groupEarnings(earningsSummary)
   const trustSnapshot = score ? {
     score: Number(score.currentScore || 0),
     tier: score.tier,
@@ -38,7 +68,7 @@ function ProfileOverviewPanel({ achievements = [], earningsSummary = [], endorse
   const profileScoreColor = getScoreFillColor(profileScore, 100)
   const visibleEndorsements = endorsements
   const endorsementCurrency = visibleEndorsements.reduce((total, item) => (
-    total + (Number.parseInt(String(item.reward).replace(/\D/g, ''), 10) || 0)
+    total + (Number.parseInt(String(item.reward || item.value || '').replace(/\D/g, ''), 10) || 0)
   ), 0)
   const endorsementProgress = Math.min(100, Math.round((endorsementCurrency / 50) * 100))
 
@@ -48,8 +78,8 @@ function ProfileOverviewPanel({ achievements = [], earningsSummary = [], endorse
         <article className="campus-profile-surface campus-profile-score-card">
           <header className="campus-profile-card-head">
             <div>
-              <h2>Zumbarl Score Breakdown</h2>
-              <p>Your overall performance across key areas</p>
+              <h2>Zumbarl score</h2>
+              <p>Built from verified work</p>
             </div>
             <button
               type="button"
@@ -57,7 +87,7 @@ function ProfileOverviewPanel({ achievements = [], earningsSummary = [], endorse
               aria-expanded={showScoreExplanation}
               onClick={() => setShowScoreExplanation((visible) => !visible)}
             >
-              What is this?
+              How it works
             </button>
           </header>
 
@@ -114,7 +144,6 @@ function ProfileOverviewPanel({ achievements = [], earningsSummary = [], endorse
         <article className="campus-profile-surface campus-profile-endorsement-card">
           <header className="campus-profile-card-head">
             <h2>Endorsements</h2>
-            <button type="button" className="campus-link-btn">View all</button>
           </header>
 
           <div className="campus-profile-endorsement-list">
@@ -128,7 +157,7 @@ function ProfileOverviewPanel({ achievements = [], earningsSummary = [], endorse
                 </div>
                 <div>
                   <strong>{item.reward || item.value}</strong>
-                  <p>{item.date}</p>
+                  <p>{formatShortDate(item.date)}</p>
                 </div>
               </article>
             )) : <p>No endorsements yet.</p>}
@@ -148,7 +177,6 @@ function ProfileOverviewPanel({ achievements = [], earningsSummary = [], endorse
         <article className="campus-profile-surface">
           <header className="campus-profile-card-head">
             <h2>Achievements</h2>
-            <button type="button" className="campus-link-btn">View all</button>
           </header>
 
           <div className="campus-profile-achievement-list">
@@ -168,13 +196,13 @@ function ProfileOverviewPanel({ achievements = [], earningsSummary = [], endorse
 
         <article className="campus-profile-surface">
           <header className="campus-profile-card-head">
-            <h2>Earnings Summary</h2>
+            <h2>Earnings</h2>
             <FiBarChart2 aria-hidden="true" />
           </header>
           <div className="campus-profile-earnings-list">
-            {earningsSummary.length ? earningsSummary.map((entry) => (
-              <div key={entry.id || entry.label || entry.title}>
-                <p>{entry.label || entry.title}</p>
+            {groupedEarnings.length ? groupedEarnings.map((entry) => (
+              <div key={entry.label}>
+                <p>{entry.label}{entry.count > 1 ? <span>{entry.count} payouts</span> : null}</p>
                 <strong>{entry.value}</strong>
               </div>
             )) : <p>No earnings yet.</p>}
@@ -185,14 +213,14 @@ function ProfileOverviewPanel({ achievements = [], earningsSummary = [], endorse
 
       <article className="campus-profile-surface campus-profile-work-card">
         <header className="campus-profile-card-head">
-          <h2>Recent Work Highlights</h2>
-          <button type="button" className="campus-link-btn">View full portfolio</button>
+          <h2>Recent work</h2>
+          <button type="button" className="campus-link-btn" onClick={onOpenPortfolio}>See all</button>
         </header>
 
         <div className="campus-profile-work-grid">
           {workHighlights.map((item) => (
             <article key={item.title} className="campus-profile-work-item">
-              <img src={item.image} alt={`${item.title} sample`} loading="lazy" />
+              <img src={item.image || fallbackWorkImage} alt={`${item.title} sample`} loading="lazy" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = fallbackWorkImage }} />
               <p>{item.title}</p>
               <span>{item.org}</span>
               <strong>

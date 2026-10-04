@@ -302,7 +302,7 @@ function FeedPoll({ error, isPending, onVote, post }) {
   )
 }
 
-function ExploreFeed({ activeFilter, allowAnnouncementSubmission = true, commentsByPost, engagementErrors, engagementPending, focusedPostId = '', onComment, onComposerPost, onEditPost, onLikePost, onOpenEvent, onOpenMediaViewer, onRemoveReshare, onResharePost, onSharePost, onSubmitAnnouncement, onTakeDownPost = null, onViewProduct, onVotePoll, posts, showComposer = true }) {
+function ExploreFeed({ activeFilter, allowAnnouncementSubmission = true, commentsByPost, composerAvatar = '/assets/index/bee_nobg.png', engagementErrors, engagementPending, focusedPostId = '', onComment, onComposerPost, onEditPost, onLikePost, onOpenEvent, onOpenMediaViewer, onRemoveReshare, onResharePost, onSharePost, onSubmitAnnouncement, onTakeDownPost = null, onViewProduct, onVotePoll, posts, showComposer = true }) {
   const [openPostMenuId, setOpenPostMenuId] = useState('')
   const [openCommentsByPost, setOpenCommentsByPost] = useState({})
   const [openReshareMenuId, setOpenReshareMenuId] = useState('')
@@ -318,7 +318,7 @@ function ExploreFeed({ activeFilter, allowAnnouncementSubmission = true, comment
     <>
       {showComposer ? <section className="explore-campus-composer-card" aria-label="Create a post">
         <div className="explore-campus-composer-head">
-          <img src="/assets/index/bee_nobg.png" alt="Brian avatar" loading="lazy" />
+          <img src={composerAvatar} alt="Your avatar" loading="lazy" />
           <button type="button" className="explore-campus-composer-input" onClick={() => onComposerPost('post')}>
             Share a win, need, idea or campus moment…
           </button>
@@ -326,19 +326,19 @@ function ExploreFeed({ activeFilter, allowAnnouncementSubmission = true, comment
         <div className="explore-campus-composer-actions">
           <button type="button" onClick={() => onComposerPost('media')}>
             <FiImage aria-hidden="true" />
-            Moment
+            Photo
           </button>
           <button type="button" onClick={() => onComposerPost('event')}>
             <FiCalendar aria-hidden="true" />
-            Gather
+            Event
           </button>
           <button type="button" onClick={() => onComposerPost('poll')}>
             <FiHelpCircle aria-hidden="true" />
-            Ask campus
+            Poll
           </button>
           <button type="button" onClick={() => onComposerPost('feeling')}>
             <FiAward aria-hidden="true" />
-            Milestone
+            Win
           </button>
           <button type="button" className="explore-campus-post-btn" onClick={() => onComposerPost('post')}>
             Send signal

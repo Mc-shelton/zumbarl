@@ -1,8 +1,5 @@
-import { FiPlusCircle } from 'react-icons/fi'
+import { FiArrowUpRight, FiClock, FiPlus } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
-import {
-  PORTFOLIO_SERVICE_COMPOSER_TOOLS,
-} from '../constants'
 
 function handleKeyboardActivation(event, onActivate) {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -22,39 +19,19 @@ function ProfilePortfolioServicesPanel({
     <section className="campus-profile-surface campus-portfolio-services-panel">
       <header className="campus-portfolio-services-head">
         <div>
-          <h3>My Services</h3>
-          <p>Services I can provide to clients and businesses.</p>
+          <div className="campus-portfolio-services-title">
+            <h3>My Services</h3>
+            <span>{portfolioServices.length}</span>
+          </div>
+          <p>What clients can book from me.</p>
         </div>
         {canManagePortfolio ? (
           <button type="button" className="campus-portfolio-add-btn">
-            <FiPlusCircle aria-hidden="true" />
-            Add Service
+            <FiPlus aria-hidden="true" />
+            Add service
           </button>
         ) : null}
       </header>
-
-      {canManagePortfolio ? (
-        <article className="campus-portfolio-service-composer">
-          <div className="campus-portfolio-service-composer-head">
-            <img
-              src="/assets/index/bee_nobg.png"
-              alt="Profile placeholder"
-            />
-            <p>What service do you want to offer next?</p>
-          </div>
-          <footer className="campus-portfolio-service-composer-foot">
-            <div className="campus-portfolio-service-tools">
-              {PORTFOLIO_SERVICE_COMPOSER_TOOLS.map(({ label, Icon }) => (
-                <button key={label} type="button">
-                  <Icon aria-hidden="true" />
-                  {label}
-                </button>
-              ))}
-            </div>
-            <button type="button" className="campus-shop-post-btn">Post</button>
-          </footer>
-        </article>
-      ) : null}
 
       <div className="campus-portfolio-service-grid">
         {portfolioServices.map(({ id, title, category, description, price, delivery, image }) => (
@@ -67,22 +44,35 @@ function ProfilePortfolioServicesPanel({
             onClick={() => onPortfolioServiceSelect(id)}
             onKeyDown={(event) => handleKeyboardActivation(event, () => onPortfolioServiceSelect(id))}
           >
-            <img
-              className="campus-portfolio-service-thumb"
-              src={image}
-              alt={`${title} thumbnail`}
-              loading="lazy"
-            />
-            <p className="campus-portfolio-service-category">{category}</p>
-            <h4>{title}</h4>
-            <p className="campus-portfolio-service-description">{description}</p>
-            <footer>
-              <strong>{price}</strong>
-              <span>{delivery}</span>
-            </footer>
+            <div className="campus-portfolio-service-media">
+              <img
+                className="campus-portfolio-service-thumb"
+                src={image}
+                alt=""
+                loading="lazy"
+              />
+              <span>{category}</span>
+            </div>
+            <div className="campus-portfolio-service-body">
+              <div className="campus-portfolio-service-title-row">
+                <h4>{title}</h4>
+                <FiArrowUpRight aria-hidden="true" />
+              </div>
+              <p className="campus-portfolio-service-description">{description}</p>
+              <footer>
+                <strong>{price}</strong>
+                <span><FiClock aria-hidden="true" />{delivery}</span>
+              </footer>
+            </div>
           </article>
         ))}
-        {!portfolioServices.length ? <p>No services added yet.</p> : null}
+        {!portfolioServices.length ? (
+          <div className="campus-portfolio-services-empty">
+            <span><FiPlus aria-hidden="true" /></span>
+            <strong>Add your first service</strong>
+            <p>Show clients what you offer and how much it costs.</p>
+          </div>
+        ) : null}
       </div>
     </section>
   )

@@ -8,6 +8,7 @@ import { BusinessWorkspaceSidebar } from '../features/business/components/Busine
 import ProfileHero from '../features/profile/components/ProfileHero'
 import ProfileShopEditor from '../features/profile/components/ProfileShopEditor'
 import ProfileMetrics from '../features/profile/components/ProfileMetrics'
+import ProfilePortfolioEditor from '../features/profile/components/ProfilePortfolioEditor'
 import ProfilePortfolioProjectRail from '../features/profile/components/ProfilePortfolioProjectRail'
 import ProfilePortfolioServiceRail from '../features/profile/components/ProfilePortfolioServiceRail'
 import ProfileSideRail from '../features/profile/components/ProfileSideRail'
@@ -22,7 +23,7 @@ import {
 } from '../features/profile/constants'
 import useCampusProfileState from '../features/profile/hooks/useCampusProfileState'
 import useCampusProfileViewModel from '../features/profile/hooks/useCampusProfileViewModel'
-import { readMyStudentProfileExperience, readStudentProfileExperience, updateMyStudentProfile } from '../features/campus/services/readCampusExperience'
+import { archiveMyPortfolioItem, publishMyPortfolioItem, readMyStudentProfileExperience, readStudentProfileExperience, shareMyPortfolioItem, unpublishMyPortfolioItem, updateMyPortfolioItem, updateMyStudentProfile } from '../features/campus/services/readCampusExperience'
 import { getAuthUserSnapshot, hydrateAuthUserFromBackend, refreshAuthUserFromBackend } from '../features/auth/services/authUserService'
 import { readProfileRelationship, setProfileRelationship } from '../features/profile/services/profileRelationshipService'
 import { updateMyProgressionMode } from '../features/profile/services/profileProgressionService'
@@ -40,6 +41,7 @@ function CampusProfilePage({ viewContext = 'campus' }) {
   const isPublicStudentView = Boolean(studentId)
   const [viewerStudentId, setViewerStudentId] = useState(() => getAuthUserSnapshot()?.student?.id || '')
   const [profileExperience, setProfileExperience] = useState(null)
+  const [editingPortfolioId, setEditingPortfolioId] = useState(() => searchParams.get('edit') === '1' ? searchParams.get('portfolio') || '' : '')
   const targetStudentId = profileExperience?.header?.id || studentId || ''
   const isOwnProfile = !isBusinessView && (!studentId || Boolean(viewerStudentId && viewerStudentId === targetStudentId))
   const [hasErrandAccess, setHasErrandAccess] = useState(false)
@@ -68,6 +70,7 @@ function CampusProfilePage({ viewContext = 'campus' }) {
     skillsLevelFilters: SKILLS_LEVEL_FILTERS,
   })
   const viewModel = useCampusProfileViewModel(profileState, profileExperience)
+  const editingPortfolioItem = viewModel.allPortfolioItems.find((item) => item.id === editingPortfolioId) || null
   const contactUserId = profileExperience?.header?.userId || ''
 
   function openProfileContact(mode) {
@@ -137,6 +140,12 @@ function CampusProfilePage({ viewContext = 'campus' }) {
     const experience = await readMyStudentProfileExperience()
     setProfileExperience(experience)
     return experience.header
+  }
+
+  async function refreshProfileExperience() {
+    const experience = await readMyStudentProfileExperience()
+    setProfileExperience(experience)
+    return experience
   }
 
   async function handleAddSkill(skillName) {
@@ -270,6 +279,7 @@ function CampusProfilePage({ viewContext = 'campus' }) {
       return progression
     },
     onPortfolioFilterChange: handlePortfolioFilterChange,
+    onEditPortfolioItem: (id) => setEditingPortfolioId(id),
     onPortfolioItemSelect: handlePortfolioItemSelect,
     onPortfolioServiceSelect: handlePortfolioServiceSelect,
     onShopFilterChange: handleShopFilterChange,
@@ -385,13 +395,13 @@ function CampusProfilePage({ viewContext = 'campus' }) {
             ) : (
               <ProfileTopBar activeTab={profileState.activeTab} />
             )}
-            <ProfileHero activeTab={profileState.activeTab} canRelate={!isBusinessView && Boolean(studentId) && !isOwnProfile} isOwnProfile={isOwnProfile} onEditShop={() => setIsShopEditorOpen(true)} onSaveProfile={handleSaveProfile} onToggleRelationship={handleToggleRelationship} profileHeader={profileExperience?.header} relationship={relationship} relationshipPending={relationshipPending} />
-          {profileState.activeTab === 'Overview' ? <ProfileMetrics metrics={profileExperience?.metrics} /> : null}
+            <ProfileHero activeTab={profileState.activeTab} canRelate={!isBusinessView && Boolean(studentId) && !isOwnProfile} isOwnProfile={isOwnProfile} onEditShop={() => setIsShopEditorOpen(true)} onSaveProfile={handleSaveProfile} onToggleRelationship={handleToggleRelationship} profileHeader={profileExperience?.header} relationship={relationship} relationshipPending={relationshipPending} socialStats={profileExperience?.socialStats} />
             <ProfileTabs
               activeTab={profileState.activeTab}
               onTabChange={profileState.setActiveTab}
               tabs={profileTabs}
             />
+            {profileState.activeTab === 'Overview' ? <ProfileMetrics metrics={profileExperience?.metrics} /> : null}
             <ProfileTabContent
               activeTab={profileState.activeTab}
               canManageMarketing={isOwnProfile}
@@ -419,7 +429,9 @@ function CampusProfilePage({ viewContext = 'campus' }) {
           && viewModel.selectedPortfolioItem
           && viewModel.selectedPortfolioDetail ? (
             <ProfilePortfolioProjectRail
+              canManage={isOwnProfile}
               onClose={() => profileState.setSelectedPortfolioId(null)}
+              onManage={setEditingPortfolioId}
               selectedPortfolioDetail={viewModel.selectedPortfolioDetail}
               selectedPortfolioItem={viewModel.selectedPortfolioItem}
               selectedPortfolioScorePoints={viewModel.selectedPortfolioScorePoints}
@@ -461,6 +473,17 @@ function CampusProfilePage({ viewContext = 'campus' }) {
             />
           ) : null}
           {isOwnProfile && isShopEditorOpen ? <ProfileShopEditor shop={shop} onClose={() => setIsShopEditorOpen(false)} onSave={async (payload) => { const updated = await updateMyMarketplaceShop(payload); setShop(updated); setIsShopEditorOpen(false) }} /> : null}
+          {isOwnProfile && editingPortfolioItem ? (
+            <ProfilePortfolioEditor
+              item={editingPortfolioItem}
+              onArchive={async (id) => { await archiveMyPortfolioItem(id); setEditingPortfolioId(''); profileState.setSelectedPortfolioId(null); await refreshProfileExperience() }}
+              onClose={() => setEditingPortfolioId('')}
+              onPublish={async (id) => { await publishMyPortfolioItem(id); await refreshProfileExperience() }}
+              onSave={async (id, payload) => { await updateMyPortfolioItem(id, payload); await refreshProfileExperience() }}
+              onShare={async (id, payload) => { const result = await shareMyPortfolioItem(id, payload); await refreshProfileExperience(); return result }}
+              onUnpublish={async (id) => { await unpublishMyPortfolioItem(id); await refreshProfileExperience() }}
+            />
+          ) : null}
         </div>
       </div>
       <ConfirmDialog

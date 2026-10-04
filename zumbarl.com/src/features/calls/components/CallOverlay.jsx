@@ -28,17 +28,23 @@ function CallOverlay({ call, onClose }) {
 
   useEffect(() => {
     if (!call?.id) return undefined
-    const intervalId = window.setInterval(async () => {
+    const handleCallUpdate = (event) => {
+      if (event.detail?.id === call.id && !['ringing', 'accepted'].includes(event.detail.status)) onClose()
+    }
+    const reconcileCall = async () => {
       try {
         const nextCall = await readCall(call.id)
-        if (nextCall.status !== 'ringing' && nextCall.status !== 'accepted') {
-          onClose()
-        }
+        if (!['ringing', 'accepted'].includes(nextCall.status)) onClose()
       } catch {
         onClose()
       }
-    }, 2500)
-    return () => window.clearInterval(intervalId)
+    }
+    window.addEventListener('zumbarl:call-updated', handleCallUpdate)
+    window.addEventListener('zumbarl:realtime-connected', reconcileCall)
+    return () => {
+      window.removeEventListener('zumbarl:call-updated', handleCallUpdate)
+      window.removeEventListener('zumbarl:realtime-connected', reconcileCall)
+    }
   }, [call?.id, onClose])
 
   if (!call) return null

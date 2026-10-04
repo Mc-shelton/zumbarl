@@ -190,7 +190,7 @@
   text-align: center;
 }
 
-.footer-credit a {
+.footer-credit > .container > span {
   font-family: 'Inter', 'Odoo Unicode Support Noto', sans-serif;
   font-size: var(--text-caption);
   line-height: 1.3;

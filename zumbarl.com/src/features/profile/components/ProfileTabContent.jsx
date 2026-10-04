@@ -18,7 +18,7 @@ function ProfileTabContent({ activeTab, canManageMarketing = false, canManageSho
           onModeChange={handlers.onProgressionModeChange}
           progression={viewModel.progression}
         />
-        <ProfileOverviewPanel achievements={viewModel.achievements} earningsSummary={viewModel.earningsSummary} endorsements={viewModel.endorsements} score={viewModel.profileScore} workHighlights={viewModel.workHighlights} />
+        <ProfileOverviewPanel achievements={viewModel.achievements} earningsSummary={viewModel.earningsSummary} endorsements={viewModel.endorsements} onOpenPortfolio={() => profileState.setActiveTab('Portfolio')} score={viewModel.profileScore} workHighlights={viewModel.workHighlights} />
         <ProfileSkillsPanel
           canManage={isOwnProfile}
           embedded
@@ -41,10 +41,13 @@ function ProfileTabContent({ activeTab, canManageMarketing = false, canManageSho
     return (
       <ProfilePortfolioPanel
         activePortfolioFilter={profileState.activePortfolioFilter}
+        isOwnProfile={isOwnProfile}
+        onEditPortfolioItem={handlers.onEditPortfolioItem}
         onFilterChange={handlers.onPortfolioFilterChange}
         onPortfolioItemSelect={handlers.onPortfolioItemSelect}
         onPortfolioServiceSelect={handlers.onPortfolioServiceSelect}
         portfolioItems={viewModel.portfolioItems}
+        portfolioFilterCounts={viewModel.portfolioFilterCounts}
         portfolioServices={viewModel.portfolioServices}
         selectedPortfolioId={profileState.selectedPortfolioId}
         selectedPortfolioServiceId={profileState.selectedPortfolioServiceId}

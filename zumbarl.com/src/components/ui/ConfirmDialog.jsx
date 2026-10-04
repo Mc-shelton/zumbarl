@@ -2,7 +2,7 @@ import { FiAlertTriangle, FiX } from 'react-icons/fi'
 import { useDialog } from './useDialog'
 import './confirm-dialog.css'
 
-function ConfirmDialog({ confirmLabel = 'Confirm', description, isOpen, isPending = false, onCancel, onConfirm, title }) {
+function ConfirmDialog({ cancelLabel = 'Keep order', confirmLabel = 'Confirm', description, isOpen, isPending = false, onCancel, onConfirm, title }) {
   const dialogRef = useDialog({ isOpen, onClose: isPending ? undefined : onCancel })
   if (!isOpen) return null
 
@@ -16,7 +16,7 @@ function ConfirmDialog({ confirmLabel = 'Confirm', description, isOpen, isPendin
         <h2 id="zumbarl-confirm-title">{title}</h2>
         <p id="zumbarl-confirm-description">{description}</p>
         <footer>
-          <button type="button" disabled={isPending} onClick={onCancel}>Keep order</button>
+          <button type="button" disabled={isPending} onClick={onCancel}>{cancelLabel}</button>
           <button type="button" className="is-destructive" disabled={isPending} onClick={onConfirm}>{isPending ? 'Please wait…' : confirmLabel}</button>
         </footer>
       </section>

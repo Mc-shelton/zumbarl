@@ -239,8 +239,8 @@ function TaskCard({
   const [isPickingBlockers, setIsPickingBlockers] = useState(false)
   const isMine = task.ownerId && task.ownerId === viewerStudentId
   const isBlocked = Boolean(task.blockedBy?.length)
-  // Any member can close out anything pending. Credit still follows the owner,
-  // so closing a teammate's task pays them, not whoever pressed the button.
+  // Only the assignee can submit the task. Business approval is still the only
+  // action that closes it and turns the contribution into credited work.
   const isOpen = !['done', 'submitted'].includes(task.status)
   const isDropped = task.status === 'dropped'
   const state = getTaskGroup(task)
@@ -336,7 +336,13 @@ function TaskCard({
                   type="button"
                   disabled={isPending || isBlocked || Boolean(submitBlockedReason)}
                   title={submitBlockedReason
-                    || (isBlocked ? 'Clear what this task is waiting on first' : 'Send this work to the business for review')}
+                    || (isBlocked
+                      ? 'Clear what this task is waiting on first'
+                      : !task.ownerId
+                        ? 'Claim this work before submitting it for review.'
+                        : !isMine
+                          ? 'This work is assigned to someone else. Only the assigned student can submit it for review.'
+                          : 'Send this work to the business for review')}
                   onClick={() => onSubmit(task)}
                 >
                   <FiUploadCloud aria-hidden="true" /> Submit for review

@@ -1,4 +1,5 @@
 import { FiDollarSign } from 'react-icons/fi'
+import StudentWalletWithdrawal from '../../finance/components/StudentWalletWithdrawal'
 
 function formatDate(value) {
   const date = value ? new Date(value) : null
@@ -14,6 +15,7 @@ function MilestoneProjectRail({
   deliverables = [],
   isBusinessViewer = false,
   milestones = [],
+  onPaymentCompleted,
   project,
   sprints = [],
   tasks = [],
@@ -153,6 +155,9 @@ function MilestoneProjectRail({
             Payouts appear here once the business approves a milestone and releases its budget.
           </p>
         )}
+        {Number(project?.walletBalance) > 0 ? (
+          <StudentWalletWithdrawal availableBalance={project.walletBalance} currency={project.walletCurrency} onCompleted={onPaymentCompleted} />
+        ) : null}
       </section>
       )}
 

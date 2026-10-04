@@ -1,14 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'react-router-dom'
 import { ACCESS_KEYS, getCurrentLoginRole, hasAccess } from '../../auth/roleConfig'
-import useEarnFlowState from '../../earn/hooks/useEarnFlowState'
-import {
-  resolveProjectReview,
-  resolveEarnWorkspaceProject,
-  resolveProjectPayment,
-  reviewProjectSubmission,
-  submitProjectWork,
-} from '../../earn/services/earnFlowService'
 import {
   normalizeProjectTab,
   PROJECT_TAB_QUERY,
@@ -42,10 +34,10 @@ function useProjectWorkspace() {
   const { projectId } = useParams()
   const isBusinessViewer = getCurrentLoginRole()?.side === 'company'
   const [searchParams, setSearchParams] = useSearchParams()
-  const earnFlow = useEarnFlowState()
   // Tagged with the projectId it belongs to so a stale in-flight result for a
   // previous project is ignored rather than briefly rendered.
   const [backendProject, setBackendProject] = useState({ id: null, view: null })
+  const [workspaceStatus, setWorkspaceStatus] = useState({ error: '', isLoading: true })
 
   useEffect(() => {
     // Always ask the backend. Missing projects remain missing instead of being
@@ -53,12 +45,22 @@ function useProjectWorkspace() {
     if (!projectId) return undefined
 
     let active = true
+    setWorkspaceStatus({ error: '', isLoading: true })
     fetchBackendProjectWorkspace(projectId)
       .then((workspace) => {
-        if (active) setBackendProject({ id: projectId, view: toProjectWorkspaceView(workspace) })
+        if (active) {
+          setBackendProject({ id: projectId, view: toProjectWorkspaceView(workspace) })
+          setWorkspaceStatus({ error: '', isLoading: false })
+        }
       })
-      .catch(() => {
-        if (active) setBackendProject({ id: projectId, view: null })
+      .catch((error) => {
+        if (active) {
+          setBackendProject({ id: projectId, view: null })
+          setWorkspaceStatus({
+            error: error instanceof Error ? error.message : 'Could not load this project.',
+            isLoading: false,
+          })
+        }
       })
 
     return () => {
@@ -68,16 +70,8 @@ function useProjectWorkspace() {
 
   const backendView = backendProject.id === projectId ? backendProject.view : null
   const activeProject = useMemo(() => (
-    backendView
-    || resolveEarnWorkspaceProject(earnFlow.projects, projectId)
-    || { ...EMPTY_PROJECT, id: projectId || '' }
-  ), [backendView, earnFlow.projects, projectId])
-  const projectReview = useMemo(() => (
-    resolveProjectReview(earnFlow.projectReviews, projectId)
-  ), [earnFlow.projectReviews, projectId])
-  const projectPayment = useMemo(() => (
-    resolveProjectPayment(earnFlow.payments, projectId)
-  ), [earnFlow.payments, projectId])
+    backendView || { ...EMPTY_PROJECT, id: projectId || '' }
+  ), [backendView, projectId])
   const initialTab = useMemo(() => {
     const tab = normalizeProjectTab(searchParams.get('tab'))
     return resolveAllowedProjectTab(tab, activeProject, { isBusinessViewer })
@@ -152,7 +146,9 @@ function useProjectWorkspace() {
     }))
     Promise.all([
       listProjectTeam(projectId),
-      listMyProjectTeamInvites().catch(() => ({ invites: [] })),
+      isBusinessViewer
+        ? Promise.resolve({ invites: [] })
+        : listMyProjectTeamInvites().catch(() => ({ invites: [] })),
     ]).then(([team, mine]) => {
       if (!active) return
       setTeamState((current) => ({
@@ -170,12 +166,21 @@ function useProjectWorkspace() {
     return () => {
       active = false
     }
-  }, [projectId])
+  }, [isBusinessViewer, projectId])
 
   async function refreshWorkspace() {
     if (!projectId) return
-    const workspace = await fetchBackendProjectWorkspace(projectId)
-    setBackendProject({ id: projectId, view: toProjectWorkspaceView(workspace) })
+    try {
+      const workspace = await fetchBackendProjectWorkspace(projectId)
+      setBackendProject({ id: projectId, view: toProjectWorkspaceView(workspace) })
+      setWorkspaceStatus({ error: '', isLoading: false })
+    } catch (error) {
+      setWorkspaceStatus({
+        error: error instanceof Error ? error.message : 'Could not refresh this project.',
+        isLoading: false,
+      })
+      throw error
+    }
   }
 
   const openSubmitWork = (milestone = null, requestedMode = null) => {
@@ -218,14 +223,9 @@ function useProjectWorkspace() {
   }
 
   const handleSubmit = async (payload) => {
-    // Real awarded projects submit to the backend. The local flow is retained
-    // only for a project already present in the user's earn workflow state.
-    if (backendView && projectId) {
-      await submitProjectDeliverable(projectId, payload)
-      await refreshWorkspace()
-    } else {
-      submitProjectWork({ project: activeProject, projectId })
-    }
+    if (!backendView || !projectId) throw new Error('The project is not available from the server.')
+    await submitProjectDeliverable(projectId, payload)
+    await refreshWorkspace()
 
     const nextParams = new URLSearchParams(searchParams)
     // A milestone submission keeps the student on the Milestones tab; a
@@ -263,15 +263,6 @@ function useProjectWorkspace() {
         notice: '',
       })
     }
-  }
-
-  const handleReviewDecision = (decision, review) => {
-    reviewProjectSubmission({
-      decision,
-      project: activeProject,
-      projectId,
-      review,
-    })
   }
 
   const handleOverview = () => {
@@ -397,7 +388,6 @@ function useProjectWorkspace() {
     handlePriceProposalResponse,
     priceProposalState,
     handleOverview,
-    handleReviewDecision,
     handleSubmit,
     handleTabChange,
     isSubmitted,
@@ -409,9 +399,9 @@ function useProjectWorkspace() {
     submitMilestone,
     submitMode,
     submitTargetValue,
-    projectPayment,
-    projectReview,
     projectId,
+    workspaceError: workspaceStatus.error,
+    workspaceIsLoading: workspaceStatus.isLoading,
     setIsSubmitOpen,
     setTeamModal,
     teamModal,

@@ -1,4 +1,4 @@
-const DEFAULT_IMAGE = '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp'
+const DEFAULT_IMAGE = '/assets/index/bee_nobg.png'
 
 export function formatDateLabel(prefix) {
   const date = new Date()
@@ -17,26 +17,6 @@ export function slugify(value) {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-}
-
-function getPortfolioFilter(category) {
-  const normalized = String(category || '').toLowerCase()
-
-  if (normalized.includes('design') || normalized.includes('ui')) return 'design'
-  if (normalized.includes('copy') || normalized.includes('writing')) return 'copy'
-  if (normalized.includes('brand')) return 'brand'
-  if (normalized.includes('video')) return 'video'
-  return 'social'
-}
-
-function getBidAmount(gig, proposal) {
-  const amount = String(proposal?.price || '').trim()
-
-  if (!amount) {
-    return gig.budget || 'Budget pending'
-  }
-
-  return `${proposal.currency || 'KES'} ${amount} ${proposal.pricingType || ''}`.trim()
 }
 
 const BID_STATUS_PRESENTATION = {
@@ -98,14 +78,14 @@ export function toStudentBidCard(bid) {
     category: opportunity.category || 'Campus Work',
     title: opportunity.company ? `${opportunity.title} for ${opportunity.company}` : opportunity.title || 'Opportunity bid',
     description: bid.proposal || bid.coverNote || (isDraft ? 'Continue this application when you are ready.' : 'Submitted proposal awaiting client review.'),
-    client: opportunity.company || 'Zumbarl client',
-    company: opportunity.company || 'Zumbarl client',
+    client: opportunity.company || 'Client not provided',
+    company: opportunity.company || 'Client not provided',
     bidAmount: bid.bidAmount != null
       ? `${bid.currency || 'KES'} ${Math.round(bid.bidAmount).toLocaleString('en-KE')}`
       : isDraft ? 'Not set' : opportunity.budget || 'Budget pending',
     submitted: formatBackendDateLabel(isDraft ? 'Saved' : 'Submitted', bid.appliedAt, isDraft ? 'Saved recently' : 'Submitted recently'),
-    lastSeen: isDraft ? 'Not visible to client' : 'Client activity pending',
-    responseEta: isDraft ? 'Complete before the deadline' : 'Expected response in 24-48h',
+    lastSeen: isDraft ? 'Not visible to client' : bid.clientLastSeen || 'No client activity recorded',
+    responseEta: isDraft ? 'Complete before the deadline' : bid.responseEta || 'No response estimate',
     stage: presentation.stage,
     progress: presentation.progress,
     progressNote: bid.deliveryTime
@@ -133,7 +113,7 @@ export function toStudentProjectCard(project) {
   return {
     ...project,
     title: project.title || 'Zumbarl project',
-    client: project.client || project.company || 'Zumbarl business',
+    client: project.client || project.company || 'Client not provided',
     category: project.category || 'Campus Work',
     status: presentation.status,
     statusTone: presentation.statusTone,
@@ -157,21 +137,21 @@ export function toStudentInviteCard(invite) {
     id: invite.id,
     opportunityId: invite.opportunityId,
     title: opportunity.title || 'Business opportunity',
-    company: opportunity.company || 'Zumbarl business',
+    company: opportunity.company || 'Client not provided',
     pay: opportunity.budget || 'Budget pending',
     mode: `${opportunity.opportunityType || 'Project'} · ${opportunity.engagementMode || 'Flexible'}`,
     location: opportunity.engagementMode || 'Flexible',
-    inviter: opportunity.company || 'Zumbarl business',
+    inviter: opportunity.company || 'Client not provided',
     detail: invite.note || opportunity.summary || 'The business invited you to submit a bid.',
     expires: formatBackendDateLabel('Apply by', opportunity.deadline, 'Open invite'),
     posted: formatBackendDateLabel('Sent', invite.sentAt, 'Sent recently'),
-    clientLastSeen: isAccepted ? 'Client awaiting your bid' : 'Client active recently',
+    clientLastSeen: isAccepted ? 'Client awaiting your bid' : 'Awaiting your response',
     stage: isAccepted ? 'Accepted' : status === 'declined' ? 'Declined' : 'New invite',
     stageTone: isAccepted ? 'is-open' : status === 'declined' ? 'is-viewed' : 'is-new',
     isAccepted,
     isNew: status === 'sent',
     image: opportunity.image || opportunity.previewImage || DEFAULT_IMAGE,
-    tags: skills.length ? skills : ['Campus Work'],
+    tags: skills,
     source: 'database',
   }
 }
@@ -193,126 +173,9 @@ export function toStudentInterviewCard(interview) {
       : 'Time to be confirmed',
     scheduledAt: interview.scheduledAt,
     mode: interviewType === 'phone' ? 'Phone call' : interviewType === 'in_person' ? 'In person' : 'Video call',
-    contact: interview.opportunity?.company || 'Zumbarl client',
+    contact: interview.opportunity?.company || 'Client not provided',
     note: interview.note || '',
     status: interview.status,
     meetingUrl: interview.meetingUrl || null,
-  }
-}
-
-export function createBid({ gig, intent, proposal }) {
-  const now = Date.now()
-
-  return {
-    id: `bid-${slugify(gig.id)}-${now}`,
-    opportunityId: gig.id,
-    category: gig.domain,
-    title: `${gig.title} for ${gig.company}`,
-    description: proposal?.proposal?.trim() || `Submitted proposal for ${gig.summary}`,
-    client: gig.client || gig.company,
-    company: gig.company,
-    bidAmount: getBidAmount(gig, proposal),
-    submitted: formatDateLabel('Submitted'),
-    lastSeen: 'Client activity pending',
-    responseEta: 'Expected response in 24-48h',
-    stage: 'Proposal submitted',
-    progress: 24,
-    progressNote: intent.id === 'career'
-      ? gig.progressionOutcome
-      : 'Your bid is now waiting for client review.',
-    image: gig.image || DEFAULT_IMAGE,
-    status: 'Submitted',
-    statusTone: 'is-reviewing',
-    intentId: intent.id,
-    intentLabel: intent.label,
-    projectId: null,
-    source: 'local',
-  }
-}
-
-export function createEvidence({ projectId, project }) {
-  const title = project.title || 'Submitted Zumbarl project'
-  const client = project.client || project.owner || 'Zumbarl client'
-
-  return {
-    id: `evidence-${slugify(projectId || title)}`,
-    projectId,
-    category: project.category || 'Campus Work',
-    filter: getPortfolioFilter(project.category),
-    title,
-    description: project.overview || project.note || 'Submitted project work for client review.',
-    client,
-    initials: client.split(' ').map((item) => item[0]).join('').slice(0, 2).toUpperCase(),
-    rating: 'Pending review',
-    date: formatDateLabel('Submitted'),
-    featured: true,
-    image: DEFAULT_IMAGE,
-    status: 'Pending client review',
-  }
-}
-
-export function toWorkspaceProject(project) {
-  return {
-    title: project.title,
-    status: project.status,
-    id: `#${slugify(project.id).slice(0, 8).toUpperCase()}`,
-    posted: 'Awarded from Zumbarl bid',
-    budget: project.budget,
-    deadline: project.deadline,
-    client: project.client,
-    owner: 'Brian Mwangi',
-    category: project.category,
-    skills: project.skills || project.category,
-    overview: project.note,
-    details: [
-      { label: 'Current progress', value: project.progress },
-      { label: 'Client', value: project.client },
-      { label: 'Status', value: project.status },
-    ],
-  }
-}
-
-export function createAwardedProject({ applicant, opportunity }) {
-  const projectId = `business-${slugify(opportunity.id || opportunity.title)}`
-
-  return {
-    id: projectId,
-    title: opportunity.title,
-    client: opportunity.company,
-    category: opportunity.category,
-    status: 'In Progress',
-    statusTone: 'is-scheduled',
-    deadline: opportunity.deadline,
-    budget: opportunity.budget,
-    progress: '0%',
-    note: opportunity.summary,
-    skills: opportunity.skills || applicant.focus,
-    source: 'business-award',
-  }
-}
-
-export function createAwardedBid({ applicant, opportunity, project }) {
-  return {
-    id: `award-${slugify(opportunity.id || opportunity.title)}`,
-    opportunityId: opportunity.id,
-    category: opportunity.category,
-    title: `${opportunity.title} for ${opportunity.company}`,
-    description: `Awarded to ${applicant.name}. Project workspace is ready for kickoff.`,
-    client: opportunity.company,
-    company: opportunity.company,
-    bidAmount: opportunity.budget,
-    submitted: formatDateLabel('Awarded'),
-    lastSeen: 'Client awarded this project',
-    responseEta: 'Kickoff ready',
-    stage: 'Project awarded',
-    progress: 100,
-    progressNote: 'This opportunity is now active in Project Workspace.',
-    image: DEFAULT_IMAGE,
-    status: 'Awarded',
-    statusTone: 'is-shortlisted',
-    intentId: opportunity.intentId || 'career',
-    intentLabel: opportunity.intentLabel || 'Build Career Mode',
-    projectId: project.id,
-    source: 'business-award',
   }
 }

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Seo from '../components/Seo'
 import { CartShell } from '../features/cart/components/CartShell'
@@ -16,6 +16,7 @@ import {
 import { useCartPageState } from '../features/cart/hooks/useCartPageState'
 import { CAMPUS_CART_REVIEW_SEO } from '../features/seo/constants'
 import { createMarketplaceOrder } from '../features/opportunities/services/marketplaceInteractionService'
+import { getAuthUserSnapshot, hydrateAuthUserFromBackend } from '../features/auth/services/authUserService'
 import '../styles/campus.css'
 import '../styles/cart.css'
 
@@ -24,6 +25,15 @@ function CampusCartReviewPage() {
   const { cartId, cartItems, totals: orderTotals } = useCartPageState()
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
   const [orderError, setOrderError] = useState('')
+  const [customer, setCustomer] = useState(() => getAuthUserSnapshot())
+
+  useEffect(() => {
+    let active = true
+    hydrateAuthUserFromBackend().then((snapshot) => {
+      if (active) setCustomer(snapshot)
+    })
+    return () => { active = false }
+  }, [])
 
   const handlePlaceOrder = async () => {
     if (isPlacingOrder || !cartId || !cartItems.length) return
@@ -42,7 +52,6 @@ function CampusCartReviewPage() {
         cartId,
         handoffType,
         handoffSpot,
-        paymentReference: `ZMB-${Date.now()}`,
       })
       navigate('/campus/cart/order-placed', { state: { order } })
     } catch (error) {
@@ -85,6 +94,7 @@ function CampusCartReviewPage() {
         hasUnavailableItems={cartItems.some((item) => item.unavailable)}
         isPlacingOrder={isPlacingOrder}
         items={cartItems}
+        customer={customer}
         onBack={() => navigate('/campus/cart/payment')}
         onPlaceOrder={handlePlaceOrder}
       />

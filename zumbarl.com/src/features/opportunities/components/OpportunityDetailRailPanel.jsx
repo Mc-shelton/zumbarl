@@ -1,9 +1,10 @@
 import {
   FiArrowRight,
+  FiBriefcase,
   FiCheckCircle,
-  FiClock,
-  FiStar,
-  FiTrendingUp,
+  FiDollarSign,
+  FiMapPin,
+  FiUsers,
   FiX,
 } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
@@ -17,13 +18,18 @@ function OpportunityDetailRailPanel({
   selectedOpportunity,
   selectedOpportunityBid,
   selectedOpportunityProject,
-  selectedOpportunityThumbnail,
 }) {
   if (!selectedOpportunity) {
     return null
   }
 
   const canPlaceBid = hasAccess(ACCESS_KEYS.opportunities.apply)
+  const responsibilities = (selectedOpportunity.responsibilities || []).filter((item) => typeof item === 'string' && item.trim())
+  const requirements = (selectedOpportunity.requirements || []).filter((item) => typeof item === 'string' && item.trim())
+  const intentFit = selectedOpportunity.matchReason
+    ? selectedOpportunity.intentFit?.[activeOpportunityIntentId]
+    : null
+  const ownerMetrics = selectedOpportunity.owner?.metrics || []
 
   return (
     <section
@@ -32,55 +38,40 @@ function OpportunityDetailRailPanel({
     >
       <header className="opportunities-detail-header">
         <div>
-          <p className="opportunities-detail-kicker">Opportunity Details</p>
+          <p className="opportunities-detail-kicker"><FiBriefcase aria-hidden="true" /> Opportunity details</p>
           <h3>{selectedOpportunity.title}</h3>
           <p>{selectedOpportunity.company} · {selectedOpportunity.meta}</p>
         </div>
-        <div className="opportunities-detail-actions">
-          <button
-            type="button"
-            className="campus-link-btn opportunities-detail-filter-btn"
-            onClick={onEditFilters}
-          >
-            Edit filters
-          </button>
-          <button
-            type="button"
-            className="opportunities-detail-close"
-            onClick={onClose}
-            aria-label="Close gig details"
-          >
-            <FiX aria-hidden="true" />
-          </button>
-        </div>
+        <button
+          type="button"
+          className="opportunities-detail-close"
+          onClick={onClose}
+          aria-label="Close opportunity details"
+        >
+          <FiX aria-hidden="true" />
+        </button>
       </header>
 
       <div className="opportunities-detail-stat-row">
         <article>
+          <span className="opportunities-detail-stat-icon"><FiDollarSign aria-hidden="true" /></span>
           <p>Pay</p>
           <strong>{selectedOpportunity.pay}</strong>
-          <span>{selectedOpportunity.unit}</span>
+          <small>{selectedOpportunity.unit}</small>
         </article>
         <article>
+          <span className="opportunities-detail-stat-icon"><FiMapPin aria-hidden="true" /></span>
           <p>Location</p>
           <strong>{selectedOpportunity.location}</strong>
-          <span>{selectedOpportunity.commitment}</span>
+          <small>{selectedOpportunity.commitment}</small>
         </article>
         <article>
+          <span className="opportunities-detail-stat-icon"><FiUsers aria-hidden="true" /></span>
           <p>Activity</p>
           <strong>{selectedOpportunity.proposals}</strong>
-          <span>{selectedOpportunity.posted}</span>
+          <small>{selectedOpportunity.posted}</small>
         </article>
       </div>
-
-      <section className="opportunities-gig-thumbnail" aria-label={`${selectedOpportunity.title} preview`}>
-        <img
-          src={selectedOpportunityThumbnail}
-          alt={`${selectedOpportunity.title} thumbnail`}
-          loading="lazy"
-          style={selectedOpportunity.imageCropStyle || undefined}
-        />
-      </section>
 
       <section className="opportunities-owner-card">
         <div className="opportunities-owner-head">
@@ -95,98 +86,84 @@ function OpportunityDetailRailPanel({
           </span>
         </div>
         <p className="opportunities-owner-background">{selectedOpportunity.owner.background}</p>
-        <div className="opportunities-owner-metrics">
-          {selectedOpportunity.owner.metrics.map((metric, index) => {
-            const MetricIcon = index === 0 ? FiStar : index === 1 ? FiTrendingUp : FiCheckCircle
-            return (
-              <article key={`${selectedOpportunity.id}-${metric.label}`}>
-                <div className="opportunities-owner-metric-icon">
-                  <MetricIcon aria-hidden="true" />
-                </div>
-                <p>{metric.label}</p>
+        {ownerMetrics.length ? (
+          <div className="opportunities-owner-metrics" aria-label="Client activity">
+            {ownerMetrics.map((metric) => (
+              <span key={`${selectedOpportunity.id}-${metric.label}`}>
+                <small>{metric.label}</small>
                 <strong>{metric.value}</strong>
-              </article>
-            )
-          })}
-        </div>
+              </span>
+            ))}
+          </div>
+        ) : null}
       </section>
 
-      <section className="opportunities-detail-block">
-        <h4>Overview</h4>
+      <section className="opportunities-detail-block opportunities-detail-summary">
+        <h4>At a glance</h4>
         <p>{selectedOpportunity.overview}</p>
       </section>
 
       <section className="opportunities-detail-block opportunities-fit-block">
-        <h4>Why this fits you</h4>
-        <p className="opportunities-fit-tags">
-          <span className="opportunities-intent-pill">Fits: {selectedOpportunity.careerPath}</span>
-          {selectedOpportunity.intentFit[activeOpportunityIntentId] ? (
-            <span>{selectedOpportunity.intentFit[activeOpportunityIntentId]}</span>
-          ) : null}
-        </p>
-        <p>{selectedOpportunity.progressionOutcome}</p>
-        <span>{selectedOpportunity.trustOutcome}</span>
+        <h4>{selectedOpportunity.matchReason ? 'Why this fits you' : 'About this opportunity'}</h4>
+        <span className="opportunities-intent-pill">
+          {selectedOpportunity.matchReason || selectedOpportunity.careerPath}
+        </span>
+        {intentFit ? <p>{intentFit}</p> : null}
+        {selectedOpportunity.progressionOutcome ? <p>{selectedOpportunity.progressionOutcome}</p> : null}
+        <button type="button" onClick={onEditFilters}>Adjust my matches</button>
       </section>
 
-      <section className="opportunities-detail-block">
-        <h4>What you will do</h4>
-        <ul>
-          {selectedOpportunity.responsibilities.map((item) => (
-            <li key={`${selectedOpportunity.id}-scope-${item}`}>{item}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="opportunities-detail-block">
-        <h4>What you need</h4>
-        <ul>
-          {selectedOpportunity.requirements.map((item) => (
-            <li key={`${selectedOpportunity.id}-req-${item}`}>{item}</li>
-          ))}
-        </ul>
-      </section>
-
-      <section className="opportunities-detail-foot">
-        <p>
-          <FiClock aria-hidden="true" />
-          Responds quickly
-        </p>
-        <p>
-          <FiTrendingUp aria-hidden="true" />
-          High repeat-hire profile
-        </p>
-        <p>
-          <FiStar aria-hidden="true" />
-          Trusted by campus talent
-        </p>
-      </section>
+      <div className="opportunities-detail-disclosures">
+        {responsibilities.length ? (
+          <details className="opportunities-detail-disclosure">
+            <summary>What you will do <span>{responsibilities.length}</span></summary>
+            <ul>
+              {responsibilities.map((item) => (
+                <li key={`${selectedOpportunity.id}-scope-${item}`}>{item}</li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
+        {requirements.length ? (
+          <details className="opportunities-detail-disclosure">
+            <summary>What you need <span>{requirements.length}</span></summary>
+            <ul>
+              {requirements.map((item) => (
+                <li key={`${selectedOpportunity.id}-req-${item}`}>{item}</li>
+              ))}
+            </ul>
+          </details>
+        ) : null}
+      </div>
 
       {canPlaceBid ? (
-        selectedOpportunity.applicationsClosed ? (
-          <div className="opportunities-detail-closed-note" role="status">
-            <strong>Applications closed</strong>
-            <span>This business has selected its talent and is no longer accepting applications.</span>
-          </div>
-        ) : (
-          <>
-            {selectedOpportunityProject || (selectedOpportunityBid && !selectedOpportunityBid.isDraft) ? (
-              <div className="opportunities-detail-application-note" role="status">
-                <FiCheckCircle aria-hidden="true" />
-                {selectedOpportunityProject
-                  ? <div><strong>Work is ongoing</strong><span>This opportunity has moved into your active project work.</span></div>
-                  : <div><strong>Application submitted</strong><span>It is being tracked under My Bids until the business awards the work.</span></div>}
-              </div>
-            ) : null}
-            <button
-              type="button"
-              className="opportunities-detail-bid-btn"
-              onClick={() => onOpenPlaceBid(selectedOpportunity.opportunityUuid)}
-            >
-              {selectedOpportunityProject ? 'View Ongoing Work' : selectedOpportunityBid?.isDraft ? 'Continue Application' : selectedOpportunityBid ? 'View Application' : 'Place Bid'}
-              <FiArrowRight aria-hidden="true" />
-            </button>
-          </>
-        )
+        <footer className="opportunities-detail-cta">
+          {selectedOpportunity.applicationsClosed ? (
+            <div className="opportunities-detail-closed-note" role="status">
+              <strong>Applications closed</strong>
+              <span>This business is no longer accepting applications.</span>
+            </div>
+          ) : (
+            <>
+              {selectedOpportunityProject || (selectedOpportunityBid && !selectedOpportunityBid.isDraft) ? (
+                <div className="opportunities-detail-application-note" role="status">
+                  <FiCheckCircle aria-hidden="true" />
+                  {selectedOpportunityProject
+                    ? <div><strong>Work is ongoing</strong><span>Open the active project workspace.</span></div>
+                    : <div><strong>Application submitted</strong><span>Track it under My Bids.</span></div>}
+                </div>
+              ) : null}
+              <button
+                type="button"
+                className="opportunities-detail-bid-btn"
+                onClick={() => onOpenPlaceBid(selectedOpportunity.opportunityUuid)}
+              >
+                {selectedOpportunityProject ? 'View Ongoing Work' : selectedOpportunityBid?.isDraft ? 'Continue Application' : selectedOpportunityBid ? 'View Application' : 'Place Bid'}
+                <FiArrowRight aria-hidden="true" />
+              </button>
+            </>
+          )}
+        </footer>
       ) : null}
     </section>
   )

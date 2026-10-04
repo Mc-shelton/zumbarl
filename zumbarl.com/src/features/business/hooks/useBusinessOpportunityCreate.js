@@ -4,10 +4,7 @@ import {
   BUSINESS_CREATE_DEFAULTS,
   BUSINESS_CREATE_STEPS,
 } from "../opportunityCreateData";
-import {
-  createBusinessOpportunity,
-  recordApplicantReviewEvent,
-} from "../services/businessFlowService";
+import { createBusinessOpportunity } from "../services/businessFlowService";
 
 function getBudgetLabel(form) {
   return `KES ${form.totalBudget || String(form.budget).replace(/^(KES\s*)+/i, "")}`;
@@ -104,14 +101,6 @@ export function useBusinessOpportunityCreate({
     const opportunity = await createBusinessOpportunity(
       toPayload(form, status),
     );
-    const isPublished = status === "Open";
-
-    recordApplicantReviewEvent({
-      action: isPublished ? "opportunity_published" : "opportunity_draft_saved",
-      opportunityId: opportunity.id,
-      detail: `${opportunity.title} ${isPublished ? "published" : "saved as a draft"} from create opportunity flow.`,
-    });
-
     navigate(destination);
     return opportunity;
   }

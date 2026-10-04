@@ -1,4 +1,4 @@
-import { FiMoreHorizontal, FiPlay } from "react-icons/fi";
+import { FiPlay } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import { BusinessMarketingThumbnail } from "./BusinessMarketingThumbnail";
 
@@ -37,7 +37,6 @@ export function BusinessMarketingCampaignHero({ campaign, onTogglePause }) {
           {campaign.platforms.map((platform) => (
             <li key={platform}>{platform}</li>
           ))}
-          <li>+1 more</li>
         </ul>
         <dl className="business-marketing-detail-stats">
           <div>
@@ -76,13 +75,6 @@ export function BusinessMarketingCampaignHero({ campaign, onTogglePause }) {
             Publish Campaign
           </button>
         ) : null}
-        <button
-          type="button"
-          className="business-profile-icon-btn"
-          aria-label="More campaign actions"
-        >
-          <FiMoreHorizontal aria-hidden="true" />
-        </button>
       </div>
     </section>
   );

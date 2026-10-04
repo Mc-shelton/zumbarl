@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BUSINESS_MARKETING_CREATE_OPTIONS,
   BUSINESS_MARKETING_FILTERS,
-  BUSINESS_MARKETING_PLATFORMS,
 } from "../marketingData";
 import { listBusinessMarketingCampaignsFromBackend } from "../services/businessMarketingService";
 
@@ -186,6 +185,20 @@ export function useBusinessMarketing() {
     ];
   }, [campaignRecords]);
 
+  const platformMetrics = useMemo(() => {
+    const counts = campaignRecords.flatMap((campaign) => campaign.platforms || [])
+      .reduce((result, name) => ({ ...result, [name]: (result[name] || 0) + 1 }), {});
+    const total = Math.max(1, campaignRecords.length);
+    const tones = ["pink", "dark", "red", "blue", "purple"];
+    return Object.entries(counts)
+      .sort((first, second) => second[1] - first[1])
+      .map(([label, count], index) => ({
+        label,
+        value: Math.round((count / total) * 100),
+        tone: tones[index % tones.length],
+      }));
+  }, [campaignRecords]);
+
   return {
     activeTab,
     campaigns: filteredCampaigns.slice(0, PAGE_SIZE),
@@ -195,7 +208,7 @@ export function useBusinessMarketing() {
     error,
     isLoading,
     metrics,
-    platforms: BUSINESS_MARKETING_PLATFORMS,
+    platforms: platformMetrics,
     selectedCampaignType,
     showingCount: Math.min(PAGE_SIZE, filteredCampaigns.length),
     totalCount: filteredCampaigns.length,

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   FiBarChart2,
+  FiBriefcase,
   FiCalendar,
   FiCamera,
   FiCheck,
@@ -97,6 +98,14 @@ const LABELS = {
   studentEngagement: "For students",
   partnershipTypes: "Campus partnerships",
 };
+
+function formatOpportunityDate(value) {
+  if (!value) return "No deadline set";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "No deadline set";
+  return `Apply by ${date.toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}`;
+}
+
 function Value({ value }) {
   if (Array.isArray(value))
     return (
@@ -322,6 +331,8 @@ export default function ManagedProfilePage() {
   );
   const followerCount = profile._count?.followers || 0;
   const attachedServices = profile.attachedServices || [];
+  const publishedOpportunities = profile.publishedOpportunities || [];
+  const featuredOpportunity = publishedOpportunities.find((item) => !item.applicationsClosed) || publishedOpportunities[0];
   const foundedYear = profile.foundedAt
     ? new Date(profile.foundedAt).getFullYear()
     : null;
@@ -360,7 +371,7 @@ export default function ManagedProfilePage() {
     profile.type === "campus"
       ? `/campus/explore?campus=${encodeURIComponent(profile.campus?.name || profile.name)}`
       : profile.type === "business"
-        ? `/campus/opportunities?organization=${encodeURIComponent(profile.slug)}`
+        ? `/campus/opportunities?${featuredOpportunity ? `opportunity=${encodeURIComponent(featuredOpportunity.id)}&` : ""}owner=${encodeURIComponent(profile.slug)}&intent=career`
         : null;
   function switchTab(tab) {
     setActiveTab(tab);
@@ -980,6 +991,74 @@ export default function ManagedProfilePage() {
                 )}
               </section>
             ) : null}
+            {activeTab === "opportunities" ? (
+              <section className="managed-profile-opportunities">
+                <header className="managed-profile-opportunities-head">
+                  <div>
+                    <span>Open work</span>
+                    <h2>Opportunities from {profile.name}</h2>
+                    <p>Explore current projects and gigs published by this organization.</p>
+                  </div>
+                  {publishedOpportunities.length ? (
+                    <Link to={`/campus/opportunities?owner=${encodeURIComponent(profile.slug)}&intent=career`}>
+                      Browse all <FiExternalLink aria-hidden="true" />
+                    </Link>
+                  ) : null}
+                </header>
+                {publishedOpportunities.length ? (
+                  <div className="managed-profile-opportunity-grid">
+                    {publishedOpportunities.map((opportunity) => (
+                      <Link
+                        className="managed-profile-opportunity-card"
+                        key={opportunity.id}
+                        to={`/campus/opportunities?opportunity=${encodeURIComponent(opportunity.id)}&owner=${encodeURIComponent(profile.slug)}&intent=career`}
+                      >
+                        <div className="managed-profile-opportunity-media">
+                          {opportunity.imageUrl ? (
+                            <img src={opportunity.imageUrl} alt="" loading="lazy" />
+                          ) : (
+                            <span><FiBriefcase aria-hidden="true" /></span>
+                          )}
+                        </div>
+                        <div className="managed-profile-opportunity-body">
+                          <div className="managed-profile-opportunity-title">
+                            <div>
+                              <small>{opportunity.category || opportunity.opportunityType || "Opportunity"}</small>
+                              <h3>{opportunity.title}</h3>
+                            </div>
+                            <em className={opportunity.applicationsClosed ? "is-closed" : ""}>
+                              {opportunity.applicationsClosed ? "Closed" : "Open"}
+                            </em>
+                          </div>
+                          <p>{opportunity.summary}</p>
+                          <div className="managed-profile-opportunity-facts">
+                            <strong>{opportunity.budget}</strong>
+                            <span>{opportunity.engagementMode || "Flexible"}</span>
+                            <span>{formatOpportunityDate(opportunity.applicationDeadline)}</span>
+                          </div>
+                          {opportunity.skills?.length ? (
+                            <div className="managed-profile-opportunity-skills">
+                              {opportunity.skills.slice(0, 3).map((skill) => <span key={`${opportunity.id}-${skill}`}>{skill}</span>)}
+                              {opportunity.skills.length > 3 ? <span>+{opportunity.skills.length - 3}</span> : null}
+                            </div>
+                          ) : null}
+                          <footer>
+                            <span>{opportunity.applicants || 0} proposal{opportunity.applicants === 1 ? "" : "s"}</span>
+                            <strong>View opportunity <FiExternalLink aria-hidden="true" /></strong>
+                          </footer>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="managed-profile-empty">
+                    <FiBriefcase />
+                    <h3>No open opportunities</h3>
+                    <p>New projects and gigs from this organization will appear here.</p>
+                  </div>
+                )}
+              </section>
+            ) : null}
             {activeTab === "people" ? (
               <section className="managed-profile-people">
                 <header className="managed-profile-people-head">
@@ -1007,7 +1086,7 @@ export default function ManagedProfilePage() {
                 </div>
               </section>
             ) : null}
-            {!["home", "about", "posts", "events", "people"].includes(activeTab) ? (
+            {!["home", "about", "posts", "events", "opportunities", "people", "messages"].includes(activeTab) ? (
               <section className="managed-profile-empty">
                 <h2>{activeTab[0].toUpperCase() + activeTab.slice(1)}</h2>
                 <p>This page has not published any {activeTab} yet.</p>

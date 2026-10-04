@@ -99,6 +99,44 @@ async function fundBackendBusinessOpportunity(opportunityId, payment) {
   })
 }
 
+async function readBackendMpesaPayment(paymentId) {
+  return sendZumbarlApiRequest(`/finance/mpesa/payments/${paymentId}`)
+}
+
+async function reconcileBackendMpesaPayment(paymentId) {
+  return sendZumbarlApiRequest(`/finance/mpesa/payments/${paymentId}/reconcile`, {
+    method: 'POST',
+  })
+}
+
+function wait(milliseconds) {
+  return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
+}
+
+async function waitForBackendMpesaPayment(paymentId, { intervalMs = 2500, attempts = 48 } = {}) {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (attempt > 0) await wait(intervalMs)
+    let response
+    if (attempt % 3 === 2) {
+      try {
+        response = await reconcileBackendMpesaPayment(paymentId)
+      } catch {
+        // A transient status-query failure must not hide a callback that may
+        // already be on its way. Continue polling the local payment record.
+        response = await readBackendMpesaPayment(paymentId)
+      }
+    } else {
+      response = await readBackendMpesaPayment(paymentId)
+    }
+    const payment = response?.payment
+    if (payment?.status === 'COMPLETED') return payment
+    if (payment?.status === 'FAILED' || payment?.status === 'REVERSED') {
+      throw new Error(payment.resultDescription || 'The M-Pesa payment was not completed.')
+    }
+  }
+  throw new Error('M-Pesa confirmation is still pending. Do not pay again; reopen this opportunity to check its funding status.')
+}
+
 async function listBackendFinanceWallets() {
   return sendZumbarlApiRequest('/finance/wallets')
 }
@@ -195,6 +233,9 @@ export {
   publishBackendBusinessOpportunity,
   setBackendOpportunityApplicationsClosed,
   fundBackendBusinessOpportunity,
+  readBackendMpesaPayment,
+  reconcileBackendMpesaPayment,
+  waitForBackendMpesaPayment,
   listBackendFinanceWallets,
   createBackendOpportunityDeliverables,
   listBackendOpportunityInviteCandidates,

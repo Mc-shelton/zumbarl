@@ -34,6 +34,7 @@ import {
   LearnPage,
   LearnAssessmentPage,
   LearnPracticePage,
+  LegalPage,
   MessagesPage,
   MarketplaceListingStudioPage,
   ManagedProfilePage,
@@ -97,6 +98,11 @@ export const APP_ROUTES = [
   },
   {
     path: "/campus/explore",
+    access: ACCESS_KEYS.campus.explore,
+    element: <ExploreCampusPage />,
+  },
+  {
+    path: "/campus/explore/posts/:postId",
     access: ACCESS_KEYS.campus.explore,
     element: <ExploreCampusPage />,
   },
@@ -343,6 +349,14 @@ export const APP_ROUTES = [
     element: <CampusProfilePage viewContext="business" />,
   },
   {
+    path: "/business/applicant-profile/:studentId",
+    access: [
+      ACCESS_KEYS.business.applicantProfiles,
+      ACCESS_KEYS.business.applicantProfilesLimited,
+    ],
+    element: <CampusProfilePage viewContext="business" />,
+  },
+  {
     path: "/business/company-profile",
     access: ACCESS_KEYS.business.companyProfile,
     element: <BusinessCompanyProfilePage />,
@@ -395,6 +409,9 @@ export const APP_ROUTES = [
   },
   { path: "/login", element: <AuthPage defaultMode="login" /> },
   { path: "/register", element: <AuthPage defaultMode="register" /> },
+  { path: "/privacy", element: <LegalPage document="privacy" /> },
+  { path: "/terms", element: <LegalPage document="terms" /> },
+  { path: "/safety", element: <LegalPage document="safety" /> },
   { path: "/web/login", element: <Navigate to="/login" replace /> },
   { path: "/web/login.html", element: <Navigate to="/login" replace /> },
   { path: "/web/signup", element: <Navigate to="/register" replace /> },

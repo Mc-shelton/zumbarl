@@ -1,9 +1,6 @@
 import { lazy } from "react";
 
 export const AuthPage = lazy(() => import("../../pages/AuthPage"));
-export const BusinessApplicantProfilePage = lazy(
-  () => import("../../pages/BusinessApplicantProfilePage"),
-);
 export const BusinessApplicantsBrowsePage = lazy(
   () => import("../../pages/BusinessApplicantsBrowsePage"),
 );
@@ -74,6 +71,7 @@ export const ExploreCampusPage = lazy(
 );
 export const EateryPage = lazy(() => import("../../pages/EateryPage"));
 export const HelpPage = lazy(() => import("../../pages/HelpPage"));
+export const LegalPage = lazy(() => import("../../pages/LegalPage"));
 export const HomePage = lazy(() => import("../../pages/HomePage"));
 export const LearnPage = lazy(() => import("../../pages/LearnPage"));
 export const KnowledgeSpacePage = lazy(

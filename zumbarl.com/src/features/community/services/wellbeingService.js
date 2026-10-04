@@ -82,6 +82,13 @@ function recordStudentCareCheckIn(enrollmentId, payload) {
   })
 }
 
+function updateOwnStudentCareEnrollment(enrollmentId, payload) {
+  return sendZumbarlApiRequest(`/support/care-enrollments/${encodeURIComponent(enrollmentId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
 export {
   completeWellbeingReset,
   createDailyCheckIn,
@@ -96,4 +103,5 @@ export {
   sendTalkItOutMessage,
   submitWellbeingCheckIn,
   updateWellbeingPreferences,
+  updateOwnStudentCareEnrollment,
 }

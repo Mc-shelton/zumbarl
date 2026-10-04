@@ -1,6 +1,7 @@
 import { Suspense, useEffect } from 'react'
 import { createBrowserRouter, RouterProvider, useRouteError } from 'react-router-dom'
 import './App.css'
+import AppBrandLoader from './components/AppBrandLoader'
 import AccessRoute from './features/auth/components/AccessRoute'
 import RealtimeCallAgent from './features/calls/components/RealtimeCallAgent'
 import CampusPreferenceObserver from './features/navigation/components/CampusPreferenceObserver'
@@ -20,10 +21,7 @@ const loadingScreenStyle = {
 function AppLoading() {
   return (
     <main style={loadingScreenStyle} role="status" aria-live="polite">
-      <div style={{ display: 'grid', justifyItems: 'center', gap: 12 }}>
-        <span className="app-route-spinner" style={{ width: 34, height: 34, border: '3px solid #e4deea', borderTopColor: '#79506f', borderRadius: '50%' }} />
-        <strong>Loading Zumbarl…</strong>
-      </div>
+      <AppBrandLoader />
     </main>
   )
 }

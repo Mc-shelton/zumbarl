@@ -10,6 +10,8 @@ function MarketplaceOfferModal({ initialAmount = '', isOpen, item, onClose, onSu
   const [isSending, setIsSending] = useState(false)
 
   useEffect(() => {
+    // Opening the reusable dialog starts a fresh offer session.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (isOpen) setAmount(initialAmount ? String(initialAmount) : '')
   }, [initialAmount, isOpen])
 
@@ -59,7 +61,7 @@ function MarketplaceOfferModal({ initialAmount = '', isOpen, item, onClose, onSu
 
         <div className="marketplace-offer-product">
           <img src={item.image} alt="" />
-          <div><strong>{item.price}</strong><span>Seller: {seller.name}</span></div>
+          <div><strong>{item.price}</strong><span>Seller: {seller?.name || item.seller?.name || 'Marketplace seller'}</span></div>
         </div>
 
         <label htmlFor="marketplace-offer-amount">

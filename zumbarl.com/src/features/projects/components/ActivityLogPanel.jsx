@@ -337,6 +337,9 @@ function ActivityLogPanel(props) {
             <FiActivity aria-hidden="true" />
             <strong>{activity.length ? 'No matching activity' : 'No project activity yet'}</strong>
             <p>{activity.length ? 'Try another search or filter.' : 'Real project events will appear here as work progresses.'}</p>
+            {activity.length ? (
+              <button type="button" onClick={() => { setQuery(''); setFilter('all') }}>Clear filters</button>
+            ) : null}
           </div>
         )}
       </section>

@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import Seo from '../components/Seo'
+import { BusinessCampusPresence } from '../features/business/components/BusinessCampusPresence'
 import { BusinessDashboardMetrics } from '../features/business/components/BusinessDashboardMetrics'
 import { BusinessPipelineOverview } from '../features/business/components/BusinessPipelineOverview'
 import { BusinessRecentApplicants } from '../features/business/components/BusinessRecentApplicants'
@@ -6,11 +8,31 @@ import { BusinessWorkspaceHeader } from '../features/business/components/Busines
 import { BusinessWorkspaceRail } from '../features/business/components/BusinessWorkspaceRail'
 import { BusinessWorkspaceSidebar } from '../features/business/components/BusinessApplicantSidebar'
 import { useBusinessWorkspace } from '../features/business/hooks/useBusinessWorkspace'
+import { createBusinessPost } from '../features/business/services/readBusinessDashboard'
+import ExplorePostComposer from '../features/explore/components/ExplorePostComposer'
 import '../styles/campus.css'
 import '../styles/business.css'
+import '../styles/explore-campus.css'
 
 function BusinessWorkspacePage() {
   const workspace = useBusinessWorkspace()
+  const [isPostComposerOpen, setIsPostComposerOpen] = useState(false)
+  const [publishNotice, setPublishNotice] = useState('')
+
+  async function publishBusinessPost(payload) {
+    await createBusinessPost(payload)
+    setPublishNotice('Your post is live in Explore Campus.')
+    await workspace.reload().catch(() => null)
+  }
+
+  async function copyStudentLink(path) {
+    try {
+      await navigator.clipboard.writeText(new URL(path, window.location.origin).toString())
+      setPublishNotice('Student-facing link copied to your clipboard.')
+    } catch {
+      setPublishNotice('Copying is unavailable in this browser. Open this dashboard over HTTPS and try again.')
+    }
+  }
 
   return (
     <main className="campus-page business-workspace-page">
@@ -31,8 +53,16 @@ function BusinessWorkspacePage() {
               primaryActionLabel="Create Opportunity"
             />
             {workspace.errorMessage ? <p className="business-dashboard-error">{workspace.errorMessage}</p> : null}
+            {publishNotice ? <p className="business-dashboard-publish-notice" role="status">{publishNotice}</p> : null}
+            <BusinessCampusPresence
+              business={workspace.business}
+              onCopyStudentLink={copyStudentLink}
+              onCreatePost={() => { setPublishNotice(''); setIsPostComposerOpen(true) }}
+              postCount={workspace.postCount}
+              posts={workspace.posts}
+            />
             <BusinessDashboardMetrics metrics={workspace.metrics} />
-           
+
             <BusinessPipelineOverview stages={workspace.pipelineStages} />
             <BusinessRecentApplicants applicants={workspace.applicants} />
           </section>
@@ -44,6 +74,18 @@ function BusinessWorkspacePage() {
           />
         </div>
       </div>
+      <ExplorePostComposer
+        allowedTypes={['post', 'media', 'poll', 'feeling']}
+        eyebrow="Business voice"
+        identity={{ name: workspace.business?.name || 'Your business', avatarUrl: workspace.business?.logoUrl }}
+        initialType="post"
+        isOpen={isPostComposerOpen}
+        onClose={() => setIsPostComposerOpen(false)}
+        onPublish={publishBusinessPost}
+        placeholder={`Share an update from ${workspace.business?.name || 'your business'} with Explore Campus…`}
+        publishLabel="Publish as business"
+        title={`Post as ${workspace.business?.name || 'your business'}`}
+      />
     </main>
   )
 }

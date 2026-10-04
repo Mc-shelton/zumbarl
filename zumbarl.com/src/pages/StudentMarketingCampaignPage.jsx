@@ -66,6 +66,29 @@ const PLATFORM_ABBREVIATIONS = {
   X: "X",
 };
 
+const PLATFORM_POST_HOSTS = {
+  Instagram: ["instagram.com"],
+  TikTok: ["tiktok.com"],
+  YouTube: ["youtube.com", "youtu.be"],
+  Facebook: ["facebook.com", "fb.watch"],
+  X: ["x.com", "twitter.com"],
+  LinkedIn: ["linkedin.com"],
+};
+
+function isValidPlatformPostUrl(value, platform) {
+  if (!String(value || "").trim()) return false;
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.toLowerCase();
+    return ["http:", "https:"].includes(url.protocol) &&
+      (PLATFORM_POST_HOSTS[platform] || []).some(
+        (host) => hostname === host || hostname.endsWith(`.${host}`),
+      );
+  } catch {
+    return false;
+  }
+}
+
 function getMarketingMaterialPreview(campaign) {
   const primaryMaterial = campaign.materials?.[0];
   return normalizeZumbarlFileUrl(
@@ -102,6 +125,7 @@ function StudentMarketingCampaignPage() {
   const [proofEntries, setProofEntries] = useState([]);
   const [uploadingPlatform, setUploadingPlatform] = useState("");
   const [isSubmittingProof, setIsSubmittingProof] = useState(false);
+  const [proofSubmissionError, setProofSubmissionError] = useState("");
   const [proofResult, setProofResult] = useState(null);
   const [copiedValue, setCopiedValue] = useState("");
   const campaign = backendCampaign;
@@ -222,10 +246,15 @@ function StudentMarketingCampaignPage() {
     !accepted &&
     remainingSlots > 0 &&
     remainingBudget >= Number(campaign.payoutPerCampaigner || 0);
-  const completedPostUrls = proofEntries.filter((entry) => entry.postUrl).length;
+  const completedPostUrls = proofEntries.filter((entry) => isValidPlatformPostUrl(entry.postUrl, entry.platform)).length;
   const completedScreenshots = proofEntries.filter((entry) => entry.analyticsScreenshot).length;
+  const invalidPostPlatforms = proofEntries
+    .filter((entry) => entry.postUrl && !isValidPlatformPostUrl(entry.postUrl, entry.platform))
+    .map((entry) => entry.platform);
   const proofReady = Boolean(
-    proofEntries.length && proofEntries.every((entry) => entry.postUrl && entry.analyticsScreenshot),
+    proofEntries.length && proofEntries.every((entry) => (
+      isValidPlatformPostUrl(entry.postUrl, entry.platform) && entry.analyticsScreenshot
+    )),
   );
   const eligibilityMessage = accepted
     ? "This campaign is in your active campaigns. Download the material and publish when ready."
@@ -256,6 +285,7 @@ function StudentMarketingCampaignPage() {
   }
   async function submitProof() {
     setError("");
+    setProofSubmissionError("");
     setIsSubmittingProof(true);
     try {
       const incompletePlatform = proofEntries.find(
@@ -263,6 +293,12 @@ function StudentMarketingCampaignPage() {
       );
       if (incompletePlatform) {
         throw new Error(`Add the post URL and analytics screenshot for ${incompletePlatform.platform}.`);
+      }
+      const invalidPlatform = proofEntries.find(
+        (entry) => !isValidPlatformPostUrl(entry.postUrl, entry.platform),
+      );
+      if (invalidPlatform) {
+        throw new Error(`Use a valid ${invalidPlatform.platform} post URL in the ${invalidPlatform.platform} field.`);
       }
       const posts = proofEntries.map((entry) => ({
         postUrl: entry.postUrl,
@@ -283,7 +319,7 @@ function StudentMarketingCampaignPage() {
       setProofSubmitted(true);
       setProofResult(result);
     } catch (reason) {
-      setError(reason.message || "Proof could not be submitted.");
+      setProofSubmissionError(reason.message || "Proof could not be submitted.");
     } finally {
       setIsSubmittingProof(false);
     }
@@ -296,6 +332,7 @@ function StudentMarketingCampaignPage() {
       return;
     }
     setError("");
+    setProofSubmissionError("");
     setUploadingPlatform(platform);
     try {
       const upload = await uploadZumbarlFile(file, {
@@ -582,8 +619,10 @@ function StudentMarketingCampaignPage() {
                       <div className="student-marketing-platform-proof-list">
                         {proofEntries.map((entry) => {
                           const inputId = `campaign-proof-link-${entry.platform.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+                          const hasPostUrl = Boolean(entry.postUrl.trim());
+                          const hasValidPostUrl = isValidPlatformPostUrl(entry.postUrl, entry.platform);
                           return (
-                            <article key={entry.platform}>
+                            <article key={entry.platform} className={hasPostUrl && !hasValidPostUrl ? "has-invalid-url" : ""}>
                               <span className={`student-marketing-platform-badge is-${entry.platform.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`} aria-hidden="true">{PLATFORM_ABBREVIATIONS[entry.platform] || entry.platform.slice(0, 2).toUpperCase()}</span>
                               <div className="opportunities-bid-field">
                                 <label htmlFor={inputId}>{entry.platform} post URL</label>
@@ -593,24 +632,31 @@ function StudentMarketingCampaignPage() {
                                     id={inputId}
                                     type="url"
                                     value={entry.postUrl}
-                                    onChange={(event) => setProofEntries((entries) => entries.map((item) => (
-                                      item.platform === entry.platform ? { ...item, postUrl: event.target.value } : item
-                                    )))}
+                                    aria-invalid={hasPostUrl && !hasValidPostUrl}
+                                    onChange={(event) => {
+                                      setProofSubmissionError("");
+                                      setProofEntries((entries) => entries.map((item) => (
+                                        item.platform === entry.platform ? { ...item, postUrl: event.target.value } : item
+                                      )));
+                                    }}
                                     placeholder={PLATFORM_POST_HINTS[entry.platform] || "https://…"}
                                     required
                                   />
                                 </div>
+                                {hasPostUrl && !hasValidPostUrl ? (
+                                  <small className="student-marketing-url-error">Use a link from {PLATFORM_POST_HOSTS[entry.platform]?.[0] || entry.platform}.</small>
+                                ) : null}
                               </div>
-                              <em className={entry.postUrl ? "is-complete" : ""}>
-                                {entry.postUrl ? <FiCheckCircle /> : null}
-                                {entry.postUrl ? "Added" : "Required"}
+                              <em className={hasValidPostUrl ? "is-complete" : hasPostUrl ? "is-invalid" : ""}>
+                                {hasValidPostUrl ? <FiCheckCircle /> : null}
+                                {hasValidPostUrl ? "Added" : hasPostUrl ? "Wrong link" : "Required"}
                               </em>
                             </article>
                           );
                         })}
                       </div>
                       <p className="student-marketing-platform-count">
-                        {proofEntries.map((entry) => entry.platform).join(" · ")} · {completedPostUrls}/{proofEntries.length} URLs added
+                        {proofEntries.map((entry) => entry.platform).join(" · ")} · {completedPostUrls}/{proofEntries.length} valid URLs
                       </p>
                     </section>
 
@@ -666,10 +712,18 @@ function StudentMarketingCampaignPage() {
                     <h3>Ready for review?</h3>
                     <p>We’ll verify the post, read the analytics screenshot, and package the results for the business.</p>
                     <ul>
-                      <li className={completedPostUrls === proofEntries.length ? "is-complete" : ""}><FiCheckCircle /> Post URLs ({completedPostUrls}/{proofEntries.length})</li>
+                      <li className={completedPostUrls === proofEntries.length ? "is-complete" : ""}><FiCheckCircle /> Valid post URLs ({completedPostUrls}/{proofEntries.length})</li>
                       <li className={completedScreenshots === proofEntries.length ? "is-complete" : ""}><FiCheckCircle /> Analytics screenshots ({completedScreenshots}/{proofEntries.length})</li>
                       <li><FiCheckCircle /> Tracking clicks attached automatically</li>
                     </ul>
+                    {invalidPostPlatforms.length ? (
+                      <p className="student-marketing-proof-error" role="alert">
+                        Replace the {invalidPostPlatforms.join(" and ")} URL{invalidPostPlatforms.length === 1 ? "" : "s"} with a post from the matching platform.
+                      </p>
+                    ) : null}
+                    {proofSubmissionError ? (
+                      <p className="student-marketing-proof-error" role="alert">{proofSubmissionError}</p>
+                    ) : null}
                     <button
                       type="button"
                       className="opportunities-detail-bid-btn"

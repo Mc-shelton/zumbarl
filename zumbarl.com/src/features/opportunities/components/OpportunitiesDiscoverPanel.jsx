@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { FiArrowUpRight, FiBriefcase, FiCheck, FiChevronDown, FiClock, FiMoreHorizontal, FiTrendingUp } from 'react-icons/fi'
+import { FiArrowUpRight, FiBriefcase, FiCheck, FiChevronDown, FiClock, FiMoreHorizontal, FiSliders, FiTrendingUp } from 'react-icons/fi'
 
 function handleKeyboardActivation(event, onActivate) {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -37,10 +37,12 @@ function OpportunitiesDiscoverPanel({
   activeOpportunityIntentId,
   activeOpportunityTypeId,
   onClearFilters,
+  onEditFilters,
   onOpportunitySelect,
   onOpportunityTypeChange,
   opportunities,
   opportunityTypeOptions = [],
+  recommendationPresentation = {},
   selectedOpportunityUuid,
 }) {
   const [isMoreOpen, setIsMoreOpen] = useState(false)
@@ -122,6 +124,11 @@ function OpportunitiesDiscoverPanel({
           ) : null}
         </div>
 
+        <button type="button" className="opportunities-mobile-filter-btn" onClick={onEditFilters}>
+          <FiSliders aria-hidden="true" />
+          Filters
+        </button>
+
         <div className="opportunities-types-track">
           {additionalOpportunityTypes.map((option) => (
             <OpportunityTypePill
@@ -134,11 +141,11 @@ function OpportunitiesDiscoverPanel({
         </div>
       </section>
 
-      <section className="opportunities-list-section" aria-label="Recommended opportunities">
+      <section className="opportunities-list-section" aria-label={recommendationPresentation.title || 'Opportunity results'}>
         <div className="opportunities-section-head">
           <div>
-            <h2>Recommended for you</h2>
-            <p>Opportunities matched to your skills and activity</p>
+            <h2>{recommendationPresentation.title || 'Opportunities'}</h2>
+            <p>{recommendationPresentation.subtitle || 'Browse currently available work'}</p>
           </div>
           <button type="button" className="campus-link-btn" onClick={onClearFilters}>View all</button>
         </div>
@@ -169,8 +176,10 @@ function OpportunitiesDiscoverPanel({
                   ) : null}
                 </div>
                 <div className="opportunities-job-intent-row">
-                  <span className="opportunities-intent-pill">Fits: {item.careerPath}</span>
-                  <span>{item.intentFit[activeOpportunityIntentId] || ''}</span>
+                  <span className="opportunities-intent-pill">
+                    {item.matchReason || `Category: ${item.careerPath}`}
+                  </span>
+                  <span>{item.matchReason ? item.intentFit[activeOpportunityIntentId] || '' : 'Shown in newest-first order'}</span>
                 </div>
                 <p className="opportunities-job-meta">
                   <FiBriefcase aria-hidden="true" />

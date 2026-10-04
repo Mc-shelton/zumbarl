@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getMarketplaceItemPath } from '../data/marketplace'
-import { MARKETPLACE_DEFAULT_SELLER } from '../data/marketplace'
 import CampusSidebar from '../components/layout/CampusSidebar'
 import Seo from '../components/Seo'
 import MarketplaceHeader from '../features/opportunities/components/MarketplaceHeader'
@@ -23,14 +22,14 @@ import '../styles/opportunities.css'
 function OpportunitiesBuySellProductPage() {
   const productState = useMarketplaceProductState()
   const navigate = useNavigate()
-  const [seller, setSeller] = useState(MARKETPLACE_DEFAULT_SELLER)
+  const [seller, setSeller] = useState(null)
   const [isOfferOpen, setIsOfferOpen] = useState(false)
   const [isServiceRequestOpen, setIsServiceRequestOpen] = useState(false)
   const [actionStatus, setActionStatus] = useState('')
   const [isActionPending, setIsActionPending] = useState(false)
   const [viewerUserId, setViewerUserId] = useState(() => getAuthUserSnapshot()?.user?.id || '')
-  const sellerUsername = productState.item.seller?.username || MARKETPLACE_DEFAULT_SELLER.username
-  const isOwner = Boolean(viewerUserId && seller.userId && viewerUserId === seller.userId)
+  const sellerUsername = productState.item.seller?.username || ''
+  const isOwner = Boolean(viewerUserId && seller?.userId && viewerUserId === seller.userId)
   const isEateryItem = isFoodListing(productState.item)
   const isStudentKitchenItem = String(productState.item.shop?.vendorType || '').toLowerCase() === 'student_kitchen'
 
@@ -50,6 +49,7 @@ function OpportunitiesBuySellProductPage() {
   }, [])
 
   useEffect(() => {
+    if (!sellerUsername) return undefined
     let cancelled = false
     readMarketplaceSeller(sellerUsername)
       .then((profile) => {
@@ -57,12 +57,12 @@ function OpportunitiesBuySellProductPage() {
         setSeller((current) => ({
           ...current,
           ...profile,
-          avatar: normalizeZumbarlFileUrl(profile.avatarUrl) || current.avatar,
+          avatar: normalizeZumbarlFileUrl(profile.avatarUrl) || current?.avatar || '',
           role: 'Student seller',
-          itemsSold: profile.itemsListed || current.itemsSold,
+          itemsSold: profile.itemsListed ?? current?.itemsSold,
           joined: profile.joinedAt
             ? new Date(profile.joinedAt).toLocaleDateString('en-KE', { month: 'short', year: 'numeric' })
-            : current.joined,
+            : current?.joined,
         }))
       })
       .catch((requestError) => setActionStatus(requestError.message))
@@ -103,8 +103,8 @@ function OpportunitiesBuySellProductPage() {
     setIsOfferOpen(false)
     const offerAmount = Number(response.offer?.amount ?? amount)
     setActionStatus(response.alreadyPending
-      ? `Your KSh ${offerAmount.toLocaleString('en-KE')} offer is already awaiting ${seller.name}'s response.`
-      : `Your KSh ${offerAmount.toLocaleString('en-KE')} offer was sent to ${seller.name}.`)
+      ? `Your KSh ${offerAmount.toLocaleString('en-KE')} offer is already awaiting ${seller?.name || 'the seller'}'s response.`
+      : `Your KSh ${offerAmount.toLocaleString('en-KE')} offer was sent to ${seller?.name || 'the seller'}.`)
   }
 
   async function handleViewSellerProfile() {

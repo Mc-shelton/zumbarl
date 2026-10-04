@@ -1,20 +1,42 @@
 import {
+  FiActivity,
+  FiArrowRight,
   FiBriefcase,
   FiCalendar,
   FiCheckCircle,
-  FiChevronDown,
+  FiClipboard,
   FiCreditCard,
+  FiFileText,
+  FiFolder,
+  FiHome,
+  FiMessageCircle,
   FiMoreHorizontal,
+  FiPlay,
   FiPlus,
+  FiStar,
+  FiUsers,
   FiUploadCloud,
 } from 'react-icons/fi'
+import { useEffect, useRef, useState } from 'react'
 import CampusTopActions from '../../../components/layout/CampusTopActions'
 import { Breadcrumb } from '../../../components/ui'
-import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
-import { getCurrentLoginRole } from '../../auth/roleConfig'
+import { Link } from 'react-router-dom'
+import { ACCESS_KEYS, getCurrentLoginRole, hasAccess } from '../../auth/roleConfig'
 import { getProjectTabs } from '../constants'
 
-function ProjectTopBar({ activeProject, activeTab, isBusinessViewer = false, onTabChange, onSubmitWork }) {
+function ProjectTopBar({
+  activeProject,
+  activeTab,
+  hasStarted = true,
+  isBusinessViewer = false,
+  isStarting = false,
+  onStartProject,
+  onTabChange,
+  onSubmitWork,
+}) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [copyNotice, setCopyNotice] = useState('')
+  const menuRef = useRef(null)
   const tabs = getProjectTabs(activeProject, {
     isBusinessViewer: getCurrentLoginRole()?.side === 'company',
   })
@@ -22,13 +44,51 @@ function ProjectTopBar({ activeProject, activeTab, isBusinessViewer = false, onT
   const canSubmitWork = !isBusinessViewer
     && hasAccess(ACCESS_KEYS.projects.submitWork)
     && activeProject.canSubmitWork !== false
+  const isReadyToStart = isBusinessViewer && !hasStarted && Boolean(onStartProject)
   const primaryAction = canDiscoverPrograms ? (
-    <button type="button" className="project-program-btn">
+    <Link to="/campus/opportunities" className="project-program-btn">
       <FiPlus aria-hidden="true" />
-      Discover Programs
-      <FiChevronDown aria-hidden="true" />
-    </button>
+      Discover opportunities
+      <FiArrowRight aria-hidden="true" />
+    </Link>
   ) : null
+
+  const tabIcons = {
+    Overview: FiHome,
+    'Work & Deliverables': FiClipboard,
+    Team: FiUsers,
+    Messages: FiMessageCircle,
+    Files: FiFolder,
+    Reviews: FiStar,
+    'Activity Logs': FiActivity,
+  }
+
+  useEffect(() => {
+    if (!isMenuOpen) return undefined
+    const closeMenu = (event) => {
+      if (!menuRef.current?.contains(event.target)) setIsMenuOpen(false)
+    }
+    const closeOnEscape = (event) => {
+      if (event.key === 'Escape') setIsMenuOpen(false)
+    }
+    document.addEventListener('pointerdown', closeMenu)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeMenu)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [isMenuOpen])
+
+  async function copyProjectLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopyNotice('Project link copied')
+    } catch {
+      setCopyNotice('Could not copy the link')
+    }
+    setIsMenuOpen(false)
+    window.setTimeout(() => setCopyNotice(''), 2200)
+  }
 
   return (
     <div className="project-workspace-head">
@@ -54,22 +114,71 @@ function ProjectTopBar({ activeProject, activeTab, isBusinessViewer = false, onT
       </header>
 
       <section className="project-workspace-titlebar">
-        <div>
-          <h1>{activeProject.title}</h1>
-          <span className="project-status">
-            <FiCheckCircle aria-hidden="true" />
-            {activeProject.status}
+        <div className="project-workspace-title-context">
+          <span className="project-workspace-title-mark" aria-hidden="true">
+            <img src="/assets/index/bee_nobg.png" alt="" />
           </span>
+          <div className="project-workspace-title-copy">
+            <small>{isBusinessViewer ? 'Business delivery workspace' : 'Your Zumbarl project'}</small>
+            <div>
+              <h1>{activeProject.title}</h1>
+              <span className="project-status">
+                <FiCheckCircle aria-hidden="true" />
+                {isReadyToStart ? 'Ready to start' : activeProject.status}
+              </span>
+            </div>
+            <p>{isBusinessViewer ? 'Guide the work, review delivery and keep the student team moving.' : 'Build the work, show your progress and turn every approved task into proof.'}</p>
+          </div>
         </div>
-        {canSubmitWork ? (
+        {isReadyToStart ? (
+          <button
+            type="button"
+            className="project-primary-btn project-start-btn"
+            disabled={isStarting}
+            onClick={onStartProject}
+          >
+            <FiPlay aria-hidden="true" />
+            {isStarting ? 'Starting…' : 'Start project'}
+          </button>
+        ) : canSubmitWork ? (
           <button type="button" className="project-primary-btn" onClick={onSubmitWork}>
             <FiUploadCloud aria-hidden="true" />
             {activeProject.workActionLabel || 'Submit Work'}
           </button>
         ) : null}
-        <button type="button" className="project-icon-btn" aria-label="More project actions">
-          <FiMoreHorizontal aria-hidden="true" />
-        </button>
+        <div className="project-actions-menu" ref={menuRef}>
+          <button
+            type="button"
+            className="project-icon-btn"
+            aria-label="More project actions"
+            aria-expanded={isMenuOpen}
+            aria-haspopup="menu"
+            onClick={() => setIsMenuOpen((current) => !current)}
+          >
+            <FiMoreHorizontal aria-hidden="true" />
+          </button>
+          {isMenuOpen ? (
+            <div className="project-actions-popover" role="menu">
+              <button type="button" role="menuitem" onClick={copyProjectLink}>
+                <FiClipboard aria-hidden="true" />
+                Copy project link
+              </button>
+              {tabs.includes('Messages') ? (
+                <button type="button" role="menuitem" onClick={() => { onTabChange('Messages'); setIsMenuOpen(false) }}>
+                  <FiMessageCircle aria-hidden="true" />
+                  Open messages
+                </button>
+              ) : null}
+              {tabs.includes('Files') ? (
+                <button type="button" role="menuitem" onClick={() => { onTabChange('Files'); setIsMenuOpen(false) }}>
+                  <FiFileText aria-hidden="true" />
+                  Open project files
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+        {copyNotice ? <span className="project-copy-notice" role="status">{copyNotice}</span> : null}
       </section>
 
       <section className="project-workspace-meta" aria-label="Project summary">
@@ -92,16 +201,21 @@ function ProjectTopBar({ activeProject, activeTab, isBusinessViewer = false, onT
       </section>
 
       <nav className="project-workspace-tabs zumbarl-segmented-tabs" aria-label="Project tabs">
-        {tabs.map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            className={activeTab === tab ? 'is-active' : ''}
-            onClick={() => onTabChange(tab)}
-          >
-            {tab}
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const TabIcon = tabIcons[tab]
+          return (
+            <button
+              key={tab}
+              type="button"
+              className={activeTab === tab ? 'is-active' : ''}
+              aria-current={activeTab === tab ? 'page' : undefined}
+              onClick={() => onTabChange(tab)}
+            >
+              {TabIcon ? <TabIcon aria-hidden="true" /> : null}
+              {tab}
+            </button>
+          )
+        })}
       </nav>
     </div>
   )

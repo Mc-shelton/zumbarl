@@ -19,7 +19,6 @@ function OpportunitiesDiscoverRail({
   selectedOpportunity,
   selectedOpportunityBid,
   selectedOpportunityProject,
-  selectedOpportunityThumbnail,
   skillOptions,
 }) {
   const railClasses = (
@@ -29,7 +28,13 @@ function OpportunitiesDiscoverRail({
   )
 
   return (
-    <aside className={railClasses}>
+    <aside
+      className={railClasses}
+      aria-label="Opportunity filters and details"
+      onClick={(event) => {
+        if (isFilterExpanded && event.target === event.currentTarget) onBackToDetail()
+      }}
+    >
       <OpportunitiesFilterRailPanel
         isDetailOpen={isDetailOpen}
         isFilterCollapsed={isFilterCollapsed}
@@ -53,7 +58,6 @@ function OpportunitiesDiscoverRail({
         selectedOpportunity={selectedOpportunity}
         selectedOpportunityBid={selectedOpportunityBid}
         selectedOpportunityProject={selectedOpportunityProject}
-        selectedOpportunityThumbnail={selectedOpportunityThumbnail}
       />
     </aside>
   )

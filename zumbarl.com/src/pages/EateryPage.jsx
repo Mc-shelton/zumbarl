@@ -241,13 +241,17 @@ function EateryPage() {
 
           <section className="campus-main eatery-main">
             <header className="campus-header eatery-header">
-              <div>
+              <div className="eatery-mobile-brand" aria-hidden="true">
+                <span><img src="/assets/index/bee_nobg.png" alt="" /></span>
+                <div><small>Your campus</small><strong>Eatery</strong></div>
+              </div>
+              <div className="eatery-head-copy">
                 <Breadcrumb items={[{ label: 'Campus' }, { label: 'Eatery' }]} />
                 <span className="eatery-kicker"><FiCoffee aria-hidden="true" /> Food around your campus</span>
                 <h1>What are you craving?</h1>
                 <p>See what campus eateries are serving or pick up a home-style plate from a student kitchen.</p>
               </div>
-              <CampusTopActions className="campus-header-actions eatery-header-actions" primaryAction={<Link className="eatery-orders-link" to="/campus/opportunities/buy-sell?view=orders"><FiPackage aria-hidden="true" /> My orders</Link>} showUserButton={false} />
+              <CampusTopActions className="campus-header-actions eatery-header-actions" primaryAction={<Link className="eatery-orders-link" to="/campus/opportunities/buy-sell?view=orders" aria-label="My orders"><FiPackage aria-hidden="true" /><span>My orders</span></Link>} showUserButton={false} />
             </header>
 
             <section className="eatery-discovery-card">

@@ -526,26 +526,40 @@ function MessagesPage() {
     if (!activeCall?.id || activeCall.status !== 'ringing') return undefined
     playCallRingtone()
     const ringtoneInterval = window.setInterval(playCallRingtone, 2200)
-    const statusInterval = window.setInterval(async () => {
+
+    const applyCallStatus = (status) => {
+      const nextCall = { ...activeCall, status }
+      if (status === 'accepted') {
+        setActiveCall(null)
+        setCallStatus('')
+        openCallOverlay(nextCall)
+      } else if (status !== 'ringing') {
+        setActiveCall(null)
+        setCallStatus(`Call ${status}.`)
+      }
+    }
+    const handleCallUpdate = (event) => {
+      if (event.detail?.id === activeCall.id) applyCallStatus(event.detail.status)
+    }
+    const reconcileCall = async () => {
       try {
         const call = await readCall(activeCall.id)
-        setActiveCall(call)
-        if (call.status === 'accepted') {
-          setActiveCall(null)
-          setCallStatus('')
-          openCallOverlay(call)
-        } else if (call.status !== 'ringing') {
-          setCallStatus(`Call ${call.status}.`)
-        }
+        applyCallStatus(call.status)
       } catch (requestError) {
         setCallStatus(requestError.message)
       }
-    }, 1200)
+    }
+    const expiryDelay = Math.max(0, new Date(activeCall.expiresAt).getTime() - Date.now())
+    const expiryTimeout = window.setTimeout(() => applyCallStatus('missed'), expiryDelay)
+    window.addEventListener('zumbarl:call-updated', handleCallUpdate)
+    window.addEventListener('zumbarl:realtime-connected', reconcileCall)
     return () => {
       window.clearInterval(ringtoneInterval)
-      window.clearInterval(statusInterval)
+      window.clearTimeout(expiryTimeout)
+      window.removeEventListener('zumbarl:call-updated', handleCallUpdate)
+      window.removeEventListener('zumbarl:realtime-connected', reconcileCall)
     }
-  }, [activeCall?.id, activeCall?.status])
+  }, [activeCall])
 
   useEffect(() => {
     if (isPageConversation || isGroupConversation || !requestedCallType || !activeParticipantId || activeParticipantId !== requestedParticipantId) return

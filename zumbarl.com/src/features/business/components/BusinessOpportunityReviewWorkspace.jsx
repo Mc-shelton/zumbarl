@@ -25,6 +25,7 @@ import {
   FiX,
 } from 'react-icons/fi'
 import { Button, MetricCard, PersonRow, StatusPill } from '../../../components/ui'
+import { getAuthUserSnapshot } from '../../auth/services/authUserService'
 import { listBackendBusinessActivity, listBackendFinanceWallets } from '../services/persistBusinessOpportunity'
 import { useDeliverableTasks } from '../../projects/hooks/useDeliverableTasks'
 import BusinessProjectSettingsPanel from './BusinessProjectSettingsPanel'
@@ -84,18 +85,15 @@ function getReviewTabs(opportunity, applicationCount = 0) {
   return withoutTeam.filter((tab) => !MILESTONE_ONLY.includes(tab.id))
 }
 
-const REVIEW_IMAGE = '/assets/index/business_page_images/optimized/campaign-creators-gMsnXqILjp4-unsplash.webp'
-const SAMPLE_APPLICATION_PDF_PREVIEW = 'data:application/pdf;base64,JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCAzMDAgMTQ0XSAvQ29udGVudHMgNCAwIFIgL1Jlc291cmNlcyA8PCAvRm9udCA8PCAvRjEgNSAwIFIgPj4gPj4gPj4KZW5kb2JqCjQgMCBvYmoKPDwgL0xlbmd0aCA0NCA+PgpzdHJlYW0KQlQKL0YxIDI0IFRmCjcyIDcyIFRkCihQb3J0Zm9saW8gc2FtcGxlKSBUagpFVAplbmRzdHJlYW0KZW5kb2JqCjUgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhID4+CmVuZG9iagp4cmVmCjAgNgowMDAwMDAwMDAwIDY1NTM1IGYgCjAwMDAwMDAwMDkgMDAwMDAgbiAKMDAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDAyNzQgMDAwMDAgbiAKMDAwMDAwMDM2NyAwMDAwMCBuIAp0cmFpbGVyCjw8IC9TaXplIDYgL1Jvb3QgMSAwIFIgPj4Kc3RhcnR4cmVmCjQzNQolJUVPRgo='
+const REVIEW_IMAGE = '/assets/index/bee_nobg.png'
 
 const APPLICATION_FILTERS = [
-  { id: 'all', label: 'All', count: 18 },
-  { id: 'new', label: 'New', count: 5 },
-  { id: 'shortlisted', label: 'Shortlisted', count: 6 },
-  { id: 'accepted', label: 'Accepted', count: 3 },
-  { id: 'rejected', label: 'Rejected', count: 4 },
+  { id: 'all', label: 'All' },
+  { id: 'new', label: 'New' },
+  { id: 'shortlisted', label: 'Shortlisted' },
+  { id: 'accepted', label: 'Accepted' },
+  { id: 'rejected', label: 'Rejected' },
 ]
-
-void SAMPLE_APPLICATION_PDF_PREVIEW
 
 const DELIVERABLE_FILTERS = [
   { id: 'deliverables', label: 'Deliverables' },
@@ -561,6 +559,7 @@ function ApplicationNegotiationModal({ application, onClose, onCounterOffer, opp
 }
 
 function ApplicationReviewModal({ application, initialStep = 'review', onClose, onScheduleInterview, onStartInterview, onAccept, onRequestEscrowTopUp, opportunityBudgetAmount = 0 }) {
+  const interviewer = getAuthUserSnapshot()
   const [reviewStep, setReviewStep] = useState(initialStep)
   const [previewAttachment, setPreviewAttachment] = useState(null)
   const [isAccepting, setIsAccepting] = useState(false)
@@ -711,7 +710,7 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose, 
                 <span>{application.completedGigs}</span>
               </header>
               <p>Completed Campaigns</p>
-              <Link className="ui-button is-ghost" to="/business/applicant-profile">View Portfolio</Link>
+              <Link className="ui-button is-ghost" to={application.student?.id ? `/business/applicant-profile/${encodeURIComponent(application.student.id)}` : '/business/applicants'}>View Portfolio</Link>
             </section>
 
             <section className="business-profile-card business-review-applicant-score">
@@ -774,9 +773,7 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose, 
               <section className="business-review-schedule-section">
                 <h3>3. Interviewers</h3>
                 <div className="business-review-interviewers">
-                  <PersonRow avatar="/assets/index/business_page_images/optimized/omar-lopez-1qfy-jDc_jo-unsplash.webp" name="Brian Mwangi" subtitle="Owner" />
-                  <PersonRow avatar="/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp" name="Kevin The Creator" subtitle="Creator Manager" />
-                  <button type="button"><FiPlus aria-hidden="true" /> Add interviewer</button>
+                  <PersonRow avatar={interviewer?.avatarUrl || '/assets/index/bee_nobg.png'} name={interviewer?.name || 'Signed-in business user'} subtitle="Organizer" />
                 </div>
               </section>
 
@@ -1354,7 +1351,7 @@ function AddDeliverableModal({ isOpen, onClose, onCreate }) {
 function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen, mode = 'publish', opportunity, type, onClose, onFund, onPublish }) {
   const [publishStep, setPublishStep] = useState(1)
   const [paymentMethod, setPaymentMethod] = useState('wallet')
-  const [selectedCardId, setSelectedCardId] = useState('visa-8421')
+  const [mpesaPhoneNumber, setMpesaPhoneNumber] = useState('')
   const [isCompletingPayment, setIsCompletingPayment] = useState(false)
   const [paymentError, setPaymentError] = useState('')
   const [companyWallet, setCompanyWallet] = useState(null)
@@ -1364,6 +1361,8 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
   useEffect(() => {
     if (!isOpen) return undefined
     let active = true
+    // The modal owns this request state and resets it whenever a new funding session opens.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setWalletLoading(true)
     listBackendFinanceWallets()
       .then((response) => {
@@ -1412,28 +1411,6 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
       stepLabel: 'STK Push',
       summary: 'Complete payment from your phone.',
     },
-    bank: {
-      actionLabel: 'Confirm Bank Transfer',
-      amountCopy: 'Transfer this amount to the Zumbarl escrow account and upload the payment reference.',
-      detailCopy: 'Use the reference below so finance can match your transfer to this opportunity.',
-      detailTitle: 'Make a bank transfer to Zumbarl escrow',
-      label: 'Bank Transfer',
-      meta: 'Manual transfer, reviewed by finance',
-      nextLabel: 'Next: Bank Details',
-      stepLabel: 'Bank Details',
-      summary: 'Send payment directly to our bank account.',
-    },
-    card: {
-      actionLabel: 'Pay with Card',
-      amountCopy: 'Your card will be charged securely after confirmation.',
-      detailCopy: 'Enter card details to complete escrow funding for this opportunity.',
-      detailTitle: 'Pay securely with card',
-      label: 'Card Payment',
-      meta: 'Visa, Mastercard and supported cards',
-      nextLabel: 'Next: Card Checkout',
-      stepLabel: 'Card Checkout',
-      summary: 'Complete payment with a debit or credit card.',
-    },
   }
   const selectedPaymentMethod = paymentMethods[paymentMethod]
   const paymentScopeItems = isEscrowTopUp ? [] : getOpportunityPaymentScopeItems(opportunity)
@@ -1444,14 +1421,11 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
   const walletBalance = Number(companyWallet?.availableBalance ?? companyWallet?.balance ?? 0)
   const walletCurrencyMatches = !companyWallet || String(companyWallet.currency || 'KES').toUpperCase() === String(opportunity.currency || 'KES').toUpperCase()
   const walletInsufficient = paymentMethod === 'wallet' && Boolean(companyWallet) && (!walletCurrencyMatches || walletBalance < paymentBudgetTotal)
+  const normalizedMpesaPhone = mpesaPhoneNumber.replace(/\D/g, '').replace(/^0/, '254')
+  const mpesaPhoneValid = /^254(?:1|7)\d{8}$/.test(normalizedMpesaPhone)
   const skills = getSkillList(opportunity)
   const modalObjective = opportunity.opportunityType || type
   const modalDeadline = opportunity.deadline === 'Rolling' ? 'Rolling' : formatOpportunityDate(opportunity.deadline, 'Rolling')
-  const savedCards = [
-    { id: 'visa-8421', label: 'Visa ending 8421', meta: 'Expires 08/28', brand: 'Visa' },
-    { id: 'mastercard-1134', label: 'Mastercard ending 1134', meta: 'Expires 11/27', brand: 'Mastercard' },
-  ]
-
   async function completePaymentAndPublish() {
     if (isCompletingPayment) return
     setIsCompletingPayment(true)
@@ -1463,6 +1437,7 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
         currency: opportunity.currency || 'KES',
         method: paymentMethod === 'mobile-money' ? 'mobile_money' : paymentMethod,
         reference: paymentReference,
+        ...(paymentMethod === 'mobile-money' ? { phoneNumber: mpesaPhoneNumber } : {}),
       })
       onClose()
     } catch (error) {
@@ -1566,55 +1541,25 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
                       </header>
                       <label>
                         <span>Phone Number</span>
-                        <div><strong>KE</strong><input type="text" defaultValue="+254 712 345 678" /><StatusPill tone="green">Verified</StatusPill></div>
-                        <em>Make sure this is the number registered with M-Pesa.</em>
+                        <div>
+                          <strong>KE</strong>
+                          <input
+                            type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
+                            placeholder="0712 345 678"
+                            value={mpesaPhoneNumber}
+                            onChange={(event) => setMpesaPhoneNumber(event.target.value)}
+                            aria-invalid={Boolean(mpesaPhoneNumber) && !mpesaPhoneValid}
+                          />
+                          {mpesaPhoneValid ? <StatusPill tone="green">Ready</StatusPill> : null}
+                        </div>
+                        <em>{mpesaPhoneNumber && !mpesaPhoneValid
+                          ? 'Enter a valid Kenyan Safaricom number, such as 0712345678.'
+                          : 'Make sure this is the number registered with M-Pesa.'}</em>
                       </label>
                     </section>
-                  ) : paymentMethod === 'bank' ? (
-                    <section className="business-review-publish-phone">
-                      <header>
-                        <FiCreditCard aria-hidden="true" />
-                        <div>
-                          <strong>{selectedPaymentMethod.detailTitle}</strong>
-                          <p>{selectedPaymentMethod.detailCopy}</p>
-                        </div>
-                      </header>
-                      <label>
-                        <span>Bank Reference</span>
-                        <div><strong>REF</strong><input type="text" defaultValue={`ZMB-${String(opportunity.id || 'OPP').slice(-6).toUpperCase()}`} /><StatusPill tone="blue">Required</StatusPill></div>
-                        <em>Bank: Zumbarl Escrow Account · Account: 123456789 · Branch: Nairobi</em>
-                      </label>
-                    </section>
-                  ) : (
-                    <section className="business-review-publish-phone">
-                      <header>
-                        <FiCreditCard aria-hidden="true" />
-                        <div>
-                          <strong>{selectedPaymentMethod.detailTitle}</strong>
-                          <p>{selectedPaymentMethod.detailCopy}</p>
-                        </div>
-                      </header>
-                      <div className="business-review-card-selector" role="radiogroup" aria-label="Saved cards">
-                        {savedCards.map((card) => (
-                          <label key={card.id} className={selectedCardId === card.id ? 'is-selected' : ''}>
-                            <input
-                              type="radio"
-                              name="publish-saved-card"
-                              checked={selectedCardId === card.id}
-                              onChange={() => setSelectedCardId(card.id)}
-                            />
-                            <span><strong>{card.brand}</strong>{card.label}</span>
-                            <em>{card.meta}</em>
-                          </label>
-                        ))}
-                      </div>
-                      <Link to="/business/settings#payment-methods" className="business-review-add-card-link">
-                        <FiPlus aria-hidden="true" />
-                        Add card in Settings
-                      </Link>
-                      <p className="business-review-card-note">Card details are managed in business settings and encrypted by the payment provider.</p>
-                    </section>
-                  )}
+                  ) : null}
                 </div>
                 <aside className="business-review-publish-phone-preview" aria-label={`${selectedPaymentMethod.stepLabel} preview`}>
                   <div>
@@ -1638,12 +1583,12 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
                   <small>Your live company-wallet balance is checked when you confirm.</small>
                   <b>Real-time<br />balance check</b>
                 </label>
-                <label aria-disabled="true">
-                  <input type="radio" name="publish-payment-method" disabled />
+                <label className={paymentMethod === 'mobile-money' ? 'is-selected' : ''}>
+                  <input type="radio" name="publish-payment-method" checked={paymentMethod === 'mobile-money'} onChange={() => setPaymentMethod('mobile-money')} />
                   <span><FiCreditCard aria-hidden="true" /></span>
                   <strong>Mobile Money STK Push</strong>
-                  <small>Provider confirmation is being connected.</small>
-                  <b>Coming<br />soon</b>
+                  <small>Pay from a Safaricom line and wait for the verified receipt.</small>
+                  <b>Live provider<br />confirmation</b>
                 </label>
                 <label aria-disabled="true">
                   <input type="radio" name="publish-payment-method" disabled />
@@ -1728,8 +1673,8 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
             <section className="business-review-publish-next">
               <h2>What happens next?</h2>
               <div>
-                <article><FiUsers aria-hidden="true" /><span><strong>1. {selectedPaymentMethod.stepLabel} Started</strong><em>{paymentMethod === 'wallet' ? 'We will reserve the amount from your wallet.' : paymentMethod === 'mobile-money' ? 'You will receive an STK push on your phone.' : paymentMethod === 'bank' ? 'Use the bank details and reference shown above.' : 'The secure card checkout is ready.'}</em></span></article>
-                <article><FiLock aria-hidden="true" /><span><strong>2. Complete {selectedPaymentMethod.stepLabel}</strong><em>{paymentMethod === 'wallet' ? 'Confirm wallet deduction to fund escrow.' : paymentMethod === 'mobile-money' ? 'Enter your PIN to authorize the payment.' : paymentMethod === 'bank' ? 'Send the transfer and keep the reference visible.' : 'Confirm the secure card payment.'}</em></span></article>
+                <article><FiUsers aria-hidden="true" /><span><strong>1. {selectedPaymentMethod.stepLabel} Started</strong><em>{paymentMethod === 'wallet' ? 'We will reserve the amount from your wallet.' : 'You will receive an STK push on your phone.'}</em></span></article>
+                <article><FiLock aria-hidden="true" /><span><strong>2. Complete {selectedPaymentMethod.stepLabel}</strong><em>{paymentMethod === 'wallet' ? 'Confirm wallet deduction to fund escrow.' : 'Enter your PIN to authorize the payment.'}</em></span></article>
                 <article><FiCheckCircle aria-hidden="true" /><span><strong>3. Payment Confirmed</strong><em>{isEscrowTopUp ? 'Escrow will update and project start will become available.' : mode === 'fund' ? 'The funded balance will be available for creator payments.' : 'We\'ll confirm payment and publish your opportunity.'}</em></span></article>
               </div>
             </section>
@@ -1746,15 +1691,15 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
             ? 'Project start becomes available after escrow is updated.'
             : mode === 'fund'
               ? 'The Payments overview will update after escrow is funded.'
-              : paymentMethod === 'bank' ? 'We will publish after the transfer is confirmed.' : paymentMethod === 'wallet' ? 'Your opportunity will publish after wallet escrow is funded.' : 'You will be redirected after successful payment.'}</p> : null}
+              : paymentMethod === 'wallet' ? 'Your opportunity will publish after wallet escrow is funded.' : 'We will publish after M-Pesa confirms the payment.'}</p> : null}
           {paymentError ? <p role="alert">{paymentError}</p> : null}
           <Button
             tone="brand"
-            disabled={isCompletingPayment || paymentBudgetTotal <= 0 || (publishStep === 3 && walletInsufficient)}
+            disabled={isCompletingPayment || paymentBudgetTotal <= 0 || (publishStep === 3 && (walletInsufficient || (paymentMethod === 'mobile-money' && !mpesaPhoneValid)))}
             onClick={publishStep === 3 ? completePaymentAndPublish : () => setPublishStep(Math.min(3, publishStep + 1))}
           >
             {isCompletingPayment
-              ? 'Completing payment...'
+              ? paymentMethod === 'mobile-money' ? 'Waiting for M-Pesa confirmation...' : 'Completing payment...'
               : publishStep === 3 ? selectedPaymentMethod.actionLabel : publishStep === 2 ? selectedPaymentMethod.nextLabel : 'Next: Payment Method'}
           </Button>
         </footer>
@@ -3389,6 +3334,13 @@ export function BusinessOpportunityReviewWorkspace({
   const navigate = useNavigate()
   const [fundingModalMode, setFundingModalMode] = useState(openPublishPayment ? 'publish' : null)
   const [escrowTopUpRequest, setEscrowTopUpRequest] = useState(null)
+
+  useEffect(() => {
+    // A create-flow navigation can select the review workspace before its draft
+    // finishes hydrating; mirror that external navigation signal once it arrives.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (openPublishPayment) setFundingModalMode('publish')
+  }, [openPublishPayment, opportunity?.id])
 
   const acceptedProject = applications.find((application) => (
     application.projectId && ['accepted', 'awarded'].includes(String(application.status || '').toLowerCase())

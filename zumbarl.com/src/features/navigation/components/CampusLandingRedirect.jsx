@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
+import AppBrandLoader from '../../../components/AppBrandLoader'
 import { getAuthUserSnapshot, hydrateAuthUserFromBackend } from '../../auth/services/authUserService'
 import {
   CAMPUS_LANDING_AREAS,
@@ -31,8 +32,7 @@ function CampusLandingRedirect() {
   if (!destination) {
     return (
       <main className="campus-landing-loading" role="status" aria-live="polite">
-        <span className="app-route-spinner" aria-hidden="true" />
-        <strong>Opening your campus…</strong>
+        <AppBrandLoader status="Opening your campus…" />
       </main>
     )
   }

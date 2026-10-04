@@ -10,6 +10,11 @@ function ExploreTopBar({
 }) {
   return (
     <section className="explore-campus-topbar" aria-label="Search and quick actions">
+      <div className="explore-campus-mobile-brand" aria-hidden="true">
+        <span><img src="/assets/index/bee_nobg.png" alt="" /></span>
+        <div><small>Your campus</small><strong>Explore Campus</strong></div>
+      </div>
+
       <form className="explore-campus-global-search" onSubmit={onSearchSubmit}>
         <button type="submit" className="explore-campus-search-submit" aria-label="Search explore campus">
           <FiSearch aria-hidden="true" />
@@ -18,7 +23,7 @@ function ExploreTopBar({
           type="search"
           value={searchInput}
           onChange={onSearchInputChange}
-          placeholder="Search people, posts, communities, work and more..."
+          placeholder="Search your campus"
           aria-label="Search explore campus"
         />
         {searchInput ? (

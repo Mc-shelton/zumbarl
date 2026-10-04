@@ -216,7 +216,7 @@ async function searchCampus(query, feedPosts = []) {
   const posts = ranked(uniqueBy([...(feedPosts || []), ...persistedPosts], (post) => post.id).map((post) => ({
     ...post,
     kind: 'posts',
-    href: `/campus?post=${encodeURIComponent(post.id)}`,
+    href: `/campus/explore/posts/${encodeURIComponent(post.id)}`,
     image: normalizeZumbarlFileUrl(post.gallery?.[0] || post.avatar),
     title: post.copy || post.event?.title || `${post.author || 'Zumbarl member'}'s post`,
     meta: [post.author, post.tag, post.campus].filter(Boolean).join(' · '),

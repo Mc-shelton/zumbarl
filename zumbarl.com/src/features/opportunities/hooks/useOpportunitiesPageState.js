@@ -7,6 +7,7 @@ import {
   respondToEarnBidCounterOffer,
   markEarnInvitesSeen,
   refreshEarnFlowFromBackend,
+  refreshEarnOpportunities,
   hydrateEarnOpportunityById,
 } from '../../earn/services/earnFlowService'
 import useEarnFlowState from '../../earn/hooks/useEarnFlowState'
@@ -26,6 +27,7 @@ import {
   getOpportunityTypeCounts,
   matchesOpportunityRailFilters,
   matchesOpportunitySearch,
+  rankOpportunitiesBySearch,
   resolveOpportunityIntent,
   resolveOpportunityTab,
   resolveOpportunityTypeId,
@@ -217,6 +219,10 @@ function toStudentBusinessOpportunity(opportunity, bidCount = 0, invite = null) 
     },
     progressionOutcome: 'If awarded, this can move into your project workspace and portfolio evidence.',
     trustOutcome: 'Client review, payment history, and repeat-hire signal',
+    createdAt: opportunity.createdAt,
+    progressionMatch: opportunity.progressionMatch || null,
+    recommendation: opportunity.recommendation || { source: 'fallback' },
+    matchReason: opportunity.progressionMatch?.reason || null,
     source: 'business-flow',
   }
 }
@@ -264,6 +270,10 @@ function useOpportunitiesPageState() {
   const activeOpportunityTab = resolveOpportunityTab(tabQueryParam)
   const activeOpportunityIntent = resolveOpportunityIntent(intentQueryParam || getPreferredOpportunityIntentId())
   const activeOpportunityTypeId = resolveOpportunityTypeId(typeQueryParam)
+
+  useEffect(() => {
+    refreshEarnOpportunities(activeOpportunityIntent.id).catch(() => {})
+  }, [activeOpportunityIntent.id])
 
   const loadServiceOrders = useCallback(async () => {
     setServiceOrdersLoading(true)
@@ -341,9 +351,15 @@ function useOpportunitiesPageState() {
   const discoverableOpportunities = useMemo(() => (
     allOpportunityListings.filter((opportunity) => !opportunity.applicationsClosed)
   ), [allOpportunityListings])
+  const ownerScopedOpportunities = useMemo(() => {
+    const normalizedOwner = slugifyOwner(ownerQueryParam)
+    return normalizedOwner
+      ? discoverableOpportunities.filter((opportunity) => opportunity.ownerSlug === normalizedOwner)
+      : discoverableOpportunities
+  }, [discoverableOpportunities, ownerQueryParam])
   const interviews = earnFlow.interviews || []
   const dashboardStats = useOpportunityDashboardStats({ invites: visibleInvites, interviews, serviceOrders })
-  const intentOpportunities = filterOpportunitiesByIntent(discoverableOpportunities, activeOpportunityIntent.id)
+  const intentOpportunities = filterOpportunitiesByIntent(ownerScopedOpportunities, activeOpportunityIntent.id)
   const opportunityTypeCounts = useMemo(
     () => getOpportunityTypeCounts(intentOpportunities),
     [intentOpportunities],
@@ -360,10 +376,47 @@ function useOpportunitiesPageState() {
   const skillOptions = useMemo(() => (
     [...new Set(intentOpportunities.flatMap((item) => item.tags || []).filter((tag) => !tag.startsWith('+')))].sort()
   ), [intentOpportunities])
-  const visibleOpportunities = filterOpportunitiesByType(intentOpportunities, activeOpportunityTypeId)
+  const filteredOpportunities = filterOpportunitiesByType(intentOpportunities, activeOpportunityTypeId)
     .filter((item) => matchesOpportunitySearch(item, searchQuery))
     .filter((item) => activeLocation === 'all' || item.location === activeLocation)
     .filter((item) => matchesOpportunityRailFilters(item, railFilters))
+  const visibleOpportunities = rankOpportunitiesBySearch(filteredOpportunities, searchQuery)
+  const hasActiveRailFilters = Boolean(
+    railFilters.types.length
+    || railFilters.workModes.length
+    || railFilters.budgetMin
+    || railFilters.budgetMax
+    || railFilters.skill !== 'all'
+  )
+  const recommendationPresentation = (() => {
+    if (searchQuery.trim()) {
+      return {
+        title: 'Search results',
+        subtitle: `${visibleOpportunities.length} matching ${visibleOpportunities.length === 1 ? 'opportunity' : 'opportunities'}, ordered by search relevance`,
+      }
+    }
+    if (activeOpportunityTypeId !== DEFAULT_OPPORTUNITY_TYPE_ID || activeLocation !== 'all' || hasActiveRailFilters) {
+      return {
+        title: 'Best matches in these filters',
+        subtitle: 'Your recommended order is preserved within the selected criteria',
+      }
+    }
+    const learned = intentOpportunities.some((item) => item.recommendation?.source === 'ml')
+    const goalMatch = intentOpportunities.find((item) => item.progressionMatch)?.progressionMatch
+    if (goalMatch) {
+      const modeLabel = goalMatch.mode === 'CAREER' ? 'Build career' : goalMatch.mode === 'BALANCED' ? 'Balanced' : 'Earn now'
+      return {
+        title: 'Recommended for you',
+        subtitle: learned
+          ? `Ordered for ${modeLabel} using your goals, skills and activity`
+          : `Ordered for ${modeLabel} using your skills, career direction and opportunity value`,
+      }
+    }
+    return {
+      title: 'Newest opportunities',
+      subtitle: 'No personal ranking is available yet, so the latest published work appears first',
+    }
+  })()
   const selectedOpportunityUuid = activeOpportunityTab === 'Discover'
     ? (
         opportunityQueryParam && opportunityUuidSet.has(opportunityQueryParam)
@@ -379,7 +432,6 @@ function useOpportunitiesPageState() {
   const selectedOpportunityProject = selectedOpportunity
     ? earnFlow.projects.find((project) => project.opportunityId === selectedOpportunity.id && project.status !== 'Completed') || null
     : null
-  const selectedOpportunityThumbnail = selectedOpportunity?.image
   const isDetailOpen = Boolean(selectedOpportunity)
   const isFilterCollapsed = isDetailOpen && !isFilterExpanded
   const isFilterPanelVisible = !isDetailOpen || isFilterExpanded
@@ -608,7 +660,7 @@ function useOpportunitiesPageState() {
     onDeclineInvite: (invite) => declineEarnOpportunityInvite(invite.id).catch(() => {}),
     onRespondCounterOffer: (bidId, decision) => respondToEarnBidCounterOffer(bidId, decision).catch(() => {}),
     onMarkInvitesSeen: markEarnInvitesSeen,
-    onRefreshEarnFlow: () => refreshEarnFlowFromBackend().catch(() => {}),
+    onRefreshEarnFlow: () => refreshEarnFlowFromBackend(activeOpportunityIntent.id).catch(() => {}),
     onEditFilters: () => setIsFilterExpanded(true),
     onIntentChange: handleOpportunityIntentChange,
     onLocationChange: setActiveLocation,
@@ -637,6 +689,7 @@ function useOpportunitiesPageState() {
     opportunitySearchRef,
     opportunityIntentOptions: OPPORTUNITY_INTENT_OPTIONS,
     opportunityTypeOptions,
+    recommendationPresentation,
     projects: earnFlow.projects,
     railFilters,
     searchQuery,
@@ -652,7 +705,6 @@ function useOpportunitiesPageState() {
     serviceOrders,
     serviceOrdersError,
     serviceOrdersLoading,
-    selectedOpportunityThumbnail,
     selectedOpportunityUuid,
     onRefreshServiceOrders: loadServiceOrders,
     upcomingInterviewsCount: dashboardStats.upcomingInterviewsCount,

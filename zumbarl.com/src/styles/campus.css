@@ -3153,13 +3153,20 @@ a.campus-action-card {
 
 @media (max-width: 980px) {
   .campus-page {
-    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+    --campus-mobile-nav-offset: calc(96px + env(safe-area-inset-bottom));
+    padding-bottom: var(--campus-mobile-nav-offset);
+    scroll-padding-bottom: var(--campus-mobile-nav-offset);
   }
 
   .campus-shell:has(> .campus-sidebar.is-social-rail) {
     display: block;
-    padding: 10px 10px calc(24px + env(safe-area-inset-bottom));
+    padding: 10px 10px var(--campus-mobile-nav-offset);
     overflow: visible;
+  }
+
+  .campus-shell:has(> .campus-sidebar.is-social-rail) > .campus-main {
+    padding-bottom: var(--campus-mobile-nav-offset);
+    scroll-padding-bottom: var(--campus-mobile-nav-offset);
   }
 
   .campus-sidebar.is-social-rail {
@@ -3205,6 +3212,11 @@ a.campus-action-card {
     height: 21px;
   }
 
+  .campus-mobile-nav > button > svg {
+    width: 21px;
+    height: 21px;
+  }
+
   .campus-mobile-nav > a img,
   .campus-mobile-nav > button img {
     width: 22px;
@@ -3231,6 +3243,12 @@ a.campus-action-card {
     color: var(--theme-purple);
   }
 
+  .campus-mobile-nav > a.is-active:not(.campus-mobile-create),
+  .campus-mobile-nav > button.is-active:not(.campus-mobile-create) {
+    border-radius: 14px;
+    background: #f5eff6;
+  }
+
   .campus-mobile-account-backdrop {
     position: fixed;
     inset: 0;
@@ -3244,13 +3262,16 @@ a.campus-action-card {
 
   .campus-mobile-account-sheet {
     width: min(560px, 100%);
+    max-height: min(720px, calc(100dvh - 36px));
     margin: 0 auto;
-    padding: 10px;
+    padding: 10px 10px max(10px, env(safe-area-inset-bottom));
     border-radius: 22px;
     background: #fff;
     box-shadow: 0 28px 70px rgba(19, 17, 25, 0.3);
     display: grid;
     gap: 3px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .campus-mobile-account-sheet header {
@@ -3269,7 +3290,8 @@ a.campus-action-card {
   .campus-mobile-account-sheet header button { width: 36px; height: 36px; border: 0; border-radius: 50%; background: #f2eff4; display: grid; place-items: center; }
 
   .campus-mobile-account-sheet > a,
-  .campus-mobile-account-sheet > button {
+  .campus-mobile-account-sheet > button,
+  .campus-mobile-more-links > a {
     min-height: 48px;
     padding: 0 10px;
     border: 0;
@@ -3283,6 +3305,49 @@ a.campus-action-card {
     font: inherit;
     font-size: 13px;
     font-weight: 750;
+  }
+
+  .campus-mobile-account-sheet > a > span,
+  .campus-mobile-more-links > a > span {
+    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .campus-mobile-account-sheet > a > span > svg,
+  .campus-mobile-more-links > a > span > svg {
+    flex: 0 0 auto;
+    width: 18px;
+    height: 18px;
+    color: #76506f;
+  }
+
+  .campus-mobile-account-sheet > a.is-active,
+  .campus-mobile-more-links > a.is-active {
+    background: #f5eff6;
+    color: #76506f;
+  }
+
+  .campus-mobile-more-links {
+    display: grid;
+    gap: 3px;
+    padding: 4px 0;
+  }
+
+  .campus-mobile-more-links > a {
+    color: var(--campus-dark);
+  }
+
+  .campus-mobile-more-account {
+    margin: 5px 8px 1px;
+    padding-top: 10px;
+    border-top: 1px solid #eee9ef;
+    color: #9a7893;
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
 
   .campus-mobile-account-sheet > button.is-logout { color: #a33d4c; }
@@ -3322,13 +3387,28 @@ a.campus-action-card {
   }
 
   .campus-create-sheet {
+    position: relative;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     width: min(560px, 100%);
     max-height: min(620px, 84dvh);
     margin: 0 auto;
     padding: 20px;
     border-radius: 24px;
-    background: #ffffff;
+    background:
+      radial-gradient(circle at 8% 0%, rgba(116, 81, 111, 0.1), transparent 30%),
+      radial-gradient(circle at 95% 2%, rgba(251, 177, 48, 0.1), transparent 28%),
+      #ffffff;
     box-shadow: 0 28px 70px rgba(19, 17, 25, 0.3);
+  }
+
+  .campus-create-sheet::before {
+    content: "";
+    position: absolute;
+    inset: 0 22px auto;
+    height: 4px;
+    border-radius: 0 0 999px 999px;
+    background: linear-gradient(90deg, #74516f 0 42%, #fbb130 42% 70%, #3c8b93 70%);
   }
 
   .campus-create-sheet > header {
@@ -3364,32 +3444,89 @@ a.campus-action-card {
     place-items: center;
   }
 
-  .campus-create-sheet > div {
+  .campus-create-sheet > .campus-create-options {
     display: grid;
-    gap: 9px;
+    gap: 10px;
   }
 
-  .campus-create-sheet a {
-    padding: 14px;
-    border: 1px solid #e8e4ec;
-    border-radius: 15px;
+  .campus-create-sheet .campus-create-options > a {
+    --create-accent: #74516f;
+    --create-soft: #f4edf5;
+    min-height: 72px;
+    padding: 11px 12px;
+    border: 1px solid color-mix(in srgb, var(--create-accent) 18%, #e8e4ec);
+    border-radius: 17px;
+    background: linear-gradient(105deg, var(--create-soft), #ffffff 48%);
     color: var(--campus-dark);
     display: grid;
-    gap: 3px;
+    grid-template-columns: 44px minmax(0, 1fr) 20px;
+    align-items: center;
+    gap: 11px;
     text-decoration: none;
+    box-shadow: 0 5px 16px rgba(45, 38, 50, 0.035);
   }
 
-  .campus-create-sheet a:active {
-    background: #f6f2f8;
+  .campus-create-sheet .campus-create-options > a.is-story {
+    --create-accent: #c57908;
+    --create-soft: #fff6e7;
   }
 
-  .campus-create-sheet a strong {
+  .campus-create-sheet .campus-create-options > a.is-event {
+    --create-accent: #2d858c;
+    --create-soft: #eaf7f6;
+  }
+
+  .campus-create-sheet .campus-create-options > a.is-listing {
+    --create-accent: #4778bd;
+    --create-soft: #edf4fc;
+  }
+
+  .campus-create-sheet .campus-create-options > a.is-meal {
+    --create-accent: #c96345;
+    --create-soft: #fff0ea;
+  }
+
+  .campus-create-sheet .campus-create-options > a:active {
+    transform: scale(0.985);
+    filter: saturate(1.08);
+  }
+
+  .campus-create-option-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    background: var(--create-soft);
+    color: var(--create-accent);
+    display: grid;
+    place-items: center;
+  }
+
+  .campus-create-option-icon svg {
+    width: 21px;
+    height: 21px;
+  }
+
+  .campus-create-option-copy {
+    min-width: 0;
+    display: grid;
+    gap: 3px;
+  }
+
+  .campus-create-sheet .campus-create-option-copy strong {
     font-size: 15px;
+    line-height: 1.2;
   }
 
-  .campus-create-sheet a span {
+  .campus-create-sheet .campus-create-option-copy > span {
     color: #747184;
     font-size: 12px;
     line-height: 1.35;
+  }
+
+  .campus-create-option-arrow {
+    width: 18px;
+    height: 18px;
+    color: var(--create-accent);
+    opacity: 0.75;
   }
 }

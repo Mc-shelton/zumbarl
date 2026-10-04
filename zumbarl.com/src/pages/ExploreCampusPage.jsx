@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { Link, useLocation, useParams, useSearchParams } from "react-router-dom";
 import CampusSidebar from "../components/layout/CampusSidebar";
 import Seo from "../components/Seo";
 import ExploreDefaultRail from "../features/explore/components/ExploreDefaultRail";
@@ -31,10 +31,7 @@ import {
   updateConnectPost,
   voteOnConnectPostPoll,
 } from "../features/explore/services/postService";
-import {
-  CAMPUS_FEED_FILTERS,
-  EXPLORE_PRODUCT_DETAILS,
-} from "../features/explore/constants";
+import { CAMPUS_FEED_FILTERS } from "../features/explore/constants";
 import useExploreCampusState from "../features/explore/hooks/useExploreCampusState";
 import useCampusSearchResults from "../features/explore/hooks/useCampusSearchResults";
 import useExploreConnectWorkflow from "../features/explore/hooks/useExploreConnectWorkflow";
@@ -287,12 +284,14 @@ function conciseText(value, fallback, length = 92) {
 
 function ExploreCampusPage() {
   const location = useLocation();
+  const { postId: routePostId = "" } = useParams();
   const [searchParams] = useSearchParams();
   const isSocialHome = location.pathname === "/campus";
   const requestedComposer = searchParams.get("compose") || "";
   const campusHubName = (searchParams.get("campus") || "").trim();
   const selectedTagReference = (searchParams.get("tag") || "").trim();
-  const focusedPostId = (searchParams.get("post") || "").trim();
+  const focusedPostId = (routePostId || searchParams.get("post") || "").trim();
+  const isPostDetail = Boolean(routePostId);
   const requestedStoryItemId = (searchParams.get("story") || "").trim();
   const [isConnectProfileOpen, setIsConnectProfileOpen] = useState(false);
   const connect = useExploreConnectWorkflow({
@@ -324,7 +323,7 @@ function ExploreCampusPage() {
   const [suggestionPending, setSuggestionPending] = useState({});
   const [campusRailItems, setCampusRailItems] = useState([]);
   const [marketplaceRailItems, setMarketplaceRailItems] = useState([]);
-  const [productDetails, setProductDetails] = useState(EXPLORE_PRODUCT_DETAILS);
+  const [productDetails, setProductDetails] = useState({});
   const [railDataLoading, setRailDataLoading] = useState(true);
   const scrolledPostIdRef = useRef("");
 
@@ -596,6 +595,12 @@ function ExploreCampusPage() {
 
   function buildExploreShareUrl(kind, id) {
     const url = new URL(window.location.href);
+    if (kind === "post") {
+      url.pathname = `/campus/explore/posts/${encodeURIComponent(id)}`;
+      url.search = "";
+      url.hash = "";
+      return url.toString();
+    }
     url.pathname = "/campus/explore";
     url.searchParams.delete("post");
     url.searchParams.delete("story");
@@ -613,6 +618,8 @@ function ExploreCampusPage() {
       title: post.event?.title || `${post.author}'s post on Zumbarl`,
       text: post.copy || originalCopy || "See this post on Zumbarl",
       url: buildExploreShareUrl("post", post.id),
+      visibility: post.visibility,
+      communityGroupId: post.communityGroupId,
     });
   }
 
@@ -624,6 +631,7 @@ function ExploreCampusPage() {
       title: item.title || `${creator.name}'s story on Zumbarl`,
       text: item.caption || "See this story on Zumbarl",
       url: buildExploreShareUrl("story", item.id),
+      visibility: item.visibility,
     });
   }
 
@@ -876,7 +884,6 @@ function ExploreCampusPage() {
     });
     const [snapshot, response] = await Promise.all([hydrateAuthUserFromBackend(), listStories()]);
     setStories(groupPersistedStories(response?.data || [], snapshot, readViewedStoryIds(snapshot)));
-    connect.patchState({ profileReady: true, storyPublished: true });
     setIsStoryComposerOpen(false);
     setActiveStoryId(story.knowledgeSpaceId ? `space-${story.knowledgeSpaceId}` : "your-story");
   }
@@ -939,7 +946,8 @@ function ExploreCampusPage() {
           post.campus?.toLocaleLowerCase() ===
             campusHubName.toLocaleLowerCase();
           const matchesSelectedTag = !selectedTagReference || (post.tagReferences || []).includes(selectedTagReference);
-          return belongsToCampus && matchesSelectedTag && (post.id === focusedPostId || postMatchesFeed(post, activeFeedFilter));
+          const matchesDetail = !isPostDetail || post.id === focusedPostId;
+          return matchesDetail && belongsToCampus && matchesSelectedTag && (post.id === focusedPostId || postMatchesFeed(post, activeFeedFilter));
         });
       const focusedIndex = focusedPostId
         ? filteredPosts.findIndex((post) => post.id === focusedPostId)
@@ -948,7 +956,7 @@ function ExploreCampusPage() {
         ? [filteredPosts[focusedIndex], ...filteredPosts.filter((_, index) => index !== focusedIndex)]
         : filteredPosts;
     },
-    [activeFeedFilter, campusHubName, createdPosts, focusedPostId, postEngagementOverrides, selectedTagReference],
+    [activeFeedFilter, campusHubName, createdPosts, focusedPostId, isPostDetail, postEngagementOverrides, selectedTagReference],
   );
 
   const railPeople = useMemo(
@@ -1140,7 +1148,7 @@ function ExploreCampusPage() {
                   partial={campusSearch.data.partial}
                 />
               ) : (
-                <ExploreFeedHero
+                isPostDetail ? <section className="explore-post-detail-heading"><Link to="/campus/explore">← Explore Campus</Link><span>Campus post</span><h1>{visibleFeedPosts[0]?.author ? `A post from ${visibleFeedPosts[0].author}` : 'Opening campus post…'}</h1><p>Read the full update and join the campus conversation.</p></section> : <ExploreFeedHero
                   activeFilter={activeFeedFilter}
                   areStoriesVisible={areStoriesVisible}
                   filters={CAMPUS_FEED_FILTERS}
@@ -1168,6 +1176,7 @@ function ExploreCampusPage() {
                 <ExploreFeed
                   activeFilter={activeFeedFilter}
                   commentsByPost={feedComments}
+                  composerAvatar={stories.find((story) => story.own)?.avatar}
                   engagementErrors={engagementErrors}
                   engagementPending={engagementPending}
                   focusedPostId={focusedPostId}
@@ -1184,6 +1193,7 @@ function ExploreCampusPage() {
                   onVotePoll={voteOnPoll}
                   onViewProduct={handleViewProduct}
                   posts={visibleFeedPosts}
+                  showComposer={!isPostDetail}
                 />
               </>
             )}

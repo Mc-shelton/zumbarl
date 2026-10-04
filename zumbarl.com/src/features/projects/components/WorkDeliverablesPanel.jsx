@@ -10,6 +10,7 @@ import { TabNav } from '../../../components/ui'
 import DeliverableRoom from './DeliverableRoom'
 import ProjectConversationPanel from '../../messages/components/ProjectConversationPanel'
 import SubmittedWorkPreview from './SubmittedWorkPreview'
+import TeamReviewsPanel from './TeamReviewsPanel'
 
 // Mirrors the business panel's sections so both sides of a project have the
 // same shell: scope, submissions, files and the shared conversation.
@@ -133,14 +134,17 @@ function buildDeliverableRows(project, submissions, targets) {
 
 function WorkDeliverablesPanel({
   deliverableTasks,
+  isBusinessViewer = false,
   // Milestone briefs replace the deliverable table with the milestone planning
   // surface, keeping Submitted Work and Files exactly where they already are.
   isMilestoneScope = false,
   milestoneContent = null,
   onSelectPhase,
+  onReview,
   onSubmitTask,
   onSubmitWork,
   project,
+  reviewState,
 }) {
   const [activeSection, setActiveSection] = useState('deliverables')
   const [openDeliverableId, setOpenDeliverableId] = useState('')
@@ -231,14 +235,16 @@ function WorkDeliverablesPanel({
   const heading = activeSection === 'messages'
     ? 'Messages'
     : activeSection === 'submitted-work'
-      ? 'Submitted Work'
+      ? isBusinessViewer ? 'Review submissions' : 'Submitted Work'
       : activeSection === 'files'
         ? 'Files'
         : isMilestoneScope ? 'Milestones' : `Work & ${kindPlural}`
   const caption = activeSection === 'messages'
     ? 'Coordinate with the business around evidence, revisions and approvals.'
     : activeSection === 'submitted-work'
-      ? 'Review every submission attempt and the files you sent to the business.'
+      ? isBusinessViewer
+        ? 'Review the student’s evidence, approve completed work, or request clear changes.'
+        : 'Review every submission attempt and the files you sent to the business.'
       : activeSection === 'files'
         ? 'Access all files submitted for this project.'
         : isMilestoneScope
@@ -278,7 +284,18 @@ function WorkDeliverablesPanel({
         <ProjectConversationPanel opportunity={{ backendId: project?.opportunityId }} />
       ) : activeSection === 'submitted-work' ? (
         submissions.length ? (
-          <SubmittedWorkPreview embedded submissions={submissions} />
+          isBusinessViewer ? (
+            <TeamReviewsPanel
+              isBusinessViewer
+              milestones={project?.milestones || []}
+              onReview={onReview}
+              reviewState={reviewState}
+              submissions={submissions}
+              tasks={deliverableTasks?.tasks || []}
+            />
+          ) : (
+            <SubmittedWorkPreview embedded submissions={submissions} />
+          )
         ) : (
           <div className="project-work-deliverables-empty">
             <FiUploadCloud aria-hidden="true" />
@@ -383,7 +400,9 @@ function WorkDeliverablesPanel({
                       ? 'Open'
                       : canSubmitWork && row.actionMode === 'revise'
                         ? 'Revise Work'
-                        : canSubmitWork && row.actionMode === 'submit' ? 'Submit' : 'View'}
+                        : canSubmitWork && row.actionMode === 'submit'
+                          ? 'Submit'
+                          : isBusinessViewer && row.statusKey === 'submitted' ? 'Review' : 'View'}
                   </button>
                 </div>
               </article>

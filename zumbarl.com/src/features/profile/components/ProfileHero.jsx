@@ -13,7 +13,7 @@ import {
   setPreferredOpportunityIntentId,
 } from '../../opportunities/services/opportunityIntentPreference'
 
-function ProfileHero({ activeTab = '', canRelate = false, isOwnProfile = false, onEditShop, onSaveProfile, onToggleRelationship, profileHeader = null, relationship = {}, relationshipPending = '' }) {
+function ProfileHero({ activeTab = '', canRelate = false, isOwnProfile = false, onEditShop, onSaveProfile, onToggleRelationship, profileHeader = null, relationship = {}, relationshipPending = '', socialStats = null }) {
   const fallbackAvatar = '/assets/index/bee_nobg.png'
   const canEditProfile = isOwnProfile && hasAccess(ACCESS_KEYS.profile.editOwn)
   const tags = profileHeader?.tags || []
@@ -35,6 +35,11 @@ function ProfileHero({ activeTab = '', canRelate = false, isOwnProfile = false, 
   const visibleSkillSuggestions = isSkillInputFocused && skillQuery.length >= 2
     ? skillSuggestions.filter((skill) => !(draft?.skills || []).some((selected) => selected.toLowerCase() === skill.name.toLowerCase())).slice(0, 6)
     : []
+  const socialSummary = [
+    { label: 'Posts', value: socialStats?.posts || 0 },
+    { label: 'Followers', value: socialStats?.followers || 0 },
+    { label: 'Following', value: socialStats?.following || 0 },
+  ]
 
   useEffect(() => {
     if (!isEditing || !hasUnsavedChanges) return undefined
@@ -169,11 +174,15 @@ function ProfileHero({ activeTab = '', canRelate = false, isOwnProfile = false, 
             </span>
           </div>
           {(yearOfStudy || profileHeader?.course?.name) ? <p className="campus-profile-academic-detail">{[yearOfStudy ? `Year ${yearOfStudy}` : null, profileHeader?.course?.name].filter(Boolean).join(' · ')}</p> : null}
-          <div className="campus-profile-tag-row" aria-label="Skills">
-            {tags.map((tag) => (
-              <span key={tag}>{tag}</span>
-            ))}
-          </div>
+        </div>
+        <p className="campus-profile-social-summary" aria-label="Social activity">
+          {socialSummary.map((item) => <span key={item.label}><strong>{Number(item.value).toLocaleString()}</strong> {item.label.toLowerCase()}</span>)}
+        </p>
+        {profileHeader?.bio ? <p className="campus-profile-bio">{profileHeader.bio}</p> : null}
+        <div className="campus-profile-tag-row" aria-label="Skills">
+          {tags.map((tag) => (
+            <span key={tag}>{tag}</span>
+          ))}
         </div>
       </div>
 
@@ -225,8 +234,8 @@ function ProfileHero({ activeTab = '', canRelate = false, isOwnProfile = false, 
       ) : null}
       {isEditing && draft ? <div className="campus-profile-editor-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) closeEditor() }}>
         <section className="campus-profile-editor-modal" role="dialog" aria-modal="true" aria-label="Edit profile">
-          <header><div><span>Profile settings</span><h2>{editorTab === 'kyc' ? 'Identity & KYC' : 'Make your profile feel like you'}</h2><p>{editorTab === 'kyc' ? 'Securely submit the documents required to operate on Zumbarl.' : 'Keep your identity, story and strongest skills up to date.'}</p></div><button type="button" disabled={isSaving} onClick={closeEditor} aria-label="Close profile editor"><FiX /></button></header>
-          <nav className="campus-profile-editor-tabs" aria-label="Profile settings sections"><button type="button" disabled={isSaving || isKycBusy} className={editorTab === 'profile' ? 'is-active' : ''} onClick={() => setEditorTab('profile')}>Profile</button><button type="button" disabled={isSaving || isKycBusy} className={editorTab === 'kyc' ? 'is-active' : ''} onClick={() => setEditorTab('kyc')}><FiShield /> KYC</button></nav>
+          <header><div><span>{editorTab === 'kyc' ? 'Verification' : 'Edit profile'}</span><h2>{editorTab === 'kyc' ? 'Identity verification' : 'Profile details'}</h2><p>{editorTab === 'kyc' ? 'Manage the documents needed for verified opportunities.' : 'Update how you appear across Zumbarl.'}</p></div><button type="button" disabled={isSaving} onClick={closeEditor} aria-label="Close profile editor"><FiX /></button></header>
+          <nav className="campus-profile-editor-tabs" aria-label="Profile settings sections"><button type="button" disabled={isSaving || isKycBusy} className={editorTab === 'profile' ? 'is-active' : ''} onClick={() => setEditorTab('profile')}>Profile</button><button type="button" disabled={isSaving || isKycBusy} className={editorTab === 'kyc' ? 'is-active' : ''} onClick={() => setEditorTab('kyc')}><FiShield /> Verification</button></nav>
           <div hidden={editorTab !== 'profile'} className="campus-profile-editor-body">
             <aside><div className="campus-profile-editor-avatar"><img src={normalizeZumbarlFileUrl(draft.avatarUrl) || fallbackAvatar} alt="Profile preview" onError={(event) => { event.currentTarget.onerror = null; event.currentTarget.src = fallbackAvatar }} /><label><FiCamera /> Change photo<input type="file" accept="image/*" onChange={(event) => uploadAvatar(event.target.files?.[0])} /></label></div><strong>{draft.firstName} {draft.lastName}</strong><span>@{draft.username || 'username'}</span><p>{draft.bio || 'Add a short introduction so people know what you care about.'}</p></aside>
             <div className="campus-profile-editor-fields">

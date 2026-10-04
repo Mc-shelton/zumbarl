@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiArrowUpRight, FiBriefcase, FiCheck, FiCompass, FiLock, FiShield, FiTarget, FiTrendingUp } from 'react-icons/fi'
+import { FiArrowUpRight, FiBriefcase, FiCheck, FiCompass, FiLock, FiTarget, FiTrendingUp } from 'react-icons/fi'
 
 function formatKes(value) {
   return new Intl.NumberFormat('en-KE', {
@@ -35,15 +35,13 @@ function CareerProgressionPanel({ isOwnProfile = false, onModeChange, progressio
 
   const currentStage = progression.careerStage
   const leadingSkills = (progression.skills || []).slice(0, 3)
-  const trust = progression.trust || {}
-
   return (
     <section className="campus-profile-surface career-progression-panel">
       <header className="career-progression-head">
         <div>
-          <span className="career-progression-eyebrow"><FiTrendingUp aria-hidden="true" /> Measurable career progress</span>
-          <h2>{isOwnProfile ? 'Turn every verified gig into career progress' : 'Evidence-backed career progression'}</h2>
-          <p>{isOwnProfile ? 'Choose what you want Zumbarl to optimise for. You keep control of every application and final price.' : 'Levels come from completed work, client diversity, delivery quality, and confidence—not self-declared badges.'}</p>
+          {!isOwnProfile ? <span className="career-progression-eyebrow"><FiTrendingUp aria-hidden="true" /> Verified progress</span> : null}
+          <h2>{isOwnProfile ? 'Career progress' : 'Evidence-backed career progression'}</h2>
+          {!isOwnProfile ? <p>Levels come from completed work, client diversity, delivery quality, and confidence—not self-declared badges.</p> : null}
         </div>
         <div className="career-stage-badge">
           <small>Career stage {currentStage?.number || 1} of 5</small>
@@ -80,16 +78,6 @@ function CareerProgressionPanel({ isOwnProfile = false, onModeChange, progressio
           {modeError ? <p className="career-progression-error" role="alert">{modeError}</p> : null}
         </section>
 
-        <section className="career-trust-proof">
-          <div className="career-card-title"><FiShield aria-hidden="true" /><div><h3>Why businesses can trust this</h3><p>{trust.explanation}</p></div></div>
-          <div className="career-trust-metrics">
-            <div><strong>{trust.verifiedGigs || 0}</strong><span>verified gigs</span></div>
-            <div><strong>{trust.uniqueClients || 0}</strong><span>distinct clients</span></div>
-            <div><strong>{trust.reliability || 0}%</strong><span>reliability</span></div>
-            <div><strong>{trust.endorsements || 0}</strong><span>endorsements</span></div>
-          </div>
-          <p className="career-confidence-line"><span className={`is-${String(trust.confidence || 'provisional').toLowerCase()}`}>{String(trust.confidence || 'provisional').toLowerCase()} confidence</span>{trust.publicScore == null ? 'Public score unlocks after enough diverse evidence.' : `${Math.round(trust.publicScore)}/100 · ${String(trust.tier).toLowerCase()} trust tier`}</p>
-        </section>
       </div>
 
       <section className="career-skill-progress">

@@ -49,6 +49,121 @@
   animation: app-route-spin 800ms linear infinite;
 }
 
+@keyframes app-brand-loader-float {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-6px) scale(1.04); }
+}
+
+@keyframes app-brand-loader-shadow {
+  0%, 100% { opacity: 0.18; transform: scaleX(1); }
+  50% { opacity: 0.1; transform: scaleX(0.72); }
+}
+
+.app-brand-loader {
+  display: grid;
+  justify-items: center;
+  gap: 22px;
+  width: min(310px, calc(100vw - 48px));
+}
+
+.app-brand-loader-mark {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding-bottom: 13px;
+}
+
+.app-brand-loader-mark img {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  animation: app-brand-loader-float 1.25s ease-in-out infinite;
+}
+
+.app-brand-loader-mark::after {
+  position: absolute;
+  bottom: 0;
+  content: '';
+  width: 34px;
+  height: 6px;
+  border-radius: 50%;
+  background: #373643;
+  filter: blur(4px);
+  animation: app-brand-loader-shadow 1.25s ease-in-out infinite;
+}
+
+.app-brand-definition {
+  width: 100%;
+  padding-top: 17px;
+  border-top: 1px solid rgba(118, 80, 111, .2);
+  color: #35313f;
+  text-align: left;
+}
+
+.app-brand-definition > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.app-brand-definition strong {
+  color: #302d3a;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -.02em;
+}
+
+.app-brand-definition > div span {
+  color: #76506f;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 15px;
+}
+
+.app-brand-definition small {
+  display: block;
+  margin-top: 3px;
+  color: #8a8490;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.app-brand-definition p {
+  margin: 13px 0 0;
+  color: #4e4854;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.app-brand-definition p b {
+  margin-right: 7px;
+  color: #a1774b;
+  font-size: 12px;
+}
+
+.app-brand-definition em {
+  display: block;
+  margin-top: 9px;
+  color: #918a96;
+  font-size: 11px;
+  font-style: normal;
+}
+
+@media (max-width: 480px) {
+  .app-brand-loader { width: min(270px, calc(100vw - 48px)); }
+  .app-brand-definition strong { font-size: 27px; }
+  .app-brand-definition p { font-size: 16px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-brand-loader-mark img,
+  .app-brand-loader-mark::after { animation: none; }
+}
+
 .app-route-error {
   min-height: 100vh;
   background: #f8f8fb;
@@ -1759,11 +1874,10 @@
   background: #f8f8fb;
   color: #343342;
 }
-
-.campus-landing-loading .app-route-spinner {
-  width: 32px;
-  height: 32px;
-  border: 3px solid #e4deea;
-  border-top-color: #79506f;
-  border-radius: 50%;
+.app-auth-check {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  background: #f7f8fb;
+  color: #343342;
 }

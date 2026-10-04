@@ -6,12 +6,14 @@ import {
   FiBookOpen,
   FiBriefcase,
   FiCalendar,
+  FiCamera,
   FiChevronRight,
   FiCreditCard,
   FiCoffee,
   FiFileText,
   FiHeart,
   FiHome,
+  FiGrid,
   FiMail,
   FiLogOut,
   FiRadio,
@@ -29,11 +31,10 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ACCESS_KEYS,
-  AUTH_ROLE_STORAGE_KEY,
   filterByAccess,
   hasAccess,
 } from "../../features/auth/roleConfig";
-import { clearAuthUserCache } from "../../features/auth/services/authUserService";
+import { logoutAuthUser } from "../../features/auth/services/authUserService";
 import { useViewerProfile } from "../../features/auth/viewerProfile";
 import { clearBusinessProfileCache } from "../../features/business/services/businessProfileService";
 import {
@@ -41,7 +42,6 @@ import {
   CAMPUS_VIEWER,
 } from "../../features/campus/constants";
 import { readNavigationFeatureTags } from "../../features/navigation/navigationFeatureTags";
-import { AUTH_TOKEN_KEY } from "../../lib/sendZumbarlApiRequest";
 
 const ICON_BY_ID = {
   activity: FiActivity,
@@ -90,9 +90,13 @@ function CampusSidebar({
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef(null);
   const isCampusNavigation = navItems === CAMPUS_NAV_ITEMS;
-  const mobileNavItems = accessibleNavItems.filter(({ id }) =>
-    ["explore", "opportunities", "wellbeing"].includes(id),
-  );
+  const mobilePrimaryItems = ["explore", "opportunities", "learn"]
+    .map((id) => accessibleNavItems.find((item) => item.id === id))
+    .filter(Boolean);
+  const mobileMoreItems = ["workspace", "marketplace", "eatery", "wellbeing"]
+    .map((id) => accessibleNavItems.find((item) => item.id === id))
+    .filter(Boolean);
+  const isMoreCurrent = isProfileCurrent || mobileMoreItems.some(({ id }) => id === activeItemId) || activeItemId === "messages";
 
   useEffect(() => {
     let active = true;
@@ -136,10 +140,8 @@ function CampusSidebar({
   }
 
   function handleLogout() {
-    clearAuthUserCache();
+    void logoutAuthUser();
     clearBusinessProfileCache();
-    window.localStorage.removeItem(AUTH_TOKEN_KEY);
-    window.localStorage.removeItem(AUTH_ROLE_STORAGE_KEY);
     setIsAccountMenuOpen(false);
     navigate("/login", { replace: true });
   }
@@ -270,7 +272,7 @@ function CampusSidebar({
     {isCampusNavigation ? (
       <>
         <nav className="campus-mobile-nav" aria-label="Primary campus navigation">
-          {mobileNavItems.slice(0, 2).map(({ id, label, icon, href }) => {
+          {mobilePrimaryItems.slice(0, 2).map(({ id, label, icon, href }) => {
             const Icon = ICON_BY_ID[icon];
             const isActive = id === activeItemId;
             return (
@@ -284,7 +286,7 @@ function CampusSidebar({
             <span><FiPlus aria-hidden="true" /></span>
             <em>Create</em>
           </button>
-          {mobileNavItems.slice(2, 3).map(({ id, label, icon, href }) => {
+          {mobilePrimaryItems.slice(2, 3).map(({ id, label, icon, href }) => {
             const Icon = ICON_BY_ID[icon];
             const isActive = id === activeItemId;
             return (
@@ -294,9 +296,9 @@ function CampusSidebar({
               </Link>
             );
           })}
-          <button type="button" className={isProfileCurrent ? "is-active" : ""} aria-expanded={isAccountMenuOpen} onClick={() => setIsAccountMenuOpen(true)}>
-            <img src={resolvedViewer.avatar} alt="" />
-            <span>Account</span>
+          <button type="button" className={`campus-mobile-more${isMoreCurrent ? " is-active" : ""}`} aria-expanded={isAccountMenuOpen} aria-controls="campus-mobile-more-sheet" onClick={() => setIsAccountMenuOpen(true)}>
+            <FiGrid aria-hidden="true" />
+            <span>More</span>
           </button>
         </nav>
 
@@ -307,12 +309,32 @@ function CampusSidebar({
                 <div><small>Share with Zumbarl</small><h2 id="campus-create-title">Create something</h2></div>
                 <button type="button" aria-label="Close create menu" onClick={() => setIsCreateMenuOpen(false)}><FiX aria-hidden="true" /></button>
               </header>
-              <div>
-                <Link to="/campus?compose=post" onClick={() => openMobileComposer("post")}><strong>Post</strong><span>Share an update, photo, poll or project moment.</span></Link>
-                <Link to="/campus?compose=story" onClick={() => openMobileComposer("story")}><strong>Story</strong><span>Publish a quick campus moment.</span></Link>
-                <Link to="/campus?compose=event" onClick={() => openMobileComposer("event")}><strong>Event</strong><span>Invite people to something happening nearby.</span></Link>
-                <Link to="/campus/marketplace/listings/new" onClick={() => setIsCreateMenuOpen(false)}><strong>Listing</strong><span>Sell a product or offer a service.</span></Link>
-                <Link to="/campus/marketplace/listings/new?mode=food" onClick={() => setIsCreateMenuOpen(false)}><strong>Home-cooked meal</strong><span>Share today’s plate from your student kitchen.</span></Link>
+              <div className="campus-create-options">
+                <Link className="is-post" to="/campus?compose=post" onClick={() => openMobileComposer("post")}>
+                  <span className="campus-create-option-icon" aria-hidden="true"><FiFileText /></span>
+                  <span className="campus-create-option-copy"><strong>Post</strong><span>Share an update, photo, poll or project moment.</span></span>
+                  <FiChevronRight className="campus-create-option-arrow" aria-hidden="true" />
+                </Link>
+                <Link className="is-story" to="/campus?compose=story" onClick={() => openMobileComposer("story")}>
+                  <span className="campus-create-option-icon" aria-hidden="true"><FiCamera /></span>
+                  <span className="campus-create-option-copy"><strong>Story</strong><span>Publish a quick campus moment.</span></span>
+                  <FiChevronRight className="campus-create-option-arrow" aria-hidden="true" />
+                </Link>
+                <Link className="is-event" to="/campus?compose=event" onClick={() => openMobileComposer("event")}>
+                  <span className="campus-create-option-icon" aria-hidden="true"><FiCalendar /></span>
+                  <span className="campus-create-option-copy"><strong>Event</strong><span>Invite people to something happening nearby.</span></span>
+                  <FiChevronRight className="campus-create-option-arrow" aria-hidden="true" />
+                </Link>
+                <Link className="is-listing" to="/campus/marketplace/listings/new" onClick={() => setIsCreateMenuOpen(false)}>
+                  <span className="campus-create-option-icon" aria-hidden="true"><FiShoppingBag /></span>
+                  <span className="campus-create-option-copy"><strong>Listing</strong><span>Sell a product or offer a service.</span></span>
+                  <FiChevronRight className="campus-create-option-arrow" aria-hidden="true" />
+                </Link>
+                <Link className="is-meal" to="/campus/marketplace/listings/new?mode=food" onClick={() => setIsCreateMenuOpen(false)}>
+                  <span className="campus-create-option-icon" aria-hidden="true"><FiCoffee /></span>
+                  <span className="campus-create-option-copy"><strong>Home-cooked meal</strong><span>Share today’s plate from your student kitchen.</span></span>
+                  <FiChevronRight className="campus-create-option-arrow" aria-hidden="true" />
+                </Link>
               </div>
             </section>
           </div>
@@ -320,14 +342,23 @@ function CampusSidebar({
 
         {isAccountMenuOpen ? (
           <div className="campus-mobile-account-backdrop" role="presentation" onMouseDown={() => setIsAccountMenuOpen(false)}>
-            <section className="campus-mobile-account-sheet" role="dialog" aria-modal="true" aria-label="Account menu" onMouseDown={(event) => event.stopPropagation()}>
+            <section id="campus-mobile-more-sheet" className="campus-mobile-account-sheet" role="dialog" aria-modal="true" aria-labelledby="campus-mobile-more-title" onMouseDown={(event) => event.stopPropagation()}>
               <header>
                 <img src={resolvedViewer.avatar} alt="" />
-                <span><strong>{resolvedViewer.name}</strong><small>{resolvedViewer.campus || resolvedViewer.meta}</small></span>
-                <button type="button" onClick={() => setIsAccountMenuOpen(false)} aria-label="Close account menu"><FiX aria-hidden="true" /></button>
+                <span><strong id="campus-mobile-more-title">More</strong><small>{resolvedViewer.name} · {resolvedViewer.campus || resolvedViewer.meta}</small></span>
+                <button type="button" onClick={() => setIsAccountMenuOpen(false)} aria-label="Close more menu"><FiX aria-hidden="true" /></button>
               </header>
-              <Link to={profileHref} onClick={() => setIsAccountMenuOpen(false)}>{profileLabel}<FiChevronRight aria-hidden="true" /></Link>
-              <Link to="/messages" onClick={() => setIsAccountMenuOpen(false)}>Messages<FiChevronRight aria-hidden="true" /></Link>
+              <nav className="campus-mobile-more-links" aria-label="More campus destinations">
+                {mobileMoreItems.map(({ id, label, icon, href }) => {
+                  const Icon = ICON_BY_ID[icon];
+                  return <Link key={id} to={href} className={id === activeItemId ? "is-active" : ""} aria-current={id === activeItemId ? "page" : undefined} onClick={() => setIsAccountMenuOpen(false)}>
+                    <span>{Icon ? <Icon aria-hidden="true" /> : null}<strong>{label}</strong></span><FiChevronRight aria-hidden="true" />
+                  </Link>;
+                })}
+              </nav>
+              <div className="campus-mobile-more-account"><span>Account</span></div>
+              <Link to={profileHref} className={isProfileCurrent ? "is-active" : ""} onClick={() => setIsAccountMenuOpen(false)}><span><FiUser aria-hidden="true" />{profileLabel}</span><FiChevronRight aria-hidden="true" /></Link>
+              <Link to="/messages" className={activeItemId === "messages" ? "is-active" : ""} onClick={() => setIsAccountMenuOpen(false)}><span><FiMail aria-hidden="true" />Messages</span><FiChevronRight aria-hidden="true" /></Link>
               <button type="button" className="is-logout" onClick={handleLogout}><span><FiLogOut aria-hidden="true" /> Log out</span><FiChevronRight aria-hidden="true" /></button>
             </section>
           </div>

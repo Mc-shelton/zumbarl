@@ -94,7 +94,7 @@ export function matchesOpportunitySearch(opportunity, query) {
   const normalizedQuery = String(query || '').trim().toLowerCase()
   if (!normalizedQuery) return true
 
-  return [
+  const searchableText = [
     opportunity.title,
     opportunity.company,
     opportunity.description,
@@ -102,7 +102,35 @@ export function matchesOpportunitySearch(opportunity, query) {
     opportunity.location,
     opportunity.meta,
     (opportunity.tags || []).join(' '),
-  ].some((value) => String(value || '').toLowerCase().includes(normalizedQuery))
+  ].map((value) => String(value || '').toLowerCase()).join(' ')
+  const terms = normalizedQuery.split(/\s+/).filter(Boolean)
+
+  return terms.every((term) => searchableText.includes(term))
+}
+
+export function rankOpportunitiesBySearch(opportunities, query) {
+  const normalizedQuery = String(query || '').trim().toLowerCase()
+  if (!normalizedQuery) return opportunities
+  const terms = normalizedQuery.split(/\s+/).filter(Boolean)
+
+  return opportunities.map((opportunity, originalIndex) => {
+    const title = String(opportunity.title || '').toLowerCase()
+    const company = String(opportunity.company || '').toLowerCase()
+    const category = String(opportunity.careerPath || '').toLowerCase()
+    const tags = (opportunity.tags || []).map((tag) => String(tag).toLowerCase())
+    const supportingText = [opportunity.description, opportunity.location, opportunity.meta]
+      .map((value) => String(value || '').toLowerCase())
+      .join(' ')
+    const score = (title.includes(normalizedQuery) ? 80 : 0)
+      + terms.reduce((total, term) => total
+        + (title.includes(term) ? 20 : 0)
+        + (tags.some((tag) => tag.includes(term)) ? 14 : 0)
+        + (category.includes(term) ? 10 : 0)
+        + (company.includes(term) ? 6 : 0)
+        + (supportingText.includes(term) ? 2 : 0), 0)
+    return { opportunity, originalIndex, score }
+  }).sort((left, right) => right.score - left.score || left.originalIndex - right.originalIndex)
+    .map(({ opportunity }) => opportunity)
 }
 
 export function matchesOpportunityRailFilters(opportunity, railFilters) {

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import {
   FiArchive, FiArrowUpRight, FiBook, FiBookOpen, FiBookmark, FiCheck, FiClock, FiDollarSign,
-  FiEye, FiFileText, FiLink, FiMessageCircle, FiPlus, FiSearch, FiTrash2, FiUploadCloud, FiUsers, FiX,
+  FiEdit3, FiEye, FiFileText, FiLink, FiMessageCircle, FiPlus, FiSearch, FiTrash2, FiUploadCloud, FiUsers, FiX,
 } from 'react-icons/fi'
 import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
@@ -16,7 +16,7 @@ import {
   purchaseKnowledgeResource, readKnowledgeResourceCheckout,
   recordKnowledgeResourceDwell, recordKnowledgeResourceOpen,
   searchKnowledgeUnits,
-  setKnowledgeSpaceFollowing, setKnowledgeSpaceMembership,
+  setKnowledgeSpaceFollowing, setKnowledgeSpaceMembership, updateKnowledgeResource,
 } from '../services/learnService'
 import './learn-knowledge.css'
 
@@ -46,6 +46,18 @@ function ResourceIcon({ type }) {
   return <FiBookOpen aria-hidden="true" />
 }
 
+function KnowledgeDialogHeader({ eyebrow, title, description, headingId, onClose }) {
+  return <header className="knowledge-dialog-header">
+    <span className="knowledge-dialog-brand" aria-hidden="true"><img src="/assets/index/bee_nobg.png" alt="" /></span>
+    <div className="knowledge-dialog-heading">
+      <span className="learn-eyebrow">{eyebrow}</span>
+      <h2 id={headingId}>{title}</h2>
+      <p>{description}</p>
+    </div>
+    <button type="button" className="knowledge-dialog-close" onClick={onClose} aria-label="Close"><FiX /></button>
+  </header>
+}
+
 const KNOWLEDGE_TABS = new Set(['resources', 'libraries', 'groups'])
 const canManageResource = (resource) => resource.space?.membership?.status === 'active'
   && ['owner', 'admin'].includes(resource.space.membership.role)
@@ -69,6 +81,7 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
   const [resourceForm, setResourceForm] = useState(EMPTY_RESOURCE)
   const [resourceSource, setResourceSource] = useState('FILES')
   const [resourceFiles, setResourceFiles] = useState([])
+  const [resourceExistingFiles, setResourceExistingFiles] = useState([])
   const [resourceCoverFile, setResourceCoverFile] = useState(null)
   const [resourceGeneratedCoverFile, setResourceGeneratedCoverFile] = useState(null)
   const [thumbnailGenerationStatus, setThumbnailGenerationStatus] = useState('idle')
@@ -109,8 +122,9 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
     return () => { active = false }
   }, [applyData])
 
-  const publishableSpaces = useMemo(() => data.libraries.filter((space) => space.membership?.status === 'active'), [data.libraries])
+  const publishableSpaces = useMemo(() => [...data.libraries, ...data.groups].filter((space) => space.membership?.status === 'active'), [data.groups, data.libraries])
   const selectedDestination = publishableSpaces.find((space) => space.id === resourceForm.spaceId) || null
+  const editingResource = dialog?.type === 'resource-form' ? dialog.resource || null : null
   const submitSearch = (event) => { event.preventDefault(); load({ q: query, type }) }
   const showResourceDetails = (resource) => {
     recordKnowledgeResourceOpen(resource.id)
@@ -126,11 +140,22 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
       setSearchParams(next, { replace: true })
     }
     setSpaceAvatarFile(null)
+    setResourceForm(EMPTY_RESOURCE)
+    setResourceFiles([])
+    setResourceExistingFiles([])
+    setResourceCoverFile(null)
+    setResourceGeneratedCoverFile(null)
+    setThumbnailGenerationStatus('idle')
+    setUnitQuery('')
+    setUnitOptions([])
+    setSelectedUnit(null)
+    setCreateNewUnit(false)
+    setResourceSource('FILES')
     setDialog(null)
   }
   const mutate = async (id, action, successMessage) => {
     setWorkingId(id); setError(''); setNotice('')
-    try { await action(); setNotice(successMessage); await load({ q: query, type }); return true }
+    try { const result = await action(); setNotice(successMessage); await load({ q: query, type }); return result ?? true }
     catch (requestError) { setError(requestError.message); return false }
     finally { setWorkingId('') }
   }
@@ -175,7 +200,7 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
       setError('Choose an existing unit, or create the typed unit as new.')
       return
     }
-    if (resourceSource === 'FILES' && !resourceFiles.length) {
+    if (resourceSource === 'FILES' && !resourceFiles.length && !resourceExistingFiles.length) {
       setError('Choose at least one file to publish this resource.')
       return
     }
@@ -183,13 +208,15 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
       setError('Add the link to this resource.')
       return
     }
-    const created = await mutate('create-resource', async () => {
-      const fileUrls = resourceSource === 'FILES'
+    const workingKey = editingResource ? `edit-resource-${editingResource.id}` : 'create-resource'
+    const saved = await mutate(workingKey, async () => {
+      const uploadedFileUrls = resourceSource === 'FILES'
         ? await Promise.all(resourceFiles.map(async (file) => {
           const upload = await uploadZumbarlFile(file, { scope: 'learn-resource', metadata: { purpose: 'knowledge-resource', title: resourceForm.title } })
           return upload.url || upload.previewUrl
         }))
         : []
+      const fileUrls = resourceSource === 'FILES' ? [...resourceExistingFiles.map((file) => file.url), ...uploadedFileUrls] : []
       const effectiveCoverFile = resourceCoverFile || resourceGeneratedCoverFile
       const coverUpload = effectiveCoverFile
         ? await uploadZumbarlFile(effectiveCoverFile, { scope: 'learn-resource-cover', metadata: { purpose: resourceCoverFile ? 'knowledge-resource-cover' : 'knowledge-resource-generated-cover', title: resourceForm.title } })
@@ -209,10 +236,43 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
         fileUrl: resourceSource === 'LINK' ? resourceForm.fileUrl.trim() : undefined,
         fileUrls,
         coverImageUrl: coverUpload?.url || coverUpload?.previewUrl || undefined,
+        sourceMessageId: editingResource?.sourceMessageId || undefined,
       }
-      return createKnowledgeResource(payload)
-    }, 'Your resource is now available in Learn & Grow.')
-    if (created) { setResourceForm(EMPTY_RESOURCE); setResourceFiles([]); setResourceCoverFile(null); setResourceGeneratedCoverFile(null); setThumbnailGenerationStatus('idle'); setUnitQuery(''); setUnitOptions([]); setSelectedUnit(null); setCreateNewUnit(false); setResourceSource('FILES'); setDialog(null) }
+      return editingResource ? updateKnowledgeResource(editingResource.id, payload) : createKnowledgeResource(payload)
+    }, editingResource ? 'Your resource changes are saved.' : 'Your resource is now available in Learn & Grow.')
+    if (saved) {
+      setResourceForm(EMPTY_RESOURCE); setResourceFiles([]); setResourceExistingFiles([]); setResourceCoverFile(null); setResourceGeneratedCoverFile(null); setThumbnailGenerationStatus('idle'); setUnitQuery(''); setUnitOptions([]); setSelectedUnit(null); setCreateNewUnit(false); setResourceSource('FILES')
+      setDialog(editingResource ? { type: 'reader', resource: saved } : null)
+    }
+  }
+
+  const beginResourceEdit = (resource) => {
+    setError('')
+    setResourceForm({
+      title: resource.title || '',
+      description: resource.description || '',
+      resourceType: String(resource.type || 'article').toUpperCase(),
+      accessMode: String(resource.accessMode || 'free_read').toUpperCase(),
+      courseCode: resource.courseCode || '',
+      academicYear: resource.academicYear || '',
+      price: resource.price ?? '',
+      fileUrl: resource.fileUrl || '',
+      previewText: resource.previewText || '',
+      availableCopies: resource.availableCopies ?? '',
+      spaceId: resource.space?.id || '',
+      currency: resource.currency || 'KES',
+    })
+    setResourceSource(String(resource.sourceMode || (resource.fileUrls?.length ? 'files' : 'link')).toUpperCase())
+    setResourceFiles([])
+    setResourceExistingFiles((resource.fileUrls || []).map((url, index) => ({ url, name: `Attached file ${index + 1}` })))
+    setResourceCoverFile(null)
+    setResourceGeneratedCoverFile(null)
+    setThumbnailGenerationStatus('idle')
+    setSelectedUnit(resource.unit?.id ? resource.unit : null)
+    setUnitQuery(resource.unit?.name || resource.courseCode || '')
+    setUnitOptions([])
+    setCreateNewUnit(false)
+    setDialog({ type: 'resource-form', resource })
   }
 
   const selectResourceFiles = async (incoming) => {
@@ -390,22 +450,36 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
 
       <KnowledgeResourceCheckoutModal checkout={purchaseCheckout} error={purchaseError} working={workingId === 'purchase'} onClose={() => { setPurchaseCheckout(null); setPurchaseError('') }} onConfirm={confirmResourcePurchase} />
       {visibleDialog && <div className="knowledge-dialog-backdrop" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) closeDialog() }}>
-        <section className="knowledge-dialog" role="dialog" aria-modal="true">
-          <button type="button" className="knowledge-dialog-close" onClick={closeDialog} aria-label="Close"><FiX /></button>
-          {error && <div className="knowledge-feedback is-error knowledge-dialog-feedback" role="alert">{error}</div>}
+        <section className={`knowledge-dialog is-${visibleDialog.type}`} role="dialog" aria-modal="true" aria-labelledby={visibleDialog.type === 'resource-form' ? 'knowledge-resource-heading' : visibleDialog.type === 'space-form' ? 'knowledge-space-heading' : 'knowledge-reader-heading'}>
           {visibleDialog.type === 'reader' && <>
-            <span className="learn-eyebrow">{TYPE_LABELS[visibleDialog.resource.type]}</span><h2>{visibleDialog.resource.title}</h2>
+            <button type="button" className="knowledge-dialog-close" onClick={closeDialog} aria-label="Close"><FiX /></button>
+            {error && <div className="knowledge-feedback is-error knowledge-dialog-feedback" role="alert">{error}</div>}
+            <span className="learn-eyebrow">{TYPE_LABELS[visibleDialog.resource.type]}</span><h2 id="knowledge-reader-heading">{visibleDialog.resource.title}</h2>
             <p>{visibleDialog.resource.description}</p><div className="knowledge-reader">{visibleDialog.resource.previewText || 'The owner has not added a text preview. Use the attached source to open the complete resource.'}</div>
             <div className="knowledge-reader-files">
               {visibleDialog.resource.fileUrl && <button type="button" className="learn-primary-btn" onClick={() => setAttachmentPreview({ url: visibleDialog.resource.fileUrl, name: visibleDialog.resource.title, resourceId: visibleDialog.resource.id })}>Preview resource link <FiLink /></button>}
               {(visibleDialog.resource.fileUrls || []).map((url, index) => <button type="button" key={url} className="learn-primary-btn" onClick={() => setAttachmentPreview({ url, name: `${visibleDialog.resource.title} · File ${index + 1}`, resourceId: visibleDialog.resource.id })}>Preview file {index + 1} <FiFileText /></button>)}
+              {visibleDialog.resource.ownedByViewer && <button type="button" className="knowledge-owner-edit" onClick={() => beginResourceEdit(visibleDialog.resource)}><FiEdit3 /> Edit resource</button>}
             </div>
           </>}
-          {visibleDialog.type === 'resource-form' && <form onSubmit={submitResource} className="knowledge-form">
-            <span className="learn-eyebrow">Share knowledge</span><h2>Post a learning resource</h2><p>Publish it from your profile or contribute it to a library. Study-group resources are marked directly from group chat.</p>
-            <label><span>Title</span><input required value={resourceForm.title} onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })} /></label>
+          {visibleDialog.type === 'resource-form' && <form onSubmit={submitResource} className="knowledge-form knowledge-modal-form">
+            <KnowledgeDialogHeader
+              eyebrow={editingResource ? 'Owner controls' : 'Share knowledge'}
+              title={editingResource ? 'Edit learning resource' : 'Post a learning resource'}
+              description={editingResource ? 'Update the details, access, preview, or attached material.' : 'Publish from your profile or contribute it to a campus library.'}
+              headingId="knowledge-resource-heading"
+              onClose={closeDialog}
+            />
+            <div className="knowledge-modal-body">
+            {error && <div className="knowledge-feedback is-error knowledge-dialog-feedback" role="alert">{error}</div>}
+            <section className="knowledge-form-section" aria-labelledby="resource-basics-heading">
+            <div className="knowledge-form-section-heading"><span>01</span><div><strong id="resource-basics-heading">Resource details</strong><small>Name it and choose how students can access it.</small></div></div>
+            <label><span>Title</span><input autoFocus required value={resourceForm.title} onChange={(e) => setResourceForm({ ...resourceForm, title: e.target.value })} /></label>
             <div className="knowledge-form-row"><label><span>Resource type</span><select value={resourceForm.resourceType} onChange={(e) => setResourceForm({ ...resourceForm, resourceType: e.target.value })}><option value="PAST_PAPER">Past paper</option><option value="BOOK">Book</option><option value="NOTES">Notes</option><option value="STUDY_GUIDE">Study guide</option><option value="ARTICLE">Article</option></select></label><label><span>Access</span><select value={!selectedDestination ? 'FREE_READ' : selectedDestination.type === 'group' ? 'MEMBERS_ONLY' : resourceForm.accessMode} disabled={!selectedDestination || selectedDestination.type === 'group'} onChange={(e) => setResourceForm({ ...resourceForm, accessMode: e.target.value })}>{!selectedDestination ? <option value="FREE_READ">Public · Read free</option> : selectedDestination.type === 'group' ? <option value="MEMBERS_ONLY">Members only</option> : <><option value="FREE_READ">Read free</option><option value="BORROW">Borrow</option><option value="BUY">Buy</option><option value="MEMBERS_ONLY">Members only</option></>}</select></label></div>
             {publishableSpaces.length ? <label><span>Publish in</span><select value={resourceForm.spaceId} onChange={(e) => selectResourceOwner(e.target.value)}><option value="">My profile · public and free</option>{publishableSpaces.map((space) => <option key={space.id} value={space.id}>{space.name} · library</option>)}</select><small className="knowledge-field-note">Personal resources are always public and free. Library access is set by the publisher.</small></label> : <div className="knowledge-personal-publish-note"><FiCheck /><span><strong>Publishing from your profile</strong><small>This resource will be public and free to read. Join a library to publish there.</small></span></div>}
+            </section>
+            <section className="knowledge-form-section" aria-labelledby="resource-context-heading">
+            <div className="knowledge-form-section-heading"><span>02</span><div><strong id="resource-context-heading">Learning context</strong><small>Help Zumbarl place it in the right student journey.</small></div></div>
             <div className="knowledge-unit-picker knowledge-hub-unit-picker">
               <label><span>Unit</span><input value={unitQuery} onChange={(event) => updateResourceUnitQuery(event.target.value)} placeholder="Search unit name or code" autoComplete="off" required /></label>
               {selectedUnit && <div className="knowledge-unit-selection"><FiCheck /><span>Using existing unit <strong>{selectedUnit.name}</strong></span><button type="button" onClick={() => updateResourceUnitQuery('')}><FiX /></button></div>}
@@ -416,7 +490,10 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
             <small className="knowledge-field-note knowledge-institution-note">Institution is filled automatically from your campus profile.</small>
             {(resourceForm.accessMode === 'BUY' || resourceForm.accessMode === 'BORROW') && <label><span>{resourceForm.accessMode === 'BUY' ? 'Price (KES)' : 'Available copies'}</span><input required type="number" min="0" value={resourceForm.accessMode === 'BUY' ? resourceForm.price : resourceForm.availableCopies} onChange={(e) => setResourceForm({ ...resourceForm, [resourceForm.accessMode === 'BUY' ? 'price' : 'availableCopies']: e.target.value })} /></label>}
             <label><span>Description</span><textarea value={resourceForm.description} onChange={(e) => setResourceForm({ ...resourceForm, description: e.target.value })} /></label>
-            <GeneratedResourceThumbnailPicker customFile={resourceCoverFile} generatedFile={resourceGeneratedCoverFile} generationStatus={thumbnailGenerationStatus} onChange={setResourceCoverFile} disabled={workingId === 'create-resource'} />
+            </section>
+            <section className="knowledge-form-section" aria-labelledby="resource-material-heading">
+            <div className="knowledge-form-section-heading"><span>03</span><div><strong id="resource-material-heading">Preview and material</strong><small>Add a recognisable cover and the resource itself.</small></div></div>
+            <GeneratedResourceThumbnailPicker customFile={resourceCoverFile} generatedFile={resourceGeneratedCoverFile} generationStatus={thumbnailGenerationStatus} onChange={setResourceCoverFile} disabled={workingId === (editingResource ? `edit-resource-${editingResource.id}` : 'create-resource')} />
             <label><span>Preview text</span><textarea value={resourceForm.previewText} onChange={(e) => setResourceForm({ ...resourceForm, previewText: e.target.value })} /></label>
             <fieldset className="knowledge-source-fieldset">
               <legend>Resource source</legend>
@@ -426,16 +503,25 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
                 <button type="button" role="radio" aria-checked={resourceSource === 'LINK'} className={resourceSource === 'LINK' ? 'is-selected' : ''} onClick={() => { setResourceSource('LINK'); selectResourceFiles([]) }}><FiLink /><span><strong>Use a link</strong><small>Website, drive or online reader</small></span></button>
               </div>
               {resourceSource === 'FILES' ? <div className="knowledge-file-picker">
-                <label><FiUploadCloud /><span><strong>Choose one or more files</strong><small>Up to 12 files can be attached</small></span><input type="file" multiple required={!resourceFiles.length} accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.rtf,.jpg,.jpeg,.png,.webp,video/*" onChange={(event) => selectResourceFiles(event.target.files)} /></label>
+                <label><FiUploadCloud /><span><strong>{resourceExistingFiles.length ? 'Add more files' : 'Choose one or more files'}</strong><small>Up to 12 files can be attached</small></span><input type="file" multiple required={!resourceFiles.length && !resourceExistingFiles.length} accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.rtf,.jpg,.jpeg,.png,.webp,video/*" onChange={(event) => selectResourceFiles(event.target.files)} /></label>
+                {resourceExistingFiles.length > 0 && <ul>{resourceExistingFiles.map((file, index) => <li key={`${file.url}-${index}`}><FiFileText /><span><strong>{file.name}</strong><small>Already attached</small></span><button type="button" onClick={() => setResourceExistingFiles((current) => current.filter((_, itemIndex) => itemIndex !== index))} aria-label={`Remove ${file.name}`}><FiTrash2 /></button></li>)}</ul>}
                 {resourceFiles.length > 0 && <ul>{resourceFiles.map((file, index) => <li key={`${file.name}-${file.lastModified}`}><FiFileText /><span><strong>{file.name}</strong><small>{Math.max(1, Math.round(file.size / 1024))} KB</small></span><button type="button" onClick={() => selectResourceFiles(resourceFiles.filter((_, fileIndex) => fileIndex !== index))} aria-label={`Remove ${file.name}`}><FiTrash2 /></button></li>)}</ul>}
               </div> : <label className="knowledge-link-field"><span>Resource link</span><div><FiLink /><input required type="url" placeholder="https://…" value={resourceForm.fileUrl} onChange={(e) => setResourceForm({ ...resourceForm, fileUrl: e.target.value })} /></div></label>}
             </fieldset>
-            <button className="learn-primary-btn" disabled={workingId === 'create-resource'}>Publish resource</button>
+            </section>
+            </div>
+            <footer className="knowledge-modal-footer">
+              <span className="knowledge-modal-assurance"><FiCheck /><span><strong>Made for shared learning</strong><small>Published through your Zumbarl profile.</small></span></span>
+              <button className="learn-primary-btn" disabled={workingId === (editingResource ? `edit-resource-${editingResource.id}` : 'create-resource')}>{editingResource ? 'Save changes' : 'Publish resource'}<FiArrowUpRight /></button>
+            </footer>
           </form>}
-          {visibleDialog.type === 'space-form' && <form onSubmit={submitSpace} className="knowledge-form">
-            <span className="learn-eyebrow">Student-owned spaces</span><h2>Create a library or study group</h2><p>Libraries organise and circulate resources. Study groups bring people together around a subject.</p>
+          {visibleDialog.type === 'space-form' && <form onSubmit={submitSpace} className="knowledge-form knowledge-modal-form">
+            <KnowledgeDialogHeader eyebrow="Student-owned spaces" title="Create a library or study group" description="Give your campus knowledge a place to grow together." headingId="knowledge-space-heading" onClose={closeDialog} />
+            <div className="knowledge-modal-body">
+            {error && <div className="knowledge-feedback is-error knowledge-dialog-feedback" role="alert">{error}</div>}
+            <section className="knowledge-form-section is-space-section">
             <div className="knowledge-form-row"><button type="button" className={spaceForm.type === 'LIBRARY' ? 'is-selected' : ''} onClick={() => setSpaceForm({ ...spaceForm, type: 'LIBRARY' })}><FiArchive /> Library</button><button type="button" className={spaceForm.type === 'GROUP' ? 'is-selected' : ''} onClick={() => setSpaceForm({ ...spaceForm, type: 'GROUP' })}><FiUsers /> Study group</button></div>
-            <label><span>Name</span><input required value={spaceForm.name} onChange={(e) => setSpaceForm({ ...spaceForm, name: e.target.value })} /></label>
+            <label><span>Name</span><input autoFocus required value={spaceForm.name} onChange={(e) => setSpaceForm({ ...spaceForm, name: e.target.value })} /></label>
             <label><span>Description</span><textarea value={spaceForm.description} onChange={(e) => setSpaceForm({ ...spaceForm, description: e.target.value })} /></label>
             <div className="knowledge-form-row"><label><span>Visibility</span><select value={spaceForm.visibility} onChange={(e) => setSpaceForm({ ...spaceForm, visibility: e.target.value })}><option value="CAMPUS">Campus</option><option value="PUBLIC">Public</option><option value="PRIVATE">Private</option></select></label><label><span>Membership</span><select value={spaceForm.membershipMode} onChange={(e) => setSpaceForm({ ...spaceForm, membershipMode: e.target.value })}><option value="REQUEST">Admin approval required</option><option value="INVITE">Invite only</option></select></label></div>
             <KnowledgeAvatarPicker
@@ -445,7 +531,9 @@ function LearnKnowledgeHub({ initialTab = 'resources', onDataChange }) {
               onClear={() => setSpaceAvatarFile(null)}
               disabled={workingId === 'create-space'}
             />
-            <button className="learn-primary-btn" disabled={workingId === 'create-space'}>Create space</button>
+            </section>
+            </div>
+            <footer className="knowledge-modal-footer"><span className="knowledge-modal-assurance"><FiUsers /><span><strong>Student-led by design</strong><small>You can invite people and shape it together.</small></span></span><button className="learn-primary-btn" disabled={workingId === 'create-space'}>Create space<FiArrowUpRight /></button></footer>
           </form>}
         </section>
       </div>}

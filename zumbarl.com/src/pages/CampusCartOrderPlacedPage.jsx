@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Seo from '../components/Seo'
 import { CartShell } from '../features/cart/components/CartShell'
 import { CartTopActions } from '../features/cart/components/CartTopActions'
@@ -12,14 +12,27 @@ import {
   CHECKOUT_BREADCRUMBS,
   CHECKOUT_STEPS,
 } from '../features/cart/checkoutData'
-import { useCartPageState } from '../features/cart/hooks/useCartPageState'
 import { CAMPUS_CART_ORDER_PLACED_SEO } from '../features/seo/constants'
 import '../styles/campus.css'
 import '../styles/cart.css'
 
 function CampusCartOrderPlacedPage() {
   const navigate = useNavigate()
-  const { cartItems, totals: orderTotals } = useCartPageState()
+  const location = useLocation()
+  const order = location.state?.order || null
+  const cartItems = Array.isArray(order?.items) ? order.items.map((item) => ({
+    ...item,
+    id: item.listingId || item.id,
+    unitPrice: Number(item.unitAmount || 0),
+  })) : []
+  const deliveryFee = Number(order?.settlement?.deliveryFee || 0)
+  const orderTotals = {
+    deliveryFee,
+    deliveryPending: false,
+    finalTotal: Number(order?.totalAmount || 0),
+    hasDelivery: deliveryFee > 0,
+    subtotal: Number(order?.settlement?.subtotal || order?.totalAmount || 0) - deliveryFee,
+  }
 
   return (
     <CartShell
@@ -32,7 +45,7 @@ function CampusCartOrderPlacedPage() {
           items={cartItems}
           totals={orderTotals}
         >
-          <OrderDeliverySummaryNote />
+          <OrderDeliverySummaryNote location={order?.handoffSpot} />
         </CheckoutOrderSummaryRail>
       )}
     >
@@ -51,11 +64,20 @@ function CampusCartOrderPlacedPage() {
         description="Your order has been confirmed. Track progress and delivery updates from here."
       />
       <CheckoutStepper steps={CHECKOUT_STEPS.confirmation} />
-      <OrderPlacedPanel
-        totals={orderTotals}
-        onContinueShopping={() => navigate('/campus/opportunities/buy-sell')}
-        onViewOrders={() => navigate('/campus/opportunities?tab=service-orders')}
-      />
+      {order ? (
+        <OrderPlacedPanel
+          order={order}
+          totals={orderTotals}
+          onContinueShopping={() => navigate('/campus/opportunities/buy-sell')}
+          onViewOrders={() => navigate('/campus/opportunities?tab=service-orders')}
+        />
+      ) : (
+        <section className="campus-checkout-panel campus-order-placed-stack" role="alert">
+          <h2>Order details are not available on this page.</h2>
+          <p>Open My Orders to view the current status from the server.</p>
+          <button type="button" className="campus-checkout-next-btn" onClick={() => navigate('/campus/opportunities?tab=service-orders')}>View My Orders</button>
+        </section>
+      )}
       <CheckoutPoweredNote />
     </CartShell>
   )

@@ -117,12 +117,12 @@ function OpportunitiesBuySellPage() {
             <MarketplaceHeader isOrdersOpen={isOrdersOpen} onOpenOrders={() => { if (!isOrdersOpen) setOrdersLoading(true); setSearchParams(isOrdersOpen ? {} : { view: 'orders' }) }} onPostItem={() => navigate('/campus/marketplace/listings/new')} />
             {isOrdersOpen ? <MarketplaceBuyerOrders error={ordersError} initialOrderId={searchParams.get('orderId') || ''} isLoading={ordersLoading} onCancel={setOrderToCancel} onConfirmReceived={(order) => updateBuyerOrder(order, 'received')} onContinueShopping={() => setSearchParams({})} onMessageOrderContact={openOrderConversation} onRefresh={loadOrders} orders={orders} updatingOrderId={updatingOrderId} /> : <>
             <MarketplaceCommerceGuide onSelect={marketplaceState.onCategoryChange} />
+            <MarketplaceSearch />
             <MarketplaceCategories
               activeCategory={marketplaceState.activeCategory}
               onCategoryChange={marketplaceState.onCategoryChange}
               onCategoryKeyDown={marketplaceState.handleCategoryKeyDown}
             />
-            <MarketplaceSearch />
             <MarketplaceItemSections
               activeCategory={marketplaceState.activeCategory}
               activeRecentFilter={marketplaceState.activeRecentFilter}

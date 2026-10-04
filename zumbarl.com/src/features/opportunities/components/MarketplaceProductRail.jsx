@@ -1,5 +1,4 @@
 import { FiBarChart2, FiCalendar, FiEdit3, FiEye, FiHeart, FiMessageCircle, FiPackage, FiShield, FiShoppingCart } from 'react-icons/fi'
-import { MARKETPLACE_DEFAULT_SELLER } from '../../../data/marketplace'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 
@@ -19,7 +18,7 @@ function MarketplaceProductRail({
   onEditListing,
   onUpdateListingStatus,
   onViewSellerProfile,
-  seller = MARKETPLACE_DEFAULT_SELLER,
+  seller,
   suggestedItems,
 }) {
   const canBuy = hasAccess(ACCESS_KEYS.marketplace.buy)
@@ -35,20 +34,30 @@ function MarketplaceProductRail({
   const serviceActionLabel = isOrderAhead ? 'Place order' : 'Choose a time'
   const isFoodVendor = isKitchen || isHotel
   const vendorNoun = isHotel ? 'hotel' : 'kitchen'
+  const sellerData = seller || {
+    avatar: normalizeZumbarlFileUrl(item.seller?.avatarUrl) || '/assets/index/bee_nobg.png',
+    campus: item.seller?.campus || '',
+    itemsSold: null,
+    joined: '',
+    name: item.seller?.name || 'Seller profile unavailable',
+    rating: null,
+    reviews: null,
+    role: 'Student seller',
+  }
   const vendorJoined = item.shop?.createdAt
     ? new Date(item.shop.createdAt).toLocaleDateString('en-KE', { month: 'short', year: 'numeric' })
-    : seller.joined
+    : sellerData.joined
   const sellerPresentation = isFoodVendor ? {
-    ...seller,
-    name: item.shop?.name || seller.name,
-    avatar: normalizeZumbarlFileUrl(item.shop?.logoUrl) || seller.avatar,
+    ...sellerData,
+    name: item.shop?.name || sellerData.name,
+    avatar: normalizeZumbarlFileUrl(item.shop?.logoUrl) || sellerData.avatar,
     role: isHotel ? 'Campus hotel' : 'Student kitchen',
-    campus: item.shop?.locationLabel || seller.campus,
-    itemsSold: item.shop?.orderCount ?? seller.itemsSold,
+    campus: item.shop?.locationLabel || sellerData.campus,
+    itemsSold: item.shop?.orderCount ?? sellerData.itemsSold,
     rating: Number(item.shop?.ratingAverage || 0).toFixed(1),
-    reviews: item.shop?.ratingCount ?? seller.reviews,
+    reviews: item.shop?.ratingCount ?? sellerData.reviews,
     joined: vendorJoined,
-  } : seller
+  } : sellerData
 
   return (
     <aside className="campus-rail opportunities-rail opportunities-marketplace-rail opportunities-marketplace-product-rail" aria-label="Marketplace checkout and provider information">
@@ -135,15 +144,15 @@ function MarketplaceProductRail({
 
         <div className="opportunities-marketplace-product-seller-metrics">
           <article>
-            <strong>{sellerPresentation.itemsSold}</strong>
+            <strong>{sellerPresentation.itemsSold ?? '—'}</strong>
             <span>{isService ? 'Orders' : 'Items sold'}</span>
           </article>
           <article>
-            <strong>{sellerPresentation.rating}</strong>
-            <span>({sellerPresentation.reviews} reviews)</span>
+            <strong>{sellerPresentation.rating ?? '—'}</strong>
+            <span>{sellerPresentation.reviews == null ? 'No rating data' : `(${sellerPresentation.reviews} reviews)`}</span>
           </article>
           <article>
-            <strong>{sellerPresentation.joined}</strong>
+            <strong>{sellerPresentation.joined || '—'}</strong>
             <span>Joined</span>
           </article>
         </div>
@@ -154,7 +163,7 @@ function MarketplaceProductRail({
         </button>
       </section>
 
-      <section className="campus-rail-card opportunities-marketplace-product-suggested-card">
+      {suggestedItems.length ? <section className="campus-rail-card opportunities-marketplace-product-suggested-card">
         <div className="opportunities-section-head">
           <h3>{isOwner ? 'Market comparison' : 'You may also like'}</h3>
           <button type="button" className="campus-link-btn">View all</button>
@@ -180,7 +189,7 @@ function MarketplaceProductRail({
             </article>
           ))}
         </div>
-      </section>
+      </section> : null}
     </aside>
   )
 }

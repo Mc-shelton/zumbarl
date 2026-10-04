@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import CampusSidebar from '../components/layout/CampusSidebar'
 import Seo from '../components/Seo'
 import OpportunitiesBidsRail from '../features/opportunities/components/OpportunitiesBidsRail'
@@ -11,6 +12,17 @@ import '../styles/opportunities.css'
 
 function OpportunitiesPage() {
   const pageState = useOpportunitiesPageState()
+  const mainRef = useRef(null)
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      mainRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+      if (window.matchMedia('(max-width: 980px)').matches) {
+        window.scrollTo({ top: 0, behavior: 'auto' })
+      }
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [pageState.activeOpportunityTab])
 
   return (
     <main className={`campus-page opportunities-page${pageState.isDetailPanelVisible ? ' is-detail-open' : ''}`}>
@@ -26,7 +38,7 @@ function OpportunitiesPage() {
         <div className={`campus-shell${pageState.isDetailPanelVisible ? ' is-detail-open' : ''}${!pageState.hasRightRail ? ' is-no-rail' : ''}`}>
           <CampusSidebar activeItemId="opportunities" />
 
-          <section className="campus-main opportunities-main">
+          <section ref={mainRef} className="campus-main opportunities-main">
             <OpportunitiesHeader
               activeLocation={pageState.activeLocation}
               activeOpportunityTab={pageState.activeOpportunityTab}
@@ -52,6 +64,7 @@ function OpportunitiesPage() {
               onClearFilters={pageState.onClearFilters}
               onCreateBooking={pageState.onCreateBooking}
               onDeclineInvite={pageState.onDeclineInvite}
+              onEditFilters={pageState.onEditFilters}
               onMarkInvitesSeen={pageState.onMarkInvitesSeen}
               onOpenInviteProject={pageState.onOpenInviteProject}
               onOpenMarketingCampaign={pageState.onOpenMarketingCampaign}
@@ -66,6 +79,7 @@ function OpportunitiesPage() {
               onOpportunityTypeChange={pageState.onOpportunityTypeChange}
               onViewBooking={pageState.onViewBooking}
               opportunityTypeOptions={pageState.opportunityTypeOptions}
+              recommendationPresentation={pageState.recommendationPresentation}
               projects={pageState.projects}
               serviceOrders={pageState.serviceOrders}
               serviceOrdersError={pageState.serviceOrdersError}
@@ -105,7 +119,6 @@ function OpportunitiesPage() {
               selectedOpportunity={pageState.selectedOpportunity}
               selectedOpportunityBid={pageState.selectedOpportunityBid}
               selectedOpportunityProject={pageState.selectedOpportunityProject}
-              selectedOpportunityThumbnail={pageState.selectedOpportunityThumbnail}
             />
           ) : null}
 

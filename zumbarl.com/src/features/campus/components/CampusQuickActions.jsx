@@ -1,4 +1,5 @@
 import {
+  FiArrowUpRight,
   FiBookOpen,
   FiBriefcase,
   FiCalendar,
@@ -25,26 +26,37 @@ function CampusQuickActions({ actions = [] }) {
   }
 
   return (
-    <section className="campus-section">
-      <h3>What would you like to do?</h3>
+    <section className="campus-section campus-quick-actions-section">
+      <header className="campus-workspace-section-head">
+        <div>
+          <span>Quick access</span>
+          <h3>Move around campus</h3>
+        </div>
+        <p>Your most useful spaces, one click away.</p>
+      </header>
       <div className="campus-actions-grid">
-        {actions.map(({ id, title, subtitle, Icon: ProvidedIcon, href, icon }) => {
+        {actions.map(({ id, title, subtitle, Icon: ProvidedIcon, href, icon }, index) => {
           const Icon = ProvidedIcon ?? iconRegistry[icon] ?? FiMoreHorizontal
-          return href ? (
-            <Link key={id ?? title} to={href} className="campus-action-card" aria-label={`Open ${title}`}>
+          const className = `campus-action-card${index === 0 ? ' is-featured' : ''}`
+          const content = (
+            <>
               <div className="campus-action-icon">
                 <Icon aria-hidden="true" />
               </div>
-              <h4>{title}</h4>
-              <p>{subtitle}</p>
+              <div className="campus-action-copy">
+                <h4>{title}</h4>
+                <p>{subtitle}</p>
+              </div>
+              {href ? <FiArrowUpRight className="campus-action-arrow" aria-hidden="true" /> : null}
+            </>
+          )
+          return href ? (
+            <Link key={id ?? title} to={href} className={className} aria-label={`Open ${title}`}>
+              {content}
             </Link>
           ) : (
-            <article key={id ?? title} className="campus-action-card">
-              <div className="campus-action-icon">
-                <Icon aria-hidden="true" />
-              </div>
-              <h4>{title}</h4>
-              <p>{subtitle}</p>
+            <article key={id ?? title} className={className}>
+              {content}
             </article>
           )
         })}

@@ -10,36 +10,22 @@ import {
 import { Link } from 'react-router-dom'
 import '../styles/footer.css'
 
-const COMMUNITY_LINKS = [
-  { label: 'Tutorials', href: 'slides/all/tag/zumbarl-tutorials-9.html' },
-  { label: 'Documentation', href: 'page/docs.html' },
-  { label: 'Forum', href: 'forum/help-1.html' },
+const PLATFORM_LINKS = [
+  { label: 'Home', href: '/' },
+  { label: 'Join Zumbarl', href: '/register' },
+  { label: 'Sign in', href: '/login' },
 ]
 
-const OPEN_SOURCE_LINKS = [
-  { label: 'Download', href: 'page/download.html' },
-  { label: 'Github', href: 'https://github.com/zumbarl/zumbarl' },
-  { label: 'Translations', href: 'https://github.com/zumbarl/zumbarl/wiki/Translations' },
-]
-
-const SERVICES_LINKS = [
+const SUPPORT_LINKS = [
   { label: 'Support', href: '/help' },
-  { label: 'Custom Developments', href: 'page/developers-on-demand.html' },
-  { label: 'Community', href: 'education/program.html' },
-  { label: 'Find an advisor', href: 'accounting-firms.html' },
-  { label: 'Find a partner', href: 'partners.html' },
-  { label: 'Become a partner', href: 'become-a-partner.html' },
+  { label: 'Email help', href: 'mailto:help@zumbarl.com' },
+  { label: 'Report fraud', href: 'mailto:fraud@zumbarl.com' },
 ]
 
-const ABOUT_LINKS = [
-  { label: 'Our company', href: 'page/about-us.html' },
-  { label: 'Brand assets', href: 'page/brand-assets.html' },
-  { label: 'Contact us', href: 'contactus.html' },
-  { label: 'Job offers', href: 'jobs.html' },
-  { label: 'Events', href: 'events.html' },
-  { label: 'Podcasts', href: 'https://podcast.zumbarl.com/' },
-  { label: 'Blog', href: 'blog.html' },
-  { label: 'Customers', href: 'blog/6.html' },
+const LEGAL_LINKS = [
+  { label: 'Privacy Notice', href: '/privacy' },
+  { label: 'Terms of Use', href: '/terms' },
+  { label: 'Safety', href: '/safety' },
 ]
 
 const SOCIAL_LINKS = [
@@ -49,7 +35,7 @@ const SOCIAL_LINKS = [
   { label: 'Github', href: 'https://github.com/zumbarl/zumbarl', Icon: TbBrandGithub },
   { label: 'Instagram', href: 'https://www.instagram.com/zumbarl.official', Icon: TbBrandInstagram },
   { label: 'TikTok', href: 'https://www.tiktok.com/@zumbarl', Icon: TbBrandTiktok },
-  { label: 'Phone', href: 'tel:+3222903490', Icon: TbPhone },
+  { label: 'Phone', href: 'tel:+254716225073', Icon: TbPhone },
 ]
 
 const isInternalRoute = (href) => typeof href === 'string' && href.startsWith('/')
@@ -101,33 +87,9 @@ function Footer() {
 
           <div className="footer-grid">
             <div className="footer-links-grid">
-              <div className="footer-links-column">
-                <FooterList title="Community" links={COMMUNITY_LINKS} />
-                <FooterList title="Open Source" links={OPEN_SOURCE_LINKS} />
-              </div>
-
-              <FooterList title="Services" links={SERVICES_LINKS} />
-
-              <section className="footer-list">
-                <h3 className="footer-list-title">About us</h3>
-                <ul className="footer-list-links">
-                  {ABOUT_LINKS.map((link) => (
-                    <li key={link.label}>
-                      <FooterLink href={link.href}>
-                        {link.label}
-                      </FooterLink>
-                    </li>
-                  ))}
-                  <li className="footer-legal-links">
-                    <a href="legal.html">Legal Documents</a>
-                    <span aria-hidden="true"> | </span>
-                    <a href="privacy.html">Privacy</a>
-                  </li>
-                  <li>
-                    <a href="security.html">Safety</a>
-                  </li>
-                </ul>
-              </section>
+              <FooterList title="Platform" links={PLATFORM_LINKS} />
+              <FooterList title="Support" links={SUPPORT_LINKS} />
+              <FooterList title="Legal" links={LEGAL_LINKS} />
             </div>
 
             <aside className="footer-info">
@@ -165,9 +127,7 @@ function Footer() {
 
       <div className="footer-credit">
         <div className="container">
-          <a href="app/website.html">
-            A subsidiary of<span className="footer-credit-brand">olscorpe.</span>
-          </a>
+          <span>A subsidiary of<span className="footer-credit-brand">olscorpe.</span></span>
         </div>
       </div>
     </footer>

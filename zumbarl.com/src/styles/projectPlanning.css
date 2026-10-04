@@ -14,20 +14,307 @@
   --project-heading-font: var(--font-heading);
 }
 
+/* Focused project messaging. Participants already appear in the conversation
+   switcher, so this surface can use the full workspace instead of duplicating
+   them in a separate rail. */
+.project-conversation-workspace {
+  grid-template-columns: minmax(240px, 290px) minmax(0, 1fr);
+  gap: 0;
+  min-height: clamp(540px, calc(100vh - 390px), 720px);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 10px 28px rgb(52 41 58 / 5.5%);
+}
+
+.project-conversation-workspace .business-review-message-list,
+.project-conversation-workspace .business-review-chat {
+  min-height: inherit;
+  border: 0;
+  border-radius: 0;
+}
+
+.project-conversation-workspace .business-review-message-list {
+  gap: 8px;
+  padding: 16px 12px;
+  border-right: 1px solid var(--color-border);
+  background: color-mix(in srgb, var(--color-surface-muted, #f7f7f9) 58%, var(--color-surface));
+}
+
+.project-conversation-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 4px 6px;
+}
+
+.project-conversation-list-heading > div > span {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--color-action);
+  font-size: var(--text-micro);
+  font-weight: 850;
+  letter-spacing: .075em;
+  text-transform: uppercase;
+}
+
+.project-conversation-list-heading h3 {
+  font-family: var(--font-heading);
+  font-size: var(--text-body-lg);
+  letter-spacing: -.02em;
+}
+
+.project-conversation-list-heading > strong {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 999px;
+  background: var(--color-surface-brand-soft);
+  color: var(--color-action);
+  font-size: var(--text-caption);
+}
+
+.project-conversation-workspace .business-review-message-list label {
+  min-height: 40px;
+  margin-bottom: 3px;
+  border-radius: 10px;
+  background: var(--color-surface);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.project-conversation-workspace .business-review-message-list label:focus-within {
+  border-color: color-mix(in srgb, var(--color-action) 48%, var(--color-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-action) 9%, transparent);
+}
+
+.project-conversation-workspace .business-review-message-list > button {
+  min-height: 60px;
+  padding: 9px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.project-conversation-workspace .business-review-message-list > button:hover {
+  background: color-mix(in srgb, var(--color-surface-brand-soft) 46%, var(--color-surface));
+}
+
+.project-conversation-workspace .business-review-message-list > button.is-active {
+  border-color: color-mix(in srgb, var(--color-action) 27%, var(--color-border));
+  background: var(--color-surface-brand-soft);
+  box-shadow: inset 3px 0 var(--color-action);
+}
+
+.project-conversation-workspace .business-review-message-list strong {
+  font-family: var(--font-heading);
+  font-size: var(--text-caption);
+  font-weight: 800;
+}
+
+.project-conversation-workspace .business-review-message-list em {
+  margin-top: 3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-conversation-workspace .business-review-chat > header {
+  min-height: 64px;
+  padding: 11px 16px;
+  grid-template-columns: 40px minmax(0, 1fr) repeat(2, 34px);
+  background: var(--color-surface);
+}
+
+.project-conversation-workspace .business-review-chat > header.is-group {
+  grid-template-columns: 40px minmax(0, 1fr);
+}
+
+.project-conversation-workspace .business-review-chat > header h3 {
+  font-family: var(--font-heading);
+  font-size: var(--text-body);
+  font-weight: 800;
+  letter-spacing: -.015em;
+}
+
+.project-conversation-workspace .business-review-chat > header p {
+  margin-top: 2px;
+  color: var(--color-success);
+}
+
+.project-conversation-workspace .business-review-chat-body {
+  gap: 12px;
+  padding: 18px 20px;
+  background:
+    radial-gradient(circle at 84% 0, color-mix(in srgb, var(--color-accent) 5%, transparent), transparent 18rem),
+    color-mix(in srgb, var(--color-surface-muted, #f7f7f9) 68%, var(--color-surface));
+}
+
+.project-conversation-workspace .business-review-chat-start {
+  padding: 6px 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
+  font-weight: 650;
+}
+
+.project-conversation-workspace .business-review-chat-body article {
+  gap: 8px;
+}
+
+.project-conversation-workspace .business-review-chat-body article > div {
+  width: min(74%, 720px);
+}
+
+.project-conversation-workspace .business-review-chat-body article.is-mine {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.project-conversation-workspace .business-review-chat-body article.is-mine > div {
+  width: min(74%, 720px);
+}
+
+.project-conversation-workspace .business-review-chat-body article p {
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.project-conversation-workspace .business-review-chat-bubble {
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 13px 13px 13px 4px;
+  background: var(--color-surface);
+  box-shadow: 0 2px 7px rgb(46 37 48 / 4%);
+  font-weight: 550;
+}
+
+.project-conversation-workspace .business-review-chat-body article.is-mine .business-review-chat-bubble {
+  border-color: transparent;
+  border-radius: 13px 13px 4px;
+  background: var(--color-action);
+}
+
+.project-conversation-workspace .business-review-chat > form {
+  padding: 11px 14px;
+  background: var(--color-surface);
+}
+
+.project-conversation-workspace .business-review-chat > form input {
+  min-height: 42px;
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--color-surface-muted, #f7f7f9) 56%, var(--color-surface));
+}
+
+.project-conversation-workspace .business-review-chat > form input:focus {
+  border-color: color-mix(in srgb, var(--color-action) 48%, var(--color-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-action) 9%, transparent);
+}
+
+.project-conversation-workspace .business-review-chat > form button {
+  border-radius: 11px;
+  background: var(--color-action);
+}
+
+@media (max-width: 860px) {
+  .project-conversation-workspace {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-conversation-workspace .business-review-message-list {
+    max-height: 230px;
+    min-height: 0;
+    overflow-y: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .project-conversation-workspace .business-review-chat {
+    min-height: 480px;
+  }
+
+  .project-conversation-workspace .business-review-chat-body article > div,
+  .project-conversation-workspace .business-review-chat-body article.is-mine > div {
+    width: min(88%, 620px);
+  }
+}
+
+/* Project messaging now consumes the same messages-* component contract as
+   the main inbox. These rules only adapt that workspace to the project tab. */
+.messages-workspace.project-messages-workspace {
+  height: auto;
+  min-height: clamp(540px, calc(100vh - 390px), 720px);
+  box-shadow: 0 10px 28px rgb(52 41 58 / 5.5%);
+}
+
+.project-messages-workspace .messages-conversations {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.project-messages-workspace .project-messages-search-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.project-messages-thread-note,
+.project-messages-loading {
+  margin: 0 auto;
+  color: #7b8092;
+  font-size: var(--text-micro);
+  font-weight: 700;
+}
+
+.project-messages-thread-note {
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #f5f4f8;
+}
+
+.project-message-sender {
+  display: block;
+  margin-bottom: 3px;
+  color: #676c80;
+  font-size: var(--text-micro);
+}
+
+.project-messages-workspace .messages-call-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.project-messages-workspace .messages-call-status button {
+  border: 0;
+  background: transparent;
+  color: #a52f43;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.project-messages-error {
+  margin: 0;
+  padding: 0 16px 12px;
+}
+
 /* Task Kanban. Inspired by the compact, scan-first Odoo project cards, but
    organized around Zumbarl's actual task lifecycle rather than projects. */
 .milestone-kanban {
   min-width: 0;
-  padding: 16px;
+  padding: 18px;
   border: 1px solid var(--color-border);
-  border-radius: 14px;
-  background: var(--color-surface-muted, #f7f8fb);
+  border-radius: 16px;
+  background: var(--color-surface);
+  box-shadow: 0 10px 28px rgb(52 41 58 / 5.5%);
 }
 
 .milestone-kanban-toolbar {
   display: grid;
-  grid-template-columns: minmax(180px, 1fr) auto minmax(190px, 260px) minmax(150px, 210px) auto;
-  gap: 12px;
+  grid-template-columns: minmax(190px, .7fr) minmax(460px, 1.65fr) minmax(180px, .55fr);
+  grid-template-areas: "intro tools progress";
+  gap: 18px;
   align-items: center;
   margin-bottom: 16px;
 }
@@ -37,32 +324,62 @@
   margin: 0;
 }
 
+.milestone-kanban-intro {
+  grid-area: intro;
+}
+
+.milestone-kanban-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 5px;
+  color: var(--color-action);
+  font-size: var(--text-micro);
+  font-weight: 900;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
 .milestone-kanban-toolbar h3 {
   color: var(--color-text-strong);
   font-family: var(--font-heading);
-  font-size: var(--text-body-lg);
+  font-size: clamp(1.2rem, 1.6vw, 1.55rem);
+  letter-spacing: -.025em;
 }
 
 .milestone-kanban-toolbar p {
-  margin-top: 3px;
+  margin-top: 4px;
   color: var(--color-text-muted);
   font-size: var(--text-caption);
+}
+
+.milestone-kanban-tools {
+  display: grid;
+  grid-area: tools;
+  grid-template-columns: minmax(200px, 1fr) minmax(155px, 210px) auto;
+  gap: 8px;
 }
 
 .milestone-kanban-search {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 38px;
-  padding: 0 11px;
+  min-height: 40px;
+  padding: 0 13px;
   border: 1px solid var(--color-border);
   border-radius: 9px;
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-surface-muted, #f7f7f9) 76%, var(--color-surface));
   color: var(--color-text-muted);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 
-.milestone-kanban-search input,
-.milestone-kanban-toolbar > select {
+.milestone-kanban-search:focus-within,
+.milestone-kanban-filter:focus-within {
+  border-color: color-mix(in srgb, var(--color-action) 55%, var(--color-border));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-action) 10%, transparent);
+}
+
+.milestone-kanban-search input {
   width: 100%;
   border: 0;
   outline: 0;
@@ -72,32 +389,76 @@
   font-size: var(--text-caption);
 }
 
-.milestone-kanban-toolbar > select {
-  min-height: 38px;
-  padding: 0 10px;
+.milestone-kanban-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  min-height: 40px;
+  padding-left: 12px;
   border: 1px solid var(--color-border);
   border-radius: 9px;
-  background: var(--color-surface);
+  background: color-mix(in srgb, var(--color-surface-muted, #f7f7f9) 76%, var(--color-surface));
+  color: var(--color-action);
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.milestone-kanban-filter select {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 10px 0 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--color-text-strong);
+  font: inherit;
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+.milestone-kanban-tools .project-primary-btn {
+  min-height: 40px;
+  border-radius: 9px;
 }
 
 .milestone-kanban-progress {
+  grid-area: progress;
   display: grid;
-  gap: 5px;
-  min-width: 90px;
+  gap: 6px;
+  min-width: 180px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--color-success) 3%, var(--color-surface));
   color: var(--color-text-muted);
-  font-size: var(--text-caption);
+  font-size: var(--text-micro);
 }
 
-.milestone-kanban-progress strong {
+.milestone-kanban-progress > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.milestone-kanban-progress > span small {
+  font-size: inherit;
+  font-weight: 800;
+}
+
+.milestone-kanban-progress > span strong {
   color: var(--color-text-strong);
+  font-family: var(--font-heading);
+  font-size: var(--text-body);
 }
 
 .milestone-kanban-progress i {
   width: 100%;
-  height: 4px;
+  height: 5px;
   overflow: hidden;
   border-radius: 999px;
-  background: var(--color-border);
+  background: color-mix(in srgb, var(--color-success) 13%, var(--color-border));
 }
 
 .milestone-kanban-progress b {
@@ -107,29 +468,54 @@
   background: var(--color-success);
 }
 
+.milestone-kanban-drag-hint {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 5px;
+  margin: -3px 2px 9px;
+  color: var(--color-text-muted);
+  font-size: var(--text-micro);
+  font-weight: 700;
+}
+
 .milestone-kanban-columns {
   display: grid;
-  grid-template-columns: repeat(5, minmax(220px, 1fr));
+  grid-template-columns: repeat(5, minmax(210px, 1fr));
   gap: 10px;
   overflow-x: auto;
-  padding-bottom: 5px;
+  padding: 2px 2px 10px;
+  scroll-padding-inline: 2px;
+  scroll-snap-type: x proximity;
   scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-action) 35%, transparent) transparent;
 }
 
 .milestone-kanban-column {
-  min-height: 440px;
+  position: relative;
+  min-height: 410px;
+  overflow: hidden;
   padding: 10px;
-  border: 1px solid color-mix(in srgb, var(--color-border) 75%, transparent);
-  border-top: 3px solid #a8adba;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--color-surface) 74%, transparent);
-  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease;
+  border: 1px solid color-mix(in srgb, var(--color-border) 86%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-surface-muted, #f5f5f7) 76%, var(--color-surface));
+  scroll-snap-align: start;
+  transition: border-color 150ms ease, background 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+.milestone-kanban-column::before {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: #a8adba;
+  content: "";
 }
 
 .milestone-kanban-column.is-drag-over {
   border-color: color-mix(in srgb, var(--color-action) 60%, var(--color-border));
   background: color-mix(in srgb, var(--color-surface-brand-soft) 42%, var(--color-surface));
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-action) 18%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-action) 18%, transparent), 0 10px 24px rgb(65 43 61 / 9%);
+  transform: translateY(-2px);
 }
 
 .milestone-kanban-column.is-drag-over.is-locked-stage {
@@ -137,65 +523,115 @@
   background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
 }
 
-.milestone-kanban-column.is-active { border-top-color: var(--color-action); }
-.milestone-kanban-column.is-blocked { border-top-color: var(--color-danger, #d85d69); }
-.milestone-kanban-column.is-submitted { border-top-color: var(--color-accent); }
-.milestone-kanban-column.is-done { border-top-color: var(--color-success); }
+.milestone-kanban-column.is-active {
+  background: color-mix(in srgb, var(--color-action) 3%, var(--color-surface-muted, #f5f5f7));
+}
+
+.milestone-kanban-column.is-active::before { background: var(--color-action); }
+.milestone-kanban-column.is-blocked::before { background: var(--color-danger, #d85d69); }
+.milestone-kanban-column.is-submitted::before { background: var(--color-accent); }
+.milestone-kanban-column.is-done::before { background: var(--color-success); }
+
+.milestone-kanban-column.is-blocked {
+  background: color-mix(in srgb, var(--color-danger, #d85d69) 2.5%, var(--color-surface-muted, #f5f5f7));
+}
+
+.milestone-kanban-column.is-submitted {
+  background: color-mix(in srgb, var(--color-accent) 4%, var(--color-surface-muted, #f5f5f7));
+}
+
+.milestone-kanban-column.is-done {
+  background: color-mix(in srgb, var(--color-success) 4%, var(--color-surface-muted, #f5f5f7));
+}
 
 .milestone-kanban-column > header {
-  min-height: 53px;
-  padding: 2px 2px 10px;
+  min-height: 61px;
+  padding: 3px 2px 10px;
 }
 
 .milestone-kanban-column > header div {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   color: var(--color-text-strong);
 }
 
 .milestone-kanban-column > header div > svg {
-  width: 14px;
-  height: 14px;
+  box-sizing: content-box;
+  width: 15px;
+  height: 15px;
+  padding: 6px;
+  border-radius: 8px;
+  background: color-mix(in srgb, #a8adba 14%, var(--color-surface));
+  color: #777d8b;
 }
 
 .milestone-kanban-column > header strong {
-  font-size: var(--text-caption);
+  font-size: .8rem;
 }
 
 .milestone-kanban-column > header span {
   display: grid;
   min-width: 21px;
-  height: 21px;
+  height: 23px;
   margin-left: auto;
   place-items: center;
   border-radius: 999px;
-  background: var(--color-surface-muted, #eef0f5);
+  background: color-mix(in srgb, #a8adba 14%, var(--color-surface));
   color: var(--color-text-muted);
   font-size: var(--text-micro);
   font-weight: 800;
 }
 
 .milestone-kanban-column > header p {
-  margin: 4px 0 0 21px;
+  margin: 4px 0 0 36px;
   color: var(--color-text-muted);
   font-size: var(--text-micro);
+}
+
+.milestone-kanban-column.is-active > header div > svg,
+.milestone-kanban-column.is-active > header span {
+  background: color-mix(in srgb, var(--color-action) 11%, var(--color-surface));
+  color: var(--color-action);
+}
+
+.milestone-kanban-column.is-blocked > header div > svg,
+.milestone-kanban-column.is-blocked > header span {
+  background: color-mix(in srgb, var(--color-danger, #d85d69) 10%, var(--color-surface));
+  color: var(--color-danger, #d85d69);
+}
+
+.milestone-kanban-column.is-submitted > header div > svg,
+.milestone-kanban-column.is-submitted > header span {
+  background: color-mix(in srgb, var(--color-accent) 13%, var(--color-surface));
+  color: color-mix(in srgb, var(--color-accent) 72%, #76506f);
+}
+
+.milestone-kanban-column.is-done > header div > svg,
+.milestone-kanban-column.is-done > header span {
+  background: color-mix(in srgb, var(--color-success) 11%, var(--color-surface));
+  color: var(--color-success);
 }
 
 .milestone-kanban-stack {
   display: grid;
   align-content: start;
-  gap: 8px;
+  gap: 10px;
 }
 
 .milestone-kanban-card {
   overflow: hidden;
-  border: 1px solid var(--color-border);
-  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--color-border) 90%, transparent);
+  border-radius: 10px;
   background: var(--color-surface);
-  box-shadow: 0 1px 2px rgb(28 32 45 / 4%);
+  box-shadow: 0 2px 7px rgb(46 37 48 / 5%);
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
+
+.milestone-kanban-column.is-active .milestone-kanban-card { border-left: 3px solid var(--color-action); }
+.milestone-kanban-column.is-blocked .milestone-kanban-card { border-left: 3px solid var(--color-danger, #d85d69); }
+.milestone-kanban-column.is-submitted .milestone-kanban-card { border-left: 3px solid var(--color-accent); }
+.milestone-kanban-column.is-done .milestone-kanban-card { border-left: 3px solid var(--color-success); }
 
 .milestone-kanban-card[draggable="true"] {
   cursor: grab;
@@ -212,15 +648,15 @@
 
 .milestone-kanban-card:hover {
   border-color: color-mix(in srgb, var(--color-action) 38%, var(--color-border));
-  box-shadow: 0 7px 18px rgb(28 32 45 / 8%);
+  box-shadow: 0 6px 15px rgb(28 32 45 / 8%);
   transform: translateY(-1px);
 }
 
 .milestone-kanban-card-open {
   display: grid;
-  gap: 7px;
+  gap: 4px;
   width: 100%;
-  padding: 11px;
+  padding: 11px 12px 10px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -230,16 +666,24 @@
 
 .milestone-kanban-card-open strong {
   color: var(--color-text-strong);
-  font-size: var(--text-caption);
-  line-height: 1.35;
+  font-family: var(--font-heading);
+  font-size: .88rem;
+  font-weight: 800;
+  line-height: 1.3;
+  letter-spacing: -.015em;
 }
 
 .milestone-kanban-card-scope {
+  width: fit-content;
+  max-width: 100%;
   overflow: hidden;
-  color: var(--color-action);
+  padding: 0;
+  background: transparent;
+  color: var(--color-text-muted);
   font-size: var(--text-micro);
-  font-weight: 800;
-  letter-spacing: .045em;
+  font-family: var(--font-ui);
+  font-weight: 750;
+  letter-spacing: .025em;
   text-overflow: ellipsis;
   text-transform: uppercase;
   white-space: nowrap;
@@ -258,18 +702,20 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 9px 11px;
+  padding: 7px 11px;
   border-top: 1px solid color-mix(in srgb, var(--color-border) 65%, transparent);
   color: var(--color-text-muted);
+  font-family: var(--font-ui);
   font-size: var(--text-micro);
+  font-weight: 600;
 }
 
 .milestone-kanban-points,
 .milestone-kanban-sprint {
-  padding: 3px 6px;
+  padding: 2px 6px;
   border-radius: 5px;
   background: var(--color-surface-muted, #f0f1f5);
-  font-weight: 700;
+  font-weight: 750;
 }
 
 .milestone-kanban-owner {
@@ -286,10 +732,11 @@
 .milestone-kanban-owner b {
   display: grid;
   flex: 0 0 auto;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   place-items: center;
   border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--color-action) 14%, transparent);
   background: var(--color-surface-brand-soft);
   color: var(--color-action);
   font-size: var(--text-micro);
@@ -305,39 +752,17 @@
   grid-template-columns: auto minmax(0, 1fr);
   gap: 7px;
   align-items: center;
-  padding: 8px 11px;
+  padding: 9px 12px;
   border-top: 1px solid var(--color-border);
   color: var(--color-text-muted);
-  font-size: var(--text-micro);
-}
-
-.milestone-kanban-move {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 7px;
-  align-items: center;
-  padding: 8px 11px;
-  border-top: 1px solid var(--color-border);
-  color: var(--color-text-muted);
-  font-size: var(--text-micro);
-}
-
-.milestone-kanban-move select {
-  min-width: 0;
-  padding: 5px 6px;
-  border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-text-strong);
-  font: inherit;
   font-size: var(--text-micro);
 }
 
 .milestone-kanban-notice {
-  margin: -5px 0 12px;
-  padding: 8px 11px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
   border: 1px solid color-mix(in srgb, var(--color-accent) 28%, var(--color-border));
-  border-radius: 8px;
+  border-radius: 10px;
   background: color-mix(in srgb, var(--color-accent) 7%, var(--color-surface));
   color: var(--color-text-strong);
   font-size: var(--text-caption);
@@ -347,8 +772,8 @@
   min-width: 0;
   padding: 5px 6px;
   border: 1px solid var(--color-border);
-  border-radius: 6px;
-  background: var(--color-surface);
+  border-radius: 8px;
+  background: var(--color-surface-muted, #f7f7f9);
   color: var(--color-text-strong);
   font: inherit;
   font-size: var(--text-micro);
@@ -356,7 +781,7 @@
 
 .milestone-kanban-claim {
   width: 100%;
-  padding: 8px 11px;
+  padding: 10px 12px;
   border: 0;
   border-top: 1px solid var(--color-border);
   background: transparent;
@@ -369,22 +794,83 @@
 
 .milestone-kanban-empty {
   display: grid;
-  min-height: 72px;
+  min-height: 116px;
   margin: 0;
+  padding: 18px;
   place-items: center;
-  border: 1px dashed var(--color-border);
-  border-radius: 8px;
+  align-content: center;
+  gap: 5px;
+  border: 1px dashed color-mix(in srgb, var(--color-border) 86%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--color-surface) 70%, transparent);
   color: var(--color-text-muted);
   font-size: var(--text-micro);
+  text-align: center;
 }
 
-@media (max-width: 1200px) {
+.milestone-kanban-empty svg {
+  width: 18px;
+  height: 18px;
+  margin-bottom: 3px;
+  color: color-mix(in srgb, var(--color-text-muted) 60%, transparent);
+}
+
+.milestone-kanban-empty strong {
+  color: var(--color-text-strong);
+  font-size: var(--text-caption);
+}
+
+.milestone-kanban-empty span {
+  max-width: 165px;
+  line-height: 1.45;
+}
+
+@media (max-width: 1500px) {
   .milestone-kanban-toolbar {
-    grid-template-columns: 1fr auto auto;
+    grid-template-columns: minmax(0, 1fr) minmax(160px, 210px);
+    grid-template-areas:
+      "intro progress"
+      "tools tools";
   }
 
-  .milestone-kanban-progress { display: none; }
-  .milestone-kanban-search { grid-column: 1 / 3; }
+  .milestone-kanban-tools {
+    grid-template-columns: minmax(200px, 1fr) minmax(160px, 210px) auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .milestone-kanban {
+    padding: 14px;
+    border-radius: 16px;
+  }
+
+  .milestone-kanban-toolbar {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "intro"
+      "progress"
+      "tools";
+  }
+
+  .milestone-kanban-progress {
+    width: auto;
+  }
+
+  .milestone-kanban-tools {
+    grid-template-columns: 1fr;
+  }
+
+  .milestone-kanban-tools .project-primary-btn {
+    width: 100%;
+  }
+
+  .milestone-kanban-drag-hint {
+    display: none !important;
+  }
+
+  .milestone-kanban-columns {
+    grid-template-columns: repeat(5, minmax(270px, 84vw));
+  }
 }
 
 :where(.milestone-scope, .project-sprints, .project-timeline) :where(.project-card),

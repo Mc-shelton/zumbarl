@@ -1,13 +1,12 @@
-import { FiCheckCircle, FiDownload, FiExternalLink, FiInfo } from 'react-icons/fi'
+import { FiCheckCircle, FiDownload, FiExternalLink, FiInfo, FiMessageCircle, FiShield } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
-import { project as fallbackProject, messages as fallbackMessages } from '../data/mockWorkspace'
 import ProjectDeliverablesStatus from './ProjectDeliverablesStatus'
 import SubmittedWorkPreview from './SubmittedWorkPreview'
 
-function OverviewPanel({ project, onOpenWorkDeliverables, onSubmitWork, onSelectPhase, onRespondToPriceProposal, priceProposalState }) {
+function OverviewPanel({ project, onOpenMessages, onOpenWorkDeliverables, onSubmitWork, onSelectPhase, onRespondToPriceProposal, priceProposalState }) {
   const canOpenMessages = hasAccess(ACCESS_KEYS.projects.messages)
-  const activeProject = project || fallbackProject
-  const isBackedProject = activeProject.source === 'database'
+  const activeProject = project
+  const isBackedProject = activeProject?.source === 'database'
   const details = Array.isArray(activeProject.details) ? activeProject.details : []
   const scopeDeliverables = isBackedProject && Array.isArray(activeProject.scopeDeliverables)
     ? activeProject.scopeDeliverables
@@ -16,9 +15,9 @@ function OverviewPanel({ project, onOpenWorkDeliverables, onSubmitWork, onSelect
   const submittedWork = isBackedProject && Array.isArray(activeProject.deliverables) ? activeProject.deliverables : []
   const priceProposal = isBackedProject ? activeProject.priceProposal : null
   const isRespondingToProposal = priceProposalState?.isResponding
-  const recentMessages = isBackedProject
-    ? (Array.isArray(activeProject.messages) ? activeProject.messages : [])
-    : fallbackMessages
+  const recentMessages = Array.isArray(activeProject?.messages) ? activeProject.messages : []
+
+  if (!isBackedProject) return null
 
   return (
     <>
@@ -91,16 +90,25 @@ function OverviewPanel({ project, onOpenWorkDeliverables, onSubmitWork, onSelect
             <dt>Client</dt>
             <dd className="has-profile">
               <img src="/assets/index/bee_nobg.png" alt="" />
-              {activeProject.client}
-              <button type="button">View Profile</button>
+              <span>
+                <strong>{activeProject.client}</strong>
+                <small><FiShield aria-hidden="true" /> Project client</small>
+              </span>
             </dd>
           </div>
           <div>
             <dt>Project Owner</dt>
             <dd className="has-profile">
               <img src="/assets/index/bee_nobg.png" alt="" />
-              {activeProject.owner}
-              {canOpenMessages ? <button type="button">Message</button> : null}
+              <span>
+                <strong>{activeProject.owner}</strong>
+                <small>Workspace owner</small>
+              </span>
+              {canOpenMessages && onOpenMessages ? (
+                <button type="button" onClick={onOpenMessages}>
+                  <FiMessageCircle aria-hidden="true" /> Message
+                </button>
+              ) : null}
             </dd>
           </div>
         </dl>
@@ -276,7 +284,7 @@ function OverviewPanel({ project, onOpenWorkDeliverables, onSubmitWork, onSelect
         <section className="project-card project-recent-messages">
           <header>
             <h2>Recent Messages</h2>
-            <button type="button">View All Messages</button>
+            <button type="button" onClick={onOpenMessages}>View All Messages</button>
           </header>
           {recentMessages.slice(0, 2).map((message) => (
             <article key={`${message.author}-${message.date}`}>

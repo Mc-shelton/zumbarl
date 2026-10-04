@@ -52,6 +52,7 @@ function CampusCartPaymentPage() {
       <PaymentMethodPanel
         onBack={() => navigate('/campus/cart')}
         onNext={() => navigate('/campus/cart/review')}
+        total={orderTotals.finalTotal}
       />
       <CheckoutPoweredNote />
     </CartShell>

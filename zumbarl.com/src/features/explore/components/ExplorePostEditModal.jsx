@@ -13,6 +13,8 @@ function ExplorePostEditModal({ post, onClose, onSave }) {
 
   useEffect(() => {
     if (!post) return
+    // A different post starts a new editor session in this reusable modal.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setBody(post.copy || '')
     setItems((post.gallery || []).map((url, index) => ({
       url,

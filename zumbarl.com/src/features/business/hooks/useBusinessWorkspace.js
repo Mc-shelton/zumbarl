@@ -22,6 +22,8 @@ const EMPTY_WORKSPACE = {
     { icon: 'check', label: 'Hires / Awarded', meta: '0 campaigns', tone: 'blue', value: 0 },
   ],
   opportunities: [],
+  postCount: 0,
+  posts: [],
   pipelineStages: [],
   projects: [],
   reviewEvents: [],
@@ -61,5 +63,16 @@ export function useBusinessWorkspace() {
     }
   }, [])
 
-  return workspace
+  const reload = async () => {
+    const dashboard = await readBusinessDashboard()
+    setWorkspace({
+      ...EMPTY_WORKSPACE,
+      ...dashboard,
+      isLoading: false,
+      errorMessage: '',
+    })
+    return dashboard
+  }
+
+  return { ...workspace, reload }
 }

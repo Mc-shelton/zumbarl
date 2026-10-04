@@ -30,7 +30,13 @@ function ProfileShopEditor({ onClose, onSave, shop }) {
 
   useEffect(() => {
     const query = form.locationLabel.trim()
-    if (isLocationSelected || query.length < 3) { setLocationResults([]); setIsSearchingLocation(false); return undefined }
+    if (isLocationSelected || query.length < 3) {
+      // Invalidate results immediately when the location is selected or no longer searchable.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLocationResults([])
+      setIsSearchingLocation(false)
+      return undefined
+    }
     const requestId = ++searchRequestRef.current
     setIsSearchingLocation(true)
     const timer = window.setTimeout(() => {

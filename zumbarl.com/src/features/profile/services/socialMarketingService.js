@@ -18,7 +18,14 @@ function saveSocialMetricsAccount(payload) {
   })
 }
 
+function deleteSocialMetricsAccount(platform) {
+  return sendZumbarlApiRequest(`/connect/profile/marketing/accounts/${encodeURIComponent(platform)}`, {
+    method: 'DELETE',
+  })
+}
+
 export {
+  deleteSocialMetricsAccount,
   extractSocialMetrics,
   readSocialMarketingProfile,
   saveSocialMetricsAccount,

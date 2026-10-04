@@ -1,11 +1,9 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { FiPhone, FiPhoneOff, FiVideo } from 'react-icons/fi'
-import { useLocation } from 'react-router-dom'
 import { AUTH_TOKEN_KEY } from '../../../lib/sendZumbarlApiRequest'
 import {
   listIncomingCalls,
   respondToCall,
-  sendPresenceHeartbeat,
 } from '../services/callService'
 import {
   playCallRingtone,
@@ -21,51 +19,30 @@ function displayName(user) {
 }
 
 function RealtimeCallAgent() {
-  const location = useLocation()
+  const authToken = window.localStorage.getItem(AUTH_TOKEN_KEY)
   const [incomingCall, setIncomingCall] = useState(null)
   const [activeCall, setActiveCall] = useState(null)
   const [isResponding, setIsResponding] = useState(false)
   const notifiedCallIdRef = useRef('')
   const incomingCallId = incomingCall?.id
 
+  const showIncomingCall = useCallback((call) => {
+    setIncomingCall(call)
+    if (
+      call
+      && notifiedCallIdRef.current !== call.id
+      && 'Notification' in window
+      && window.Notification.permission === 'granted'
+    ) {
+      notifiedCallIdRef.current = call.id
+      new window.Notification(`${displayName(call.caller)} is calling`, {
+        body: `Incoming ${call.callType} call on Zumbarl`,
+        tag: call.id,
+      })
+    }
+  }, [])
+
   useEffect(() => subscribeToCallOverlay(setActiveCall), [])
-
-  useEffect(() => {
-    const token = window.localStorage.getItem(AUTH_TOKEN_KEY)
-    if (!token) return undefined
-
-    let isMounted = true
-    async function heartbeatAndPoll() {
-      try {
-        await sendPresenceHeartbeat()
-        const calls = await listIncomingCalls()
-        const call = calls?.[0] || null
-        if (!isMounted) return
-        setIncomingCall(call)
-        if (
-          call
-          && notifiedCallIdRef.current !== call.id
-          && 'Notification' in window
-          && window.Notification.permission === 'granted'
-        ) {
-          notifiedCallIdRef.current = call.id
-          new window.Notification(`${displayName(call.caller)} is calling`, {
-            body: `Incoming ${call.callType} call on Zumbarl`,
-            tag: call.id,
-          })
-        }
-      } catch {
-        if (isMounted) setIncomingCall(null)
-      }
-    }
-
-    heartbeatAndPoll()
-    const intervalId = window.setInterval(heartbeatAndPoll, 2500)
-    return () => {
-      isMounted = false
-      window.clearInterval(intervalId)
-    }
-  }, [location.pathname])
 
   useEffect(() => {
     const unlock = () => unlockCommunicationSounds()
@@ -85,11 +62,40 @@ function RealtimeCallAgent() {
   }, [incomingCallId])
 
   useEffect(() => {
-    const token = window.localStorage.getItem(AUTH_TOKEN_KEY)
-    if (!token) return undefined
+    if (!incomingCall?.expiresAt) return undefined
+    const delay = Math.max(0, new Date(incomingCall.expiresAt).getTime() - Date.now())
+    const timeoutId = window.setTimeout(() => {
+      setIncomingCall((current) => current?.id === incomingCall.id ? null : current)
+    }, delay)
+    return () => window.clearTimeout(timeoutId)
+  }, [incomingCall])
+
+  useEffect(() => {
+    if (!authToken) return undefined
     const controller = new AbortController()
-    subscribeToRealtimeEvents((event) => {
-      if (event.type === 'message.created') {
+
+    async function handleEvent(event) {
+      if (event.type === 'connected') {
+        window.dispatchEvent(new CustomEvent('zumbarl:realtime-connected'))
+        try {
+          const calls = await listIncomingCalls()
+          if (!controller.signal.aborted) showIncomingCall(calls?.[0] || null)
+        } catch {
+          // The next stream reconnect will reconcile incoming calls again.
+        }
+      } else if (event.type === 'call.created') {
+        showIncomingCall(event.data)
+      } else if (event.type === 'call.updated') {
+        window.dispatchEvent(new CustomEvent('zumbarl:call-updated', { detail: event.data }))
+        setIncomingCall((current) => (
+          current?.id === event.data?.id && event.data.status !== 'ringing' ? null : current
+        ))
+        setActiveCall((current) => (
+          current?.id === event.data?.id && !['ringing', 'accepted'].includes(event.data.status)
+            ? null
+            : current
+        ))
+      } else if (event.type === 'message.created') {
         playMessageSound()
         window.dispatchEvent(new CustomEvent('zumbarl:message-created', { detail: event.data }))
       } else if (event.type === 'page-message.created') {
@@ -104,9 +110,11 @@ function RealtimeCallAgent() {
       } else if (event.type === 'circle.message.removed') {
         window.dispatchEvent(new CustomEvent('zumbarl:circle-message-removed', { detail: event.data }))
       }
-    }, controller.signal).catch(() => {})
+    }
+
+    subscribeToRealtimeEvents(handleEvent, controller.signal).catch(() => {})
     return () => controller.abort()
-  }, [location.pathname])
+  }, [authToken, showIncomingCall])
 
   async function handleResponse(response) {
     if (!incomingCall || isResponding) return

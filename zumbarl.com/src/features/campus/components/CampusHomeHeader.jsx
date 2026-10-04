@@ -1,4 +1,4 @@
-import { FiSearch } from 'react-icons/fi'
+import { FiBriefcase, FiSearch } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import CampusTopActions from '../../../components/layout/CampusTopActions'
 
@@ -6,8 +6,9 @@ function CampusHomeHeader({ onBackToAi, showBackToAiButton, viewer }) {
   return (
     <header className="campus-header">
       <div className="campus-header-copy">
-        <h1>Good morning{viewer?.firstName ? `, ${viewer.firstName}` : ''}</h1>
-        <p>What are we doing today?</p>
+        <span className="campus-header-eyebrow">Your campus workspace</span>
+        <h1>Good morning{viewer?.firstName ? `, ${viewer.firstName}` : ''}.</h1>
+        <p>What would you like to move forward today?</p>
       </div>
       <CampusTopActions
         className="campus-header-actions"
@@ -26,7 +27,7 @@ function CampusHomeHeader({ onBackToAi, showBackToAiButton, viewer }) {
               Back to AI
             </button>
             <Link to="/campus/opportunities" className="campus-cta-btn">
-              Opportunities
+              <FiBriefcase aria-hidden="true" /> Opportunities
             </Link>
           </>
         )}

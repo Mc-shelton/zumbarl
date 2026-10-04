@@ -11,6 +11,8 @@ import {
   FiStar,
   FiX,
 } from 'react-icons/fi'
+import { Link } from 'react-router-dom'
+import { getMarketplaceItemPath } from '../../../data/marketplace'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 
 function ProfileShopDetailRail({
@@ -29,7 +31,10 @@ function ProfileShopDetailRail({
 }) {
   const gallery = selectedShopProductDetail?.gallery || []
   const canBuy = hasAccess(ACCESS_KEYS.marketplace.buy) && !isOwner
-  const canUseCart = canBuy && hasAccess(ACCESS_KEYS.cart.view)
+  const rating = Number(selectedShopProductDetail?.rating || 0)
+  const reviewCount = Number(selectedShopProductDetail?.reviews || 0)
+  const soldCount = Number(selectedShopProductDetail?.sold || 0)
+  const productId = selectedShopProduct.id || selectedShopProduct.uid
 
   return (
     <article className="campus-rail-card campus-profile-side-card campus-shop-rail-card campus-shop-detail-card">
@@ -86,10 +91,12 @@ function ProfileShopDetailRail({
         <strong>{selectedShopProduct.price}</strong>
       </div>
 
-      <p className="campus-shop-detail-rating">
-        <FiStar aria-hidden="true" />
-        {selectedShopProductDetail?.rating || '4.8'} ({selectedShopProductDetail?.reviews || 0} reviews) · {selectedShopProductDetail?.sold || 0} sold
-      </p>
+      {rating || reviewCount || soldCount ? (
+        <p className="campus-shop-detail-rating">
+          <FiStar aria-hidden="true" />
+          {rating ? `${rating.toFixed(1)} · ` : ''}{reviewCount} reviews · {soldCount} sold
+        </p>
+      ) : null}
 
       <p className="campus-shop-detail-description">{selectedShopProduct.description}</p>
 
@@ -109,17 +116,12 @@ function ProfileShopDetailRail({
             Edit listing
           </button>
         </div>
-      ) : canUseCart || canBuy ? (
+      ) : canBuy ? (
         <div className="campus-shop-detail-actions">
-          {canUseCart ? (
-            <button type="button" className="campus-shop-detail-action-btn is-primary">
-              <FiShoppingBag aria-hidden="true" />
-              Add to Cart
-            </button>
-          ) : null}
-          {canBuy ? (
-            <button type="button" className="campus-shop-detail-action-btn is-ghost">Buy Now</button>
-          ) : null}
+          <Link className="campus-shop-detail-action-btn is-primary" to={getMarketplaceItemPath(productId)}>
+            <FiShoppingBag aria-hidden="true" />
+            View listing
+          </Link>
         </div>
       ) : null}
 
@@ -143,19 +145,23 @@ function ProfileShopDetailRail({
       {activeShopDetailTab === 'details' ? (
         <section className="campus-shop-detail-copy">
           <h4>Product Details</h4>
-          <p>{selectedShopProductDetail?.summary}</p>
+          <p>{selectedShopProductDetail?.summary || 'No additional product details have been provided.'}</p>
           <ul>
             {(selectedShopProductDetail?.details || []).map((item) => (
               <li key={`${selectedShopProduct.uid}-${item}`}>{item}</li>
             ))}
           </ul>
 
-          <h4>Available Colors</h4>
-          <div className="campus-shop-detail-color-row">
-            {(selectedShopProductDetail?.colors || []).map((color) => (
-              <span key={`${selectedShopProduct.uid}-${color}`} style={{ background: color }} />
-            ))}
-          </div>
+          {selectedShopProductDetail?.colors?.length ? (
+            <>
+              <h4>Available Colors</h4>
+              <div className="campus-shop-detail-color-row">
+                {selectedShopProductDetail.colors.map((color) => (
+                  <span key={`${selectedShopProduct.uid}-${color}`} style={{ background: color }} />
+                ))}
+              </div>
+            </>
+          ) : null}
         </section>
       ) : (
         <section className="campus-shop-detail-posts">
@@ -183,19 +189,20 @@ function ProfileShopDetailRail({
               </footer>
             </article>
           ))}
+          {!selectedShopProductDetail?.postsFeed?.length ? <p>No product posts have been published.</p> : null}
         </section>
       )}
 
-      <footer className="campus-shop-detail-footer">
-        <p>
-          <FiMapPin aria-hidden="true" />
-          Ships from Nairobi, Kenya
-        </p>
-        <p>
-          <FiRefreshCw aria-hidden="true" />
-          7-day easy returns
-        </p>
-      </footer>
+      {selectedShopProduct.location || selectedShopProduct.returnPolicy ? (
+        <footer className="campus-shop-detail-footer">
+          {selectedShopProduct.location ? (
+            <p><FiMapPin aria-hidden="true" />{selectedShopProduct.location}</p>
+          ) : null}
+          {selectedShopProduct.returnPolicy ? (
+            <p><FiRefreshCw aria-hidden="true" />{selectedShopProduct.returnPolicy}</p>
+          ) : null}
+        </footer>
+      ) : null}
     </article>
   )
 }

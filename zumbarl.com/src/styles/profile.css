@@ -37,6 +37,7 @@
 .campus-profile-main {
   padding: 0 6px 20px 0;
   display: grid;
+  grid-auto-rows: max-content;
   gap: var(--campus-main-gap);
   align-content: start;
 }
@@ -58,6 +59,10 @@
 
 .campus-profile-breadcrumb {
   margin: 0;
+}
+
+.campus-profile-mobile-title {
+  display: none;
 }
 
 .campus-profile-top-actions {
@@ -349,6 +354,32 @@
   color: #313b63;
 }
 
+.campus-profile-social-summary {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  margin: 0;
+  color: #69708b;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.campus-profile-social-summary span {
+  white-space: nowrap;
+}
+
+.campus-profile-social-summary strong {
+  color: #202542;
+  font-weight: 850;
+}
+
+.campus-profile-identity > .campus-profile-bio,
+.campus-profile-identity > .campus-profile-tag-row {
+  grid-column: 2;
+  margin-top: 0;
+}
+
 .campus-profile-hero-actions {
   display: inline-flex;
   align-items: flex-start;
@@ -471,6 +502,14 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
+}
+
+.campus-profile-metrics-heading {
+  display: none;
+}
+
+.campus-profile-metric-list {
+  display: contents;
 }
 
 .campus-profile-metric-card {
@@ -735,7 +774,7 @@
 
 .career-progression-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -865,15 +904,263 @@
 }
 
 @media (max-width: 720px) {
-  .career-progression-panel { padding: 14px; }
-  .career-progression-head { display: grid; }
-  .career-stage-badge { min-width: 0; width: 100%; }
-  .career-stage-track { grid-template-columns: 1fr; }
-  .career-stage-track::before { top: 10px; bottom: 10px; left: 16px; right: auto; width: 2px; height: auto; }
-  .career-stage-step { justify-content: flex-start; }
-  .career-mode-options { grid-template-columns: 1fr; }
-  .career-trust-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .career-next-actions { grid-template-columns: 1fr; }
+  .career-progression-panel {
+    padding: 16px 4px;
+    gap: 14px;
+    border: 0;
+    border-top: 1px solid #ebe7ed;
+    border-radius: 0;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .career-progression-head {
+    display: grid;
+    gap: 10px;
+  }
+
+  .career-progression-eyebrow {
+    gap: 5px;
+    font-size: 9px;
+  }
+
+  .career-progression-head h2 {
+    margin: 5px 0 3px;
+    font-size: 20px;
+    line-height: 1.15;
+  }
+
+  .career-progression-head > div:first-child > p {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 11px;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .career-stage-badge {
+    width: auto;
+    min-width: 0;
+    padding: 8px 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px 8px;
+    border: 0;
+    border-radius: 9px;
+    background: #f5f2f6;
+    box-shadow: none;
+  }
+
+  .career-stage-badge small {
+    grid-column: 1 / -1;
+    font-size: 9px;
+  }
+
+  .career-stage-badge strong {
+    overflow: hidden;
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .career-stage-badge span {
+    align-self: center;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .career-stage-track {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .career-stage-track::before {
+    top: 13px;
+    bottom: auto;
+    left: 9%;
+    right: 9%;
+    width: auto;
+    height: 2px;
+  }
+
+  .career-stage-step {
+    display: grid;
+    justify-content: stretch;
+    justify-items: center;
+    gap: 4px;
+    text-align: center;
+  }
+
+  .career-stage-step > span {
+    width: 28px;
+    height: 28px;
+    flex-basis: 28px;
+    font-size: 9px;
+  }
+
+  .career-stage-step > div {
+    min-width: 0;
+    padding: 0;
+  }
+
+  .career-stage-step strong {
+    overflow: hidden;
+    max-width: 100%;
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .career-stage-step small {
+    display: none;
+  }
+
+  .career-progression-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+
+  .career-focus-card,
+  .career-trust-proof,
+  .career-skill-progress {
+    padding: 14px 0;
+    border: 0;
+    border-top: 1px solid #ece8ee;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .career-card-title {
+    grid-template-columns: 28px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .career-card-title > svg {
+    width: 28px;
+    height: 28px;
+    padding: 6px;
+    border-radius: 8px;
+  }
+
+  .career-card-title h3,
+  .career-skill-progress h3 {
+    font-size: 15px;
+  }
+
+  .career-card-title p,
+  .career-skill-progress header p {
+    display: -webkit-box;
+    overflow: hidden;
+    font-size: 10px;
+    line-height: 1.4;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .career-mode-options {
+    margin-top: 10px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .career-mode-options button {
+    min-height: 44px;
+    padding: 7px 5px;
+    place-items: center;
+    border-radius: 9px;
+    text-align: center;
+  }
+
+  .career-mode-options span {
+    justify-content: center;
+    gap: 3px;
+    font-size: 10px;
+    line-height: 1.2;
+  }
+
+  .career-mode-options small {
+    display: none;
+  }
+
+  .career-mode-options em {
+    font-size: 8px;
+  }
+
+  .career-trust-metrics {
+    margin-top: 10px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0;
+  }
+
+  .career-trust-metrics > div {
+    min-width: 0;
+    padding: 6px 5px;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .career-trust-metrics > div + div {
+    border-left: 1px solid #ece8ee;
+  }
+
+  .career-trust-metrics strong {
+    font-size: 15px;
+  }
+
+  .career-trust-metrics span {
+    overflow: hidden;
+    font-size: 8px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .career-confidence-line {
+    margin-top: 7px;
+    flex-wrap: wrap;
+    gap: 5px;
+    font-size: 9px;
+    line-height: 1.35;
+  }
+
+  .career-confidence-line > span {
+    padding: 3px 6px;
+    font-size: 8px;
+  }
+
+  .career-skill-progress {
+    gap: 9px;
+  }
+
+  .career-skill-cards {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .career-skill-cards::-webkit-scrollbar {
+    display: none;
+  }
+
+  .career-skill-cards > article {
+    flex: 0 0 min(270px, 82vw);
+    padding: 10px;
+    gap: 7px;
+  }
+
+  .career-next-actions {
+    padding: 11px;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    border-radius: 10px;
+  }
+
+  .career-next-actions ul {
+    gap: 3px;
+    font-size: 10px;
+  }
 }
 
 .campus-profile-card-head {
@@ -2184,6 +2471,94 @@
   max-width: none;
 }
 
+.campus-portfolio-workspace {
+  min-width: 0;
+  display: grid;
+  gap: 12px;
+  touch-action: pan-y;
+}
+
+.campus-work-view-switcher {
+  padding: 6px;
+}
+
+.campus-work-view-tabs {
+  width: min(420px, 100%);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+  border-radius: 14px;
+  background: #f4f2f6;
+}
+
+.campus-work-view-tabs button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 11px;
+  background: transparent;
+  color: #69647a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 850;
+  cursor: pointer;
+  transition: background-color .18s ease, color .18s ease, box-shadow .18s ease;
+}
+
+.campus-work-view-tabs button strong {
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: rgba(118, 80, 111, .1);
+  display: inline-grid;
+  place-items: center;
+  font-size: 10px;
+}
+
+.campus-work-view-tabs button.is-active {
+  background: #fff;
+  color: var(--theme-purple);
+  box-shadow: 0 3px 12px rgba(55, 43, 64, .09);
+}
+
+.campus-work-view-tabs button.is-active strong {
+  background: #f0e7f1;
+  color: #684460;
+}
+
+.campus-work-view-tabs button:focus-visible {
+  outline: 2px solid rgba(118, 80, 111, .5);
+  outline-offset: 1px;
+}
+
+.campus-portfolio-workspace > [role='tabpanel'] {
+  min-width: 0;
+}
+
+.campus-work-view-panel.is-forward { animation: campus-work-view-forward .2s ease both; }
+.campus-work-view-panel.is-back { animation: campus-work-view-back .2s ease both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .campus-work-view-panel.is-forward,
+  .campus-work-view-panel.is-back { animation: none; }
+}
+
+@keyframes campus-work-view-forward {
+  from { opacity: .72; transform: translateX(14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes campus-work-view-back {
+  from { opacity: .72; transform: translateX(-14px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 .campus-portfolio-panel {
   padding: 0 14px 14px;
   display: grid;
@@ -2350,16 +2725,16 @@
 }
 
 .campus-portfolio-services-panel {
-  padding: 14px;
+  padding: 18px;
   display: grid;
-  gap: 12px;
+  gap: 18px;
 }
 
 .campus-portfolio-services-head {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
+  align-items: center;
+  gap: 16px;
 }
 
 .campus-portfolio-services-head h3,
@@ -2370,72 +2745,33 @@
 .campus-portfolio-services-head h3 {
   color: #1f2649;
   font-size: var(--text-title-sm);
+  letter-spacing: -.02em;
 }
 
 .campus-portfolio-services-head p {
-  margin-top: 4px;
+  margin-top: 3px;
   color: #607094;
-  font-size: var(--text-body);
+  font-size: var(--text-small);
   font-weight: 600;
 }
 
-.campus-portfolio-service-composer {
-  border: 1px solid #e6eaf8;
-  border-radius: 10px;
-  overflow: hidden;
-}
-
-.campus-portfolio-service-composer-head {
-  border-bottom: 1px solid #eceff8;
+.campus-portfolio-services-title {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 9px 11px;
+  gap: 8px;
 }
 
-.campus-portfolio-service-composer-head img {
-  width: 40px;
-  height: 40px;
+.campus-portfolio-services-title > span {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
   border-radius: 999px;
-  object-fit: cover;
-}
-
-.campus-portfolio-service-composer-head p {
-  margin: 0;
-  color: #7682a3;
-  font-size: var(--text-body);
-}
-
-.campus-portfolio-service-composer-foot {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 9px;
-  padding: 8px 11px;
-}
-
-.campus-portfolio-service-tools {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.campus-portfolio-service-tools button {
-  border: 0;
-  background: transparent;
-  color: #4f5b82;
-  font-size: var(--text-small);
-  font-weight: 700;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  border-radius: 8px;
-  cursor: pointer;
-}
-
-.campus-portfolio-service-tools button:hover {
-  background: #f4f6fd;
+  background: #f2edf3;
+  color: #77516e;
+  display: inline-grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
 }
 
 .campus-portfolio-service-grid {
@@ -2446,17 +2782,18 @@
 
 .campus-portfolio-service-card {
   border: 1px solid #e6eaf8;
-  border-radius: 11px;
-  padding: 10px;
-  display: grid;
-  gap: 8px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
   cursor: pointer;
   transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
 }
 
 .campus-portfolio-service-card:hover {
   border-color: rgba(95, 67, 232, 0.4);
-  /* box-shadow: 0 12px 24px rgba(38, 44, 88, 0.08); */
+  box-shadow: 0 12px 28px rgba(38, 44, 88, 0.08);
   transform: translateY(-2px);
 }
 
@@ -2466,25 +2803,68 @@
 }
 
 .campus-portfolio-service-card.is-selected {
-  border-color: var(--theme-dark);
-  /* box-shadow: 0 14px 28px rgba(59, 47, 133, 0.12); */
-  /* background: #fcfbff; */
+  border-color: #8d6683;
+  box-shadow: 0 0 0 2px rgba(118, 80, 111, .09);
 }
 
-.campus-portfolio-service-card.is-selected .campus-portfolio-service-thumb {
-  border-color: rgba(95, 67, 232, 0.52);
+.campus-portfolio-service-media {
+  position: relative;
+  overflow: hidden;
+  background: #f3f4f8;
 }
 
 .campus-portfolio-service-thumb {
   width: 100%;
-  height: 138px;
-  border-radius: 10px;
+  height: 154px;
   object-fit: cover;
   display: block;
-  border: 1px solid #e6eaf8;
+  transition: transform 220ms ease;
 }
 
-.campus-portfolio-service-category,
+.campus-portfolio-service-card:hover .campus-portfolio-service-thumb {
+  transform: scale(1.025);
+}
+
+.campus-portfolio-service-media > span {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  max-width: calc(100% - 20px);
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .93);
+  color: #347f87;
+  box-shadow: 0 3px 12px rgba(31, 38, 73, .12);
+  font-size: 10px;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.campus-portfolio-service-body {
+  min-width: 0;
+  flex: 1;
+  padding: 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.campus-portfolio-service-title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.campus-portfolio-service-title-row > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #8a6b84;
+  font-size: 17px;
+}
+
 .campus-portfolio-service-card h4,
 .campus-portfolio-service-description,
 .campus-portfolio-service-card footer strong,
@@ -2492,28 +2872,26 @@
   margin: 0;
 }
 
-.campus-portfolio-service-category {
-  color: var(--theme-green);
-  font-size: var(--text-small);
-  font-weight: 700;
-}
-
 .campus-portfolio-service-card h4 {
   color: #1f284d;
   font-size: var(--text-body-lg);
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .campus-portfolio-service-description {
   color: #5f6a90;
-  font-size: var(--text-body);
+  font-size: var(--text-small);
   line-height: 1.4;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .campus-portfolio-service-card footer {
-  margin-top: 2px;
+  margin-top: auto;
   border-top: 1px solid #edf0f9;
-  padding-top: 8px;
+  padding-top: 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -2529,6 +2907,44 @@
   color: #7180a1;
   font-size: var(--text-caption);
   font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+
+.campus-portfolio-services-empty {
+  grid-column: 1 / -1;
+  min-height: 210px;
+  border: 1px dashed #d7ccda;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 5px;
+  text-align: center;
+  color: #5f6685;
+}
+
+.campus-portfolio-services-empty > span {
+  width: 44px;
+  height: 44px;
+  margin-bottom: 4px;
+  border-radius: 999px;
+  background: #f2edf3;
+  color: #77516e;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+}
+
+.campus-portfolio-services-empty strong,
+.campus-portfolio-services-empty p {
+  margin: 0;
+}
+
+.campus-portfolio-services-empty p {
+  font-size: var(--text-small);
 }
 
 .campus-portfolio-grid {
@@ -5528,15 +5944,6 @@
     border-bottom: 1px solid #edf1fa;
   }
 
-  .campus-portfolio-service-composer-foot {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .campus-portfolio-service-composer-foot .campus-shop-post-btn {
-    width: 100%;
-  }
-
   .campus-portfolio-service-grid {
     grid-template-columns: 1fr;
   }
@@ -5715,13 +6122,67 @@
   }
 
   .campus-portfolio-services-head {
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
   }
 
   .campus-portfolio-services-head .campus-portfolio-add-btn {
-    width: 100%;
+    width: auto;
+    flex: 0 0 auto;
     justify-content: center;
   }
+
+  .campus-portfolio-services-panel {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .campus-portfolio-service-grid {
+    gap: 10px;
+  }
+
+  .campus-portfolio-service-card {
+    min-height: 132px;
+    flex-direction: row;
+  }
+
+  .campus-portfolio-service-media {
+    flex: 0 0 116px;
+  }
+
+  .campus-portfolio-service-thumb {
+    height: 100%;
+    min-height: 132px;
+  }
+
+  .campus-portfolio-service-media > span {
+    left: 8px;
+    bottom: 8px;
+    max-width: calc(100% - 16px);
+  }
+
+  .campus-portfolio-service-body {
+    padding: 12px;
+    gap: 7px;
+  }
+
+  .campus-portfolio-service-card h4 {
+    font-size: var(--text-body);
+  }
+
+  .campus-portfolio-service-card footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .campus-portfolio-workspace { gap: 10px; }
+  .campus-work-view-switcher { position: sticky; top: 0; z-index: 5; padding: 5px; }
+  .campus-work-view-tabs { width: 100%; }
+  .campus-work-view-tabs button { min-height: 42px; padding: 0 10px; }
+  .campus-portfolio-filter-row { flex-wrap: nowrap; max-width: 100%; overflow-x: auto; scrollbar-width: none; touch-action: pan-x; }
+  .campus-portfolio-filter-row::-webkit-scrollbar { display: none; }
+  .campus-portfolio-filter-chip { flex: 0 0 auto; white-space: nowrap; }
 
   .campus-shop-product-grid {
     grid-template-columns: 1fr;
@@ -6129,30 +6590,31 @@
   .profile-errands-tab-panel { padding: 12px; }
   .profile-errand-action button { width: 100%; }
 }
-.campus-profile-editor-backdrop { position: fixed; inset: 0; z-index: 9999; overflow: auto; display: grid; place-items: center; padding: 24px; background: rgba(18,21,43,.58); backdrop-filter: blur(4px); }
-.campus-profile-editor-modal { width: min(880px, 100%); max-height: calc(100vh - 48px); overflow: auto; border: 1px solid #e3e5ef; border-radius: 20px; color: #171b3a; background: #fff; box-shadow: 0 26px 80px rgba(17,21,48,.3); }
-.campus-profile-editor-modal > header { padding: 24px 26px 20px; display: flex; justify-content: space-between; gap: 20px; border-bottom: 1px solid #eceef5; }
+.campus-profile-editor-backdrop { position: fixed; inset: 0; z-index: 9999; overflow: auto; display: grid; place-items: center; padding: 20px; background: rgba(24,22,31,.52); backdrop-filter: blur(5px); }
+.campus-profile-editor-modal { width: min(760px, 100%); max-height: calc(100vh - 40px); overflow: hidden; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto; border: 1px solid #e3dfe6; border-radius: 18px; color: #282532; background: #fff; box-shadow: 0 24px 70px rgba(25,20,29,.25); }
+.campus-profile-editor-modal > header { padding: 18px 20px 14px; display: flex; justify-content: space-between; gap: 20px; border-bottom: 1px solid #ece9ee; }
 .campus-profile-editor-modal > header span { color: #7450e5; font-size: var(--text-micro); font-weight: 850; text-transform: uppercase; letter-spacing: .08em; }
-.campus-profile-editor-modal > header h2 { margin: 5px 0; font-size: var(--text-title-md); }
+.campus-profile-editor-modal > header h2 { margin: 4px 0; font-size: 22px; line-height: 1.15; }
 .campus-profile-editor-modal > header p { margin: 0; color: #72778d; font-size: var(--text-small); }
 .campus-profile-editor-modal > header button { width: 36px; height: 36px; flex: 0 0 auto; border: 0; border-radius: 10px; display: grid; place-items: center; color: #696e83; background: #f4f5f9; cursor: pointer; }
-.campus-profile-editor-tabs { padding: 0 26px; border-bottom: 1px solid #eceef5; display: flex; gap: 22px; background: #fff; }
-.campus-profile-editor-tabs button { min-height: 47px; margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; padding: 0 2px; display: inline-flex; align-items: center; gap: 6px; color: #767b90; background: transparent; font: inherit; font-size: var(--text-small); font-weight: 800; cursor: pointer; }
+.campus-profile-editor-tabs { padding: 0 20px; border-bottom: 1px solid #ece9ee; display: flex; gap: 20px; background: #fff; }
+.campus-profile-editor-tabs button { min-height: 42px; margin-bottom: -1px; border: 0; border-bottom: 2px solid transparent; padding: 0 2px; display: inline-flex; align-items: center; gap: 6px; color: #767b90; background: transparent; font: inherit; font-size: var(--text-small); font-weight: 800; cursor: pointer; }
 .campus-profile-editor-tabs button.is-active { border-bottom-color: #7047df; color: #5f38cf; }
 .campus-profile-editor-tabs button:focus-visible { outline: 2px solid #7652e8; outline-offset: 3px; }
 .campus-profile-editor-tabs button:disabled { cursor: wait; opacity: .6; }
 .campus-profile-editor-body[hidden],
 .campus-profile-editor-modal > div[hidden] { display: none; }
-.campus-profile-editor-body { display: grid; grid-template-columns: 220px minmax(0, 1fr); }
-.campus-profile-editor-body > aside { padding: 28px 24px; border-right: 1px solid #eceef5; display: flex; align-items: center; flex-direction: column; text-align: center; background: #faf9fe; }
+.campus-profile-editor-modal > div:not([hidden]) { min-height: 0; overflow-y: auto; }
+.campus-profile-editor-body { display: grid; grid-template-columns: 180px minmax(0, 1fr); }
+.campus-profile-editor-body > aside { padding: 22px 16px; border-right: 1px solid #ece9ee; display: flex; align-items: center; flex-direction: column; text-align: center; background: #faf8fb; }
 .campus-profile-editor-avatar { position: relative; margin-bottom: 15px; }
-.campus-profile-editor-avatar img { width: 116px; height: 116px; border: 5px solid #fff; border-radius: 50%; object-fit: cover; box-shadow: 0 8px 28px rgba(35,31,72,.16); }
+.campus-profile-editor-avatar img { width: 92px; height: 92px; border: 4px solid #fff; border-radius: 50%; object-fit: cover; box-shadow: 0 8px 24px rgba(35,31,42,.15); }
 .campus-profile-editor-avatar label { position: absolute; right: -8px; bottom: 2px; border: 3px solid #fff; border-radius: 999px; padding: 7px 9px; display: flex; align-items: center; gap: 5px; color: #fff; background: #7047df; font-size: var(--text-micro); font-weight: 800; cursor: pointer; white-space: nowrap; }
 .campus-profile-editor-avatar input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 .campus-profile-editor-body > aside > strong { font-size: var(--text-body); }
 .campus-profile-editor-body > aside > span { margin-top: 3px; color: #7652e8; font-size: var(--text-caption); }
 .campus-profile-editor-body > aside > p { margin: 14px 0 0; color: #74798e; font-size: var(--text-caption); line-height: 1.55; }
-.campus-profile-editor-fields { padding: 24px 26px; display: grid; gap: 22px; }
+.campus-profile-editor-fields { padding: 18px 20px 22px; display: grid; gap: 18px; }
 .campus-profile-editor-fields section { display: grid; gap: 11px; }
 .campus-profile-editor-fields h3 { margin: 0; font-size: var(--text-small); }
 .campus-profile-editor-fields label { display: grid; gap: 6px; color: #5f6478; font-size: var(--text-micro); font-weight: 800; }
@@ -6185,7 +6647,7 @@
 .campus-profile-editor-skills { display: flex; flex-wrap: wrap; gap: 7px; }
 .campus-profile-editor-skills button { border: 1px solid #ddd8f5; border-radius: 999px; padding: 6px 9px; display: inline-flex; align-items: center; gap: 5px; color: #4e4770; background: #f7f5ff; font-size: var(--text-micro); font-weight: 750; cursor: pointer; }
 .campus-profile-edit-error { color: #bd3346; font-size: var(--text-caption); }
-.campus-profile-editor-modal > footer { padding: 17px 26px; border-top: 1px solid #eceef5; display: flex; justify-content: flex-end; gap: 9px; }
+.campus-profile-editor-modal > footer { position: relative; z-index: 5; padding: 12px 20px; border-top: 1px solid #ece9ee; display: flex; justify-content: flex-end; gap: 9px; background: #fff; }
 .campus-profile-editor-modal > footer button { min-height: 41px; border: 1px solid #dfe2ec; border-radius: 10px; padding: 0 17px; display: inline-flex; align-items: center; gap: 6px; color: #373c51; background: #fff; font-weight: 800; cursor: pointer; }
 .campus-profile-editor-modal > footer button.is-primary { border-color: #7047df; color: #fff; background: #7047df; }
 .campus-profile-editor-modal > footer button:disabled { cursor: not-allowed; opacity: .62; }
@@ -6237,19 +6699,36 @@
 @keyframes profile-kyc-pulse { to { opacity: .28; transform: translateY(-3px); } }
 
 @media (max-width: 700px) {
-  .campus-profile-editor-backdrop { padding: 10px; }
-  .campus-profile-editor-modal { max-height: calc(100vh - 20px); }
-  .campus-profile-editor-modal > header,
-  .profile-kyc-panel { padding-right: 18px; padding-left: 18px; }
-  .campus-profile-editor-tabs { padding: 0 18px; }
+  .campus-profile-editor-backdrop { place-items: end center; padding: 0; }
+  .campus-profile-editor-modal { width: 100%; height: min(92dvh, 820px); max-height: 92dvh; border-right: 0; border-bottom: 0; border-left: 0; border-radius: 18px 18px 0 0; }
+  .campus-profile-editor-modal > header { padding: 14px 16px 11px; }
+  .campus-profile-editor-modal > header h2 { font-size: 19px; }
+  .campus-profile-editor-modal > header p { font-size: 10px; }
+  .campus-profile-editor-modal > header button { width: 34px; height: 34px; }
+  .profile-kyc-panel { padding-right: 16px; padding-left: 16px; }
+  .campus-profile-editor-tabs { padding: 0 16px; }
+  .campus-profile-editor-tabs button { min-height: 40px; font-size: 11px; }
   .campus-profile-editor-body { grid-template-columns: 1fr; }
-  .campus-profile-editor-body > aside { border-right: 0; border-bottom: 1px solid #eceef5; }
-  .campus-profile-edit-grid,
+  .campus-profile-editor-body > aside { padding: 12px 16px; display: grid; grid-template-columns: 62px minmax(0, 1fr); grid-template-rows: auto auto auto; column-gap: 12px; border-right: 0; border-bottom: 1px solid #ece9ee; text-align: left; }
+  .campus-profile-editor-avatar { grid-row: 1 / 4; margin: 0; }
+  .campus-profile-editor-avatar img { width: 62px; height: 62px; border-width: 3px; }
+  .campus-profile-editor-avatar label { right: -3px; bottom: -2px; width: 26px; height: 26px; box-sizing: border-box; justify-content: center; overflow: hidden; padding: 0; border-width: 2px; font-size: 0; }
+  .campus-profile-editor-avatar label svg { font-size: 12px; }
+  .campus-profile-editor-body > aside > strong { align-self: end; font-size: 13px; }
+  .campus-profile-editor-body > aside > span { margin: 1px 0 0; font-size: 10px; }
+  .campus-profile-editor-body > aside > p { align-self: start; display: -webkit-box; overflow: hidden; margin: 3px 0 0; font-size: 9px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .campus-profile-editor-fields { padding: 15px 16px 18px; gap: 16px; }
+  .campus-profile-editor-fields section { gap: 9px; }
+  .campus-profile-editor-fields input,
+  .campus-profile-editor-fields textarea { min-height: 42px; padding: 9px 10px; font-size: 12px; }
+  .campus-profile-edit-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
   .profile-kyc-access-grid { grid-template-columns: 1fr; }
   .profile-kyc-panel > header { display: grid; }
   .profile-kyc-status { justify-self: start; }
   .profile-kyc-documents > article { grid-template-columns: auto minmax(0, 1fr); align-items: start; }
   .profile-kyc-document-action { grid-column: 1 / -1; }
+  .campus-profile-editor-modal > footer { padding: 10px 16px calc(10px + env(safe-area-inset-bottom)); }
+  .campus-profile-editor-modal > footer button { flex: 1; justify-content: center; min-height: 44px; }
 }
 
 @media (max-width: 430px) {
@@ -6267,11 +6746,31 @@
 
 .profile-marketing-panel,
 .profile-marketing-state {
-  padding: 20px;
-  border: 1px solid var(--campus-border);
-  border-radius: 18px;
+  padding: 22px;
+  border: 1px solid #e6e1e8;
+  border-radius: 16px;
   background: #fff;
 }
+
+.profile-marketing-state {
+  min-height: 180px;
+  place-content: center;
+  grid-template-columns: repeat(3, 8px) auto;
+  gap: 5px;
+  color: #777180;
+}
+
+.profile-marketing-state > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #76516f;
+  animation: profile-kyc-pulse 1s ease-in-out infinite alternate;
+}
+
+.profile-marketing-state > span:nth-child(2) { animation-delay: .18s; }
+.profile-marketing-state > span:nth-child(3) { animation-delay: .36s; }
+.profile-marketing-state > p { margin: 0 0 0 6px; font-size: var(--text-small); font-weight: 750; }
 
 .profile-marketing-heading {
   display: flex;
@@ -6290,9 +6789,9 @@
 }
 
 .profile-marketing-heading h2 {
-  margin: 6px 0 7px;
+  margin: 5px 0 5px;
   color: var(--theme-dark);
-  font-size: var(--text-title-md);
+  font-size: clamp(22px, 2.2vw, 28px);
 }
 
 .profile-marketing-heading p {
@@ -6310,7 +6809,7 @@
   padding: 0 16px;
   border: 0;
   border-radius: 11px;
-  background: var(--theme-dark);
+  background: #3a3641;
   color: #fff;
   display: inline-flex;
   align-items: center;
@@ -6322,27 +6821,33 @@
 }
 
 .profile-marketing-summary {
-  margin-top: 20px;
+  margin-top: 18px;
+  padding: 4px;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+  gap: 0;
+  border: 1px solid #e8e3ea;
+  border-radius: 14px;
+  background: #f8f6f9;
 }
 
 .profile-marketing-summary article {
-  padding: 15px;
-  border: 1px solid #e5e8f0;
-  border-radius: 13px;
-  background: #f8f9fc;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 0;
+  background: transparent;
   display: flex;
   align-items: center;
   gap: 11px;
 }
 
+.profile-marketing-summary article + article { border-left: 1px solid #e3dde5; }
+
 .profile-marketing-summary article > svg {
-  width: 38px;
-  height: 38px;
-  padding: 10px;
-  border-radius: 11px;
+  width: 34px;
+  height: 34px;
+  padding: 8px;
+  border-radius: 10px;
   background: #eee8f0;
   color: var(--theme-purple);
 }
@@ -6378,6 +6883,55 @@
   color: #b32f49;
   font-size: var(--text-caption);
   font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.profile-marketing-error button { flex: 0 0 auto; min-height: 32px; padding: 0 10px; border: 1px solid #e7b7c0; border-radius: 8px; background: #fff; color: #a52d43; font: inherit; font-size: var(--text-micro); font-weight: 850; cursor: pointer; }
+
+.profile-marketing-load-error {
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid #eadfe5;
+  border-radius: 14px;
+  background: #faf8fa;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  color: var(--theme-dark);
+}
+
+.profile-marketing-load-error > svg {
+  width: 38px;
+  height: 38px;
+  padding: 10px;
+  border-radius: 11px;
+  background: #f1e9ef;
+  color: var(--theme-purple);
+}
+
+.profile-marketing-load-error strong,
+.profile-marketing-load-error span { display: block; }
+.profile-marketing-load-error strong { font-size: var(--text-small); }
+.profile-marketing-load-error span { margin-top: 3px; color: var(--campus-muted); font-size: var(--text-caption); line-height: 1.45; }
+.profile-marketing-load-error button {
+  min-height: 38px;
+  padding: 0 13px;
+  border: 1px solid #d8d1dc;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--theme-dark);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font: inherit;
+  font-size: var(--text-caption);
+  font-weight: 850;
+  cursor: pointer;
 }
 
 .profile-marketing-accounts {
@@ -6388,11 +6942,11 @@
 }
 
 .profile-marketing-accounts > article {
-  padding: 17px;
-  border: 1px solid #e2e5ee;
-  border-radius: 15px;
+  padding: 15px;
+  border: 1px solid #e5e1e7;
+  border-radius: 13px;
   background: #fff;
-  box-shadow: 0 7px 24px rgba(35, 38, 62, .05);
+  box-shadow: 0 7px 22px rgba(43, 34, 45, .05);
 }
 
 .profile-marketing-accounts > article.is-stale {
@@ -6408,9 +6962,9 @@
 }
 
 .profile-marketing-platform-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
   background: #f0eaf2;
   color: var(--theme-purple);
   display: grid;
@@ -6451,8 +7005,8 @@
 }
 
 .profile-marketing-accounts dl {
-  margin: 16px 0;
-  padding: 14px 0;
+  margin: 13px 0;
+  padding: 11px 0;
   border-top: 1px solid #eceef4;
   border-bottom: 1px solid #eceef4;
   display: grid;
@@ -6511,30 +7065,27 @@
 
 .profile-marketing-empty {
   grid-column: 1 / -1;
-  min-height: 220px;
-  padding: 28px;
+  min-height: 170px;
+  padding: 24px;
   border: 1px dashed #ccd1df;
-  border-radius: 15px;
-  background: #fafbfe;
+  border-radius: 14px;
+  background: #faf9fb;
   display: grid;
   place-items: center;
   align-content: center;
   text-align: center;
 }
 
-.profile-marketing-empty > svg {
-  font-size: var(--text-title-lg);
-  color: var(--theme-purple);
-}
-
-.profile-marketing-empty h3 { margin: 10px 0 5px; }
+.profile-marketing-platforms { display: flex; justify-content: center; gap: 7px; }
+.profile-marketing-platforms span { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid #e2dbe5; border-radius: 50%; background: #fff; color: #76516f; }
+.profile-marketing-empty h3 { margin: 12px 0 5px; }
 .profile-marketing-empty p { margin: 0 0 15px; color: var(--campus-muted); font-size: var(--text-caption); }
 
 .profile-marketing-weekly-note {
-  margin-top: 15px;
-  padding: 14px 16px;
-  border-radius: 13px;
-  background: #f1f7f7;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f1f7f6;
   color: #2d747a;
   display: flex;
   align-items: flex-start;
@@ -6550,20 +7101,22 @@
   z-index: 9999;
   inset: 0;
   padding: 20px;
-  background: rgba(25, 27, 43, .58);
-  backdrop-filter: blur(4px);
+  background: rgba(24, 22, 31, .48);
+  backdrop-filter: blur(8px);
   display: grid;
   place-items: center;
 }
 
 .profile-marketing-editor form {
   width: min(680px, 100%);
+  box-sizing: border-box;
   max-height: calc(100vh - 40px);
   overflow: auto;
-  padding: 24px;
-  border-radius: 18px;
+  padding: 26px;
+  border: 1px solid rgba(83, 51, 79, .12);
+  border-radius: 24px;
   background: #fff;
-  box-shadow: 0 24px 80px rgba(23, 26, 49, .3);
+  box-shadow: 0 28px 80px rgba(25, 20, 29, .24);
 }
 
 .profile-marketing-editor form > header {
@@ -6573,14 +7126,100 @@
   gap: 18px;
 }
 
-.profile-marketing-editor form > header h2 { margin: 5px 0 0; color: var(--theme-dark); font-size: var(--text-title-md); }
-.profile-marketing-editor form > header button { width: 35px; height: 35px; border: 0; border-radius: 9px; background: #f1f2f6; color: #6b7085; font-size: var(--text-title-sm); cursor: pointer; }
+.profile-marketing-editor form > header h2 { margin: 5px 0 0; color: var(--theme-dark); font-size: 26px; letter-spacing: -.025em; }
+.profile-marketing-editor form > header p { margin: 6px 0 0; color: var(--campus-muted); font-size: 13px; font-weight: 650; }
+.profile-marketing-editor form > header button { flex: 0 0 auto; width: 40px; height: 40px; border: 0; border-radius: 50%; background: #f5f2f6; color: #6b6170; display: grid; place-items: center; font-size: 20px; cursor: pointer; transition: background-color .2s ease, color .2s ease; }
+.profile-marketing-editor form > header button:hover { background: #eee7ef; color: var(--theme-purple); }
 
 .profile-marketing-editor-grid {
-  margin-top: 20px;
+  margin-top: 22px;
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 16px;
+}
+
+.profile-marketing-platform-field {
+  display: grid;
+  gap: 8px;
+}
+
+.profile-marketing-platform-field > span {
+  color: #4d536a;
+  font-size: var(--text-caption);
+  font-weight: 850;
+}
+
+.profile-marketing-platform-picker {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.profile-marketing-platform-picker button {
+  min-width: 0;
+  min-height: 48px;
+  padding: 0 10px;
+  border: 1px solid #e2dce5;
+  border-radius: 13px;
+  background: #faf9fb;
+  color: #716879;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: border-color .2s ease, background-color .2s ease, color .2s ease, transform .2s ease;
+}
+
+.profile-marketing-platform-picker button:hover:not(:disabled) { transform: translateY(-1px); border-color: #bfa9bb; }
+.profile-marketing-platform-picker button.is-selected { border-color: #76516f; background: #f3edf4; color: #684460; box-shadow: inset 0 0 0 1px #76516f; }
+.profile-marketing-platform-picker button:disabled { cursor: not-allowed; opacity: .65; }
+.profile-marketing-platform-picker button svg { flex: 0 0 auto; width: 17px; height: 17px; }
+.profile-marketing-platform-picker button span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.profile-marketing-locked-account {
+  min-height: 76px;
+  padding: 12px;
+  border: 1px solid #e4dde6;
+  border-radius: 15px;
+  background: #faf8fa;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+}
+
+.profile-marketing-locked-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: #eee7ef;
+  color: var(--theme-purple);
+  display: grid;
+  place-items: center;
+}
+
+.profile-marketing-locked-account > div { min-width: 0; display: grid; gap: 2px; }
+.profile-marketing-locked-account > div > span { color: #777083; font-size: 10px; font-weight: 850; letter-spacing: .045em; text-transform: uppercase; }
+.profile-marketing-locked-account strong { overflow: hidden; color: var(--theme-dark); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.profile-marketing-locked-account small { color: #81798a; font-size: 10px; line-height: 1.35; }
+.profile-marketing-locked-account > button {
+  min-height: 36px;
+  padding: 0 11px;
+  border: 1px solid #e8c9cf;
+  border-radius: 10px;
+  background: #fff;
+  color: #aa3348;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 850;
+  cursor: pointer;
 }
 
 .profile-marketing-editor label,
@@ -6596,36 +7235,44 @@
 .profile-marketing-editor select {
   width: 100%;
   box-sizing: border-box;
-  min-height: 40px;
-  padding: 0 11px;
-  border: 1px solid #dfe2eb;
-  border-radius: 9px;
-  background: #fff;
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1px solid #e0dae3;
+  border-radius: 13px;
+  background: #faf9fb;
   color: var(--theme-dark);
   font: inherit;
 }
 
+.profile-marketing-editor input:focus,
+.profile-marketing-editor select:focus { outline: none; border-color: #9a7693; background: #fff; box-shadow: 0 0 0 3px rgba(118, 80, 111, .09); }
+
 .profile-marketing-upload {
   position: relative;
-  margin-top: 15px;
-  min-height: 130px;
-  padding: 18px;
-  border: 1px dashed #bfc5d5;
-  border-radius: 13px;
-  background: #fafbfe;
+  margin-top: 18px;
+  min-height: 82px;
+  padding: 14px;
+  border: 1px dashed #c7b9c5;
+  border-radius: 16px;
+  background: #fbf9fb;
   display: flex !important;
   align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  text-align: center;
+  flex-direction: row;
+  gap: 13px;
+  text-align: left;
   cursor: pointer;
+  transition: border-color .2s ease, background-color .2s ease;
 }
 
-.profile-marketing-upload > svg { color: var(--theme-purple); font-size: var(--text-title-md); }
-.profile-marketing-upload strong { margin-top: 8px; color: var(--theme-dark); font-size: var(--text-small); }
-.profile-marketing-upload span { margin-top: 4px; color: var(--campus-muted); font-size: var(--text-micro); }
+.profile-marketing-upload:hover { border-color: #8d6986; background: #f8f3f8; }
+.profile-marketing-upload-icon { flex: 0 0 auto; width: 46px; height: 46px; border-radius: 14px; background: #efe7f0; color: var(--theme-purple); display: grid; place-items: center; }
+.profile-marketing-upload-icon svg { width: 23px; height: 23px; }
+.profile-marketing-upload-copy { min-width: 0; flex: 1; display: grid; gap: 3px; }
+.profile-marketing-upload-copy strong { overflow: hidden; color: var(--theme-dark); font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.profile-marketing-upload-copy > span { color: var(--campus-muted); font-size: 11px; line-height: 1.4; }
+.profile-marketing-upload-action { flex: 0 0 auto; padding: 7px 10px; border-radius: 999px; background: #fff; color: var(--theme-purple); font-size: 11px; font-weight: 900; }
 .profile-marketing-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; }
-.profile-marketing-upload.is-reading { cursor: wait; }
+.profile-marketing-upload.is-reading { cursor: wait; opacity: .72; }
 
 .profile-marketing-extraction-note {
   margin: 12px 0 0;
@@ -6676,18 +7323,21 @@
 }
 
 .profile-marketing-editor fieldset {
-  margin: 16px 0 0;
-  padding: 15px;
-  border: 1px solid #e2e5ed;
-  border-radius: 12px;
+  margin: 18px 0 0;
+  padding: 14px;
+  border: 1px solid #e5dfe7;
+  border-radius: 15px;
+  background: #fdfcfd;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
 }
 
 .profile-marketing-editor legend { padding: 0 6px; color: var(--theme-dark); font-size: var(--text-caption); font-weight: 900; }
-.profile-marketing-editor form > footer { margin-top: 20px; padding-top: 17px; border-top: 1px solid #eceef4; display: flex; justify-content: flex-end; gap: 9px; }
-.profile-marketing-editor form > footer button { min-height: 40px; padding: 0 16px; border: 1px solid #dfe2eb; border-radius: 9px; background: #fff; color: var(--theme-dark); font-weight: 850; cursor: pointer; }
+.profile-marketing-editor fieldset label > small { color: #8b90a2; font-size: var(--text-micro); font-weight: 650; }
+.profile-marketing-editor fieldset input::placeholder { color: #a0a5b4; }
+.profile-marketing-editor form > footer { margin-top: 22px; padding-top: 18px; border-top: 1px solid #ece8ee; display: flex; justify-content: flex-end; gap: 10px; }
+.profile-marketing-editor form > footer button { min-height: 44px; padding: 0 18px; border: 1px solid #dfd8e1; border-radius: 12px; background: #fff; color: var(--theme-dark); font-weight: 850; cursor: pointer; }
 .profile-marketing-editor form > footer button.is-primary { border-color: var(--theme-dark); background: var(--theme-dark); color: #fff; }
 .profile-marketing-editor form > footer button:disabled { cursor: not-allowed; opacity: .55; }
 
@@ -6698,13 +7348,64 @@
 
 @media (max-width: 760px) {
   .campus-profile-shell.is-marketing-tab { grid-template-columns: minmax(0, 1fr); }
-  .profile-marketing-panel { padding: 16px; }
-  .profile-marketing-heading { flex-direction: column; }
-  .profile-marketing-summary { grid-template-columns: minmax(0, 1fr); }
-  .profile-marketing-accounts dl { grid-template-columns: minmax(0, 1fr); }
-  .profile-marketing-editor-grid,
-  .profile-marketing-editor fieldset { grid-template-columns: minmax(0, 1fr); }
-  .profile-marketing-accounts article > footer { align-items: flex-start; flex-direction: column; }
+  .profile-marketing-panel { width: 100%; min-width: 0; padding: 18px 12px calc(94px + env(safe-area-inset-bottom)); border: 0; border-radius: 0; box-shadow: none; }
+  .profile-marketing-heading { align-items: center; gap: 10px; }
+  .profile-marketing-heading > div { min-width: 0; }
+  .profile-marketing-heading > div > span { display: none; }
+  .profile-marketing-heading h2 { margin: 0 0 4px; font-size: 22px; line-height: 1.15; }
+  .profile-marketing-heading p { max-width: 290px; font-size: 13px; line-height: 1.45; }
+  .profile-marketing-heading > button { width: 40px; height: 40px; min-height: 40px; padding: 0; border-radius: 50%; font-size: 0; }
+  .profile-marketing-heading > button svg { margin: 0; font-size: 18px; }
+  .profile-marketing-summary { margin-top: 18px; padding: 0; border: 0; border-top: 1px solid #e7e2e9; border-bottom: 1px solid #e7e2e9; border-radius: 0; background: #fff; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .profile-marketing-summary article { min-height: 62px; justify-content: center; padding: 10px 6px; text-align: center; }
+  .profile-marketing-summary article > svg { display: none; }
+  .profile-marketing-summary strong { font-size: 19px; line-height: 1; }
+  .profile-marketing-summary span { margin-top: 5px; overflow: hidden; font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+  .profile-marketing-error { font-size: 12px; }
+  .profile-marketing-load-error { margin-top: 18px; padding: 18px 14px; grid-template-columns: auto minmax(0, 1fr); gap: 11px; }
+  .profile-marketing-load-error > svg { width: 36px; height: 36px; padding: 9px; }
+  .profile-marketing-load-error strong { font-size: 14px; }
+  .profile-marketing-load-error span { margin-top: 4px; font-size: 12px; }
+  .profile-marketing-load-error button { grid-column: 1 / -1; width: 100%; min-height: 42px; font-size: 13px; }
+  .profile-marketing-accounts { margin-top: 14px; gap: 10px; grid-template-columns: minmax(0, 1fr); }
+  .profile-marketing-accounts > article { min-width: 0; padding: 14px; border-radius: 13px; box-shadow: none; }
+  .profile-marketing-platform-icon { width: 38px; height: 38px; font-size: 17px; }
+  .profile-marketing-accounts h3 { font-size: 15px; }
+  .profile-marketing-accounts header p,
+  .profile-marketing-accounts header em { font-size: 10px; }
+  .profile-marketing-accounts dl { margin: 12px 0; padding: 12px 0; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .profile-marketing-accounts dt { overflow: hidden; font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+  .profile-marketing-accounts dd { margin-top: 4px; font-size: 15px; }
+  .profile-marketing-accounts footer > span { min-width: 0; font-size: 10px; }
+  .profile-marketing-accounts footer button { min-height: 34px; font-size: 12px; }
+  .profile-marketing-empty { min-height: 0; margin-top: 2px; padding: 24px 16px; border-style: solid; background: #faf9fb; }
+  .profile-marketing-platforms span { width: 32px; height: 32px; font-size: 14px; }
+  .profile-marketing-empty h3 { margin-top: 13px; font-size: 18px; }
+  .profile-marketing-empty p { max-width: 290px; margin-bottom: 16px; font-size: 13px; line-height: 1.45; }
+  .profile-marketing-empty button { width: 100%; min-height: 44px; font-size: 14px; }
+  .profile-marketing-weekly-note { display: none; }
+  .profile-marketing-editor { place-items: end center; padding: 0; }
+  .profile-marketing-editor form { width: 100%; max-height: 92dvh; padding: 20px; border-right: 0; border-bottom: 0; border-left: 0; border-radius: 26px 26px 0 0; }
+  .profile-marketing-editor form > header h2 { font-size: 23px; }
+  .profile-marketing-editor form > header p { font-size: 12px; }
+  .profile-marketing-editor form > header button { width: 38px; height: 38px; }
+  .profile-marketing-editor-grid { margin-top: 18px; gap: 14px; }
+  .profile-marketing-platform-picker { gap: 7px; }
+  .profile-marketing-platform-picker button { min-height: 45px; padding: 0; border-radius: 13px; }
+  .profile-marketing-platform-picker button span { display: none; }
+  .profile-marketing-locked-account { grid-template-columns: auto minmax(0, 1fr); }
+  .profile-marketing-locked-account > button { grid-column: 1 / -1; width: 100%; justify-content: center; }
+  .profile-marketing-upload { min-height: 76px; margin-top: 16px; padding: 12px; gap: 11px; }
+  .profile-marketing-upload-icon { width: 42px; height: 42px; border-radius: 12px; }
+  .profile-marketing-upload-copy strong { font-size: 13px; }
+  .profile-marketing-upload-copy > span { font-size: 10px; }
+  .profile-marketing-upload-action { display: none; }
+  .profile-marketing-editor fieldset { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; padding: 12px 9px; }
+  .profile-marketing-editor fieldset label { min-width: 0; gap: 4px; font-size: 11px; }
+  .profile-marketing-editor fieldset label > small { font-size: 9px; }
+  .profile-marketing-editor fieldset input { min-width: 0; min-height: 42px; padding: 0 8px; font-size: 16px; }
+  .profile-marketing-editor form > footer { position: sticky; bottom: -20px; margin: 18px -20px -20px; padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); background: rgba(255, 255, 255, .96); backdrop-filter: blur(10px); }
+  .profile-marketing-editor form > footer button { flex: 1; justify-content: center; min-height: 44px; }
 }
 .campus-profile-score-explanation {
   margin-top: 1rem;
@@ -7400,6 +8101,848 @@
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
+
+/* Student profile: compact, useful mobile overview ---------------------- */
+
+.campus-profile-bio {
+  max-width: 680px;
+  margin: 8px 0 0;
+  color: #626a87;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+@media (max-width: 720px) {
+  .campus-profile-page:not(.business-student-profile-page) {
+    background:
+      radial-gradient(circle at 8% 2%, rgba(116, 81, 111, .08), transparent 24%),
+      linear-gradient(#fff, #faf8fb 520px, #f7f6fa);
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-main {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: clip;
+    gap: 10px;
+    padding-bottom: calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-shell {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow-x: clip;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-rail:not(.is-shop-rail),
+  .campus-profile-page:not(.business-student-profile-page) .career-trust-proof {
+    display: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-topbar {
+    position: sticky;
+    top: env(safe-area-inset-top);
+    z-index: 35;
+    flex-direction: row;
+    align-items: center;
+    gap: 9px;
+    padding: 10px 2px;
+    background: rgba(255, 255, 255, .94);
+    box-shadow: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-breadcrumb {
+    display: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-mobile-title {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #8a8292;
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: .01em;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-mobile-title::after {
+    order: 1;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: #d4a43d;
+    content: '';
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-mobile-title strong {
+    order: 2;
+    color: #27233f;
+    font-size: 13px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-top-actions {
+    display: grid;
+    grid-template-columns: 38px 38px 38px;
+    gap: 7px;
+    width: auto;
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-find-btn {
+    display: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-find-btn svg:last-child {
+    margin-left: auto;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-top-actions .campus-icon-btn,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-user-btn {
+    width: 38px;
+    height: 38px;
+    min-height: 38px;
+    border-radius: 12px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-hero {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    overflow: visible;
+    padding: 15px 4px 13px;
+    border: 0;
+    border-bottom: 1px solid #ebe7ee;
+    border-radius: 0;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-identity {
+    min-width: 0;
+    grid-template-columns: 76px minmax(0, 1fr);
+    align-items: start;
+    gap: 13px;
+    text-align: left;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-photo-wrap {
+    width: 76px;
+    height: 76px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-photo-wrap img {
+    border: 3px solid #fff;
+    box-shadow: 0 8px 22px rgba(42, 33, 48, .16);
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-photo-wrap span {
+    right: 1px;
+    bottom: 1px;
+    width: 17px;
+    height: 17px;
+    border-width: 3px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-identity-copy {
+    min-width: 0;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-identity-copy h1 {
+    gap: 6px;
+    font-size: clamp(23px, 7vw, 28px);
+    line-height: 1.05;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-identity-copy h1 em {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-campus-link,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-identity-copy > p {
+    margin-top: 5px;
+    font-size: 13px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-identity-meta {
+    gap: 5px 11px;
+    margin-top: 7px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-identity-meta span {
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-academic-detail,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-bio,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-tag-row,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-social-summary {
+    grid-column: 1 / -1;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-social-summary {
+    display: flex;
+    align-items: center;
+    gap: 7px 0;
+    width: auto;
+    margin-top: 2px;
+    padding: 0;
+    border: 0;
+    color: #6c7085;
+    font-size: 12px;
+    line-height: 1.35;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-social-summary span {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    white-space: nowrap;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-social-summary strong {
+    color: #27243a;
+    font-size: 14px;
+    font-weight: 850;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-social-summary span:not(:last-child)::after {
+    margin: 0 9px 0 5px;
+    color: #c6bdc8;
+    content: '·';
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-bio {
+    display: -webkit-box;
+    overflow: hidden;
+    margin-top: 2px;
+    color: #50556d;
+    font-size: 13px;
+    line-height: 1.5;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-tag-row {
+    max-width: 100%;
+    margin-top: 1px;
+    flex-wrap: wrap;
+    gap: 6px;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-tag-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-tag-row span {
+    display: inline-flex;
+    align-items: center;
+    flex: 0 1 auto;
+    max-width: 180px;
+    overflow: hidden;
+    padding: 5px 9px;
+    border: 1px solid #dfd8e3;
+    border-radius: 999px;
+    background: #f8f6f9;
+    color: #59435a;
+    font-size: 11px;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-tag-row span:not(:last-child)::after {
+    content: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-hero-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 38px;
+    gap: 6px;
+    justify-content: stretch;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-hero-actions .campus-profile-ghost-btn {
+    min-height: 38px;
+    padding: 8px 12px;
+    justify-content: center;
+    border: 0;
+    border-radius: 9px;
+    background: #f0edf1;
+    color: #34303b;
+    font-size: 12px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-hero-actions .campus-profile-ghost-icon {
+    width: 38px;
+    height: 38px;
+    border: 0;
+    border-radius: 9px;
+    background: #f0edf1;
+    color: #514a57;
+    font-size: 17px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-settings-menu {
+    z-index: 50;
+    width: min(300px, calc(100vw - 24px));
+    max-height: min(470px, calc(100vh - 120px));
+    overflow-y: auto;
+    padding: 11px;
+    gap: 6px;
+    border-color: #dfd8e2;
+    border-radius: 12px;
+    box-shadow: 0 18px 44px rgba(42, 31, 45, .2);
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-settings-menu > p {
+    font-size: 9px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-settings-menu > button {
+    padding: 8px 10px;
+    border-radius: 9px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-settings-menu > button strong {
+    font-size: 11px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-settings-menu > button span,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-settings-menu > .campus-profile-settings-kyc > span > span {
+    font-size: 9px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-tabs-wrap {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    top: calc(env(safe-area-inset-top) + 58px);
+    z-index: 25;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-bottom: 1px solid #e9e6eb;
+    border-radius: 0;
+    background: rgba(255, 255, 255, .96);
+    box-shadow: none;
+    backdrop-filter: blur(12px);
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 4px;
+    padding: 0;
+    background: transparent;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-tabs button {
+    flex: 0 0 auto;
+    min-height: 38px;
+    padding: 7px 12px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    font-size: 12px;
+    font-weight: 750;
+    scroll-snap-align: start;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-tabs button.is-active {
+    border: 0;
+    border-bottom: 2px solid #76516f;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-metrics {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+    display: block;
+    padding: 12px 0;
+    border-block: 1px solid #ebe8ed;
+    background: #fff;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-metrics-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 0 4px 9px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-metrics-heading strong {
+    color: #292633;
+    font-size: 13px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-metrics-heading span {
+    color: #8b8390;
+    font-size: 10px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-metric-list {
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scrollbar-width: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-metric-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-metric-card {
+    flex: 0 0 112px;
+    min-width: 112px;
+    min-height: 68px;
+    box-sizing: border-box;
+    display: block;
+    padding: 5px 12px;
+    border: 0;
+    border-right: 1px solid #eeebef;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-metric-icon {
+    display: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-metric-tab {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-metric-card p {
+    overflow: hidden;
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-metric-card h3 {
+    margin: 3px 0;
+    font-size: 22px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-metric-card span {
+    overflow: hidden;
+    font-size: 10px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-progress {
+    padding-bottom: 8px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-cards {
+    display: grid;
+    gap: 7px;
+    overflow: visible;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-cards > article {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 9px 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
+    border-color: #e8e4ea;
+    border-radius: 10px;
+    box-shadow: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-cards > article > header,
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-progress-line {
+    grid-column: 1 / -1;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-cards h4 {
+    font-size: 13px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-cards header small,
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-cards header > span {
+    font-size: 8px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-progress-line {
+    height: 5px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-cards > article > p,
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-gates,
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-cards footer small,
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-cards footer > span {
+    display: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-cards footer {
+    grid-column: 1 / -1;
+    padding: 0;
+    border: 0;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-skill-cards footer strong {
+    font-size: 10px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-next-actions {
+    padding: 10px;
+    gap: 5px;
+    border: 1px solid #e3dce5;
+    background: #f7f4f7;
+    color: #332f3a;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-next-actions > div > svg {
+    color: #76516f;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-next-actions > div span {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-next-actions > div strong {
+    font-size: 12px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-next-actions small {
+    margin: 0;
+    color: #7f7782;
+    font-size: 8px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-next-actions ul {
+    margin: 0;
+    color: #655f69;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .career-next-actions li:not(:first-child) {
+    display: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-overview-top-grid,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-dual-grid {
+    gap: 0;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-score-card,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-endorsement-card,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-dual-grid > .campus-profile-surface,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-work-card {
+    padding: 14px 4px;
+    gap: 10px;
+    border: 0;
+    border-top: 1px solid #ebe7ed;
+    border-radius: 0;
+    background: #fff;
+    box-shadow: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-card-head {
+    align-items: center;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-card-head h2 {
+    font-size: 15px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-card-head p {
+    margin-top: 2px;
+    font-size: 9px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-link-btn {
+    min-height: 32px;
+    padding: 5px 7px;
+    font-size: 10px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-score-grid {
+    grid-template-columns: 74px minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-score-ring {
+    width: 74px;
+    height: 74px;
+    margin: 0;
+    padding: 5px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-score-ring strong {
+    font-size: 25px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-score-ring span {
+    font-size: 8px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-score-bars {
+    gap: 7px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-score-row {
+    grid-template-columns: 72px minmax(24px, 1fr) 40px;
+    gap: 6px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-score-row p,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-score-row strong {
+    overflow: hidden;
+    font-size: 9px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-score-row div {
+    height: 5px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-score-foot {
+    padding-top: 7px;
+    gap: 4px 10px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-score-foot p {
+    font-size: 9px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-endorsement-item {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    padding: 7px;
+    border-color: #ebe7ed;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-endorsement-item > img {
+    width: 34px;
+    height: 34px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-endorsement-item h3,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-endorsement-item strong {
+    font-size: 10px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-endorsement-item p,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-endorsement-item blockquote,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-endorsement-foot p {
+    font-size: 8px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-achievement-list article {
+    grid-template-columns: 32px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-achievement-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 9px;
+    font-size: 15px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-achievement-list h3,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-achievement-list p {
+    margin-left: 0;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-achievement-list h3 {
+    font-size: 12px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-achievement-list p {
+    font-size: 10px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-earnings-list {
+    gap: 7px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-earnings-list div {
+    min-height: 34px;
+    padding: 0 0 7px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-earnings-list p {
+    display: grid;
+    gap: 1px;
+    font-size: 11px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-earnings-list p span {
+    color: #898392;
+    font-size: 8px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-earnings-list strong {
+    font-size: 12px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-work-grid {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-work-grid::-webkit-scrollbar {
+    display: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-work-item {
+    flex: 0 0 154px;
+    padding: 5px;
+    gap: 4px;
+    scroll-snap-align: start;
+    border-color: #e8e5eb;
+    border-radius: 10px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-work-item img {
+    height: 82px;
+    border-radius: 7px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-work-item p {
+    overflow: hidden;
+    font-size: 11px;
+    font-weight: 750;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-work-item span,
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-work-item strong {
+    font-size: 9px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded {
+    margin: 0;
+    padding: 14px 4px;
+    gap: 10px;
+    border: 0;
+    border-top: 1px solid #ebe7ed;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-sticky-head {
+    padding: 0;
+    gap: 8px;
+    border: 0;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-head {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-head h2 {
+    font-size: 15px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-head p,
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-toolbar,
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-group-title,
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-proficiency-cell,
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-score-cell,
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-last-used-cell,
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-row-menu,
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-show-more-btn,
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-icon,
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-name-cell p {
+    display: none;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-add-btn {
+    width: auto;
+    min-height: 32px;
+    padding: 5px 9px;
+    border: 0;
+    background: #f0edf1;
+    font-size: 10px;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-table {
+    display: block;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-group-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    overflow: visible;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-row {
+    width: auto;
+    min-width: 0;
+    display: inline-flex;
+    padding: 6px 10px;
+    border: 1px solid #dfd8e3;
+    border-radius: 999px;
+    background: #f8f6f9;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-name-cell {
+    display: block;
+  }
+
+  .campus-profile-page:not(.business-student-profile-page) .campus-skills-panel.is-embedded .campus-skills-name-cell h4 {
+    color: #59435a;
+    font-size: 11px;
+    font-weight: 750;
+    line-height: 1.2;
+  }
+}
+
+@media (max-width: 390px) {
+  .campus-profile-page:not(.business-student-profile-page) .campus-profile-top-actions {
+    grid-template-columns: 36px 36px 36px;
+    gap: 5px;
+  }
+}
 .errand-delivery-code-backdrop {
   position: fixed;
   inset: 0;
@@ -7433,3 +8976,105 @@
 .errand-delivery-code-submit { display: flex; width: 100%; align-items: center; justify-content: center; gap: 9px; margin-top: 16px; padding: 13px 16px; border: 0; border-radius: 12px; background: #393642; color: #fff; font-weight: 800; }
 .errand-delivery-code-submit:disabled { opacity: .55; }
 .errand-delivery-code-dialog footer { margin-top: 16px; color: #77717f; font-size: 13px; line-height: 1.45; }
+.campus-portfolio-draft {
+  align-items: center;
+  background: #fff7df;
+  border: 1px solid #f4d27b;
+  border-radius: 999px;
+  color: #7a5300;
+  display: inline-flex;
+  font-size: 0.72rem;
+  font-weight: 800;
+  gap: 5px;
+  left: 12px;
+  padding: 5px 9px;
+  position: absolute;
+  top: 12px;
+  z-index: 2;
+}
+
+.portfolio-editor-backdrop {
+  align-items: center;
+  background: rgba(18, 24, 40, 0.7);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 24px;
+  position: fixed;
+  z-index: 1200;
+}
+
+.portfolio-editor {
+  background: #fff;
+  border-radius: 22px;
+  box-shadow: 0 28px 80px rgba(20, 28, 50, 0.28);
+  max-height: calc(100vh - 48px);
+  max-width: 980px;
+  overflow: auto;
+  padding: 24px;
+  width: 100%;
+}
+
+.portfolio-editor > header,
+.portfolio-editor > footer,
+.portfolio-editor-share,
+.portfolio-editor-files article,
+.portfolio-editor-privacy label {
+  align-items: center;
+  display: flex;
+}
+
+.portfolio-editor > header { justify-content: space-between; }
+.portfolio-editor > header span { align-items: center; color: #6842d7; display: inline-flex; font-size: 0.76rem; font-weight: 800; gap: 6px; text-transform: uppercase; }
+.portfolio-editor > header h2 { margin: 6px 0; }
+.portfolio-editor > header p,
+.portfolio-editor-files > p,
+.portfolio-editor-share p { color: #697386; margin: 0; }
+.portfolio-editor > header > button { background: #f2f4f8; border: 0; border-radius: 50%; display: grid; height: 38px; place-items: center; width: 38px; }
+
+.portfolio-editor-grid { display: grid; gap: 24px; grid-template-columns: minmax(0, 1.35fr) minmax(260px, 0.85fr); margin-top: 24px; }
+.portfolio-editor-fields { display: grid; gap: 16px; }
+.portfolio-editor-fields > label { display: grid; gap: 7px; }
+.portfolio-editor-fields label > span,
+.portfolio-editor-share label > span { font-size: 0.82rem; font-weight: 800; }
+.portfolio-editor input[type="text"],
+.portfolio-editor-fields input:not([type]),
+.portfolio-editor textarea,
+.portfolio-editor select { border: 1px solid #d9deea; border-radius: 11px; font: inherit; padding: 11px 12px; width: 100%; }
+.portfolio-editor-fields textarea { min-height: 132px; resize: vertical; }
+.portfolio-editor-privacy { background: #f7f8fb; border-radius: 14px; display: grid; gap: 12px; padding: 14px; }
+.portfolio-editor-privacy label { align-items: flex-start; gap: 10px; }
+.portfolio-editor-privacy label > span { display: grid; gap: 2px; }
+.portfolio-editor-privacy small { color: #697386; font-weight: 500; }
+
+.portfolio-editor-files { border: 1px solid #e2e5ed; border-radius: 16px; padding: 16px; }
+.portfolio-editor-files h3 { margin: 0 0 5px; }
+.portfolio-editor-files article { border-top: 1px solid #eceef3; gap: 10px; justify-content: space-between; margin-top: 12px; padding-top: 12px; }
+.portfolio-editor-files article > label:first-child { align-items: center; display: flex; gap: 8px; min-width: 0; }
+.portfolio-editor-files article span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.portfolio-thumbnail-choice { color: #6842d7; font-size: 0.76rem; font-weight: 800; }
+.portfolio-editor-empty { align-items: flex-start; background: #f0f8f4; border-radius: 12px; color: #32624a; display: flex; gap: 9px; margin-top: 14px; padding: 12px; }
+
+.portfolio-editor-share { align-items: stretch; background: #f5f1ff; border-radius: 16px; flex-wrap: wrap; gap: 12px; margin-top: 22px; padding: 16px; }
+.portfolio-editor-share > div { flex: 1 1 100%; }
+.portfolio-editor-share h3 { margin: 0 0 4px; }
+.portfolio-editor-share textarea { flex: 1 1 420px; min-height: 70px; }
+.portfolio-editor-share label { display: grid; gap: 5px; min-width: 150px; }
+.portfolio-editor button,
+.portfolio-editor-share button { align-items: center; border: 1px solid #d8dce6; border-radius: 10px; cursor: pointer; display: inline-flex; font-weight: 800; gap: 7px; justify-content: center; padding: 10px 14px; }
+.portfolio-editor-share button,
+.portfolio-editor button.is-primary { background: #6842d7; border-color: #6842d7; color: #fff; }
+.portfolio-editor button:disabled { cursor: wait; opacity: 0.6; }
+.portfolio-editor-message { color: #257047; font-weight: 700; margin: 14px 0 0; }
+.portfolio-editor-message.is-error { color: #b42318; }
+.portfolio-editor > footer { border-top: 1px solid #eceef3; justify-content: space-between; margin-top: 22px; padding-top: 18px; }
+.portfolio-editor > footer > div { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; }
+.portfolio-editor .is-archive { color: #9f2d27; }
+
+@media (max-width: 760px) {
+  .portfolio-editor-backdrop { align-items: flex-end; padding: 0; }
+  .portfolio-editor { border-radius: 20px 20px 0 0; max-height: 94vh; padding: 18px; }
+  .portfolio-editor-grid { grid-template-columns: 1fr; }
+  .portfolio-editor > footer { align-items: stretch; flex-direction: column-reverse; }
+  .portfolio-editor > footer > div { display: grid; }
+}

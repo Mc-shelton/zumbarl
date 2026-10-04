@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FiActivity, FiArrowLeft, FiCalendar, FiCheckCircle, FiClock, FiHeart, FiRefreshCw, FiShield, FiUserCheck } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import Seo from '../components/Seo'
+import { ACCESS_KEYS, hasAccess } from '../features/auth/roleConfig'
 import { readStudentCareOperations, reviewStudentCareCircle, updateStudentCareCase, updateStudentCareEnrollment } from '../features/community/services/studentCareOperationsService'
 import '../styles/student-care-operations.css'
 
@@ -10,6 +11,7 @@ function labelStatus(value = '') { return STATUS_LABELS[value] || value.replaceA
 function when(value) { return value ? new Date(value).toLocaleString('en-KE', { dateStyle: 'medium', timeStyle: 'short' }) : 'Not scheduled' }
 
 function StudentCareOperationsPage() {
+  const canOpenAdministration = hasAccess(ACCESS_KEYS.platform.all)
   const [data, setData] = useState(null)
   const [tab, setTab] = useState('pathways')
   const [workingId, setWorkingId] = useState('')
@@ -62,7 +64,7 @@ function StudentCareOperationsPage() {
   return <main className="student-care-ops-page">
     <Seo title="Student Care Operations | Zumbarl" description="Restricted Student Affairs and wellbeing support operations." path="/admin/student-care" />
     <section className="student-care-ops-shell">
-      <header className="student-care-ops-hero"><div><Link to="/admin/super-admin"><FiArrowLeft /> Administration</Link><span>Restricted support workspace</span><h1>Student Care Operations</h1><p>Move private requests from first contact to an owned plan, confirmed appointment and accountable follow-up.</p></div><aside><FiShield /><strong>Need-to-know access</strong><small>Use only for care coordination and safeguarding.</small></aside></header>
+      <header className="student-care-ops-hero"><div><Link to={canOpenAdministration ? '/admin/super-admin' : '/'}><FiArrowLeft /> {canOpenAdministration ? 'Administration' : 'Zumbarl home'}</Link><span>Restricted support workspace</span><h1>Student Care Operations</h1><p>Move private requests from first contact to an owned plan, confirmed appointment and accountable follow-up.</p></div><aside><FiShield /><strong>Need-to-know access</strong><small>Use only for care coordination and safeguarding.</small></aside></header>
       {notice ? <p className="student-care-ops-notice"><FiCheckCircle /> {notice}</p> : null}
       {error ? <p className="student-care-ops-error">{error}</p> : null}
       <section className="student-care-ops-metrics"><article><FiHeart /><span><strong>{data?.summary?.openReports || 0}</strong> open requests</span></article><article><FiCalendar /><span><strong>{data?.summary?.requestedBookings || 0}</strong> appointments to confirm</span></article><article><FiActivity /><span><strong>{data?.summary?.activeEnrollments || 0}</strong> active pathways</span></article><article><FiUserCheck /><span><strong>{data?.summary?.followUpsNeeded || 0}</strong> follow-ups requested</span></article></section>

@@ -32,10 +32,16 @@ function MarketplaceHeader({
   title = 'Campus Marketplace',
 }) {
   const canPostItem = hasAccess(ACCESS_KEYS.marketplace.sell)
+  const mobileTitle = title.replace(/^Campus\s+/i, '')
 
   return (
     <section className="marketplace-page-intro">
       <header className="campus-header opportunities-header opportunities-marketplace-header">
+        <div className="opportunities-mobile-brand" aria-hidden="true">
+          <span><img src="/assets/index/bee_nobg.png" alt="" /></span>
+          <div><small>Campus</small><strong>{mobileTitle}</strong></div>
+        </div>
+
         <div className="opportunities-head-copy">
           <Breadcrumb
             className="opportunities-breadcrumb"

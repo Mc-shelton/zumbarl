@@ -1,9 +1,4 @@
 export const HERO_DOODLE = "/assets/index/hero-doodle-arrow.svg"
-export const EVENT_FLAG = "/assets/index/event-flag-kenya.png"
-export const EVENT_TITLE = "Training Project Management - Nairobi"
-export const EVENT_DATE = "May 27, 2026"
-export const EVENT_LINK = "https://zumbarl.com/event/training-project-management-nairobi-10588/register"
-
 
 export const ZUMBARL_APPS_FROM_DOCS = [{
     id: "campus-jobs",

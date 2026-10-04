@@ -7,6 +7,7 @@ import {
   FiMapPin,
   FiMessageCircle,
   FiRepeat,
+  FiShield,
   FiTag,
   FiStar,
   FiX,
@@ -62,16 +63,11 @@ function ExploreProductRail({
   return (
     <section className="campus-rail-card explore-campus-right-card explore-campus-product-detail-card">
       <header className="explore-campus-product-detail-topbar">
-        <button type="button" className="explore-campus-product-more-btn" onClick={() => onSetTab('details')}>
-          More details
-        </button>
+        <div className="explore-campus-product-brand">
+          <span><img src="/assets/index/bee_nobg.png" alt="" /></span>
+          <div><small>Zumbarl Marketplace</small><strong>Campus find</strong></div>
+        </div>
         <div>
-          <button type="button" aria-label="Previous product image" onClick={() => onStepImage(-1)}>
-            <FiChevronLeft aria-hidden="true" />
-          </button>
-          <button type="button" aria-label="Next product image" onClick={() => onStepImage(1)}>
-            <FiChevronRight aria-hidden="true" />
-          </button>
           <button type="button" aria-label="Close product details" onClick={onClose}>
             <FiX aria-hidden="true" />
           </button>
@@ -80,39 +76,43 @@ function ExploreProductRail({
 
       {activeRailProductImage ? (
         <section className="explore-campus-product-gallery">
-          <div className="explore-campus-product-thumbs">
+          <div className="explore-campus-product-hero">
+            <img src={activeRailProductImage} alt={`${activeRailProduct.title} preview`} loading="lazy" />
+            <em>{activeRailProduct.badge}</em>
+            {activeRailProductGallery.length > 1 ? <>
+              <button type="button" className="is-previous" aria-label="Previous product image" onClick={() => onStepImage(-1)}><FiChevronLeft aria-hidden="true" /></button>
+              <button type="button" className="is-next" aria-label="Next product image" onClick={() => onStepImage(1)}><FiChevronRight aria-hidden="true" /></button>
+            </> : null}
+            <span>{normalizedRailProductImageIndex + 1}/{activeRailProductGallery.length}</span>
+          </div>
+          {activeRailProductGallery.length > 1 ? <div className="explore-campus-product-thumbs">
             {activeRailProductGallery.map((image, index) => (
               <button
                 key={`${activeRailProduct.id}-thumb-${index}`}
                 type="button"
                 className={index === normalizedRailProductImageIndex ? 'is-active' : ''}
                 aria-label={`Show product image ${index + 1}`}
+                aria-pressed={index === normalizedRailProductImageIndex}
                 onClick={() => onSelectImage(index)}
               >
-                <img src={image} alt={`${activeRailProduct.title} thumbnail ${index + 1}`} loading="lazy" />
+                <img src={image} alt="" loading="lazy" />
               </button>
             ))}
-          </div>
-          <div className="explore-campus-product-hero">
-            <img src={activeRailProductImage} alt={`${activeRailProduct.title} preview`} loading="lazy" />
-            <em>{activeRailProduct.badge}</em>
-            <span>{normalizedRailProductImageIndex + 1}/{activeRailProductGallery.length}</span>
-          </div>
+          </div> : null}
         </section>
       ) : null}
 
       <div className="explore-campus-product-title-row">
         <div>
+          <span>Available from {sellerName}</span>
           <h3>{activeRailProduct.title}</h3>
-          <p>by {activeRailProduct.seller}</p>
+          <p className="explore-campus-product-rating">
+            <FiStar aria-hidden="true" />
+            <strong>{activeRailProduct.rating}</strong> ({activeRailProduct.reviews} reviews) <i /> {activeRailProduct.sold} sold
+          </p>
         </div>
-        <strong>{activeRailProduct.price}</strong>
+        <p><small>Asking price</small><strong>{activeRailProduct.price}</strong></p>
       </div>
-
-      <p className="explore-campus-product-rating">
-        <FiStar aria-hidden="true" />
-        {activeRailProduct.rating} ({activeRailProduct.reviews} reviews) · {activeRailProduct.sold} sold
-      </p>
 
       <p className="explore-campus-product-description">{activeRailProduct.description}</p>
 
@@ -136,7 +136,9 @@ function ExploreProductRail({
       ) : null}
       {actionStatus ? <p className="explore-campus-product-action-status" role="status">{actionStatus}</p> : null}
 
-      <div className="explore-campus-product-switcher">
+      <p className="explore-campus-product-trust"><FiShield aria-hidden="true" /><span><strong>Trade with campus confidence</strong><small>Use Zumbarl offers and approved handoff points.</small></span></p>
+
+      <div className="explore-campus-product-switcher" role="tablist" aria-label="Product information">
         <button type="button" className={activeRailProductTab === 'details' ? 'is-active' : ''} onClick={() => onSetTab('details')}>
           Details
         </button>

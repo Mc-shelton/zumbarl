@@ -9,7 +9,7 @@ import TeamTimelineRail from './TeamTimelineRail'
 
 function TeamProjectRail({ activeTab, activityData, messageParticipants, onInviteMember, reviews, timeline }) {
   if (activeTab === 'Team') {
-    return <TeamMembersRail />
+    return <TeamMembersRail activityData={activityData} />
   }
 
   if (activeTab === 'Timeline') {
@@ -36,7 +36,7 @@ function TeamProjectRail({ activeTab, activityData, messageParticipants, onInvit
     return <TeamMessagesRail participants={messageParticipants} />
   }
 
-  return <TeamDefaultRail onInviteMember={onInviteMember} />
+  return <TeamDefaultRail activityData={activityData} onInviteMember={onInviteMember} />
 }
 
 export default TeamProjectRail

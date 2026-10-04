@@ -6,11 +6,6 @@ import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 import { readMyMarketplaceInventory } from '../../opportunities/services/marketplaceInteractionService'
 import { readKnowledgeHub } from '../../learn/services/learnService'
 
-const FALLBACK_MEDIA = {
-  personal: '/assets/index/business_page_images/optimized/justin-buisson-vIluu0IH6Ps-unsplash.webp',
-  product: '/assets/index/business_page_images/optimized/sable-flow-T74mVg__F_k-unsplash.webp',
-}
-
 function ExploreStoryComposer({
   allowProductStories = true,
   fixedKnowledgeSpace = null,
@@ -48,6 +43,8 @@ function ExploreStoryComposer({
 
   useEffect(() => {
     if (!isOpen) return
+    // Opening the reusable dialog starts a fresh story session.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setStoryKind('personal'); setTitle(''); setCaption(''); setMediaFile(null); setSelectedProductId(''); setProductQuery(''); setVideoDuration(0); setTrimStart(0); setTrimEnd(0); setKnowledgeSpaceId(fixedKnowledgeSpace?.id || ''); setError('')
   }, [fixedKnowledgeSpace?.id, isOpen])
 
@@ -59,7 +56,12 @@ function ExploreStoryComposer({
   }, [fixedKnowledgeSpace, isOpen])
 
   useEffect(() => {
-    if (!mediaFile) { setMediaPreviewUrl(''); return undefined }
+    if (!mediaFile) {
+      // Keep the preview paired with the effect-managed object URL lifecycle.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMediaPreviewUrl('')
+      return undefined
+    }
     const url = URL.createObjectURL(mediaFile)
     setMediaPreviewUrl(url)
     return () => URL.revokeObjectURL(url)
@@ -68,6 +70,8 @@ function ExploreStoryComposer({
   useEffect(() => {
     if (!isOpen || storyKind !== 'product') return
     if (productsOverride) return
+    // This flag belongs to the inventory request started by this effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsLoadingProducts(true)
     readMyMarketplaceInventory()
       .then((response) => setProducts((response?.listings || []).filter((item) => ['ACTIVE', 'PUBLISHED'].includes(String(item.status).toUpperCase()))))
@@ -87,10 +91,11 @@ function ExploreStoryComposer({
         ? await uploadZumbarlFile(mediaFile, { scope: 'connect-story', metadata: { storyKind } })
         : null
       const productImages = (selectedProduct?.images || selectedProduct?.gallery || []).map(normalizeZumbarlFileUrl).filter(Boolean)
-      const media = isTextStory ? undefined : normalizeZumbarlFileUrl(upload?.url || upload?.previewUrl) || productImages[0] || FALLBACK_MEDIA[storyKind]
+      const media = isTextStory ? undefined : normalizeZumbarlFileUrl(upload?.url || upload?.previewUrl) || productImages[0]
+      if (!isTextStory && !media) throw new Error('Choose a photo or video before publishing this story.')
       const mediaType = isTextStory ? 'text' : mediaFile?.type?.startsWith('video/') ? 'video' : 'image'
-      const storyTitle = title.trim() || (isTextStory ? caption.trim().slice(0, 60) : selectedProduct?.title) || 'New story'
-      const storyCaption = caption.trim() || (isTextStory ? title.trim() : storyKind === 'product' ? selectedProduct?.description || 'See product details.' : 'Shared a new story.')
+      const storyTitle = title.trim() || (isTextStory ? caption.trim().slice(0, 60) : selectedProduct?.title) || mediaFile?.name || ''
+      const storyCaption = caption.trim() || (isTextStory ? title.trim() : storyKind === 'product' ? selectedProduct?.description || '' : '')
       const product = storyKind === 'product'
         ? {
           id: selectedProduct.id,
@@ -112,7 +117,7 @@ function ExploreStoryComposer({
       await onPublish({
         type: mediaType,
         media,
-        poster: mediaType === 'video' ? FALLBACK_MEDIA[storyKind] : undefined,
+        poster: undefined,
         storyKind,
         title: storyTitle,
         caption: storyCaption,
@@ -143,13 +148,13 @@ function ExploreStoryComposer({
 
         <fieldset className="explore-story-kind explore-story-kind-tabs">
           <legend>Story type</legend>
-          <button type="button" className={storyKind === 'personal' ? 'is-active' : ''} onClick={() => setStoryKind('personal')}>
+          <button type="button" className={`is-personal${storyKind === 'personal' ? ' is-active' : ''}`} onClick={() => setStoryKind('personal')}>
             <FiImage aria-hidden="true" /><span><strong>Your story</strong><small>Photo or video</small></span>
           </button>
-          <button type="button" className={storyKind === 'text' ? 'is-active' : ''} onClick={() => { setStoryKind('text'); setMediaFile(null); setSelectedProductId('') }}>
+          <button type="button" className={`is-text${storyKind === 'text' ? ' is-active' : ''}`} onClick={() => { setStoryKind('text'); setMediaFile(null); setSelectedProductId('') }}>
             <FiType aria-hidden="true" /><span><strong>Words</strong><small>Share a text story</small></span>
           </button>
-          {allowProductStories ? <button type="button" className={storyKind === 'product' ? 'is-active' : ''} onClick={() => setStoryKind('product')}>
+          {allowProductStories ? <button type="button" className={`is-product${storyKind === 'product' ? ' is-active' : ''}`} onClick={() => setStoryKind('product')}>
             <FiShoppingBag aria-hidden="true" /><span><strong>Product story</strong><small>Live marketplace listing</small></span>
           </button> : null}
         </fieldset>

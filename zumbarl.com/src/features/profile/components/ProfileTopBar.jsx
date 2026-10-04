@@ -1,4 +1,4 @@
-import { FiChevronDown, FiPlusCircle } from 'react-icons/fi'
+import { FiArrowRight, FiPlusCircle } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import CampusTopActions from '../../../components/layout/CampusTopActions'
 import { Breadcrumb } from '../../../components/ui'
@@ -13,13 +13,17 @@ function ProfileTopBar({ activeTab }) {
           { label: activeTab },
         ]}
       />
+      <div className="campus-profile-mobile-title">
+        <span>My profile</span>
+        <strong>{activeTab}</strong>
+      </div>
       <CampusTopActions
         className="campus-profile-top-actions"
         primaryAction={(
           <Link to="/campus/opportunities" className="campus-profile-find-btn">
             <FiPlusCircle aria-hidden="true" />
             Find Opportunities
-            <FiChevronDown aria-hidden="true" />
+            <FiArrowRight aria-hidden="true" />
           </Link>
         )}
         userButtonClassName="campus-profile-user-btn"

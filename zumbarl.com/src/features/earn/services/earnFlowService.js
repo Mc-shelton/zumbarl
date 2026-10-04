@@ -1,17 +1,11 @@
 import {
-  createAwardedBid,
-  createAwardedProject,
-  createBid,
-  createEvidence,
   toStudentBidCard,
   toStudentInterviewCard,
   toStudentInviteCard,
   toStudentProjectCard,
-  toWorkspaceProject,
 } from './earnFlowMappers'
-import { createEarnFlowSyncPayload, loadEarnFlowState, saveEarnFlowState } from './earnFlowRepository'
-import { createPayoutReadinessRecord, resolveProjectPayment } from './earnPaymentService'
-import { applyReviewToEvidence, createProjectEndorsement, createProjectReview, getReviewedProjectState } from './earnReviewMappers'
+import { getDefaultEarnFlowState } from './earnFlowRepository'
+import { resolveProjectPayment } from './earnPaymentService'
 import { resolveEarnTrustSnapshot } from './earnTrustService'
 import { sendZumbarlApiRequest } from '../../../lib/sendZumbarlApiRequest'
 import { recordRecommendationImpressions, withRecommendationEvent } from '../../recommendations/services/recommendationEventService'
@@ -19,8 +13,9 @@ import { recordRecommendationImpressions, withRecommendationEvent } from '../../
 const listeners = new Set()
 const SEEN_INVITES_KEY = 'zumbarl.earnFlow.seenInvites'
 
-let currentState = loadEarnFlowState()
+let currentState = getDefaultEarnFlowState()
 let backendHydrationPromise = null
+let opportunityHydrationGeneration = 0
 
 function readSeenInviteIds() {
   if (typeof window === 'undefined') return new Set()
@@ -47,7 +42,6 @@ function applySeenState(invites) {
 
 function setEarnFlowState(updater) {
   currentState = updater(currentState)
-  saveEarnFlowState(currentState)
   listeners.forEach((listener) => listener())
   return currentState
 }
@@ -65,40 +59,65 @@ function readEnvelopeData(payload) {
   return Array.isArray(payload?.data) ? payload.data : []
 }
 
-export async function hydrateEarnFlowFromBackend() {
+export async function hydrateEarnFlowFromBackend(opportunityIntentId) {
   if (backendHydrationPromise) {
     return backendHydrationPromise
   }
 
+  const opportunityGeneration = ++opportunityHydrationGeneration
+  const opportunityQuery = opportunityIntentId ? `?intent=${encodeURIComponent(opportunityIntentId)}` : ''
+  setEarnFlowState((state) => ({ ...state, error: '', isLoading: true }))
   backendHydrationPromise = Promise.all([
-    sendZumbarlApiRequest('/earn/opportunities').catch(() => null),
-    sendZumbarlApiRequest('/earn/bids').catch(() => null),
-    sendZumbarlApiRequest('/earn/projects').catch(() => null),
-    sendZumbarlApiRequest('/earn/invites').catch(() => null),
-    sendZumbarlApiRequest('/earn/interviews').catch(() => null),
+    sendZumbarlApiRequest(`/earn/opportunities${opportunityQuery}`),
+    sendZumbarlApiRequest('/earn/bids'),
+    sendZumbarlApiRequest('/earn/projects'),
+    sendZumbarlApiRequest('/earn/invites'),
+    sendZumbarlApiRequest('/earn/interviews'),
   ]).then(([opportunitiesPayload, bidsPayload, projectsPayload, invitesPayload, interviewsPayload]) => {
-    recordRecommendationImpressions('opportunities', 'opportunity', readEnvelopeData(opportunitiesPayload))
+    if (opportunitiesPayload && opportunityGeneration === opportunityHydrationGeneration) {
+      recordRecommendationImpressions('opportunities', 'opportunity', readEnvelopeData(opportunitiesPayload))
+    }
     setEarnFlowState((state) => ({
       ...state,
-      opportunities: opportunitiesPayload ? readEnvelopeData(opportunitiesPayload) : state.opportunities,
+      opportunities: opportunitiesPayload && opportunityGeneration === opportunityHydrationGeneration
+        ? readEnvelopeData(opportunitiesPayload)
+        : state.opportunities,
       bids: bidsPayload ? readEnvelopeData(bidsPayload).map(toStudentBidCard) : state.bids,
       projects: projectsPayload ? readEnvelopeData(projectsPayload).map(toStudentProjectCard) : state.projects,
       invites: invitesPayload ? applySeenState(readEnvelopeData(invitesPayload).map(toStudentInviteCard)) : state.invites,
       interviews: interviewsPayload ? readEnvelopeData(interviewsPayload).map(toStudentInterviewCard) : state.interviews,
+      error: '',
+      isLoading: false,
     }))
 
     return currentState
   }).catch((error) => {
     backendHydrationPromise = null
+    setEarnFlowState((state) => ({
+      ...state,
+      error: error instanceof Error ? error.message : 'Could not load opportunities.',
+      isLoading: false,
+    }))
     throw error
   })
 
   return backendHydrationPromise
 }
 
-export function refreshEarnFlowFromBackend() {
+export async function refreshEarnOpportunities(intentId) {
+  const opportunityGeneration = ++opportunityHydrationGeneration
+  const query = intentId ? `?intent=${encodeURIComponent(intentId)}` : ''
+  const opportunitiesPayload = await sendZumbarlApiRequest(`/earn/opportunities${query}`)
+  const opportunities = readEnvelopeData(opportunitiesPayload)
+
+  if (opportunityGeneration !== opportunityHydrationGeneration) return currentState
+  recordRecommendationImpressions('opportunities', 'opportunity', opportunities)
+  return setEarnFlowState((state) => ({ ...state, opportunities }))
+}
+
+export function refreshEarnFlowFromBackend(opportunityIntentId) {
   backendHydrationPromise = null
-  return hydrateEarnFlowFromBackend()
+  return hydrateEarnFlowFromBackend(opportunityIntentId)
 }
 
 export async function hydrateEarnOpportunityById(opportunityId) {
@@ -199,14 +218,18 @@ export async function submitOpportunityBid({ gig, intent, proposal }) {
       questionAnswers: proposal.questionAnswers || [],
     }),
   }), { surface: 'opportunities', entityType: 'opportunity', entityId: opportunityId, eventType: 'apply' })
-  const bid = {
-    ...createBid({ gig, intent, proposal }),
+  const bid = toStudentBidCard({
     ...backendBid,
-    id: backendBid.id,
-    source: 'database',
-    status: 'Submitted',
-    stage: 'Proposal submitted',
-  }
+    intentId: backendBid.intentId || intent.id,
+    opportunity: backendBid.opportunity || {
+      id: opportunityId,
+      budget: gig.budget,
+      category: gig.domain,
+      company: gig.company,
+      image: gig.image,
+      title: gig.title,
+    },
+  })
   setEarnFlowState((state) => ({
     ...state,
     bids: [
@@ -217,103 +240,8 @@ export async function submitOpportunityBid({ gig, intent, proposal }) {
   return bid
 }
 
-export function submitProjectWork({ projectId, project }) {
-  const evidence = createEvidence({ projectId, project })
-  setEarnFlowState((state) => ({
-    ...state,
-    portfolioEvidence: [
-      evidence,
-      ...state.portfolioEvidence.filter((item) => item.id !== evidence.id),
-    ],
-    projects: state.projects.map((item) => (
-      item.id === projectId
-        ? { ...item, status: 'Submitted', statusTone: 'is-awaiting', progress: '100%' }
-        : item
-    )),
-  }))
-  return evidence
-}
-
-export function reviewProjectSubmission({ decision, projectId, project, review = {} }) {
-  const projectReview = createProjectReview({ decision, projectId, project, review })
-  const nextProjectState = getReviewedProjectState(decision)
-  const endorsement = decision === 'approved'
-    ? createProjectEndorsement({ projectId, project, review: { ...review, ...projectReview } })
-    : null
-  const payment = decision === 'approved'
-    ? createPayoutReadinessRecord({ projectId, project, review: projectReview })
-    : null
-
-  setEarnFlowState((state) => {
-    const existingEvidence = state.portfolioEvidence.find((item) => item.projectId === projectId)
-    const reviewedEvidence = applyReviewToEvidence({
-      decision,
-      evidence: existingEvidence || createEvidence({ projectId, project }),
-      review: projectReview,
-    })
-
-    return {
-      ...state,
-      endorsements: endorsement
-        ? [endorsement, ...state.endorsements.filter((item) => item.id !== endorsement.id)]
-        : state.endorsements,
-      payments: payment
-        ? [payment, ...state.payments.filter((item) => item.id !== payment.id)]
-        : state.payments,
-      portfolioEvidence: [
-        reviewedEvidence,
-        ...state.portfolioEvidence.filter((item) => item.id !== reviewedEvidence.id),
-      ],
-      projectReviews: [
-        projectReview,
-        ...state.projectReviews.filter((item) => item.projectId !== projectId),
-      ],
-      projects: state.projects.map((item) => (
-        item.id === projectId
-          ? { ...item, progress: decision === 'approved' ? '100%' : '80%', status: nextProjectState.project, statusTone: nextProjectState.statusTone }
-          : item
-      )),
-    }
-  })
-
-  return { endorsement, payment, review: projectReview }
-}
-
-export function awardBusinessOpportunity({ applicant, opportunity }) {
-  const project = createAwardedProject({ applicant, opportunity })
-  const bid = createAwardedBid({ applicant, opportunity, project })
-
-  setEarnFlowState((state) => ({
-    ...state,
-    bids: [
-      bid,
-      ...state.bids.filter((item) => item.id !== bid.id),
-    ],
-    projects: [
-      project,
-      ...state.projects.filter((item) => item.id !== project.id),
-    ],
-  }))
-
-  return { bid, project }
-}
-
-export function resolveEarnWorkspaceProject(projects, projectId) {
-  const project = projects.find((item) => item.id === projectId)
-
-  if (!project) {
-    return null
-  }
-
-  return toWorkspaceProject(project)
-}
-
 export function resolveProjectReview(projectReviews, projectId) {
   return projectReviews.find((item) => item.projectId === projectId) || null
 }
 
 export { resolveEarnTrustSnapshot, resolveProjectPayment }
-
-export function createEarnFlowPersistencePayload() {
-  return createEarnFlowSyncPayload(currentState)
-}

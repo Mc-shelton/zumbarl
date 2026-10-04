@@ -1,16 +1,46 @@
-# React + Vite
+# Zumbarl web application
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React/Vite client for Zumbarl's student, business, Earn, Learn, Connect,
+marketplace, project, finance, and wellbeing workflows. Runtime records come
+from the API; seed fixtures are development/test-only.
 
-Currently, two official plugins are available:
+## Local setup
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Requirements: Node.js 20+, the backend dependencies from
+`../zumbarl_backend/docker-compose.yml`, and a running backend on port 4100.
 
-## React Compiler
+```bash
+cp .env.example .env.local
+npm ci
+npm run dev -- --host 0.0.0.0 --port 5174
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Vite serves HTTPS locally and proxies `/api` and `/files` to the backend. The
+default same-origin API setting avoids mixed-content and CORS issues.
 
-## Expanding the ESLint configuration
+## Environment
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+- `VITE_ZUMBARL_API_URL`: API prefix or absolute API URL. Prefer `/api/v1`
+  behind a production reverse proxy.
+- `VITE_ZUMBARL_API_TIMEOUT_MS`: ordinary API timeout; defaults to 30 seconds.
+
+Do not put secrets in `VITE_*` variables: Vite embeds them in browser assets.
+
+## Verification
+
+```bash
+npm run lint
+npm run build
+npm run e2e
+```
+
+The browser suite expects the frontend at `https://127.0.0.1:5174` and the API
+at `http://127.0.0.1:4100`. `npm run e2e:demo` explicitly refreshes the opt-in
+development fixtures before running the core journey.
+
+## Production
+
+Build with `npm ci && npm run build`, serve `dist/` behind HTTPS, route `/api`
+and `/files` to the backend, and use SPA fallback to `index.html`. Run the
+backend's `release:prepare` and `go-live:verify` commands in the deployment
+environment before sending traffic.

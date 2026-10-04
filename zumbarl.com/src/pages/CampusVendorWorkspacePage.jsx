@@ -110,6 +110,13 @@ function CampusVendorWorkspacePage() {
     finally { setFinanceLoading(false) }
   }, [vendorSlug])
 
+  // Finance is also directly linkable through ?tab=finance.
+  useEffect(() => {
+    // Loading the selected finance workspace is the external synchronization performed here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (activeTab === 'finance') loadFinance()
+  }, [activeTab, loadFinance])
+
   const posts = useMemo(() => (workspace?.posts || []).filter((post) => post.type !== 'promotion' && !post.isPromoted && !post.promotion), [workspace?.posts])
   const shop = workspace?.shop
   const vendorId = shop?.id || ''
@@ -363,7 +370,7 @@ function CampusVendorWorkspacePage() {
         </header>
 
         <nav className="vendor-workspace-tabs zumbarl-segmented-tabs" aria-label="Vendor tools">
-          {TABS.filter((tab) => tab.id !== 'finance' || (canManageVendor && shop?.handlesFinances !== false)).map(({ id, label, Icon }) => <button className={activeTab === id ? 'is-active' : ''} key={id} onClick={() => { setActiveTab(id); if (id === 'finance') loadFinance() }} type="button"><Icon /> {label}</button>)}
+          {TABS.filter((tab) => tab.id !== 'finance' || (canManageVendor && shop?.handlesFinances !== false)).map(({ id, label, Icon }) => <button className={activeTab === id ? 'is-active' : ''} key={id} onClick={() => setActiveTab(id)} type="button"><Icon /> {label}</button>)}
         </nav>
         {status ? <p className="vendor-workspace-status">{status}</p> : null}
         {workspace && !isApproved ? <p className="vendor-workspace-approval-note" role="status"><FiShield /> <span><strong>Admin review in progress</strong>Your kitchen page is private for now. You can update its profile and team, but menus, posts, promotions, and orders unlock after approval.</span></p> : null}
@@ -459,7 +466,7 @@ function CampusVendorWorkspacePage() {
             updatingOrderId={updatingOrderId}
           />
         </section> : null}
-        {workspace && activeTab === 'finance' && canManageVendor && shop?.handlesFinances !== false ? <section className="vendor-workspace-panel"><PageFinancePanel error={financeError} finance={finance} loading={financeLoading} onRefresh={loadFinance} onWithdraw={async (payload) => { await requestCampusVendorWithdrawal(vendorSlug, payload); await loadFinance(); setFeedback({ type: 'success', text: 'Withdrawal requested and sent to the finance payout queue.' }) }} /></section> : null}
+        {workspace && activeTab === 'finance' && canManageVendor && shop?.handlesFinances !== false ? <section className="vendor-workspace-panel"><PageFinancePanel error={financeError} finance={finance} loading={financeLoading} onRefresh={loadFinance} onSearchRecipients={(query) => searchManagedCampusVendorManagerCandidates(vendorSlug, query)} onWithdraw={async (payload) => { await requestCampusVendorWithdrawal(vendorSlug, payload); await loadFinance(); setFeedback({ type: 'success', text: 'Withdrawal requested and sent to the selected recipient.' }) }} /></section> : null}
         {workspace && activeTab === 'messages' ? <PageInboxPanel pageId={shop.id} pageName={shop.name} pageType="marketplace_shop" /> : null}
         {workspace && activeTab === 'errands' ? <section className="vendor-workspace-panel vendor-workspace-errands">
           <header><div><span>Campus delivery</span><h2>Errands</h2><p>Set one delivery price for this page. Every available errander receives each offer, and the first to accept gets it.</p></div><span className={`vendor-errand-state ${shop.errandsEnabled || shop.freeCampusDelivery ? 'is-on' : 'is-off'}`}>{shop.freeCampusDelivery ? 'Free delivery' : shop.errandsEnabled ? 'Erranders on' : 'Deliveries off'}</span></header>

@@ -1,51 +1,41 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FiArchive, FiArrowRight, FiAward, FiBookOpen, FiBriefcase, FiCheck, FiChevronRight, FiClock, FiLock, FiRefreshCw, FiTarget, FiUsers, FiZap } from 'react-icons/fi'
+import { FiArchive, FiArrowRight, FiBookOpen, FiBriefcase, FiCheck, FiChevronDown, FiChevronRight, FiClock, FiPlus, FiRefreshCw, FiTarget, FiUsers, FiX } from 'react-icons/fi'
 import { Link, useSearchParams } from 'react-router-dom'
 import CampusSidebar from '../components/layout/CampusSidebar'
+import CampusTopActions from '../components/layout/CampusTopActions'
 import Seo from '../components/Seo'
 import LearnKnowledgeHub from '../features/learn/components/LearnKnowledgeHub'
 import CareerCoachPanel from '../features/learn/components/CareerCoachPanel'
+import LearningPathBuilder from '../features/learn/components/LearningPathBuilder'
 import {
   createRoadmap,
-  lockRoadmap,
   readLearnExperience,
   readRoadmapCoachingPlan,
   readRoadmapRecommendations,
   updateRoadmapCoachingFocus,
-  verifyRoadmap,
+  updateRoadmapResourceProgress,
+  updateRoadmapResourceSelection,
 } from '../features/learn/services/learnService'
 import '../styles/campus.css'
 import '../styles/learn.css'
-
-const INTENT_LABELS = {
-  explore: 'Explore this career',
-  'earn-while-learning': 'Earn while learning',
-  'attachment-readiness': 'Prepare for attachment',
-  'internship-readiness': 'Prepare for internship',
-  'job-readiness': 'Prepare for a job',
-}
-
-function scoreLabel(checkpoint) {
-  if (checkpoint.status === 'completed') return 'Completed'
-  if (checkpoint.status === 'active') return 'In progress'
-  return 'Locked'
-}
 
 function LearnPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const [experience, setExperience] = useState({ ladders: [], baseline: null, roadmaps: [] })
   const [selectedLadderId, setSelectedLadderId] = useState('')
-  const [activeCheckpointId, setActiveCheckpointId] = useState('')
-  const [intent, setIntent] = useState('earn-while-learning')
-  const [recommendations, setRecommendations] = useState([])
+  const [recommendationFeed, setRecommendationFeed] = useState({ enrollmentId: '', items: [] })
   const [coachingPlan, setCoachingPlan] = useState(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [showPathBuilder, setShowPathBuilder] = useState(false)
+  const [showPathSwitcher, setShowPathSwitcher] = useState(false)
   const activeArea = searchParams.get('view') === 'path' ? 'path' : 'knowledge'
+  const requestedRoadmapId = searchParams.get('roadmap') || ''
   const [knowledgeData, setKnowledgeData] = useState({ resources: [], libraries: [], groups: [], summary: {} })
-  const workspaceRef = useRef(null)
+  const resourceSectionRef = useRef(null)
+  const pathSwitcherRef = useRef(null)
 
   const selectArea = (area) => {
     const nextParams = new URLSearchParams(searchParams)
@@ -60,12 +50,19 @@ function LearnPage() {
       .then((next) => {
         if (!active) return
         setExperience(next)
-        setSelectedLadderId(next.roadmaps[0]?.roadmapId || next.ladders[0]?.id || '')
+        const requestedLadder = next.ladders.find((ladder) => (
+          ladder.id === requestedRoadmapId || ladder.slug === requestedRoadmapId
+        ))
+        const requestedEnrollment = requestedLadder
+          ? next.roadmaps.find((roadmap) => roadmap.roadmapId === requestedLadder.id)
+          : null
+        setSelectedLadderId(requestedLadder?.id || next.roadmaps[0]?.roadmapId || next.ladders[0]?.id || '')
+        if (requestedLadder && !requestedEnrollment) setShowPathBuilder(true)
       })
       .catch((requestError) => { if (active) setError(requestError.message) })
       .finally(() => { if (active) setLoading(false) })
     return () => { active = false }
-  }, [])
+  }, [requestedRoadmapId])
 
   const selectedLadder = useMemo(
     () => experience.ladders.find((ladder) => ladder.id === selectedLadderId) || experience.ladders[0] || null,
@@ -75,23 +72,68 @@ function LearnPage() {
     () => experience.roadmaps.find((roadmap) => roadmap.roadmapId === selectedLadder?.id) || null,
     [experience.roadmaps, selectedLadder?.id],
   )
-  const checkpoints = enrollment?.checkpoints || selectedLadder?.checkpoints || []
-  const activeCheckpoint = checkpoints.find((checkpoint) => checkpoint.id === (activeCheckpointId || searchParams.get('checkpoint')))
-    || checkpoints.find((checkpoint) => checkpoint.status === 'active')
-    || checkpoints[0]
-    || null
+  const joinedPaths = useMemo(
+    () => experience.roadmaps.map((roadmap) => ({
+      roadmap,
+      ladder: experience.ladders.find((ladder) => ladder.id === roadmap.roadmapId) || roadmap.ladder,
+    })).filter((item) => item.ladder),
+    [experience.ladders, experience.roadmaps],
+  )
+  const enrolledRoadmapIds = useMemo(
+    () => new Set(experience.roadmaps.map((roadmap) => roadmap.roadmapId)),
+    [experience.roadmaps],
+  )
+  const pathResources = useMemo(() => {
+    const resources = new Map()
+    for (const checkpoint of enrollment?.checkpoints || []) {
+      for (const resource of checkpoint.resources || []) {
+        if (!resources.has(resource.id)) resources.set(resource.id, { ...resource, checkpointId: checkpoint.id })
+      }
+    }
+    return [...resources.values()].sort((left, right) => {
+      if (left.status === 'COMPLETED' && right.status !== 'COMPLETED') return 1
+      if (right.status === 'COMPLETED' && left.status !== 'COMPLETED') return -1
+      return (right.matchScore || 0) - (left.matchScore || 0)
+    })
+  }, [enrollment])
+  const selectedPathResources = pathResources.filter((resource) => resource.selected)
+  const suggestedPathResources = pathResources.filter((resource) => !resource.selected)
+  const recommendations = recommendationFeed.enrollmentId === enrollment?.id ? recommendationFeed.items : []
 
   useEffect(() => {
-    if (!enrollment?.id) return
-    readRoadmapRecommendations(enrollment.id).then(setRecommendations).catch(() => setRecommendations([]))
-    readRoadmapCoachingPlan(enrollment.id).then(setCoachingPlan).catch(() => setCoachingPlan(null))
-  }, [enrollment?.id, enrollment?.updatedAt])
+    if (!showPathSwitcher) return undefined
+    const closeSwitcher = (event) => {
+      if (!pathSwitcherRef.current?.contains(event.target)) setShowPathSwitcher(false)
+    }
+    document.addEventListener('mousedown', closeSwitcher)
+    return () => document.removeEventListener('mousedown', closeSwitcher)
+  }, [showPathSwitcher])
+
+  useEffect(() => {
+    if (activeArea !== 'path' || !enrollment?.id) return
+    let active = true
+    const readRecommendations = () => readRoadmapRecommendations(enrollment.id)
+      .then((items) => { if (active) setRecommendationFeed({ enrollmentId: enrollment.id, items }) })
+      .catch(() => { if (active) setRecommendationFeed({ enrollmentId: enrollment.id, items: [] }) })
+    readRecommendations()
+    readRoadmapCoachingPlan(enrollment.id).then((plan) => { if (active) setCoachingPlan(plan) }).catch(() => { if (active) setCoachingPlan(null) })
+    const intervalId = window.setInterval(readRecommendations, 60_000)
+    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') readRecommendations() }
+    document.addEventListener('visibilitychange', refreshWhenVisible)
+    return () => {
+      active = false
+      window.clearInterval(intervalId)
+      document.removeEventListener('visibilitychange', refreshWhenVisible)
+    }
+  }, [activeArea, enrollment?.id, enrollment?.updatedAt])
 
   const replaceEnrollment = (updated) => {
     setExperience((current) => ({
       ...current,
+      ladders: current.ladders.some((ladder) => ladder.id === updated.ladder.id) ? current.ladders : [updated.ladder, ...current.ladders],
       roadmaps: [updated, ...current.roadmaps.filter((item) => item.id !== updated.id)],
     }))
+    setSelectedLadderId(updated.roadmapId)
   }
 
   const runAction = async (action, successMessage) => {
@@ -110,15 +152,16 @@ function LearnPage() {
     }
   }
 
-  const startPath = async () => {
-    if (!selectedLadder) return
-    const created = await runAction(() => createRoadmap(selectedLadder.id, intent), 'Your path is ready. Start with the first checkpoint.')
-    if (created) replaceEnrollment(created)
+  const joinPath = async (ladderId, selectedIntent) => {
+    const created = await runAction(() => createRoadmap(ladderId, selectedIntent), 'Learning path added. Choose the resources you want in your plan.')
+    if (created) { replaceEnrollment(created); setShowPathBuilder(false) }
+    return created
   }
 
-  const focusPath = async () => {
-    const updated = await runAction(() => lockRoadmap(enrollment.id), 'Opportunity discovery now prioritizes this path.')
-    if (updated) replaceEnrollment(updated)
+  const createStudentPath = async (payload) => {
+    const created = await runAction(() => createRoadmap(payload), 'Your new learning path is ready and reusable by other students.')
+    if (created) { replaceEnrollment(created); setShowPathBuilder(false) }
+    return created
   }
 
   const saveCoachingFocus = async (skillIds, weeklyTarget) => {
@@ -129,15 +172,39 @@ function LearnPage() {
     if (updated) replaceEnrollment(updated)
   }
 
-  const requestVerification = async () => {
-    const result = await runAction(() => verifyRoadmap(enrollment.id), 'Career path verified and added to your profile.')
-    if (result?.roadmap) replaceEnrollment(result.roadmap)
-    if (result && !result.verified) setNotice('Complete every required checkpoint to verify this career path.')
+  const markResourceDone = async (resourceId) => {
+    const updated = await runAction(() => updateRoadmapResourceProgress(enrollment.id, resourceId, 100), 'Resource completed. Your weekly progress is updated.')
+    if (updated) replaceEnrollment(updated)
   }
 
-  const pendingEvidence = enrollment?.evidence?.filter((item) => item.status === 'PENDING').length || 0
-  const allComplete = Boolean(enrollment && enrollment.checkpoints.every((checkpoint) => !checkpoint.required || checkpoint.status === 'completed'))
-  const baselineSkillSlugs = new Set((experience.baseline?.skills || []).map((skill) => skill.slug))
+  const setResourceSelected = async (resource, selected) => {
+    const updated = await runAction(
+      () => updateRoadmapResourceSelection(enrollment.id, resource.id, selected),
+      selected ? `${resource.title} was added to your plan.` : `${resource.title} was removed from your plan.`,
+    )
+    if (updated) replaceEnrollment(updated)
+  }
+
+  const renderResourceCard = (resource) => (
+    <article key={resource.id} className={`${resource.status === 'COMPLETED' ? 'is-complete' : ''}${resource.selected ? ' is-selected' : ' is-suggested'}`}>
+      <Link to={resource.content?.knowledgeResourceId
+        ? `/campus/learn?view=knowledge&resource=${encodeURIComponent(resource.content.knowledgeResourceId)}`
+        : `/campus/learn/${enrollment.id}/checkpoints/${resource.checkpointId}/practice/${resource.id}`}>
+        <span className="learn-resource-icon">{resource.status === 'COMPLETED' ? <FiCheck /> : <FiBookOpen />}</span>
+        <span className="learn-resource-copy"><small>{resource.provider || resource.type || 'Knowledge Hub resource'}</small><strong>{resource.title}</strong><span>{resource.description || 'Open this resource to review what it covers.'}</span></span>
+        {resource.matchScore ? <em>{resource.matchScore}% match</em> : null}
+        <FiArrowRight aria-hidden="true" />
+      </Link>
+      <div className="learn-resource-footer">
+        <span>{resource.status === 'COMPLETED' ? 'Completed' : resource.selected ? 'In your plan' : 'Recommended for this path'}</span>
+        <div>
+          {!resource.selected && <button type="button" disabled={saving} onClick={() => setResourceSelected(resource, true)}><FiPlus />Add to my plan</button>}
+          {resource.selected && ['SELECTED', 'NOT_STARTED'].includes(resource.status) && <button type="button" className="is-remove" disabled={saving} onClick={() => setResourceSelected(resource, false)}><FiX />Remove</button>}
+          {resource.selected && resource.status !== 'COMPLETED' && <button type="button" disabled={saving} onClick={() => markResourceDone(resource.id)}><FiCheck />Mark complete</button>}
+        </div>
+      </div>
+    </article>
+  )
 
   if (loading) {
     return (
@@ -153,157 +220,89 @@ function LearnPage() {
           <CampusSidebar activeItemId="learn" />
 
           <section className="campus-main learn-main">
-            <header className="learn-page-intro">
-              <div className="learn-breadcrumb"><span>Campus</span><FiChevronRight aria-hidden="true" /><strong>Learn &amp; Grow</strong></div>
-              <div className="learn-page-intro-copy">
-                <div>
-                  <h1>Learn &amp; Grow</h1>
-                  <p>Build career-ready skills, find study material, and learn with your campus community.</p>
+            <div className="learn-sticky-head">
+              <header className="learn-mobile-appbar">
+                <div className="learn-mobile-brand" aria-hidden="true">
+                  <span><img src="/assets/index/bee_nobg.png" alt="" /></span>
+                  <div><small>Learning</small><strong>Learn &amp; Grow</strong></div>
                 </div>
-              </div>
-              <nav className="learn-area-switcher" aria-label="Learn and Grow areas">
-                <button type="button" className={activeArea === 'knowledge' ? 'is-active' : ''} onClick={() => selectArea('knowledge')}>
-                  <FiBookOpen aria-hidden="true" /><span><strong>Knowledge hub</strong><small>Resources and groups</small></span>
-                </button>
-                <button type="button" className={activeArea === 'path' ? 'is-active' : ''} onClick={() => selectArea('path')}>
-                  <FiTarget aria-hidden="true" /><span><strong>My learning path</strong><small>Career readiness</small></span>
-                </button>
-              </nav>
-            </header>
+                <CampusTopActions className="learn-mobile-actions" userButtonClassName="learn-mobile-user-btn" />
+              </header>
+
+              <header className="learn-page-intro">
+                <div className="learn-breadcrumb"><span>Campus</span><FiChevronRight aria-hidden="true" /><strong>Learn &amp; Grow</strong></div>
+                <div className="learn-page-intro-copy">
+                  <div>
+                    <h1>Learn &amp; Grow</h1>
+                    <p>Build career-ready skills, find study material, and learn with your campus community.</p>
+                  </div>
+                </div>
+                <nav className="learn-area-switcher" aria-label="Learn and Grow areas">
+                  <button type="button" className={activeArea === 'knowledge' ? 'is-active' : ''} onClick={() => selectArea('knowledge')}>
+                    <FiBookOpen aria-hidden="true" /><span><strong>Knowledge hub</strong><small>Resources and groups</small></span>
+                  </button>
+                  <button type="button" className={activeArea === 'path' ? 'is-active' : ''} onClick={() => selectArea('path')}>
+                    <FiTarget aria-hidden="true" /><span><strong>My learning path</strong><small>Career readiness</small></span>
+                  </button>
+                </nav>
+              </header>
+            </div>
 
             {error && <div className="learn-feedback is-error" role="alert">{error}</div>}
             {notice && <div className="learn-feedback" role="status"><FiCheck aria-hidden="true" />{notice}</div>}
 
             {activeArea === 'knowledge' ? <LearnKnowledgeHub initialTab={searchParams.get('tab') || 'resources'} onDataChange={setKnowledgeData} /> : <>
 
-            <section className="learn-hero">
+            <section className="learn-path-picker" aria-label="Career paths">
               <div>
-                <span>My learning path</span>
-                <h1>{enrollment ? selectedLadder?.title : 'Choose where you want your work to take you.'}</h1>
-                <p>{enrollment
-                  ? `${activeCheckpoint?.title || 'Your next checkpoint'} is your next focus. Learn it, practise it, and let your verified Zumbarl work prove it.`
-                  : 'Zumbarl creates a practical path from what you already know to your next attachment, internship, or paid opportunity.'}</p>
-                <div className="learn-hero-actions">
-                  {enrollment ? (
-                    <button type="button" className="learn-primary-btn" onClick={() => workspaceRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
-                      Continue checkpoint <FiArrowRight aria-hidden="true" />
-                    </button>
-                  ) : (
-                    <button type="button" className="learn-primary-btn" disabled={saving || !selectedLadder} onClick={startPath}>
-                      Start this path <FiArrowRight aria-hidden="true" />
-                    </button>
-                  )}
-                  {enrollment && !enrollment.locked && (
-                    <button type="button" className="learn-secondary-btn" disabled={saving} onClick={focusPath}><FiTarget aria-hidden="true" />Focus my opportunities</button>
-                  )}
-                </div>
+                <h2>Your learning paths</h2>
+                <p>{joinedPaths.length ? `${joinedPaths.length} active ${joinedPaths.length === 1 ? 'path' : 'paths'}. Switch without losing progress.` : 'Choose your first path and make it your own.'}</p>
               </div>
-              <div className="learn-progress-summary" aria-label="Path progress">
-                <strong>{Math.round(enrollment?.progressPercent || 0)}%</strong>
-                <span>Path completed</span>
-                <div><i style={{ width: `${enrollment?.progressPercent || 0}%` }} /></div>
-                <small>{enrollment?.locked ? 'Opportunity matching is focused on this path' : `${selectedLadder?.estimatedWeeks || 0} week guided path`}</small>
+              <div className="learn-path-picker-controls">
+                {joinedPaths.length ? <div className="learn-path-switcher" ref={pathSwitcherRef}>
+                  <button type="button" className="learn-path-switcher-trigger" aria-haspopup="menu" aria-expanded={showPathSwitcher} onClick={() => setShowPathSwitcher((current) => !current)}>
+                    <span className="learn-path-switcher-icon"><FiBookOpen /></span>
+                    <span><small>Current path</small><strong>{selectedLadder?.title}</strong></span>
+                    <em>{Math.max(1, joinedPaths.findIndex((item) => item.ladder.id === selectedLadder?.id) + 1)} of {joinedPaths.length}</em>
+                    <FiChevronDown aria-hidden="true" />
+                  </button>
+                  {showPathSwitcher && <div className="learn-path-switcher-menu" role="menu">
+                    <header><strong>Switch learning path</strong><span>{joinedPaths.length} active</span></header>
+                    <div>{joinedPaths.map(({ ladder, roadmap }) => {
+                      const completedPercent = roadmap.resourceProgress?.total ? Math.round((roadmap.resourceProgress.completed / roadmap.resourceProgress.total) * 100) : 0
+                      return <button key={ladder.id} type="button" role="menuitem" className={ladder.id === selectedLadder?.id ? 'is-selected' : ''} onClick={() => { setSelectedLadderId(ladder.id); setShowPathSwitcher(false) }}>
+                        <span className="learn-path-switcher-icon"><FiBookOpen /></span>
+                        <span><strong>{ladder.title}</strong><small>{roadmap.resourceProgress?.completed || 0} of {roadmap.resourceProgress?.total || 0} resources</small><i><b style={{ width: `${completedPercent}%` }} /></i></span>
+                        {ladder.id === selectedLadder?.id ? <FiCheck aria-label="Current path" /> : <em>{completedPercent}%</em>}
+                      </button>
+                    })}</div>
+                  </div>}
+                </div> : <button type="button" className="learn-path-empty-action" onClick={() => setShowPathBuilder(true)}><FiBookOpen /><span><strong>Choose your first path</strong><small>Search the catalogue or create one</small></span><FiArrowRight /></button>}
+                <button type="button" className="learn-add-path" onClick={() => { setShowPathSwitcher(false); setShowPathBuilder(true) }}><FiPlus /><span><strong>{joinedPaths.length ? 'Add path' : 'Create a path'}</strong><small>Search or create</small></span></button>
               </div>
             </section>
 
-            <section className="learn-path-picker" aria-label="Career paths">
-              <div>
-                <h2>Your direction</h2>
-                <p>Switch paths without losing progress.</p>
-              </div>
-              <div className="learn-path-options">
-                {experience.ladders.map((ladder) => (
-                  <button key={ladder.id} type="button" className={ladder.id === selectedLadder?.id ? 'is-selected' : ''} onClick={() => setSelectedLadderId(ladder.id)}>
-                    <strong>{ladder.title}</strong>
-                    <span>{experience.roadmaps.some((roadmap) => roadmap.roadmapId === ladder.id) ? 'In progress' : `${ladder.estimatedWeeks} weeks`}</span>
-                  </button>
-                ))}
-              </div>
-              {!enrollment && selectedLadder && (
-                <label className="learn-intent-select">
-                  <span>What are you preparing for?</span>
-                  <select value={intent} onChange={(event) => setIntent(event.target.value)}>
-                    {(selectedLadder.intents || Object.keys(INTENT_LABELS)).map((value) => <option key={value} value={value}>{INTENT_LABELS[value] || value}</option>)}
-                  </select>
-                </label>
-              )}
-            </section>
+            {enrollment && <section className="learn-resource-progress-card" aria-labelledby="resource-progress-heading">
+              <div><span className="learn-eyebrow">Accountability schedule</span><h2 id="resource-progress-heading">{enrollment.resourceProgress.completed} of {enrollment.resourceProgress.total} resources completed</h2><p>{enrollment.resourceProgress.completedThisWeek} of {enrollment.resourceProgress.weeklyTarget} planned resources completed this week.</p></div>
+              <div className="learn-resource-progress-meter"><strong>{enrollment.resourceProgress.total ? Math.round((enrollment.resourceProgress.completed / enrollment.resourceProgress.total) * 100) : 0}%</strong><i><b style={{ width: `${enrollment.resourceProgress.total ? (enrollment.resourceProgress.completed / enrollment.resourceProgress.total) * 100 : 0}%` }} /></i><small>{enrollment.resourceProgress.remaining} remaining</small></div>
+              <div className="learn-weekly-target"><strong>{Math.min(enrollment.resourceProgress.completedThisWeek, enrollment.resourceProgress.weeklyTarget)}/{enrollment.resourceProgress.weeklyTarget}</strong><span>this week</span></div>
+            </section>}
+
+            {enrollment && <section className="learn-path-resources" ref={resourceSectionRef} aria-labelledby="path-resources-heading">
+              <header className="learn-path-resources-header">
+                <div><span className="learn-eyebrow">Matched to your skills</span><h2 id="path-resources-heading">Recommended for {selectedLadder?.title}</h2><p>Review the matches, then add only the resources you want to complete. Your schedule and progress use your selected resources.</p></div>
+                <span className="learn-resource-refresh-note"><FiClock aria-hidden="true" />Checked weekly</span>
+              </header>
+              {pathResources.length ? <div className="learn-resource-groups">
+                {selectedPathResources.length > 0 && <section><header><div><strong>My selected resources</strong><span>{selectedPathResources.length} in your plan</span></div></header><div className="learn-path-resource-grid">{selectedPathResources.map(renderResourceCard)}</div></section>}
+                {suggestedPathResources.length > 0 && <section><header><div><strong>Recommended resources</strong><span>Select the ones that fit how you want to learn</span></div><em>{suggestedPathResources.length} found</em></header><div className="learn-path-resource-grid">{suggestedPathResources.map(renderResourceCard)}</div></section>}
+              </div> : <div className="learn-resource-empty"><FiBookOpen /><strong>No matching resources yet</strong><p>New matches are checked automatically each week and whenever you change this path’s skills.</p></div>}
+            </section>}
 
             {enrollment && coachingPlan && <CareerCoachPanel key={`${coachingPlan.enrollmentId}:${coachingPlan.focus.selectedSkillIds.join(',')}:${coachingPlan.focus.weeklyTarget}`} plan={coachingPlan} saving={saving} onSave={saveCoachingFocus} />}
 
-            <section className="learn-roadmap-panel" aria-labelledby="path-heading">
-              <header>
-                <div><span className="learn-eyebrow">Your path</span><h2 id="path-heading">{selectedLadder?.title}</h2></div>
-                {enrollment?.locked && <strong><FiLock aria-hidden="true" /> Focused</strong>}
-              </header>
-              <div className="learn-roadmap-tree" style={{ '--roadmap-progress': `${checkpoints.length > 1 ? Math.max(0, checkpoints.findIndex((checkpoint) => checkpoint.id === activeCheckpoint?.id)) / (checkpoints.length - 1) * 100 : 100}%` }}>
-                {checkpoints.map((checkpoint, index) => {
-                  const nodeStatus = checkpoint.status || (index ? 'locked' : 'active')
-                  const isCurrent = checkpoint.id === activeCheckpoint?.id
-                  return <article key={checkpoint.id} className={`learn-roadmap-node is-${nodeStatus} ${isCurrent ? 'is-selected' : ''}`}>
-                    <button type="button" aria-current={checkpoint.id === activeCheckpoint?.id ? 'step' : undefined} onClick={() => setActiveCheckpointId(checkpoint.id)}>
-                      <span className="learn-node-top"><span className="learn-node-index">{nodeStatus === 'completed' ? <FiCheck aria-hidden="true" /> : index + 1}</span><small>{nodeStatus === 'completed' ? 'Completed' : isCurrent ? 'Current' : nodeStatus === 'locked' ? 'Locked' : 'Available'}</small></span>
-                      <span className="learn-node-level">{checkpoint.level}</span>
-                      <strong>{checkpoint.title}</strong>
-                      <em>{enrollment ? `${checkpoint.score}%` : scoreLabel(checkpoint)}</em>
-                    </button>
-                  </article>
-                })}
-              </div>
-            </section>
-
-            {activeCheckpoint && (
-              <section className="learn-workspace" ref={workspaceRef}>
-                <article className="learn-checkpoint-card">
-                  <div className="learn-checkpoint-heading">
-                    <div><span className="learn-eyebrow">Current checkpoint</span><h2>{activeCheckpoint.title}</h2><p>{activeCheckpoint.description}</p></div>
-                    {enrollment && <div className="learn-score"><strong>{activeCheckpoint.score}%</strong><span>readiness</span></div>}
-                  </div>
-
-                  <div className="learn-score-bars">
-                    <div><span>Verified work <strong>{activeCheckpoint.evidenceScore || 0}/{selectedLadder.weights.evidence}</strong></span><i><b style={{ width: `${((activeCheckpoint.evidenceScore || 0) / selectedLadder.weights.evidence) * 100}%` }} /></i></div>
-                    <div><span>Assessment <strong>{activeCheckpoint.testScore || 0}/{selectedLadder.weights.test}</strong></span><i><b style={{ width: `${((activeCheckpoint.testScore || 0) / selectedLadder.weights.test) * 100}%` }} /></i></div>
-                  </div>
-
-                  <h3>What you’ll be able to prove</h3>
-                  <div className="learn-competencies">
-                    {activeCheckpoint.competencies.map((item) => <span key={item.id}><FiCheck aria-hidden="true" />{item.name}</span>)}
-                  </div>
-
-                  <h3>Learn and practise</h3>
-                  <div className="learn-resource-list">
-                    {activeCheckpoint.resources.length ? activeCheckpoint.resources.map((resource) => (
-                      enrollment ? <Link key={resource.id} to={`/campus/learn/${enrollment.id}/checkpoints/${activeCheckpoint.id}/practice/${resource.id}`}>
-                        <FiBookOpen aria-hidden="true" /><span><strong>{resource.title}</strong><small>{resource.description}</small></span><FiArrowRight aria-hidden="true" />
-                      </Link> : <button key={resource.id} type="button" onClick={startPath}>
-                        <FiBookOpen aria-hidden="true" /><span><strong>{resource.title}</strong><small>Start this path to open the lesson.</small></span><FiArrowRight aria-hidden="true" />
-                      </button>
-                    )) : <p>No resources have been added to this checkpoint yet.</p>}
-                  </div>
-                </article>
-
-                <aside className="learn-next-card">
-                  <span className="learn-eyebrow">Do next</span>
-                  <h2>Your real work builds this score</h2>
-                  <p>Finish matched work on Zumbarl. Once it is approved or verified, we connect its skills to this checkpoint and award points automatically.</p>
-                  {!enrollment ? (
-                    <button type="button" className="learn-primary-btn" onClick={startPath}>Start path <FiArrowRight aria-hidden="true" /></button>
-                  ) : (
-                    <>
-                      <div className="learn-auto-evidence">
-                        <FiZap aria-hidden="true" />
-                        <div><strong>Automatic evidence is on</strong><span>Approved opportunities, verified campaign proof, portfolio work and endorsements count when their skills match.</span></div>
-                      </div>
-                      {activeCheckpoint.assessment.length > 0 && <Link className="learn-secondary-btn" to={`/campus/learn/${enrollment.id}/checkpoints/${activeCheckpoint.id}/assessment`}><FiBookOpen aria-hidden="true" />Take checkpoint assessment</Link>}
-                      {allComplete && !enrollment.verified && <button type="button" className="learn-secondary-btn" onClick={requestVerification}><FiAward aria-hidden="true" />Verify career path</button>}
-                    </>
-                  )}
-                </aside>
-              </section>
-            )}
-
-            <section className="learn-matches">
-              <div className="learn-section-heading"><div><span className="learn-eyebrow">Practise on Zumbarl</span><h2>Work that builds this checkpoint</h2></div><p>Matches explain which competency they help you prove.</p></div>
+            {enrollment && <section className="learn-matches">
+              <div className="learn-section-heading"><div><span className="learn-eyebrow">Practise on Zumbarl</span><h2>Work that builds your skills</h2></div><p>Live opportunities are matched automatically from the skills on this path.</p></div>
               <div className="learn-match-grid">
                 {recommendations.length ? recommendations.map((item) => (
                   <article key={item.id}>
@@ -318,11 +317,13 @@ function LearnPage() {
                       <Link to={`/campus/opportunities?opportunity=${encodeURIComponent(item.id)}&view=activity`}>View opportunity <FiArrowRight aria-hidden="true" /></Link>
                     )}
                   </article>
-                )) : <div className="learn-empty-match"><FiBriefcase aria-hidden="true" /><strong>No live matches yet</strong><span>We’ll show opportunities here when their required skills connect to this checkpoint.</span></div>}
+                )) : <div className="learn-empty-match"><FiBriefcase aria-hidden="true" /><strong>No live matches yet</strong><span>New opportunities will appear here automatically when they connect to your path.</span></div>}
               </div>
-            </section>
+            </section>}
             </>}
           </section>
+
+          {showPathBuilder && <LearningPathBuilder initialRoadmapId={requestedRoadmapId} enrolledRoadmapIds={enrolledRoadmapIds} saving={saving} actionError={error} onClose={() => setShowPathBuilder(false)} onJoin={joinPath} onCreate={createStudentPath} />}
 
           <aside className="campus-rail learn-rail">
             {activeArea === 'knowledge' ? <>
@@ -356,17 +357,18 @@ function LearnPage() {
             <section className="learn-rail-card">
               <h2>Skills on this path</h2>
               <div className="learn-skill-list">
-                {(selectedLadder?.checkpoints || []).flatMap((checkpoint) => checkpoint.competencies).map((competency) => (
-                  <span key={competency.id} className={competency.skill && baselineSkillSlugs.has(competency.skill.slug) ? 'is-known' : ''}>
-                    {competency.skill && baselineSkillSlugs.has(competency.skill.slug) && <FiCheck aria-hidden="true" />}{competency.name}
+                {(enrollment?.skills || []).map((skill) => (
+                  <span key={skill.id} className={skill.verified ? 'is-known' : ''}>
+                    {skill.verified && <FiCheck aria-hidden="true" />}{skill.name}{skill.verified && <small>Verified by work</small>}
                   </span>
                 ))}
+                {enrollment && !enrollment.skills?.length && <p className="learn-rail-empty-copy">Add at least one skill to start matching resources and opportunities.</p>}
               </div>
             </section>
             {enrollment && (
               <section className="learn-rail-card learn-review-card">
-                <FiClock aria-hidden="true" />
-                <div><h2>{pendingEvidence} awaiting review</h2><p>Only verified evidence contributes to your readiness.</p></div>
+                <FiCheck aria-hidden="true" />
+                <div><h2>Evidence stays automatic</h2><p>Approved gigs and verified work confirm matching skills without holding up your learning path.</p></div>
               </section>
             )}
             </>}

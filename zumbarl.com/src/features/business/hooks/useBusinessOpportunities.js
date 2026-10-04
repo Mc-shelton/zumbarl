@@ -16,6 +16,7 @@ import {
   awardBackendApplicant,
   counterOfferBackendApplicant,
   fundBackendBusinessOpportunity,
+  waitForBackendMpesaPayment,
   setBackendOpportunityApplicationsClosed,
   listBackendOpportunitySubmissions,
   reviewBackendDeliverable,
@@ -134,7 +135,7 @@ function mapFlowOpportunity(opportunity, invitedCount = 0) {
     skillOverflow: Math.max(0, skills.length - 3),
     status,
     statusLabel: projectEnded ? 'Ended' : status,
-    time: opportunity.createdAt === 'Seed brief' ? 'Seed brief' : 'Just now',
+    time: getRelativeTimeLabel(opportunity.createdAt),
     title: opportunity.title,
     tone: projectEnded ? 'orange' : (STATUS_TONES[status] || 'purple'),
     thumbnail: opportunity.thumbnail,
@@ -219,18 +220,9 @@ export function useBusinessOpportunities() {
   const [deletingOpportunityId, setDeletingOpportunityId] = useState(null)
   const [deleteOpportunityError, setDeleteOpportunityError] = useState('')
 
-  const invitesByOpportunity = useMemo(() => (
-    (businessFlow.opportunityInvites || []).reduce((groups, invite) => ({
-      ...groups,
-      [invite.opportunityId]: [...(groups[invite.opportunityId] || []), invite],
-    }), {})
-  ), [businessFlow.opportunityInvites])
-
   const opportunities = useMemo(() => (
-    businessFlow.opportunities.map((item) => (
-      mapFlowOpportunity(item, invitesByOpportunity[item.id]?.length || 0)
-    ))
-  ), [businessFlow.opportunities, invitesByOpportunity])
+    businessFlow.opportunities.map((item) => mapFlowOpportunity(item))
+  ), [businessFlow.opportunities])
 
   const inviteOpportunity = useMemo(() => (
     opportunities.find((opportunity) => opportunity.id === inviteOpportunityId) || null
@@ -259,10 +251,6 @@ export function useBusinessOpportunities() {
     ? submissionLoadErrors[reviewOpportunityBackendId] || ''
     : ''
 
-  const existingInviteIds = useMemo(() => (
-    new Set((invitesByOpportunity[inviteOpportunityId] || []).map((invite) => invite.bidderId))
-  ), [inviteOpportunityId, invitesByOpportunity])
-
   const inviteOpportunityBackendId = inviteOpportunity?.backendId || ''
   // Identifies the request currently being shown. While the stored result belongs
   // to a different key the fetch is still in flight, which is what "loading" means
@@ -288,7 +276,7 @@ export function useBusinessOpportunities() {
       .map((candidate) => ({
         ...candidate,
         skills: Array.isArray(candidate.skills) ? candidate.skills : [],
-        alreadyInvited: Boolean(candidate.alreadyInvited) || existingInviteIds.has(candidate.id),
+        alreadyInvited: Boolean(candidate.alreadyInvited),
         skillMatches: (Array.isArray(candidate.skills) ? candidate.skills : []).filter((skill) => opportunitySkills.has(skill)).length,
       }))
       .filter((candidate) => {
@@ -302,7 +290,7 @@ export function useBusinessOpportunities() {
         ].some((value) => value.toLowerCase().includes(normalizedQuery))
       })
       .sort((a, b) => b.skillMatches - a.skillMatches || b.match - a.match)
-  }, [backendInviteCandidates, existingInviteIds, inviteOpportunity, inviteQuery])
+  }, [backendInviteCandidates, inviteOpportunity, inviteQuery])
 
   useEffect(() => {
     // Nothing to fetch with the panel closed.
@@ -503,7 +491,7 @@ export function useBusinessOpportunities() {
   }
 
   function toggleBidderSelection(bidderId) {
-    if (existingInviteIds.has(bidderId)) return
+    if (inviteCandidates.some((candidate) => candidate.id === bidderId && candidate.alreadyInvited)) return
 
     setSelectedBidderIds((current) => (
       current.includes(bidderId)
@@ -546,7 +534,8 @@ export function useBusinessOpportunities() {
   function continueDraftOpportunity(opportunity) {
     if (!opportunity || opportunity.status !== 'Draft') return
 
-    navigate('/business/opportunities/create', {
+    const draftReference = opportunity.backendId || opportunity.id
+    navigate(`/business/opportunities/create?draft=${encodeURIComponent(draftReference)}`, {
       state: {
         draftOpportunityId: opportunity.id,
       },
@@ -682,6 +671,9 @@ export function useBusinessOpportunities() {
     setProjectActionState({ error: '', notice: '', pending: 'fund' })
     try {
       const escrow = await fundBackendBusinessOpportunity(opportunityId, payment)
+      if (escrow?.payment?.id && escrow.payment.status !== 'COMPLETED') {
+        await waitForBackendMpesaPayment(escrow.payment.id)
+      }
       await hydrateBusinessOpportunitiesFromBackend()
       // Applicant rows do not determine whether funding succeeded. Refresh them
       // opportunistically without turning a completed payment into a UI error.
@@ -767,6 +759,8 @@ export function useBusinessOpportunities() {
     inviteCandidates,
     inviteNote,
     inviteOpportunity,
+    opportunitiesError: businessFlow.error,
+    opportunitiesLoading: businessFlow.isLoading,
     isLoadingInviteCandidates,
     isSendingInvites,
     openPublishPaymentForReview: publishPaymentOpportunityId === reviewOpportunity?.id,
@@ -832,6 +826,7 @@ export function useBusinessOpportunities() {
     onReviewSubmission: reviewSubmission,
     onCompleteScopeTarget: completeScopeTarget,
     onPublishOpportunity: publishOpportunity,
+    onReloadOpportunities: hydrateBusinessOpportunitiesFromBackend,
     onSendInvites: sendInvites,
     onToggleBidderSelection: toggleBidderSelection,
   }

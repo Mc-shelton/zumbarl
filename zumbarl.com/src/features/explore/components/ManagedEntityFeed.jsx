@@ -185,6 +185,8 @@ function ManagedEntityFeed({ identity, onEditPost = null, onTakeDownPost = null,
       text: post.copy,
       title: `${post.author} on Zumbarl`,
       url: `${window.location.origin}/campus/explore?post=${encodeURIComponent(post.id)}`,
+      visibility: post.visibility,
+      communityGroupId: post.communityGroupId,
     })
   }
 

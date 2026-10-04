@@ -3,13 +3,17 @@ import { createPortal } from "react-dom";
 import {
   FiArrowLeft,
   FiArrowRight,
+  FiBarChart2,
   FiBookOpen,
+  FiCalendar,
   FiCheck,
+  FiEdit3,
   FiImage,
   FiMapPin,
   FiPlus,
   FiSearch,
   FiShoppingBag,
+  FiSmile,
   FiTag,
   FiTrash2,
   FiUploadCloud,
@@ -27,11 +31,11 @@ import { readKnowledgeHub } from "../../learn/services/learnService";
 import { searchEventOrganizers, searchPostTagTargets } from "../services/postService";
 
 const TYPES = [
-  { id: "post", label: "Post" },
-  { id: "media", label: "Photo/Video" },
-  { id: "event", label: "Event" },
-  { id: "poll", label: "Poll" },
-  { id: "feeling", label: "Feeling/Activity" },
+  { id: "post", label: "Post", icon: FiEdit3 },
+  { id: "media", label: "Photo/Video", icon: FiImage },
+  { id: "event", label: "Event", icon: FiCalendar },
+  { id: "poll", label: "Poll", icon: FiBarChart2 },
+  { id: "feeling", label: "Feeling/Activity", icon: FiSmile },
 ];
 const DEFAULT_TYPE_IDS = TYPES.map((type) => type.id);
 const FEELINGS = [
@@ -65,6 +69,8 @@ function ExplorePostComposer({
   const fixedOrganizerId = fixedOrganizer?.id || "";
   const fixedOrganizerName = fixedOrganizer?.name || "";
   const fixedOrganizerType = fixedOrganizer?.type || "";
+  const fixedOrganizerProfileType = fixedOrganizer?.profileType || fixedOrganizer?.type || "";
+  const fixedOrganizerSlug = fixedOrganizer?.slug || "";
   const fixedOrganizerHandle = fixedOrganizer?.handle || "";
   const fixedOrganizerAvatarUrl = fixedOrganizer?.avatarUrl || null;
   const [type, setType] = useState(initialType);
@@ -106,6 +112,8 @@ function ExplorePostComposer({
   const availableTypes = TYPES.filter((item) => allowedTypes.includes(item.id));
   useEffect(() => {
     if (isOpen) {
+      // Opening the reusable dialog starts a fresh composer session.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setType(initialType);
       setBody("");
       setFiles([]);
@@ -120,7 +128,7 @@ function ExplorePostComposer({
         longitude: "",
       });
       setLocationResults([]);
-      setOrganizer(fixedOrganizerId ? { id: fixedOrganizerId, name: fixedOrganizerName, type: fixedOrganizerType, handle: fixedOrganizerHandle, avatarUrl: fixedOrganizerAvatarUrl } : null); setOrganizerQuery(""); setOrganizerResults([]); setOrganizerDefaultResolved(Boolean(fixedOrganizerId));
+      setOrganizer(fixedOrganizerId ? { id: fixedOrganizerId, name: fixedOrganizerName, type: fixedOrganizerType, profileType: fixedOrganizerProfileType, slug: fixedOrganizerSlug, handle: fixedOrganizerHandle, avatarUrl: fixedOrganizerAvatarUrl } : null); setOrganizerQuery(""); setOrganizerResults([]); setOrganizerDefaultResolved(Boolean(fixedOrganizerId));
       setPollQuestion("");
       setPollOptionType("text");
       setPollSelectionMode("single");
@@ -134,7 +142,7 @@ function ExplorePostComposer({
       setSelectedTags(requiredTagId ? [{ id: requiredTagId, label: requiredTagLabel, type: requiredTagType, locked: true }] : []);
       setError("");
     }
-  }, [fixedOrganizerAvatarUrl, fixedOrganizerHandle, fixedOrganizerId, fixedOrganizerName, fixedOrganizerType, initialType, isOpen, requiredTagId, requiredTagLabel, requiredTagType]);
+  }, [fixedOrganizerAvatarUrl, fixedOrganizerHandle, fixedOrganizerId, fixedOrganizerName, fixedOrganizerProfileType, fixedOrganizerSlug, fixedOrganizerType, initialType, isOpen, requiredTagId, requiredTagLabel, requiredTagType]);
   useEffect(() => {
     if (!isOpen) return;
     Promise.allSettled([readKnowledgeHub(), listMarketplaceListings(), allowSpaceTags ? searchPostTagTargets("") : Promise.resolve({ data: [] })])
@@ -170,6 +178,8 @@ function ExplorePostComposer({
   useEffect(() => {
     const query = event.location.trim();
     if (type !== "event" || event.latitude !== "" || query.length < 3) {
+      // Invalidate results immediately when the current query is no longer searchable.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocationResults([]);
       setIsSearchingLocation(false);
       return undefined;
@@ -194,20 +204,25 @@ function ExplorePostComposer({
   }, [event.latitude, event.location, type]);
   useEffect(() => {
     if (!isOpen || type !== "event" || organizer || fixedOrganizerId) return undefined;
-    const requestId = ++organizerRequestRef.current; setIsSearchingOrganizers(true);
+    const requestId = ++organizerRequestRef.current;
+    // This flag belongs to the organizer lookup started by this effect.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setIsSearchingOrganizers(true);
     const timer = window.setTimeout(() => searchEventOrganizers(organizerQuery.trim()).then((response) => { if (requestId !== organizerRequestRef.current) return; const results = response.data || []; setOrganizerResults(results); if (!organizerQuery.trim() && !organizerDefaultResolved) { setOrganizer(results.find((item) => item.isSelf) || null); setOrganizerDefaultResolved(true) } }).catch(() => { if (requestId === organizerRequestRef.current) setOrganizerResults([]) }).finally(() => { if (requestId === organizerRequestRef.current) setIsSearchingOrganizers(false) }), organizerQuery.trim() ? 350 : 0);
     return () => window.clearTimeout(timer);
   }, [fixedOrganizerId, isOpen, organizer, organizerDefaultResolved, organizerQuery, type]);
   useEffect(() => {
     const urls = files.map((file) => URL.createObjectURL(file));
-    setMediaEdits(
+    // Object URLs are effect-managed resources, so their paired edit state is synchronized here.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMediaEdits((current) =>
       files.map((file, index) => ({
         type: file.type.startsWith("video/") ? "video" : "image",
-        zoom: mediaEdits[index]?.zoom || 1,
-        positionX: mediaEdits[index]?.positionX ?? 50,
-        positionY: mediaEdits[index]?.positionY ?? 50,
-        trimStart: mediaEdits[index]?.trimStart || 0,
-        trimEnd: mediaEdits[index]?.trimEnd,
+        zoom: current[index]?.zoom || 1,
+        positionX: current[index]?.positionX ?? 50,
+        positionY: current[index]?.positionY ?? 50,
+        trimStart: current[index]?.trimStart || 0,
+        trimEnd: current[index]?.trimEnd,
         previewUrl: urls[index],
       })),
     );
@@ -276,7 +291,8 @@ function ExplorePostComposer({
                 latitude: Number(event.latitude),
                 longitude: Number(event.longitude),
                 thumbnailUrl: mediaUrls[0] || null,
-                ...(organizer ? { organizer: { id: organizer.id, type: organizer.type, name: organizer.name, handle: organizer.handle, avatarUrl: organizer.avatarUrl || null } } : {}),
+                galleryUrls: mediaUrls,
+                ...(organizer ? { organizer: { id: organizer.id, type: organizer.type, profileType: organizer.profileType || organizer.type, slug: organizer.slug || null, name: organizer.name, handle: organizer.handle, avatarUrl: organizer.avatarUrl || null } } : {}),
               },
             }
           : {}),
@@ -371,16 +387,18 @@ function ExplorePostComposer({
         </header>
         {identity ? <div className="explore-post-identity"><img src={normalizeZumbarlFileUrl(identity.avatarUrl) || "/assets/knowledge/default-group-avatar.svg"} alt="" /><span><small>Posting as</small><strong>{identity.name}</strong></span></div> : null}
         <nav>
-          {availableTypes.map((item) => (
-            <button
+          {availableTypes.map((item) => {
+            const TypeIcon = item.icon;
+            return <button
               type="button"
               key={item.id}
-              className={type === item.id ? "is-active" : ""}
+              className={`is-${item.id}${type === item.id ? " is-active" : ""}`}
               onClick={() => setType(item.id)}
             >
-              {item.label}
+              <TypeIcon aria-hidden="true" />
+              <span>{item.label}</span>
             </button>
-          ))}
+          })}
         </nav>
         <div className="explore-post-fields">
           <textarea
@@ -522,28 +540,26 @@ function ExplorePostComposer({
           ) : null}
           {type === "event" ? (
             <section>
-              <label className="explore-post-upload">
+              <label className={`explore-post-upload explore-event-thumbnail-upload${files.length ? " has-preview" : ""}`}>
                 <FiImage />
                 <span>
                   {files.length
-                    ? "Replace event thumbnail"
-                    : "Add event thumbnail"}
+                    ? `${files.length} of 8 event photos · Add more`
+                    : "Add event photos"}
                 </span>
                 <input
                   type="file"
+                  multiple
                   accept="image/*"
+                  disabled={files.length >= 8}
                   onChange={(e) => {
-                    const selected = e.target.files?.[0];
-                    if (selected) {
-                      setFiles([selected]);
-                      setActiveMediaIndex(0);
-                    }
+                    appendFiles(e.target.files);
                     e.target.value = "";
                   }}
                 />
               </label>
               {activeEdit ? (
-                <div className="explore-event-thumbnail-editor">
+                <section className="explore-post-media-editor explore-event-thumbnail-editor">
                   <ImageCropper
                     className="is-compact"
                     src={activeEdit.previewUrl}
@@ -554,14 +570,23 @@ function ExplorePostComposer({
                     alt="Event thumbnail being cropped"
                     maxStageHeight={260}
                   />
-                  <button
-                    type="button"
-                    className="explore-event-thumbnail-remove"
-                    onClick={() => removeMedia(0)}
-                  >
-                    <FiTrash2 /> Remove thumbnail
-                  </button>
-                </div>
+                  <div className="explore-post-media-thumbs explore-event-media-thumbs">
+                    {mediaEdits.map((edit, index) => (
+                      <article key={edit.previewUrl} className={index === activeMediaIndex ? "is-active" : ""}>
+                        <button type="button" className="explore-post-thumb-preview" onClick={() => setActiveMediaIndex(index)} aria-label={`Edit event photo ${index + 1}`}>
+                          <img src={edit.previewUrl} alt="" />
+                          <span>{index === 0 ? "Cover" : index + 1}</span>
+                        </button>
+                        <div>
+                          <button type="button" disabled={index === 0} onClick={() => moveMedia(index, -1)} aria-label="Move event photo left"><FiArrowLeft /></button>
+                          <button type="button" onClick={() => removeMedia(index)} aria-label={`Remove event photo ${index + 1}`}><FiTrash2 /></button>
+                          <button type="button" disabled={index === mediaEdits.length - 1} onClick={() => moveMedia(index, 1)} aria-label="Move event photo right"><FiArrowRight /></button>
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                  <small className="explore-event-gallery-help">The first photo is the event cover. Change the order with the arrow controls; each photo can be repositioned above.</small>
+                </section>
               ) : null}
               <label>
                 Event name

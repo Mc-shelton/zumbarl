@@ -2,80 +2,32 @@ import {
   createBackendBusinessOpportunity,
   deleteBackendBusinessOpportunity,
   fundBackendBusinessOpportunity,
+  waitForBackendMpesaPayment,
   listBackendBusinessOpportunities,
   publishBackendBusinessOpportunity,
   sendBackendOpportunityInvites,
   updateBackendBusinessOpportunity,
 } from './persistBusinessOpportunity'
-import { getOpportunityStatusForAction } from './businessPipelineService'
 import { normalizeZumbarlFileMetadata } from '../../../lib/normalizeZumbarlFileUrl'
 
-const STORAGE_KEY = 'zumbarl.businessFlow.v1'
 const STATE_VERSION = 2
-const REPEAT_HIRE_LIMIT = 3
 
 const listeners = new Set()
-
-function mirrorBackendWrite(writeOperation, onSuccess) {
-  writeOperation()
-    .then((result) => {
-      if (result && onSuccess) onSuccess(result)
-    })
-    .catch((error) => {
-      console.error('Zumbarl backend write failed:', error)
-    })
-}
 
 function getDefaultState() {
   return {
     version: STATE_VERSION,
     opportunities: [],
-    opportunityInvites: [],
-    opportunityBids: [],
     selectedOpportunityId: null,
-    reviewEvents: [],
+    error: '',
+    isLoading: false,
   }
 }
 
-function getStorage() {
-  return typeof window === 'undefined' ? null : window.localStorage
-}
-
-function readStoredState() {
-  const storage = getStorage()
-
-  if (!storage) return getDefaultState()
-
-  try {
-    const parsed = JSON.parse(storage.getItem(STORAGE_KEY))
-
-    if (parsed?.version !== STATE_VERSION) return getDefaultState()
-
-    return {
-      ...getDefaultState(),
-      ...parsed,
-      opportunities: Array.isArray(parsed.opportunities)
-        ? parsed.opportunities.map((opportunity) => normalizeOpportunity(opportunity))
-        : getDefaultState().opportunities,
-      opportunityInvites: Array.isArray(parsed.opportunityInvites) ? parsed.opportunityInvites : [],
-      opportunityBids: Array.isArray(parsed.opportunityBids) ? parsed.opportunityBids : [],
-      reviewEvents: Array.isArray(parsed.reviewEvents) ? parsed.reviewEvents : getDefaultState().reviewEvents,
-    }
-  } catch {
-    return getDefaultState()
-  }
-}
-
-let currentState = readStoredState()
-
-function persistState(state) {
-  const storage = getStorage()
-  if (storage) storage.setItem(STORAGE_KEY, JSON.stringify(state))
-}
+let currentState = getDefaultState()
 
 function setBusinessFlowState(updater) {
   currentState = updater(currentState)
-  persistState(currentState)
   listeners.forEach((listener) => listener())
   return currentState
 }
@@ -149,27 +101,31 @@ function mergeBackendOpportunities(opportunities) {
   }))
   setBusinessFlowState((state) => ({
     ...state,
-    opportunities: [
-      ...backendOpportunities,
-      ...state.opportunities.filter((opportunity) => !opportunity.backendId),
-    ],
+    opportunities: backendOpportunities,
   }))
 }
 
-export function hydrateBusinessOpportunitiesFromBackend() {
-  return listBackendBusinessOpportunities()
-    .then((response) => {
-      // Merge even when the backend returns nothing. Skipping that left any
-      // opportunity the backend no longer has stranded in local state forever,
-      // rendering a ghost card whose every request 404s.
-      mergeBackendOpportunities(response?.data || [])
-      return response?.data || []
-    })
-    .catch(() => [])
+export async function hydrateBusinessOpportunitiesFromBackend() {
+  setBusinessFlowState((state) => ({ ...state, error: '', isLoading: true }))
+  try {
+    const response = await listBackendBusinessOpportunities()
+    // Replacing the collection makes the API authoritative and prevents deleted
+    // opportunities from surviving as local ghost cards.
+    mergeBackendOpportunities(response?.data || [])
+    setBusinessFlowState((state) => ({ ...state, error: '', isLoading: false }))
+    return response?.data || []
+  } catch (error) {
+    setBusinessFlowState((state) => ({
+      ...state,
+      error: error instanceof Error ? error.message : 'Opportunities could not be loaded.',
+      isLoading: false,
+    }))
+    throw error
+  }
 }
 
 function mergeSavedOpportunity(localOpportunity, backendOpportunity) {
-  const backendId = backendOpportunity?.id || localOpportunity.backendId
+  const backendId = backendOpportunity?.id || localOpportunity.backendId || localOpportunity.id
   const keepLocalArrayIfBackendEmpty = (fieldName) => {
     const backendItems = Array.isArray(backendOpportunity?.[fieldName])
       ? backendOpportunity[fieldName]
@@ -189,7 +145,7 @@ function mergeSavedOpportunity(localOpportunity, backendOpportunity) {
   const savedOpportunity = normalizeOpportunity({
     ...localOpportunity,
     ...backendOpportunity,
-    id: localOpportunity.id,
+    id: backendId,
     backendId,
     deliverableMilestones: keepLocalArrayIfBackendEmpty('deliverableMilestones'),
     milestoneScopes: keepLocalArrayIfBackendEmpty('milestoneScopes'),
@@ -202,7 +158,7 @@ function mergeSavedOpportunity(localOpportunity, backendOpportunity) {
   setBusinessFlowState((state) => ({
     ...state,
     opportunities: state.opportunities.map((item) => (
-      item.id === localOpportunity.id ? savedOpportunity : item
+      item.id === localOpportunity.id || item.id === backendId ? savedOpportunity : item
     )),
     selectedOpportunityId: savedOpportunity.id,
   }))
@@ -214,7 +170,7 @@ export async function createBusinessOpportunity(payload, options = {}) {
   const existingOpportunity = options.existingId
     ? currentState.opportunities.find((item) => item.id === options.existingId)
     : null
-  const opportunity = {
+  const draft = {
     ...(existingOpportunity || {}),
     id: existingOpportunity?.id || createId('brief', `${payload.title}-${Date.now()}`),
     applicants: 0,
@@ -225,19 +181,27 @@ export async function createBusinessOpportunity(payload, options = {}) {
     status: getDisplayOpportunityStatus(payload.status || existingOpportunity?.status || 'Draft'),
   }
 
-  setBusinessFlowState((state) => ({
-    ...state,
-    opportunities: existingOpportunity
-      ? state.opportunities.map((item) => (item.id === existingOpportunity.id ? opportunity : item))
-      : [opportunity, ...state.opportunities],
-    selectedOpportunityId: opportunity.id,
-  }))
+  const backendOpportunity = draft.backendId
+    ? await updateBackendBusinessOpportunity(draft.backendId, draft)
+    : await createBackendBusinessOpportunity(draft)
 
-  const backendOpportunity = opportunity.backendId
-    ? await updateBackendBusinessOpportunity(opportunity.backendId, opportunity)
-    : await createBackendBusinessOpportunity(opportunity)
+  if (!existingOpportunity) {
+    const saved = normalizeOpportunity({
+      ...draft,
+      ...backendOpportunity,
+      id: backendOpportunity.id,
+      backendId: backendOpportunity.id,
+      status: getDisplayOpportunityStatus(backendOpportunity.status),
+    })
+    setBusinessFlowState((state) => ({
+      ...state,
+      opportunities: [saved, ...state.opportunities.filter((item) => item.id !== saved.id)],
+      selectedOpportunityId: saved.id,
+    }))
+    return saved
+  }
 
-  return mergeSavedOpportunity(opportunity, backendOpportunity)
+  return mergeSavedOpportunity(draft, backendOpportunity)
 }
 
 export async function deleteBusinessOpportunity(opportunityId) {
@@ -254,9 +218,6 @@ export async function deleteBusinessOpportunity(opportunityId) {
   setBusinessFlowState((state) => ({
     ...state,
     opportunities: state.opportunities.filter((item) => item.id !== opportunityId),
-    opportunityInvites: state.opportunityInvites.filter((invite) => invite.opportunityId !== opportunityId),
-    opportunityBids: state.opportunityBids.filter((bid) => bid.opportunityId !== opportunityId),
-    reviewEvents: state.reviewEvents.filter((event) => event.opportunityId !== opportunityId),
     selectedOpportunityId: state.selectedOpportunityId === opportunityId ? null : state.selectedOpportunityId,
   }))
 
@@ -268,104 +229,27 @@ export async function publishBusinessOpportunity(opportunityId, payment) {
   if (!opportunity) return null
 
   const backendId = opportunity.backendId || opportunityId
-  await fundBackendBusinessOpportunity(backendId, payment)
-  const backendOpportunity = await publishBackendBusinessOpportunity(backendId)
-  const updatedOpportunity = mergeSavedOpportunity(opportunity, backendOpportunity)
-  recordApplicantReviewEvent({
-    action: 'opportunity_published',
-    detail: `${updatedOpportunity.title} funded and published from the opportunities workspace.`,
-    opportunityId,
+  const funding = await fundBackendBusinessOpportunity(backendId, {
+    ...payment,
+    publishAfterFunding: payment?.method === 'mobile_money',
   })
-  return updatedOpportunity
+  if (funding?.payment?.id && funding.payment.status !== 'COMPLETED') {
+    await waitForBackendMpesaPayment(funding.payment.id)
+  }
+  const backendOpportunity = await publishBackendBusinessOpportunity(backendId)
+  return mergeSavedOpportunity(opportunity, backendOpportunity)
 }
 
 export async function inviteBusinessOpportunityBidders({ bidders, note, opportunityId }) {
   const opportunity = currentState.opportunities.find((item) => item.id === opportunityId)
-  const existingInviteKeys = new Set(
-    currentState.opportunityInvites
-      .filter((invite) => invite.opportunityId === opportunityId)
-      .map((invite) => invite.bidderId),
-  )
-  const createdAt = formatCreatedAt()
-  const newInvites = bidders
-    .filter((bidder) => !existingInviteKeys.has(bidder.id))
-    .map((bidder) => ({
-      id: createId('invite', `${opportunityId}-${bidder.id}-${Date.now()}`),
-      bidderId: bidder.id,
-      bidderName: bidder.name,
-      match: bidder.match,
-      note,
-      opportunityId,
-      sentAt: createdAt,
-      status: 'Invited',
-    }))
+  const backendId = opportunity?.backendId || opportunity?.id
+  if (!backendId) throw new Error('Save this opportunity before inviting students.')
+  if (!bidders.length) return []
 
-  if (!newInvites.length) return []
-
-  if (opportunity?.backendId) {
-    await sendBackendOpportunityInvites(opportunity.backendId, {
-      note,
-      studentIds: newInvites.map((invite) => invite.bidderId),
-    })
-  }
-
-  setBusinessFlowState((state) => ({
-    ...state,
-    opportunities: state.opportunities.map((opportunity) => {
-      if (opportunity.id !== opportunityId) return opportunity
-
-      return {
-        ...opportunity,
-        invitedCount: (opportunity.invitedCount || 0) + newInvites.length,
-        status: opportunity.status === 'Draft ready' || opportunity.status === 'Draft' ? 'Open' : opportunity.status,
-      }
-    }),
-    opportunityInvites: [...newInvites, ...state.opportunityInvites],
-  }))
-
-  recordApplicantReviewEvent({
-    action: 'opportunity_invites_sent',
-    detail: `${newInvites.length} bidder${newInvites.length === 1 ? '' : 's'} invited to submit an offer.`,
-    opportunityId,
+  const response = await sendBackendOpportunityInvites(backendId, {
+    note,
+    studentIds: bidders.map((bidder) => bidder.id),
   })
-
-  return newInvites
-}
-
-export function recordApplicantReviewEvent({ action, detail, opportunityId }) {
-  const event = {
-    id: createId('event', `${action}-${Date.now()}`),
-    action,
-    opportunityId,
-    detail,
-    createdAt: formatCreatedAt(),
-  }
-
-  setBusinessFlowState((state) => ({
-    ...state,
-    opportunities: state.opportunities.map((opportunity) => (
-      opportunity.id === opportunityId
-        ? { ...opportunity, status: getOpportunityStatusForAction(action) }
-        : opportunity
-    )),
-    reviewEvents: [event, ...state.reviewEvents],
-  }))
-
-  return event
-}
-
-export function resolveApplicantHiringGuardrail(reviewEvents) {
-  const awardedCount = reviewEvents.filter((event) => event.action === 'awarded').length
-  const unlockCount = reviewEvents.filter((event) => event.action === 'guardrail_unlocked').length
-  const isUnlocked = unlockCount > 0
-  const remainingAwards = Math.max(0, REPEAT_HIRE_LIMIT - awardedCount)
-
-  return {
-    awardedCount,
-    hireLimit: REPEAT_HIRE_LIMIT,
-    isUnlocked,
-    remainingAwards,
-    requiresUnlock: awardedCount >= REPEAT_HIRE_LIMIT && !isUnlocked,
-    status: isUnlocked ? 'Mentorship unlock active' : `${remainingAwards} repeat hires remaining`,
-  }
+  await hydrateBusinessOpportunitiesFromBackend()
+  return response?.invites || []
 }

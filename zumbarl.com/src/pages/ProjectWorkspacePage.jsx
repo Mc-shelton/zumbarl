@@ -14,8 +14,6 @@ import MilestonesRail from '../features/projects/components/MilestonesRail'
 import TeamPanel from '../features/projects/components/TeamPanel'
 import TeamReviewsPanel from '../features/projects/components/TeamReviewsPanel'
 import TeamProjectRail from '../features/projects/components/TeamProjectRail'
-import TeamTaskModal from '../features/projects/components/TeamTaskModal'
-import TeamMilestoneModal from '../features/projects/components/TeamMilestoneModal'
 import TeamInviteModal from '../features/projects/components/TeamInviteModal'
 import TeamInviteResponseCard from '../features/projects/components/TeamInviteResponseCard'
 import PlaceholderPanel from '../features/projects/components/PlaceholderPanel'
@@ -53,7 +51,6 @@ function ProjectWorkspacePage() {
     handlePriceProposalResponse,
     priceProposalState,
     handleOverview,
-    handleReviewDecision,
     handleSubmit,
     handleTabChange,
     isSubmitted,
@@ -66,8 +63,6 @@ function ProjectWorkspacePage() {
     submitMode,
     submitTargetValue,
     projectId,
-    projectPayment,
-    projectReview,
     setTeamModal,
     teamModal,
     teamInviteCandidates,
@@ -80,6 +75,8 @@ function ProjectWorkspacePage() {
     teamMembers: persistedTeamMembers,
     teamMessageParticipants,
     pendingTeamInvite,
+    workspaceError,
+    workspaceIsLoading,
   } = useProjectWorkspace()
   const isTeamProject = Boolean(activeProject.isTeamProject ?? activeProject.hasTeam)
   // Board, sprints, timeline and the program gates belong to milestone-based
@@ -120,6 +117,15 @@ function ProjectWorkspacePage() {
   // business approving that submission is what marks it done.
   const openSubmitWorkForTask = (task) => {
     if (isBusinessViewer) return
+    if (!task?.ownerId) {
+      setLifecycleError('Claim this work before submitting it for review.')
+      return
+    }
+    if (task.ownerId !== deliverableTasks.viewerStudentId) {
+      setLifecycleError('This work is assigned to someone else. Only the assigned student can submit it for review.')
+      return
+    }
+    setLifecycleError('')
     setPendingSubmitTaskIds(task?.id ? [task.id] : [])
     openSubmitWorkForPhase(task?.targetId || task?.milestoneDeliverableId || task?.scopeItemId || '', 'submit')
   }
@@ -196,7 +202,7 @@ function ProjectWorkspacePage() {
       />
 
       <div className="campus-stage">
-        <div className="campus-shell project-workspace-shell">
+        <div className={`campus-shell project-workspace-shell${['Board', 'Messages'].includes(activeTab) ? ' is-no-rail is-focus-view' : ''}`}>
           {isBusinessViewer ? (
             <BusinessWorkspaceSidebar activeItemId="opportunities" />
           ) : (
@@ -207,7 +213,12 @@ function ProjectWorkspacePage() {
             <ProjectTopBar
               activeProject={activeProject}
               activeTab={activeTab}
+              hasStarted={hasStarted}
               isBusinessViewer={isBusinessViewer}
+              isStarting={lifecyclePending === 'start'}
+              onStartProject={isBusinessViewer && !hasStarted
+                ? () => runLifecycle('start', () => startProject(projectId))
+                : undefined}
               onTabChange={handleTabChange}
               onSubmitWork={isBusinessViewer ? undefined : () => openSubmitWork()}
             />
@@ -248,27 +259,29 @@ function ProjectWorkspacePage() {
                 </p>
               ) : null}
 
-              {isSubmitted && activeTab === 'Overview' ? (
+              {workspaceIsLoading ? (
+                <section className="project-card project-files-empty" aria-live="polite">
+                  <strong>Loading project…</strong>
+                  <p>Fetching the current workspace from Zumbarl.</p>
+                </section>
+              ) : workspaceError ? (
+                <section className="project-card project-files-empty" role="alert">
+                  <strong>Project unavailable</strong>
+                  <p>{workspaceError}</p>
+                  <button type="button" className="project-primary-btn" onClick={refreshWorkspace}>Try again</button>
+                </section>
+              ) : isSubmitted && activeTab === 'Overview' ? (
                 <SubmittedPanel
                   activeProject={activeProject}
-                  onApproveSubmission={() => handleReviewDecision('approved', {
-                    endorsementCurrency: 12,
-                    feedback: 'Strong delivery, clear communication, and useful campaign-ready assets.',
-                    rating: '4.8',
-                  })}
                   onOverview={handleOverview}
-                  onRequestRevision={() => handleReviewDecision('revision_requested', {
-                    feedback: 'Please add one more content variation and resubmit the final file pack.',
-                  })}
                   onResubmit={isBusinessViewer ? undefined : () => openSubmitWork()}
-                  payment={projectPayment}
-                  reviewDecision={projectReview}
                 />
               ) : usesTeamPlanning && activeTab === 'Overview' ? (
                 <>
                   <MilestoneProgramPanel programGates={milestoneWorkspace.programGates} />
                   <OverviewPanel
                     project={activeProject}
+                    onOpenMessages={() => handleTabChange('Messages')}
                     onOpenWorkDeliverables={() => handleTabChange('Work & Deliverables')}
                     onSubmitWork={isBusinessViewer ? undefined : openSubmitWork}
                     onSelectPhase={isBusinessViewer ? undefined : openSubmitWorkForPhase}
@@ -310,7 +323,10 @@ function ProjectWorkspacePage() {
                 <WorkDeliverablesPanel
                   isMilestoneScope
                   deliverableTasks={deliverableTasks}
+                  isBusinessViewer={isBusinessViewer}
+                  onReview={isBusinessViewer ? handleSubmissionReview : undefined}
                   project={activeProject}
+                  reviewState={reviewActionState}
                   onSubmitTask={isBusinessViewer ? undefined : openSubmitWorkForTask}
                   onSubmitWork={isBusinessViewer ? undefined : openSubmitWork}
                   onSelectPhase={isBusinessViewer ? undefined : openSubmitWorkForPhase}
@@ -378,6 +394,7 @@ function ProjectWorkspacePage() {
               ) : activeTab === 'Overview' ? (
                 <OverviewPanel
                   project={activeProject}
+                  onOpenMessages={() => handleTabChange('Messages')}
                   onOpenWorkDeliverables={() => handleTabChange('Work & Deliverables')}
                   onSubmitWork={isBusinessViewer ? undefined : openSubmitWork}
                   onSelectPhase={isBusinessViewer ? undefined : openSubmitWorkForPhase}
@@ -387,7 +404,10 @@ function ProjectWorkspacePage() {
               ) : activeTab === 'Work & Deliverables' ? (
                 <WorkDeliverablesPanel
                   deliverableTasks={deliverableTasks}
+                  isBusinessViewer={isBusinessViewer}
+                  onReview={isBusinessViewer ? handleSubmissionReview : undefined}
                   project={activeProject}
+                  reviewState={reviewActionState}
                   onSubmitTask={isBusinessViewer ? undefined : openSubmitWorkForTask}
                   onSubmitWork={isBusinessViewer ? undefined : openSubmitWork}
                   onSelectPhase={isBusinessViewer ? undefined : openSubmitWorkForPhase}
@@ -401,7 +421,10 @@ function ProjectWorkspacePage() {
                   projectId={projectId}
                 />
               ) : activeTab === 'Files' ? (
-                <FilesPanel project={activeProject} />
+                <FilesPanel
+                  project={activeProject}
+                  onSubmitWork={isBusinessViewer ? undefined : () => openSubmitWork()}
+                />
               ) : activeTab === 'Activity Logs' && activeProject.source === 'database' ? (
                 <ActivityLogPanel project={activeProject} />
               ) : (
@@ -410,11 +433,12 @@ function ProjectWorkspacePage() {
             </div>
           </section>
 
-          {usesTeamPlanning && ['Overview', 'Board', 'Milestones'].includes(activeTab) ? (
+          {workspaceIsLoading || workspaceError || activeTab === 'Messages' || (usesTeamPlanning && activeTab === 'Board') ? null : usesTeamPlanning && ['Overview', 'Milestones'].includes(activeTab) ? (
             <MilestoneProjectRail
               deliverables={milestoneWorkspace.deliverables}
               isBusinessViewer={isBusinessViewer}
               milestones={milestoneWorkspace.milestones}
+              onPaymentCompleted={refreshWorkspace}
               project={activeProject}
               sprints={milestoneWorkspace.sprints}
               tasks={deliverableTasks.tasks}
@@ -446,6 +470,7 @@ function ProjectWorkspacePage() {
               activeProject={activeProject}
               activeTab={activeTab}
               isSubmitted={isSubmitted}
+              onPaymentCompleted={refreshWorkspace}
               onSubmitWork={isBusinessViewer ? undefined : () => openSubmitWork()}
               onTabChange={handleTabChange}
             />
@@ -467,8 +492,6 @@ function ProjectWorkspacePage() {
           targetKindLabel={usesTeamPlanning ? 'Deliverable' : (activeProject.targetKindLabel || 'Deliverable')}
         />
       ) : null}
-      {teamModal === 'task' ? <TeamTaskModal onClose={() => setTeamModal(null)} /> : null}
-      {teamModal === 'milestone' ? <TeamMilestoneModal onClose={() => setTeamModal(null)} /> : null}
       {teamModal === 'invite' ? (
         <TeamInviteModal
           candidates={teamInviteCandidates}

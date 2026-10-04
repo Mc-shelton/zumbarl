@@ -4,15 +4,21 @@ import CampusHeroPanel from '../features/campus/components/CampusHeroPanel'
 import CampusHomeHeader from '../features/campus/components/CampusHomeHeader'
 import CampusHomeRail from '../features/campus/components/CampusHomeRail'
 import CampusProjectInvites from '../features/campus/components/CampusProjectInvites'
+import CampusQuickActions from '../features/campus/components/CampusQuickActions'
+import CampusRecommendations from '../features/campus/components/CampusRecommendations'
 import CampusSearchForm from '../features/campus/components/CampusSearchForm'
+import CampusTrustStrip from '../features/campus/components/CampusTrustStrip'
 import useCampusHomeState from '../features/campus/hooks/useCampusHomeState'
 import { CAMPUS_SEO } from '../features/seo/constants'
 import '../styles/campus.css'
+import '../styles/campus-workspace.css'
 
 function CampusPage() {
   const {
     assistantPrompts,
     assistantSource,
+    activeMarketplaceHover,
+    activeMarketplaceSlide,
     chatMessages,
     chatMode,
     discoveryChips,
@@ -20,6 +26,8 @@ function CampusPage() {
     focusPromptInput,
     handleBackToAi,
     handleMainScroll,
+    handleMarketplaceHoverEnd,
+    handleMarketplaceHoverStart,
     handlePromptSubmit,
     hero,
     heroCardRef,
@@ -27,20 +35,24 @@ function CampusPage() {
     isAssistantThinking,
     isHomeLoading,
     mainScrollRef,
+    openRecommendedGig,
     prompt,
     promptInputRef,
     promptPlaceholder,
+    quickActions,
     rail,
+    recommendationSections,
     reloadHomeExperience,
     resetChatSurface,
     runAssistantPrompt,
     setPrompt,
     showBackToAiButton,
+    trustPoints,
     viewer,
   } = useCampusHomeState()
 
   return (
-    <main className="campus-page">
+    <main className="campus-page campus-workspace-page">
       <Seo
         title={CAMPUS_SEO.title}
         description={CAMPUS_SEO.description}
@@ -101,6 +113,16 @@ function CampusPage() {
                   promptInputRef={promptInputRef}
                   promptPlaceholder={promptPlaceholder}
                 />
+                <CampusQuickActions actions={quickActions} />
+                <CampusRecommendations
+                  activeMarketplaceHover={activeMarketplaceHover}
+                  activeMarketplaceSlide={activeMarketplaceSlide}
+                  onMarketplaceHoverEnd={handleMarketplaceHoverEnd}
+                  onMarketplaceHoverStart={handleMarketplaceHoverStart}
+                  onOpenRecommendedGig={openRecommendedGig}
+                  recommendationSections={recommendationSections}
+                />
+                <CampusTrustStrip trustPoints={trustPoints} />
               </>
             )}
           </section>

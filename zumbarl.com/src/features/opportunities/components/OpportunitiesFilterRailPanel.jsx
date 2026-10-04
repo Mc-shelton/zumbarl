@@ -38,13 +38,13 @@ function OpportunitiesFilterRailPanel({
             <h3>Filter opportunities</h3>
           </div>
         </div>
-        {isDetailOpen && isFilterExpanded ? (
+        {isFilterExpanded ? (
           <button
             type="button"
             className="opportunities-filter-action opportunities-filter-toggle"
             onClick={onBackToDetail}
           >
-            Back to gig
+            {isDetailOpen ? 'Back to gig' : 'Done'}
           </button>
         ) : isDetailOpen ? (
           <button

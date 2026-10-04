@@ -4,10 +4,6 @@ import {
   sendZumbarlApiRequest,
 } from '../../../lib/sendZumbarlApiRequest'
 
-function sendPresenceHeartbeat() {
-  return sendZumbarlApiRequest('/connect/presence/heartbeat', { method: 'POST' })
-}
-
 function createCall({ recipientId, opportunityId, callType }) {
   return sendZumbarlApiRequest('/connect/calls', {
     method: 'POST',
@@ -52,7 +48,6 @@ function endCallOnPageClose(callId) {
 }
 
 export {
-  sendPresenceHeartbeat,
   createCall,
   listIncomingCalls,
   readCall,

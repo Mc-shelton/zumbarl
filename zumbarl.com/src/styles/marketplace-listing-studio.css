@@ -181,9 +181,41 @@
 }
 
 @media (max-width: 640px) {
-  .marketplace-studio-header { min-height: 145px; }
+  .marketplace-studio-page {
+    background:
+      radial-gradient(circle at 8% 0%, rgba(118, 81, 111, .1), transparent 24%),
+      radial-gradient(circle at 94% 1%, rgba(251, 177, 48, .1), transparent 22%),
+      #f8f6f8;
+  }
+  .marketplace-studio-header {
+    position: relative;
+    min-height: 145px;
+    margin-inline: 10px;
+    overflow: hidden;
+    background: linear-gradient(120deg, #fbf7fb, #fffaf2 65%, #eff9f8);
+  }
+  .marketplace-studio-header::before {
+    content: '';
+    position: absolute;
+    inset: 0 20px auto;
+    height: 4px;
+    border-radius: 0 0 999px 999px;
+    background: linear-gradient(90deg, var(--studio-primary) 0 42%, var(--studio-orange) 42% 70%, #3c8b93 70%);
+  }
   .marketplace-studio-header > :last-child { display: none; }
   .marketplace-studio-step-panel { padding: 18px; }
+  .marketplace-studio-steps {
+    grid-template-columns: repeat(5, minmax(122px, 1fr));
+    margin-inline: 10px;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+  }
+  .marketplace-studio-steps button {
+    min-height: 62px;
+    border-bottom: 0;
+    scroll-snap-align: start;
+  }
+  .marketplace-studio-form-card { margin-inline: 10px; }
   .marketplace-studio-type-grid, .marketplace-studio-delivery-grid, .marketplace-studio-form-grid, .marketplace-studio-price-card, .marketplace-studio-review-sections, .marketplace-studio-rail { grid-template-columns: 1fr; }
   .marketplace-studio-form-grid label.is-wide { grid-column: auto; }
   .marketplace-studio-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }

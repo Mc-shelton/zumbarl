@@ -1,22 +1,45 @@
-import { FiCreditCard, FiPlus, FiShield } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import { FiCreditCard, FiShield } from 'react-icons/fi'
 import Seo from '../components/Seo'
 import { BusinessCompanyProfileCard } from '../features/business/components/BusinessCompanyProfileCard'
 import { BusinessWorkspaceHeader } from '../features/business/components/BusinessWorkspaceHeader'
 import { BusinessWorkspaceSidebar } from '../features/business/components/BusinessApplicantSidebar'
+import { listBackendFinanceWallets } from '../features/business/services/persistBusinessOpportunity'
 import '../styles/campus.css'
 import '../styles/business.css'
 
-const SAVED_PAYMENT_METHODS = [
-  { id: 'visa-8421', brand: 'Visa', label: 'Visa ending 8421', meta: 'Expires 08/28', status: 'Default' },
-  { id: 'mastercard-1134', brand: 'Mastercard', label: 'Mastercard ending 1134', meta: 'Expires 11/27', status: 'Backup' },
-]
+function formatWalletBalance(wallet) {
+  return new Intl.NumberFormat('en-KE', {
+    style: 'currency',
+    currency: wallet.currency || 'KES',
+  }).format(Number(wallet.availableBalance ?? wallet.balance ?? 0))
+}
 
 function BusinessSettingsPage() {
+  const [wallets, setWallets] = useState([])
+  const [walletsLoading, setWalletsLoading] = useState(true)
+  const [walletsError, setWalletsError] = useState('')
+
+  useEffect(() => {
+    let active = true
+    listBackendFinanceWallets()
+      .then((response) => {
+        if (active) setWallets(Array.isArray(response?.data) ? response.data : [])
+      })
+      .catch((error) => {
+        if (active) setWalletsError(error.message || 'Company wallet details could not be loaded.')
+      })
+      .finally(() => {
+        if (active) setWalletsLoading(false)
+      })
+    return () => { active = false }
+  }, [])
+
   return (
     <main className="campus-page business-workspace-page business-settings-page">
       <Seo
         title="Business Settings | Zumbarl"
-        description="Manage Zumbarl business account settings, payment methods, and security preferences."
+        description="Manage Zumbarl business account settings, wallets, and security preferences."
         path="/business/settings"
       />
 
@@ -27,7 +50,7 @@ function BusinessSettingsPage() {
           <section className="campus-main business-workspace-main business-settings-main">
             <BusinessWorkspaceHeader
               title="Settings"
-              description="Manage your company profile, payment methods and business workspace controls."
+              description="Manage your company profile, funding wallet and business workspace controls."
               primaryActionHref="/business/opportunities/create"
               primaryActionLabel="Create Opportunity"
             />
@@ -37,31 +60,31 @@ function BusinessSettingsPage() {
             <section id="payment-methods" className="business-profile-card business-settings-payment-card">
               <header>
                 <div>
-                  <h2>Payment Methods</h2>
-                  <p>Select cards for opportunity funding, escrow payments and business invoices.</p>
+                  <h2>Funding Wallets</h2>
+                  <p>Wallet balances used for opportunity funding, escrow payments, and business transactions.</p>
                 </div>
-                <button type="button" className="business-profile-primary-btn">
-                  <FiPlus aria-hidden="true" />
-                  Add Card
-                </button>
               </header>
 
+              {walletsLoading ? <p aria-live="polite">Loading company wallets…</p> : null}
+              {walletsError ? <p role="alert">{walletsError}</p> : null}
+              {!walletsLoading && !walletsError && !wallets.length ? <p>No company wallet is available for this account.</p> : null}
+
               <div className="business-settings-card-list">
-                {SAVED_PAYMENT_METHODS.map((method) => (
-                  <article key={method.id}>
+                {wallets.map((wallet) => (
+                  <article key={wallet.id}>
                     <span aria-hidden="true"><FiCreditCard /></span>
                     <div>
-                      <strong>{method.label}</strong>
-                      <p>{method.brand} · {method.meta}</p>
+                      <strong>{wallet.name || (wallet.type === 'COMPANY' ? 'Company Wallet' : wallet.type)}</strong>
+                      <p>{formatWalletBalance(wallet)} available</p>
                     </div>
-                    <em>{method.status}</em>
+                    <em>{wallet.status || 'Active'}</em>
                   </article>
                 ))}
               </div>
 
               <footer>
                 <FiShield aria-hidden="true" />
-                <p>Cards are tokenized by the payment provider. Zumbarl only stores a secure payment reference.</p>
+                <p>Wallet funding and escrow movements are recorded by the finance ledger. Card storage is not enabled.</p>
               </footer>
             </section>
           </section>

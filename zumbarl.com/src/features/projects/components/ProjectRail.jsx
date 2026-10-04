@@ -8,22 +8,22 @@ import {
   FiUploadCloud,
 } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
-import { project as fallbackProject, railFiles as fallbackRailFiles, timeline as fallbackTimeline } from '../data/mockWorkspace'
+import StudentWalletWithdrawal from '../../finance/components/StudentWalletWithdrawal'
+import { Link } from 'react-router-dom'
 
-function ProjectRail({ activeProject, activeTab, isSubmitted, onSubmitWork, onTabChange }) {
+function ProjectRail({ activeProject, activeTab, isSubmitted, onPaymentCompleted, onSubmitWork, onTabChange }) {
   const canSubmitWork = hasAccess(ACCESS_KEYS.projects.submitWork)
   const canViewFiles = hasAccess(ACCESS_KEYS.projects.files)
-  const project = activeProject || fallbackProject
-  const isBackedProject = project.source === 'database'
-  const timeline = isBackedProject && Array.isArray(project.timeline) ? project.timeline : fallbackTimeline
-  const railFiles = isBackedProject ? (Array.isArray(project.files) ? project.files : []) : fallbackRailFiles
-  const progressLabel = isBackedProject ? `${project.progressPercent ?? 0}%` : '60%'
+  const project = activeProject
+  const isBackedProject = project?.source === 'database'
+  if (!isBackedProject) return null
+  const timeline = Array.isArray(project.timeline) ? project.timeline : []
+  const railFiles = Array.isArray(project.files) ? project.files : []
+  const progressLabel = `${project.progressPercent ?? 0}%`
   const progressWidth = progressLabel
-  const progressNote = isBackedProject
-    ? (project.progressNote || (isSubmitted ? 'Pending client review' : 'Work in progress'))
-    : (isSubmitted ? 'Pending client review' : 'Work in progress')
-  const walletPayouts = isBackedProject && Array.isArray(project.payouts) ? project.payouts : []
-  const hasWallet = isBackedProject && (project.totalEarned > 0 || walletPayouts.length)
+  const progressNote = project.progressNote || (isSubmitted ? 'Pending client review' : 'Work in progress')
+  const walletPayouts = Array.isArray(project.payouts) ? project.payouts : []
+  const hasWallet = canSubmitWork && isBackedProject && (Number(project.walletBalance) > 0 || project.totalEarned > 0 || walletPayouts.length)
 
   return (
     <aside className="campus-rail project-workspace-rail" aria-label="Project details">
@@ -53,6 +53,7 @@ function ProjectRail({ activeProject, activeTab, isSubmitted, onSubmitWork, onTa
               ))}
             </ul>
           ) : null}
+          <StudentWalletWithdrawal availableBalance={project.walletBalance} currency={project.walletCurrency} onCompleted={onPaymentCompleted} />
         </section>
       ) : null}
 
@@ -72,13 +73,13 @@ function ProjectRail({ activeProject, activeTab, isSubmitted, onSubmitWork, onTa
         <h3>Project Timeline</h3>
         <div className="project-timeline-list">
           {timeline.map((item, index) => {
-            const isCurrent = isBackedProject ? item.current : (isSubmitted ? item.label === 'Work Submitted' : item.current)
+            const isCurrent = item.current
             return (
               <article key={item.label} className={item.complete ? 'is-complete' : isCurrent ? 'is-current' : ''}>
                 <span>{item.complete ? <FiCheck aria-hidden="true" /> : index + 1}</span>
                 <div>
                   <strong>{item.label}</strong>
-                  {item.label === 'Work Submitted' && isCurrent ? <em>Current</em> : null}
+                  {isCurrent ? <em>Current</em> : null}
                 </div>
                 <p>{item.date}</p>
               </article>
@@ -115,30 +116,6 @@ function ProjectRail({ activeProject, activeTab, isSubmitted, onSubmitWork, onTa
         </section>
       ) : activeTab === 'Files' ? (
         <>
-          {!isBackedProject ? (
-            <>
-              <section className="campus-rail-card project-storage-card">
-                <header>
-                  <h3>Storage Usage</h3>
-                  <strong>24%</strong>
-                </header>
-                <p>2.4 GB of 10 GB used</p>
-                <span className="project-progress-track">
-                  <i />
-                </span>
-              </section>
-              <section className="campus-rail-card project-file-categories">
-                <h3>File Categories</h3>
-                {['All Files', 'Documents', 'Spreadsheets', 'Presentations', 'Forms', 'PDFs', 'Folders'].map((item, index) => (
-                  <button key={item} type="button">
-                    <FiFileText aria-hidden="true" />
-                    {item}
-                    <span>{[15, 4, 3, 2, 1, 3, 2][index]}</span>
-                  </button>
-                ))}
-              </section>
-            </>
-          ) : null}
           {canSubmitWork && project.canSubmitWork !== false ? (
             <section className="campus-rail-card project-support-card">
               <FiUploadCloud aria-hidden="true" />
@@ -180,10 +157,10 @@ function ProjectRail({ activeProject, activeTab, isSubmitted, onSubmitWork, onTa
               <h3>Need help with this project?</h3>
               <p>Our support team is here to help.</p>
             </div>
-            <button type="button" className="project-soft-btn">
+            <Link to="/help" className="project-soft-btn">
               Contact Support
               <FiArrowRight aria-hidden="true" />
-            </button>
+            </Link>
           </section>
         </>
       )}

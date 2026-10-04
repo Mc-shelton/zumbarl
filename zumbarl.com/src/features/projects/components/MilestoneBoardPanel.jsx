@@ -1,14 +1,24 @@
 import { useMemo, useState } from 'react'
-import { FiAlertCircle, FiCheck, FiClock, FiPlus, FiSearch, FiUserPlus } from 'react-icons/fi'
+import {
+  FiAlertCircle,
+  FiCheck,
+  FiClock,
+  FiFilter,
+  FiMove,
+  FiPlus,
+  FiSearch,
+  FiUserPlus,
+  FiZap,
+} from 'react-icons/fi'
 import DeliverableRoom from './DeliverableRoom'
 import ProjectStartNotice from './ProjectStartNotice'
 
 const BOARD_COLUMNS = [
-  { id: 'pool', label: 'Unassigned', hint: 'Ready for someone to pick up', icon: FiPlus },
-  { id: 'active', label: 'In progress', hint: 'Work currently moving', icon: FiClock },
-  { id: 'blocked', label: 'Blocked', hint: 'Waiting on a dependency', icon: FiAlertCircle },
-  { id: 'submitted', label: 'In review', hint: 'Waiting for business approval', icon: FiUserPlus },
-  { id: 'done', label: 'Done', hint: 'Approved and complete', icon: FiCheck },
+  { id: 'pool', label: 'Unassigned', hint: 'Ready for someone to pick up', empty: 'Newly declared tasks will wait here.', icon: FiPlus },
+  { id: 'active', label: 'In progress', hint: 'Work currently moving', empty: 'Claim a task to start making progress.', icon: FiClock },
+  { id: 'blocked', label: 'Blocked', hint: 'Waiting on a dependency', empty: 'Nothing is holding the team back.', icon: FiAlertCircle },
+  { id: 'submitted', label: 'In review', hint: 'Waiting for business approval', empty: 'Submitted work will appear here.', icon: FiUserPlus },
+  { id: 'done', label: 'Done', hint: 'Approved and complete', empty: 'Approved tasks become portfolio proof.', icon: FiCheck },
 ]
 
 const MANUAL_BOARD_STATES = new Set(['pool', 'active', 'blocked'])
@@ -102,6 +112,14 @@ function MilestoneBoardPanel({
     setMoveNotice('')
 
     if (nextState === 'submitted') {
+      if (!task.ownerId) {
+        setMoveNotice('Claim this work before submitting it for review.')
+        return
+      }
+      if (task.ownerId !== deliverableTasks.viewerStudentId) {
+        setMoveNotice('This work is assigned to someone else. Only the assigned student can submit it for review.')
+        return
+      }
       const blockedReason = getSubmitBlockedReason(task)
       if (blockedReason) {
         setMoveNotice(`Submissions are not open on this work yet: ${blockedReason}`)
@@ -157,36 +175,48 @@ function MilestoneBoardPanel({
     return (
       <section className="milestone-kanban">
         <header className="milestone-kanban-toolbar">
-          <div>
+          <div className="milestone-kanban-intro">
+            <span className="milestone-kanban-eyebrow"><FiZap aria-hidden="true" /> {activeSprint?.name || 'No active sprint'}</span>
             <h3>Project board</h3>
             <p>
               {activeSprint
-                ? `Showing tasks in the active sprint: ${activeSprint.name}.`
+                ? `${boardTasks.length} visible task${boardTasks.length === 1 ? '' : 's'} across ${BOARD_COLUMNS.length} stages.`
                 : 'Start a sprint to show its tasks on the board.'}
             </p>
           </div>
           <div className="milestone-kanban-progress" aria-label={`${progress}% of visible tasks complete`}>
-            <span><strong>{doneCount}</strong>/{boardTasks.length} done</span>
+            <span><small>Board completion</small><strong>{progress}%</strong></span>
             <i><b style={{ width: `${progress}%` }} /></i>
+            <small>{doneCount} of {boardTasks.length} visible tasks approved</small>
           </div>
-          <label className="milestone-kanban-search">
-            <FiSearch aria-hidden="true" />
-            <input value={query} placeholder="Search tasks or people" onChange={(event) => setQuery(event.target.value)} />
-          </label>
-          <select value={deliverableFilter} onChange={(event) => setDeliverableFilter(event.target.value)}>
-            <option value="all">All deliverables</option>
-            {deliverables.map((deliverable) => (
-              <option key={deliverable.id} value={deliverable.id}>{deliverable.title}</option>
-            ))}
-          </select>
-          {deliverableTasks.canEdit ? (
-            <button type="button" className="project-primary-btn" onClick={() => onOpenDeliverable?.(declareTarget)}>
-              <FiPlus aria-hidden="true" /> Declare task
-            </button>
-          ) : null}
+          <div className="milestone-kanban-tools">
+            <label className="milestone-kanban-search">
+              <FiSearch aria-hidden="true" />
+              <input value={query} placeholder="Search tasks or people" onChange={(event) => setQuery(event.target.value)} />
+            </label>
+            <label className="milestone-kanban-filter">
+              <FiFilter aria-hidden="true" />
+              <span className="sr-only">Filter by deliverable</span>
+              <select value={deliverableFilter} onChange={(event) => setDeliverableFilter(event.target.value)}>
+                <option value="all">All deliverables</option>
+                {deliverables.map((deliverable) => (
+                  <option key={deliverable.id} value={deliverable.id}>{deliverable.title}</option>
+                ))}
+              </select>
+            </label>
+            {deliverableTasks.canEdit ? (
+              <button type="button" className="project-primary-btn" onClick={() => onOpenDeliverable?.(declareTarget)}>
+                <FiPlus aria-hidden="true" /> Declare task
+              </button>
+            ) : null}
+          </div>
         </header>
 
         {moveNotice ? <p className="milestone-kanban-notice" role="status">{moveNotice}</p> : null}
+
+        {deliverableTasks.canEdit ? (
+          <p className="milestone-kanban-drag-hint"><FiMove aria-hidden="true" /> Drag tasks between open stages</p>
+        ) : null}
 
         <div className="milestone-kanban-columns">
           {BOARD_COLUMNS.map((column) => {
@@ -225,8 +255,8 @@ function MilestoneBoardPanel({
                         }}
                       >
                         <button type="button" className="milestone-kanban-card-open" onClick={() => onOpenDeliverable?.(targetId)}>
-                          <span className="milestone-kanban-card-scope">{deliverable?.title || 'Deliverable'}</span>
                           <strong>{task.title}</strong>
+                          <span className="milestone-kanban-card-scope">{deliverable?.title || 'Deliverable'}</span>
                           {task.blockedBy?.length ? <em><FiAlertCircle aria-hidden="true" /> {task.blockedBy.length} blocker{task.blockedBy.length === 1 ? '' : 's'}</em> : null}
                         </button>
                         <footer>
@@ -255,25 +285,16 @@ function MilestoneBoardPanel({
                             <FiUserPlus aria-hidden="true" /> Claim task
                           </button>
                         ) : null}
-                        {deliverableTasks.canEdit && !['submitted', 'done'].includes(task.status) ? (
-                          <label className="milestone-kanban-move">
-                            <span>Move to</span>
-                            <select
-                              value={boardState(task)}
-                              disabled={Boolean(deliverableTasks.pendingTaskId)}
-                              onChange={(event) => moveTask(task, event.target.value)}
-                            >
-                              <option value="pool">Unassigned</option>
-                              <option value="active">In progress</option>
-                              <option value="blocked">Blocked</option>
-                              {deliverableTasks.viewerStudentId ? <option value="submitted">Submit for review…</option> : null}
-                            </select>
-                          </label>
-                        ) : null}
                       </article>
                     )
                   })}
-                  {!columnTasks.length ? <p className="milestone-kanban-empty">No tasks here</p> : null}
+                  {!columnTasks.length ? (
+                    <div className="milestone-kanban-empty">
+                      <ColumnIcon aria-hidden="true" />
+                      <strong>Nothing here yet</strong>
+                      <span>{column.empty}</span>
+                    </div>
+                  ) : null}
                 </div>
               </section>
             )

@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FiBell, FiCheck, FiChevronDown, FiMessageCircle } from 'react-icons/fi'
 import { Link, useNavigate } from 'react-router-dom'
-import { ACCESS_KEYS, AUTH_ROLE_STORAGE_KEY, hasAccess } from '../../features/auth/roleConfig'
-import { AUTH_TOKEN_KEY } from '../../lib/sendZumbarlApiRequest'
+import { ACCESS_KEYS, hasAccess } from '../../features/auth/roleConfig'
 import { useViewerProfile } from '../../features/auth/viewerProfile'
-import { clearAuthUserCache } from '../../features/auth/services/authUserService'
+import { logoutAuthUser } from '../../features/auth/services/authUserService'
 import { clearBusinessProfileCache } from '../../features/business/services/businessProfileService'
 import {
   listZumbarlNotifications,
@@ -144,7 +143,7 @@ function CampusTopActions({
     const refreshVisibleNotifications = () => {
       if (document.visibilityState === 'visible') refreshNotifications()
     }
-    const intervalId = window.setInterval(refreshNotifications, 10000)
+    const intervalId = window.setInterval(refreshNotifications, 120000)
     window.addEventListener('focus', refreshNotifications)
     document.addEventListener('visibilitychange', refreshVisibleNotifications)
     return () => {
@@ -160,6 +159,7 @@ function CampusTopActions({
     const controller = new AbortController()
     subscribeToRealtimeEvents((event) => {
       if (event.type === 'notification.created') loadNotifications({ notify: true })
+      else if (event.type === 'connected') loadNotifications()
     }, controller.signal).catch(() => {})
     return () => controller.abort()
   }, [canOpenNotifications, loadNotifications])
@@ -216,7 +216,7 @@ function CampusTopActions({
   }
 
   function handleLogout() {
-    clearAuthUserCache()
+    void logoutAuthUser()
     clearBusinessProfileCache()
 
     if (onLogout) {
@@ -224,8 +224,6 @@ function CampusTopActions({
       return
     }
 
-    window.localStorage.removeItem(AUTH_TOKEN_KEY)
-    window.localStorage.removeItem(AUTH_ROLE_STORAGE_KEY)
     navigate('/login', { replace: true })
   }
 

@@ -19,7 +19,8 @@
 }
 
 .eatery-header::before { display: none; }
-.eatery-header > div:first-child { flex: 1 1 auto; min-width: 0; }
+.eatery-head-copy { flex: 1 1 auto; min-width: 0; }
+.eatery-mobile-brand { display: none; }
 .eatery-header-actions { flex: 0 0 auto; }
 .eatery-header .ui-breadcrumb { margin: 0 0 8px; }
 
@@ -244,28 +245,166 @@
 }
 
 @media (max-width: 980px) {
-  .eatery-rail { padding-top: 0; }
-  .eatery-rail-card { display: none; }
-  .eatery-shop-link { margin: 16px 0 0; }
+  .eatery-rail { display: none; }
 }
 
 @media (max-width: 700px) {
-  .eatery-header { gap: 12px; }
-  .eatery-header h1 { font-size: 30px; }
-  .eatery-discovery-card { min-height: 0; padding: 24px 21px; align-items: flex-start; flex-direction: column; }
+  .eatery-page {
+    overflow-x: clip;
+    overflow-y: visible;
+    background: #fff;
+  }
+
+  .eatery-page .campus-shell { overflow: visible; }
+  .eatery-main { padding: 0; }
+
+  .eatery-header {
+    min-height: 58px;
+    margin: -10px -10px 0;
+    padding: 10px 12px;
+    background:
+      radial-gradient(circle at 8% 10%, rgba(116, 81, 111, .09), transparent 34%),
+      radial-gradient(circle at 92% 8%, rgba(245, 166, 35, .09), transparent 38%),
+      linear-gradient(120deg, #fbf8fb 0%, #fffaf5 62%, #f8fbfa 100%);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 8px 18px rgba(45, 38, 50, .06);
+  }
+
+  .eatery-mobile-brand {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+  }
+
+  .eatery-mobile-brand > span {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    border-radius: 12px;
+    background: #f8f5f8;
+    display: grid;
+    place-items: center;
+  }
+
+  .eatery-mobile-brand img {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+  }
+
+  .eatery-mobile-brand > div {
+    min-width: 0;
+    display: grid;
+    gap: 1px;
+  }
+
+  .eatery-mobile-brand small {
+    color: #8c8190;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .08em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .eatery-mobile-brand strong {
+    color: #704a69;
+    font-size: 20px;
+    line-height: 1.1;
+  }
+
+  .eatery-head-copy {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    border: 0;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .eatery-header-actions {
+    justify-self: end;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .eatery-header .campus-icon-btn,
+  .eatery-orders-link {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+    padding: 0;
+    border-radius: 12px;
+    justify-content: center;
+  }
+
+  .eatery-orders-link > span { display: none; }
+
+  .eatery-discovery-card {
+    min-height: 0;
+    margin-top: 10px;
+    padding: 16px;
+    border-radius: 19px;
+    align-items: flex-start;
+    box-shadow: none;
+  }
+
+  .eatery-discovery-card::before { width: 82px; height: 82px; top: -50px; right: 28px; }
+  .eatery-discovery-card::after { width: 54px; height: 54px; right: -19px; bottom: -18px; }
+  .eatery-discovery-card > div:first-child { max-width: calc(100% - 20px); }
+  .eatery-discovery-card span { font-size: 9px; }
+  .eatery-discovery-card h2 { margin: 4px 0; font-size: 21px; letter-spacing: -.025em; }
+  .eatery-discovery-card p { font-size: 12px; line-height: 1.45; }
+  .eatery-promo-action { min-height: 34px; margin-top: 12px; padding: 0 13px; font-size: 11px; }
   .eatery-discovery-marks { display: none; }
-  .eatery-promo-items { width: 280px; height: 130px; margin: 18px auto 0; flex: none; }
-  .eatery-promo-item { width: 108px; height: 126px; }
-  .eatery-promo-item:nth-child(2) { left: 84px; }
-  .eatery-promo-item:nth-child(3) { left: 168px; }
-  .eatery-promo-item img { height: 82px; }
-  .eatery-promo-item span { padding-top: 6px; }
-  .eatery-tabs-row { align-items: stretch; flex-direction: column; }
+  .eatery-promo-items { display: none; }
+
+  .eatery-tabs-row { margin: 10px 0 16px; align-items: stretch; flex-direction: column; gap: 8px; }
   .eatery-tabs-row > a { width: fit-content; }
+  .eatery-source-tabs.zumbarl-segmented-tabs.zumbarl-segmented-tabs {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 3px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px;
+    overflow: visible;
+  }
+
+  .eatery-source-tabs.zumbarl-segmented-tabs.zumbarl-segmented-tabs > button {
+    min-width: 0;
+    min-height: 36px;
+    padding: 7px 4px;
+    gap: 4px;
+    overflow: hidden;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .eatery-source-tabs.zumbarl-segmented-tabs.zumbarl-segmented-tabs > button strong {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    font-size: 9px;
+  }
+
   .eatery-student-intro { grid-template-columns: 44px minmax(0, 1fr); }
   .eatery-student-intro > a { grid-column: 1 / -1; justify-content: center; }
-  .eatery-section-head { align-items: stretch; flex-direction: column; }
-  .eatery-search { width: 100%; box-sizing: border-box; }
+  .eatery-section-head { margin-bottom: 10px; align-items: stretch; flex-direction: column; gap: 10px; }
+  .eatery-section-head > div > span { font-size: 9px; }
+  .eatery-section-head h2 { margin-top: 3px; font-size: 23px; letter-spacing: -.025em; }
+  .eatery-section-head p { margin-top: 3px; font-size: 11px; line-height: 1.45; }
+  .eatery-search { width: 100%; min-height: 44px; padding: 0 13px; box-sizing: border-box; border-radius: 14px; background: #f7f5f6; }
+  .eatery-search input { font-size: 13px; }
+  .eatery-filter-row { margin-bottom: 12px; gap: 6px; }
+  .eatery-filter-row button { min-height: 34px; padding: 0 12px; font-size: 10px; }
   .eatery-meal-grid,
   .eatery-loading { grid-template-columns: 1fr; }
   .eatery-venue-card { grid-template-columns: 108px minmax(0, 1fr); }

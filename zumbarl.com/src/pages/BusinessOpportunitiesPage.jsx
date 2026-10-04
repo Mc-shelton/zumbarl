@@ -70,6 +70,8 @@ function BusinessOpportunitiesPage() {
                   primaryActionHref="/business/opportunities/create"
                   primaryActionLabel="Create Opportunity"
                 />
+                {opportunities.opportunitiesLoading ? <section className="business-profile-card" aria-live="polite"><p>Loading opportunities…</p></section> : null}
+                {opportunities.opportunitiesError ? <section className="business-profile-card" role="alert"><h2>Opportunities are unavailable</h2><p>{opportunities.opportunitiesError}</p><button type="button" className="business-link-btn" onClick={() => opportunities.onReloadOpportunities().catch(() => {})}>Try again</button></section> : null}
                 <BusinessOpportunityTabs activeTab={opportunities.activeTab} onChangeTab={opportunities.onChangeTab} />
                 <BusinessOpportunityToolbar
                   filters={opportunities.filters}

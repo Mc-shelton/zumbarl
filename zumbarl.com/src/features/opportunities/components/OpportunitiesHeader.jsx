@@ -19,6 +19,11 @@ function OpportunitiesHeader({
   return (
     <div className="opportunities-sticky-head">
       <header className="campus-header opportunities-header">
+        <div className="opportunities-mobile-brand" aria-hidden="true">
+          <span><img src="/assets/index/bee_nobg.png" alt="" /></span>
+          <div><small>Opportunities</small><strong>{isMarketingTab ? 'Marketing' : 'Jobs & Gigs'}</strong></div>
+        </div>
+
         <div className="opportunities-head-copy">
           <Breadcrumb
             className="opportunities-breadcrumb"

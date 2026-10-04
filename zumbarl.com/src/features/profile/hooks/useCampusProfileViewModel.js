@@ -1,9 +1,20 @@
 import { useMemo } from 'react'
+import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 import {
   buildRadarPoints,
   getPortfolioDetail,
   getShopProductDetail,
 } from '../constants'
+
+function portfolioFilter(category) {
+  const key = String(category || '').toLowerCase().replace(/[^a-z0-9]+/g, '')
+  if (key.includes('social') || key.includes('content')) return 'social'
+  if (key.includes('graphic') || key.includes('design')) return 'design'
+  if (key.includes('copy') || key.includes('writing')) return 'copy'
+  if (key.includes('brand')) return 'brand'
+  if (key.includes('video') || key.includes('film')) return 'video'
+  return 'other'
+}
 
 function matchesSkillFilters(skill, normalizedSearch, categoryFilter, levelFilter) {
   const matchesSearch = !normalizedSearch
@@ -36,10 +47,11 @@ function useCampusProfileViewModel({
   const apiPortfolioItems = useMemo(() => (
     (profileExperience?.portfolioItems || []).map((item) => ({
       ...item,
-      date: item.date || 'From database',
+      date: item.date ? new Date(item.date).toLocaleDateString('en-KE', { day: 'numeric', month: 'short', year: 'numeric' }) : 'From database',
+      filter: portfolioFilter(item.category),
       featured: item.featured ?? item.isFeatured,
-      image: item.image || '/assets/business/campaign-workshop.jpg',
-      rating: item.rating || 'Verified',
+      image: normalizeZumbarlFileUrl(item.image) || '/assets/index/bee_nobg.png',
+      rating: item.rating || null,
       source: 'backend',
     }))
   ), [profileExperience?.portfolioItems])
@@ -54,7 +66,7 @@ function useCampusProfileViewModel({
       description: service.description,
       price: service.price || service.value,
       delivery: service.delivery || service.meta,
-      image: service.image || service.thumbnail || '/assets/business/campaign-workshop.jpg',
+      image: service.image || service.thumbnail || '/assets/index/bee_nobg.png',
     }))
     return services
   }, [profileExperience?.services])
@@ -64,6 +76,11 @@ function useCampusProfileViewModel({
       ? combinedPortfolioItems
       : combinedPortfolioItems.filter((item) => item.filter === activePortfolioFilter)
   ), [activePortfolioFilter, combinedPortfolioItems])
+  const portfolioFilterCounts = useMemo(() => combinedPortfolioItems.reduce((counts, item) => ({
+    ...counts,
+    all: counts.all + 1,
+    [item.filter]: (counts[item.filter] || 0) + 1,
+  }), { all: 0 }), [combinedPortfolioItems])
 
   const selectedPortfolioItem = useMemo(() => (
     selectedPortfolioId
@@ -81,10 +98,10 @@ function useCampusProfileViewModel({
     const products = (profileExperience?.shopProducts || []).map((product) => ({
       ...product,
       uid: product.uid || product.id,
-      seller: product.seller || profileExperience?.header?.name || 'Student seller',
-      time: product.time || 'From database',
-      image: product.image || product.thumbnail || '/assets/marketplace/poster-kit.jpg',
-      badge: product.badge || 'Available',
+      seller: product.seller || profileExperience?.header?.name || 'Seller',
+      time: product.time || (product.updatedAt ? new Date(product.updatedAt).toLocaleDateString('en-KE') : 'Date not available'),
+      image: product.image || product.thumbnail || product.images?.[0] || '/assets/index/bee_nobg.png',
+      badge: product.badge || String(product.status || 'Status not set').replace(/^./, (letter) => letter.toUpperCase()),
       badgeTone: product.badgeTone || 'is-new',
       price: product.price || product.value,
       likes: product.likes || 0,
@@ -138,8 +155,7 @@ function useCampusProfileViewModel({
     const backendSkills = (profileExperience?.skills || []).map((skill) => {
       const level = String(skill.level || 'BEGINNER').toLowerCase().replace(/^./, (letter) => letter.toUpperCase())
       const verifiedProjects = Number(skill.verifiedByGigs || 0)
-      const levelProgress = { Beginner: 25, Intermediate: 55, Advanced: 75, Expert: 95 }
-      const score = Math.max(0, Math.min(100, Number(skill.score ?? skill.zumbarlScore ?? (verifiedProjects ? 30 + (verifiedProjects * 8) : 0))))
+      const score = Math.max(0, Math.min(100, Number(skill.score ?? skill.zumbarlScore ?? 0)))
       const iconLabel = String(skill.name || 'Skill').split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
 
       return {
@@ -150,7 +166,7 @@ function useCampusProfileViewModel({
         endorsements: verifiedProjects,
         iconLabel,
         iconTone: 'is-social',
-        proficiency: Math.max(0, Math.min(100, Number(skill.proficiency ?? skill.score ?? levelProgress[level] ?? 0))),
+        proficiency: Math.max(0, Math.min(100, Number(skill.proficiency ?? skill.score ?? 0))),
         projects: `${verifiedProjects} verified project${verifiedProjects === 1 ? '' : 's'}`,
         score,
         scoreMeta: verifiedProjects ? `${verifiedProjects} verified project${verifiedProjects === 1 ? '' : 's'}` : 'No verified work yet',
@@ -193,6 +209,7 @@ function useCampusProfileViewModel({
 
   return {
     activeShopDetailImage,
+    allPortfolioItems: combinedPortfolioItems,
     filteredCoreSkills,
     filteredOtherSkills,
     filteredShopProducts,
@@ -212,6 +229,7 @@ function useCampusProfileViewModel({
     isShopTab,
     normalizedShopDetailImageIndex,
     portfolioItems,
+    portfolioFilterCounts,
     portfolioServices,
     profileScore: profileExperience?.score || null,
     progression: profileExperience?.progression || null,

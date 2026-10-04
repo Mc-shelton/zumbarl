@@ -1,14 +1,23 @@
+import {
+  FiArrowUpRight,
+  FiBookOpen,
+  FiBriefcase,
+  FiCalendar,
+  FiClock,
+  FiImage,
+  FiShoppingBag,
+  FiUsers,
+} from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 
 const SECTION_LINKS = {
-  stories: '/campus/explore',
   posts: '/campus/explore',
   gigs: '/campus/opportunities',
   marketplace: '/campus/opportunities/buy-sell',
   communities: '/campus/explore',
   events: '/campus/explore',
-  roadmaps: '/campus/learn',
+  roadmaps: '/campus/learn?view=path',
   services: '/campus/opportunities/buy-sell?mode=services',
 }
 
@@ -17,6 +26,29 @@ function handleKeyboardActivation(event, onActivate) {
     event.preventDefault()
     onActivate()
   }
+}
+
+function formatEventMeta(value) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return { date: String(value || 'Date to be confirmed'), time: '' }
+  }
+
+  return {
+    date: new Intl.DateTimeFormat('en-KE', {
+      day: 'numeric',
+      month: 'short',
+      year: date.getFullYear() === new Date().getFullYear() ? undefined : 'numeric',
+    }).format(date),
+    time: new Intl.DateTimeFormat('en-KE', {
+      hour: 'numeric',
+      minute: '2-digit',
+    }).format(date),
+  }
+}
+
+function MediaFallback({ Icon = FiImage }) {
+  return <span className="campus-card-media-placeholder"><Icon aria-hidden="true" /></span>
 }
 
 function RecommendationCard({
@@ -39,24 +71,51 @@ function RecommendationCard({
         onClick={() => onOpenRecommendedGig(item.opportunityUuid || item.id, item.owner, item.href)}
         onKeyDown={(event) => handleKeyboardActivation(event, () => onOpenRecommendedGig(item.opportunityUuid || item.id, item.owner, item.href))}
       >
-        <img
-          className="campus-gig-cover"
-          src={normalizeZumbarlFileUrl(item.thumbnail) || '/assets/index/bee_nobg.png'}
-          alt={`${item.title} thumbnail`}
-          loading="lazy"
-        />
-        <div className="campus-gigs-card-wrap">
-          <img className="campus-gig-company-avatar" src="/assets/index/bee_nobg.png" alt={`${item.org} logo`} loading="lazy" />
-          <div className="campus-gig-body">
-            <h4>{item.title}</h4>
-            <div className="campus-gig-detail">
-              <p>{item.org}</p>
+        <div className="campus-gig-media">
+          {item.thumbnail ? <img
+            className="campus-gig-cover"
+            src={normalizeZumbarlFileUrl(item.thumbnail)}
+            alt=""
+            loading="lazy"
+          /> : <span className="campus-gig-cover is-placeholder"><FiBriefcase aria-hidden="true" /></span>}
+          <span className="campus-gig-type">{item.meta || 'Flexible opportunity'}</span>
+        </div>
+        <div className="campus-gig-content">
+          <div className="campus-gig-company">
+            {item.companyLogo ? <img className="campus-gig-company-avatar" src={normalizeZumbarlFileUrl(item.companyLogo)} alt="" loading="lazy" /> : <span className="campus-gig-company-avatar is-placeholder"><FiBriefcase aria-hidden="true" /></span>}
+            <div>
+              <span>Recommended opportunity</span>
+              <p>{item.org || 'Zumbarl partner'}</p>
             </div>
-            <span>{item.meta}</span>
-            <strong>{item.value}</strong>
           </div>
+          <h4>{item.title}</h4>
+          <p className="campus-gig-summary">{item.recommendationReason || item.description || 'A paid opportunity matched to your campus activity and skills.'}</p>
+          {Array.isArray(item.tags) && item.tags.length ? <div className="campus-gig-skills">
+            {item.tags.slice(0, 3).map((tag) => <span key={tag}>{tag}</span>)}
+          </div> : null}
+          <footer className="campus-gig-footer">
+            <div><span>Budget</span><strong>{item.value}</strong></div>
+            <span className="campus-gig-open">View role <FiArrowUpRight aria-hidden="true" /></span>
+          </footer>
         </div>
       </article>
+    )
+  }
+
+  if (sectionId === 'posts') {
+    return (
+      <Link to={item.href || '/campus/explore'} className="campus-reco-card campus-social-reco-card">
+        {item.thumbnail ? <img className="campus-event-reco-cover" src={normalizeZumbarlFileUrl(item.thumbnail)} alt="" loading="lazy" /> : <span className="campus-social-reco-placeholder"><FiImage aria-hidden="true" /></span>}
+        <div className="campus-event-reco-body">
+          <div className="campus-reco-creator">
+            {item.avatar ? <img src={normalizeZumbarlFileUrl(item.avatar)} alt="" loading="lazy" /> : <span>{String(item.org || 'Z').slice(0, 1).toUpperCase()}</span>}
+            <p>{item.org}</p>
+          </div>
+          <h4>{item.title}</h4>
+          {item.description ? <p className="campus-reco-summary">{item.description}</p> : null}
+          <footer><span>{item.meta}</span><strong>{item.value}</strong></footer>
+        </div>
+      </Link>
     )
   }
 
@@ -74,20 +133,23 @@ function RecommendationCard({
           onMouseEnter={() => onMarketplaceHoverStart(marketplaceKey, marketplaceImages.length)}
           onMouseLeave={onMarketplaceHoverEnd}
         >
-          <img
-            key={`${marketplaceKey}-${imageIndex}`}
-            className={`campus-market-cover${isHovered ? ' is-slideshow' : ''}`}
-            src={activeImage}
-            alt={`${item.title} thumbnail`}
-            loading="lazy"
-          />
+          {activeImage ? <img
+              key={`${marketplaceKey}-${imageIndex}`}
+              className={`campus-market-cover${isHovered ? ' is-slideshow' : ''}`}
+              src={activeImage}
+              alt=""
+              loading="lazy"
+            /> : <MediaFallback Icon={FiShoppingBag} />}
+          <span className="campus-card-badge">{item.condition || 'Available'}</span>
         </div>
         <div className="campus-market-body">
+          <p className="campus-card-kicker">{item.org}</p>
           <h4>{item.title}</h4>
-          <p>{item.org}</p>
+          {item.description ? <p className="campus-card-summary">{item.description}</p> : null}
           <div className="campus-market-foot">
             <span>{item.meta}</span>
             <strong>{item.value}</strong>
+            <FiArrowUpRight aria-hidden="true" />
           </div>
         </div>
       </Link>
@@ -98,27 +160,67 @@ function RecommendationCard({
     return (
       <Link to={item.href || '/campus/explore'} className="campus-reco-card campus-community-card">
         <div className="campus-community-head">
-          <img className="campus-community-avatar" src={normalizeZumbarlFileUrl(item.thumbnail)} alt={`${item.title} thumbnail`} loading="lazy" />
+          {item.thumbnail ? <img className="campus-community-avatar" src={normalizeZumbarlFileUrl(item.thumbnail)} alt="" loading="lazy" /> : <span className="campus-community-avatar is-placeholder"><FiUsers aria-hidden="true" /></span>}
           <div>
+            <span className="campus-card-kicker">Student community</span>
             <h4>{item.title}</h4>
             <p>{item.org}</p>
           </div>
         </div>
-        <span>{item.meta}</span>
-        <strong>{item.value}</strong>
+        <div className="campus-card-footer">
+          <span><FiUsers aria-hidden="true" /> {item.meta}</span>
+          <strong>{item.value}</strong>
+          <FiArrowUpRight aria-hidden="true" />
+        </div>
       </Link>
     )
   }
 
-  if (sectionId === 'events' || sectionId === 'stories' || sectionId === 'posts' || sectionId === 'roadmaps') {
+  if (sectionId === 'events') {
+    const eventMeta = formatEventMeta(item.meta)
+
     return (
       <Link to={item.href || '/campus/explore'} className="campus-reco-card campus-event-reco-card">
-        {item.thumbnail ? <img className="campus-event-reco-cover" src={normalizeZumbarlFileUrl(item.thumbnail)} alt={`${item.title} thumbnail`} loading="lazy" /> : null}
+        <div className="campus-event-reco-media">
+          {item.thumbnail ? <img className="campus-event-reco-cover" src={normalizeZumbarlFileUrl(item.thumbnail)} alt="" loading="lazy" /> : <MediaFallback Icon={FiCalendar} />}
+          <strong className="campus-card-badge">{item.value}</strong>
+        </div>
         <div className="campus-event-reco-body">
+          <span className="campus-card-kicker">Upcoming event</span>
           <h4>{item.title}</h4>
           <p>{item.org}</p>
-          <span>{item.meta}</span>
-          <strong>{item.value}</strong>
+          <div className="campus-event-meta">
+            <span><FiCalendar aria-hidden="true" /> {eventMeta.date}</span>
+            {eventMeta.time ? <span><FiClock aria-hidden="true" /> {eventMeta.time}</span> : null}
+          </div>
+          <div className="campus-card-footer">
+            <span>{item.attendeeCount ? `${item.attendeeCount} attending` : 'Be the first to join'}</span>
+            <strong>{item.isGoing ? 'You’re going' : item.actionLabel || 'View event'}</strong>
+            <FiArrowUpRight aria-hidden="true" />
+          </div>
+        </div>
+      </Link>
+    )
+  }
+
+  if (sectionId === 'roadmaps') {
+    return (
+      <Link to={item.href || '/campus/learn?view=path'} className="campus-reco-card campus-roadmap-card">
+        <div className="campus-roadmap-media">
+          {item.thumbnail ? <img src={normalizeZumbarlFileUrl(item.thumbnail)} alt="" loading="lazy" /> : <MediaFallback Icon={FiBookOpen} />}
+        </div>
+        <div className="campus-roadmap-body">
+          <span className="campus-card-kicker">Learning path</span>
+          <h4>{item.title}</h4>
+          <p>{item.org}</p>
+          <div className="campus-roadmap-tags">
+            {(item.tags || []).slice(0, 2).map((tag) => <span key={tag}>{tag}</span>)}
+          </div>
+          <div className="campus-card-footer">
+            <span>{item.meta}</span>
+            <strong>{item.value}</strong>
+            <FiArrowUpRight aria-hidden="true" />
+          </div>
         </div>
       </Link>
     )
@@ -127,14 +229,18 @@ function RecommendationCard({
   return (
     <Link to={item.href || '/campus/explore'} className="campus-reco-card campus-service-card">
       <div className="campus-service-head">
-        {item.thumbnail ? <img className="campus-service-avatar" src={normalizeZumbarlFileUrl(item.thumbnail)} alt={`${item.title} thumbnail`} loading="lazy" /> : null}
+        {item.thumbnail ? <img className="campus-service-avatar" src={normalizeZumbarlFileUrl(item.thumbnail)} alt="" loading="lazy" /> : <span className="campus-service-avatar is-placeholder"><FiShoppingBag aria-hidden="true" /></span>}
         <div>
+          <span className="campus-card-kicker">Campus service</span>
           <h4>{item.title}</h4>
           <p>{item.org}</p>
         </div>
       </div>
-      <span>{item.meta}</span>
-      <strong>{item.value}</strong>
+      <div className="campus-card-footer">
+        <span>{item.meta}</span>
+        <strong>{item.value}</strong>
+        <FiArrowUpRight aria-hidden="true" />
+      </div>
     </Link>
   )
 }
@@ -147,30 +253,23 @@ function CampusRecommendations({
   onOpenRecommendedGig,
   recommendationSections = [],
 }) {
-  const populatedSections = recommendationSections.filter((section) => Array.isArray(section.items) && section.items.length)
+  const populatedSections = recommendationSections.filter((section) => (
+    section.id !== 'posts' && Array.isArray(section.items) && section.items.length
+  ))
 
   return (
     <>
-      {populatedSections.map((section, index) => (
-        <section key={section.id} className="campus-section">
-          {index === 0 ? (
-            <div className="campus-section-head">
-              <div>
-                <h3>{section.title}</h3>
-                <p>{section.subtitle}</p>
-              </div>
-              <Link to={SECTION_LINKS[section.id] || '/campus/explore'} className="campus-link-btn">
-                View all
-              </Link>
-            </div>
-          ) : (
-            <div className="campus-reco-strip">
+      {populatedSections.map((section) => (
+        <section key={section.id} className={`campus-section campus-recommendation-section is-${section.id}`}>
+          <div className="campus-section-head">
+            <div>
+              <h3>{section.title}</h3>
               <p>{section.subtitle}</p>
-              <Link to={SECTION_LINKS[section.id] || '/campus/explore'} className="campus-link-btn">
-                View all
-              </Link>
             </div>
-          )}
+            <Link to={SECTION_LINKS[section.id] || '/campus/explore'} className="campus-link-btn">
+              View all
+            </Link>
+          </div>
 
           <div className={`campus-gigs-grid campus-gigs-grid-${section.id}`}>
             {section.items.map((item, itemIndex) => (

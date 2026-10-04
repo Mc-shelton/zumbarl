@@ -1,15 +1,14 @@
 import { FiInfo, FiX } from 'react-icons/fi'
-import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 import { buildRadarRingPoints } from '../constants'
 
 function ProfilePortfolioProjectRail({
+  canManage = false,
   onClose,
+  onManage,
   selectedPortfolioDetail,
   selectedPortfolioItem,
   selectedPortfolioScorePoints,
 }) {
-  const canShareProfile = hasAccess(ACCESS_KEYS.profile.share)
-
   return (
     <aside className="campus-rail campus-portfolio-detail-rail" aria-label={`${selectedPortfolioItem.title} details`}>
       <section className="campus-rail-card campus-portfolio-detail-panel">
@@ -146,10 +145,8 @@ function ProfilePortfolioProjectRail({
             <span>{selectedPortfolioDetail.feedback.role}</span>
           </p>
           <div className="campus-portfolio-detail-actions">
-            <button type="button" className="campus-portfolio-detail-action-btn is-ghost">View Project Files</button>
-            {canShareProfile ? (
-              <button type="button" className="campus-portfolio-detail-action-btn is-primary">Share Project</button>
-            ) : null}
+            {selectedPortfolioItem.fileUrls?.[0] ? <a className="campus-portfolio-detail-action-btn is-ghost" href={selectedPortfolioItem.fileUrls[0]} target="_blank" rel="noreferrer">View Project Files</a> : null}
+            {canManage ? <button type="button" className="campus-portfolio-detail-action-btn is-primary" onClick={() => onManage(selectedPortfolioItem.id)}>Manage &amp; share</button> : null}
           </div>
         </section>
       </section>

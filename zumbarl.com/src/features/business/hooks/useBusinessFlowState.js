@@ -13,7 +13,7 @@ export function useBusinessFlowState() {
   )
 
   useEffect(() => {
-    hydrateBusinessOpportunitiesFromBackend()
+    hydrateBusinessOpportunitiesFromBackend().catch(() => {})
   }, [])
 
   return snapshot

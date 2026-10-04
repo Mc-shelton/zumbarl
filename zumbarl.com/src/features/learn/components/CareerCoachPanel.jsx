@@ -1,6 +1,7 @@
-import { useState } from 'react'
-import { FiArrowRight, FiAward, FiBookOpen, FiBriefcase, FiCalendar, FiCheck, FiTrendingUp, FiUsers, FiZap } from 'react-icons/fi'
+import { useEffect, useState } from 'react'
+import { FiArrowRight, FiAward, FiBookOpen, FiBriefcase, FiCalendar, FiCheck, FiPlus, FiSearch, FiTrendingUp, FiUsers, FiX, FiZap } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import { createProfileSkill, searchProfileSkills } from '../../profile/services/profileSkillService'
 
 function CoachLink({ href, children }) {
   return href ? <Link to={href}>{children}<FiArrowRight aria-hidden="true" /></Link> : <span>{children}</span>
@@ -9,11 +10,32 @@ function CoachLink({ href, children }) {
 function CareerCoachPanel({ plan, saving, onSave }) {
   const [selectedSkillIds, setSelectedSkillIds] = useState(() => plan?.focus?.selectedSkillIds || [])
   const [weeklyTarget, setWeeklyTarget] = useState(() => plan?.focus?.weeklyTarget || 3)
+  const [skillQuery, setSkillQuery] = useState('')
+  const [skillResults, setSkillResults] = useState([])
+  const [extraSkills, setExtraSkills] = useState([])
+  const [skillError, setSkillError] = useState('')
+
+  useEffect(() => {
+    let active = true
+    const timeout = setTimeout(() => {
+      if (!skillQuery.trim()) { setSkillResults([]); return }
+      searchProfileSkills(skillQuery).then((payload) => { if (active) setSkillResults(payload?.data || []) }).catch(() => { if (active) setSkillResults([]) })
+    }, 180)
+    return () => { active = false; clearTimeout(timeout) }
+  }, [skillQuery])
 
   if (!plan) return null
-  const toggleSkill = (skillId) => setSelectedSkillIds((current) => (
-    current.includes(skillId) ? current.filter((id) => id !== skillId) : current.length < 5 ? [...current, skillId] : current
-  ))
+  const availableSkills = [...new Map([...plan.focus.availableSkills, ...extraSkills].map((skill) => [skill.id, skill])).values()]
+  const selectedSkills = availableSkills.filter((skill) => selectedSkillIds.includes(skill.id))
+  const addSkill = (skill) => {
+    setExtraSkills((current) => current.some((item) => item.id === skill.id) ? current : [...current, skill])
+    setSelectedSkillIds((current) => current.includes(skill.id) || current.length >= 20 ? current : [...current, skill.id])
+    setSkillQuery('')
+  }
+  const createSkill = async () => {
+    setSkillError('')
+    try { addSkill(await createProfileSkill(skillQuery.trim())) } catch (error) { setSkillError(error.message) }
+  }
   const changed = weeklyTarget !== plan.focus.weeklyTarget
     || selectedSkillIds.join('|') !== plan.focus.selectedSkillIds.join('|')
 
@@ -26,15 +48,18 @@ function CareerCoachPanel({ plan, saving, onSave }) {
     <div className="career-coach-progress">
       <div><span>Next level</span><strong>{plan.game.nextLevelXp ? `${plan.game.nextLevelXp - plan.game.xp} XP to go` : 'Highest level reached'}</strong><i><b style={{ width: `${plan.game.progressToNextLevel}%` }} /></i></div>
       <div><span>Practice streak</span><strong>{plan.game.streakWeeks} {plan.game.streakWeeks === 1 ? 'week' : 'weeks'}</strong></div>
-      <div><span>This week</span><strong>{plan.game.weeklyProgress}/{plan.game.weeklyTarget} actions</strong></div>
+      <div><span>This week</span><strong>{plan.game.weeklyProgress}/{plan.game.weeklyTarget} resources</strong></div>
     </div>
 
     <div className="career-focus-editor">
-      <div><h3>Skills I want to practise</h3><p>Choose up to five. This selection powers every recommendation below.</p></div>
+      <div><h3>Skills in my version of this path</h3><p>Add or remove skills freely. These changes belong only to your path and drive its resources, work matches, and verification.</p></div>
       <div className="career-focus-skills">
-        {plan.focus.availableSkills.map((skill) => <button key={skill.id} type="button" className={selectedSkillIds.includes(skill.id) ? 'is-selected' : ''} onClick={() => toggleSkill(skill.id)} aria-pressed={selectedSkillIds.includes(skill.id)}>{selectedSkillIds.includes(skill.id) && <FiCheck aria-hidden="true" />}{skill.name}</button>)}
+        {selectedSkills.map((skill) => <button key={skill.id} type="button" className="is-selected" onClick={() => setSelectedSkillIds((current) => current.filter((id) => id !== skill.id))} aria-label={`Remove ${skill.name}`}>{skill.verified ? <FiCheck aria-hidden="true" /> : null}{skill.name}{skill.verified && <small>Work verified</small>}<FiX aria-hidden="true" /></button>)}
       </div>
-      <label><span>Weekly target</span><select value={weeklyTarget} onChange={(event) => setWeeklyTarget(Number(event.target.value))}>{[1, 2, 3, 4, 5, 6, 7].map((value) => <option key={value} value={value}>{value} actions</option>)}</select></label>
+      <div className="career-skill-search"><FiSearch /><input value={skillQuery} onChange={(event) => setSkillQuery(event.target.value)} placeholder="Search or create a skill" /></div>
+      {skillQuery.trim() && <div className="career-skill-results">{skillResults.filter((skill) => !selectedSkillIds.includes(skill.id)).slice(0, 6).map((skill) => <button key={skill.id} type="button" onClick={() => addSkill(skill)}><FiPlus />{skill.name}</button>)}{!skillResults.some((skill) => skill.name.toLowerCase() === skillQuery.trim().toLowerCase()) && skillQuery.trim().length >= 2 && <button type="button" onClick={createSkill}><FiPlus />Create “{skillQuery.trim()}”</button>}</div>}
+      {skillError && <p className="learn-inline-error">{skillError}</p>}
+      <label><span>Resources per week</span><select value={weeklyTarget} onChange={(event) => setWeeklyTarget(Number(event.target.value))}>{Array.from({ length: 14 }, (_, index) => index + 1).map((value) => <option key={value} value={value}>{value} {value === 1 ? 'resource' : 'resources'}</option>)}</select></label>
       <button type="button" className="learn-primary-btn" disabled={saving || !selectedSkillIds.length || !changed} onClick={() => onSave(selectedSkillIds, weeklyTarget)}>{plan.focus.configured ? 'Update coaching plan' : 'Activate coaching plan'}</button>
     </div>
 
@@ -46,7 +71,7 @@ function CareerCoachPanel({ plan, saving, onSave }) {
       <article><h3><FiBookOpen />Learn and practise</h3>
         {plan.resources.slice(0, 3).map((resource) => <CoachLink key={resource.id} href={`/campus/learn/${plan.enrollmentId}/checkpoints/${resource.checkpointId}/practice/${resource.id}`}><span><strong>{resource.title}</strong><small>{resource.provider || resource.type}</small></span></CoachLink>)}
         {plan.opportunities.slice(0, 3).map((item) => <CoachLink key={item.id} href={`/campus/opportunities?opportunity=${encodeURIComponent(item.id)}&view=activity`}><span><strong>{item.title}</strong><small>{item.matchScore}% match · {item.companyName}</small></span></CoachLink>)}
-        {!plan.resources.length && !plan.opportunities.length && <p>Complete your current checkpoint to unlock focused practice.</p>}
+        {!plan.resources.length && !plan.opportunities.length && <p>Add a focus skill or refresh your resources to find relevant practice.</p>}
       </article>
 
       <article><h3><FiCalendar />Industry exposure</h3>

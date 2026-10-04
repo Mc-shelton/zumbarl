@@ -16,6 +16,8 @@ function useCampusSearchResults(query, feedPosts = []) {
   useEffect(() => {
     const normalizedQuery = query.trim()
     if (!normalizedQuery) {
+      // Clearing the query synchronously invalidates results from the prior search.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ data: EMPTY_RESULTS, error: '', loading: false })
       return undefined
     }

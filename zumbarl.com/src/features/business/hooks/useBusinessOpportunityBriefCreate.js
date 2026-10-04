@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useBlocker, useLocation, useNavigate } from 'react-router-dom'
 import {
   BUSINESS_OPPORTUNITY_BRIEF_DEFAULTS,
@@ -7,7 +7,8 @@ import {
 import {
   createBusinessOpportunity,
   getBusinessFlowSnapshot,
-  recordApplicantReviewEvent,
+  hydrateBusinessOpportunitiesFromBackend,
+  subscribeBusinessFlow,
 } from '../services/businessFlowService'
 import {
   getBusinessProfileSnapshot,
@@ -314,22 +315,34 @@ function getFirstMissingStep(form) {
 export function useBusinessOpportunityBriefCreate() {
   const navigate = useNavigate()
   const location = useLocation()
-  const draftToContinue = location.state?.draftOpportunityId
+  const businessFlow = useSyncExternalStore(
+    subscribeBusinessFlow,
+    getBusinessFlowSnapshot,
+    getBusinessFlowSnapshot,
+  )
+  const draftToContinue = new URLSearchParams(location.search).get('draft')
+    || location.state?.draftOpportunityId
+    || ''
   const existingDraft = draftToContinue
-    ? getBusinessFlowSnapshot().opportunities.find((opportunity) => opportunity.id === draftToContinue)
+    ? businessFlow.opportunities.find((opportunity) => (
+        opportunity.id === draftToContinue || opportunity.backendId === draftToContinue
+      ))
     : null
   const initialForm = useMemo(() => getOpportunityFormDraft(existingDraft), [existingDraft])
   const [activeStep, setActiveStep] = useState(() => existingDraft ? getFirstMissingStep(initialForm) : 1)
   const [form, setForm] = useState(() => initialForm)
   const [draftOpportunityId, setDraftOpportunityId] = useState(existingDraft?.id || null)
+  const [completedDraftLookup, setCompletedDraftLookup] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isUploadingSplash, setIsUploadingSplash] = useState(false)
   const [saveError, setSaveError] = useState('')
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
+  const hasUnsavedChangesRef = useRef(false)
+  const loadedDraftRef = useRef(existingDraft?.id || '')
   const [businessProfile, setBusinessProfile] = useState(() => getBusinessProfileSnapshot())
   const saveDraftBeforeLeaveRef = useRef(null)
   const leaveBlocker = useBlocker(({ currentLocation, nextLocation }) => (
-    hasUnsavedChanges && currentLocation.pathname !== nextLocation.pathname
+    hasUnsavedChangesRef.current && currentLocation.pathname !== nextLocation.pathname
   ))
   // Derived rather than mirrored into state: the prompt is open exactly when the
   // router is blocking navigation. reset()/proceed() below close it on their own.
@@ -347,6 +360,33 @@ export function useBusinessOpportunityBriefCreate() {
     hydrateBusinessProfileFromBackend()
     return unsubscribe
   }, [])
+
+  useEffect(() => {
+    if (!draftToContinue || existingDraft || completedDraftLookup === draftToContinue) return undefined
+
+    let isCurrent = true
+    hydrateBusinessOpportunitiesFromBackend()
+      .catch((error) => {
+        if (isCurrent) setSaveError(error instanceof Error ? error.message : 'Could not load this opportunity draft.')
+      })
+      .finally(() => {
+        if (isCurrent) setCompletedDraftLookup(draftToContinue)
+      })
+
+    return () => { isCurrent = false }
+  }, [completedDraftLookup, draftToContinue, existingDraft])
+
+  useEffect(() => {
+    if (!existingDraft || loadedDraftRef.current === existingDraft.id) return
+
+    const nextForm = getOpportunityFormDraft(existingDraft)
+    loadedDraftRef.current = existingDraft.id
+    setForm(nextForm)
+    setDraftOpportunityId(existingDraft.id)
+    setActiveStep(getFirstMissingStep(nextForm))
+    hasUnsavedChangesRef.current = false
+    setHasUnsavedChanges(false)
+  }, [existingDraft])
 
   const summary = useMemo(() => ({
     acceptanceCriteria: form.acceptanceCriteria,
@@ -369,6 +409,7 @@ export function useBusinessOpportunityBriefCreate() {
   }), [businessProfile, clarityChecks.length, completeClarityChecks, form])
 
   function updateField(name, value) {
+    hasUnsavedChangesRef.current = true
     setHasUnsavedChanges(true)
     setForm((current) => ({ ...current, [name]: value }))
   }
@@ -395,15 +436,9 @@ export function useBusinessOpportunityBriefCreate() {
       }), {
         existingId: draftOpportunityId,
       })
-      const isPublished = status === 'Open'
-
       setDraftOpportunityId(opportunity.id)
+      hasUnsavedChangesRef.current = false
       setHasUnsavedChanges(false)
-      recordApplicantReviewEvent({
-        action: isPublished ? 'opportunity_published' : 'opportunity_draft_saved',
-        opportunityId: opportunity.id,
-        detail: `${opportunity.title} ${isPublished ? 'published' : 'saved as a draft'} from create opportunity brief.`,
-      })
 
       if (!options.skipNavigate) {
         navigate('/business/opportunities', options.navigateState ? { state: options.navigateState } : undefined)
@@ -483,7 +518,12 @@ export function useBusinessOpportunityBriefCreate() {
     clarityChecks,
     clarityScore,
     form,
+    isEditingDraft: Boolean(draftToContinue),
     isPublishReady,
+    isDraftLoading: Boolean(draftToContinue && !existingDraft && completedDraftLookup !== draftToContinue),
+    draftLoadError: draftToContinue && completedDraftLookup === draftToContinue && !existingDraft
+      ? 'This opportunity draft could not be found. It may have been deleted.'
+      : '',
     isSaving,
     isUploadingSplash,
     isFirstStep: activeStep <= 1,

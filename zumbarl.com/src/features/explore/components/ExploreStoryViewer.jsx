@@ -32,12 +32,6 @@ import {
 import { creatorProfilePath } from '../utils/creatorProfilePath'
 
 const DEFAULT_STORY_DURATION = 7000
-const STORY_COMMENTS = [
-  { id: 'aisha', author: 'Aisha Mwangi', handle: '@aisha.mwangi', time: '4m', text: 'This is such a good update. Keep them coming!', avatar: '/assets/index/bee_nobg.png' },
-  { id: 'david', author: 'David Kamau', handle: '@david.analytics', time: '9m', text: 'The campus energy in this one is perfect.', avatar: '/assets/index/bee_nobg.png' },
-  { id: 'fatma', author: 'Fatma Ali', handle: '@fatma.ai', time: '14m', text: 'Love this perspective 👏', avatar: '/assets/index/bee_nobg.png' },
-  { id: 'mercy', author: 'Mercy Wanjiku', handle: '@mercy.w', time: '21m', text: 'Saving this for later!', avatar: '/assets/index/bee_nobg.png' },
-]
 
 function storySnapshot(item, creator) {
   return {
@@ -156,6 +150,8 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
 
   useEffect(() => {
     remainingDurationRef.current = activeItem?.duration || DEFAULT_STORY_DURATION
+    // Product controls reset when navigation selects a different story item.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setProductImageIndex(0)
     setProductActionStatus('')
     setIsOfferOpen(false)
@@ -242,10 +238,7 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
   const engagement = engagementByItem[activeItem.id] || { reactionCount: 0, viewerReacted: false, comments: [] }
   const isLiked = Boolean(engagement.viewerReacted)
   const itemComments = engagement.comments || []
-  const comments = activeItem.comments + itemComments.length
-  const visibleComments = STORY_COMMENTS
-    .filter((entry) => entry.author !== activeCreator.name)
-    .slice(0, Math.min(3, activeItem.comments))
+  const comments = Number(engagement.commentCount ?? itemComments.length)
   const mediaAlt = `${activeCreator.name}: ${activeItem.title}`
 
   async function submitComment(event) {
@@ -562,7 +555,7 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
             </header>
 
             <div className="explore-story-comments-list">
-              {[...visibleComments, ...itemComments].length ? [...visibleComments, ...itemComments].map((entry) => (
+              {itemComments.length ? itemComments.map((entry) => (
                 <article key={entry.id}>
                   <img src={entry.avatar || '/assets/index/bee_nobg.png'} alt="" />
                   <div>

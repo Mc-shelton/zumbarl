@@ -1,4 +1,5 @@
 export const ROLE_SIDES = {
+  public: 'public',
   student: 'student',
   company: 'company',
   platform: 'platform',
@@ -465,6 +466,14 @@ export const AUTH_ROLES = {
 
 export const AUTH_ROLE_LIST = Object.values(AUTH_ROLES)
 
+const UNAUTHENTICATED_ROLE = {
+  id: 'unauthenticated',
+  side: ROLE_SIDES.public,
+  label: 'Signed out',
+  summary: 'No authenticated session.',
+  access: [],
+}
+
 export const AUTH_ROLE_STORAGE_KEY = 'zumbarl.auth.roleId'
 
 const BACKEND_ROLE_TO_AUTH_ROLE_ID = {
@@ -487,17 +496,8 @@ const BACKEND_ROLE_TO_AUTH_ROLE_ID = {
   CONTENT_MODERATOR: AUTH_ROLES.contentModerator.id,
 }
 
-// Temporary local switch until real auth/session state exists.
-export const TEMP_CURRENT_LOGIN_ROLE_ID = AUTH_ROLES.studentStandard.id
-
-export const TEMP_CURRENT_LOGIN_PROFILE = {
-  name: 'Zumbarl Student',
-  campus: '',
-  avatar: '/assets/index/bee_nobg.png',
-}
-
 export function getAuthRoleById(roleId) {
-  return AUTH_ROLE_LIST.find((role) => role.id === roleId) || AUTH_ROLES.studentStandard
+  return AUTH_ROLE_LIST.find((role) => role.id === roleId) || UNAUTHENTICATED_ROLE
 }
 
 function readStoredAuthRoleId() {
@@ -506,25 +506,27 @@ function readStoredAuthRoleId() {
 }
 
 export function getAuthRoleIdFromBackendRole(role) {
-  return BACKEND_ROLE_TO_AUTH_ROLE_ID[role] || AUTH_ROLES.studentStandard.id
+  return BACKEND_ROLE_TO_AUTH_ROLE_ID[role] || UNAUTHENTICATED_ROLE.id
 }
 
-const TEMP_BASE_LOGIN_ROLE = getAuthRoleById(readStoredAuthRoleId() || TEMP_CURRENT_LOGIN_ROLE_ID)
+const INITIAL_LOGIN_ROLE = getAuthRoleById(readStoredAuthRoleId())
 
 export const CURRENT_LOGIN_ROLE = {
-  ...TEMP_BASE_LOGIN_ROLE,
-  access: Array.from(new Set(TEMP_BASE_LOGIN_ROLE.access)),
+  ...INITIAL_LOGIN_ROLE,
+  access: Array.from(new Set(INITIAL_LOGIN_ROLE.access)),
 }
 
 export const CURRENT_LOGIN_VIEWER = {
-  ...TEMP_CURRENT_LOGIN_PROFILE,
+  name: 'Account',
+  campus: '',
+  avatar: '/assets/index/bee_nobg.png',
   role: CURRENT_LOGIN_ROLE.label,
   roleId: CURRENT_LOGIN_ROLE.id,
   roleSide: CURRENT_LOGIN_ROLE.side,
 }
 
 export function getCurrentLoginRole() {
-  const role = getAuthRoleById(readStoredAuthRoleId() || TEMP_CURRENT_LOGIN_ROLE_ID)
+  const role = getAuthRoleById(readStoredAuthRoleId())
   return {
     ...role,
     access: Array.from(new Set(role.access)),

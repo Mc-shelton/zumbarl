@@ -20,6 +20,7 @@ function OpportunitiesTabContent({
   onClearFilters,
   onCreateBooking,
   onDeclineInvite,
+  onEditFilters,
   onMarkInvitesSeen,
   onOpenInviteProject,
   onOpenMarketingCampaign,
@@ -34,6 +35,7 @@ function OpportunitiesTabContent({
   onOpportunityTypeChange,
   onViewBooking,
   opportunityTypeOptions,
+  recommendationPresentation,
   projects,
   serviceOrders,
   serviceOrdersError,
@@ -55,10 +57,12 @@ function OpportunitiesTabContent({
         activeOpportunityIntentId={activeOpportunityIntentId}
         activeOpportunityTypeId={activeOpportunityTypeId}
         onClearFilters={onClearFilters}
+        onEditFilters={onEditFilters}
         onOpportunitySelect={onOpportunitySelect}
         onOpportunityTypeChange={onOpportunityTypeChange}
         opportunities={visibleOpportunities}
         opportunityTypeOptions={opportunityTypeOptions}
+        recommendationPresentation={recommendationPresentation}
         selectedOpportunityUuid={selectedOpportunityUuid}
       />
     )

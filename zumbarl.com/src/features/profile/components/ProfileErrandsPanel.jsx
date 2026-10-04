@@ -84,12 +84,14 @@ function ProfileErrandsPanel() {
 
   useEffect(() => {
     const initialLoad = window.setTimeout(load, 0)
-    const timer = window.setInterval(() => load({ quiet: true }), 15000)
+    const timer = window.setInterval(() => load({ quiet: true }), 120000)
     const controller = new AbortController()
     const onFocus = () => load({ quiet: true })
     window.addEventListener('focus', onFocus)
     subscribeToRealtimeEvents((event) => {
-      if (event.type === 'notification.created') {
+      if (event.type === 'connected') {
+        load({ quiet: true })
+      } else if (event.type === 'notification.created') {
         if (event.data?.kind === 'ERRAND_AVAILABLE') setWorkTab('available')
         load({ quiet: true })
       }

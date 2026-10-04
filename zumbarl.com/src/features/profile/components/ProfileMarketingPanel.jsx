@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { FaFacebookF, FaInstagram, FaTiktok, FaXTwitter, FaYoutube } from 'react-icons/fa6'
-import { FiAlertTriangle, FiArrowUp, FiCheckCircle, FiClock, FiRefreshCw, FiShield, FiUploadCloud } from 'react-icons/fi'
+import { FiAlertTriangle, FiArrowUp, FiCheckCircle, FiClock, FiLock, FiRefreshCw, FiShield, FiTrash2, FiUploadCloud, FiX } from 'react-icons/fi'
+import { ConfirmDialog } from '../../../components/ui'
 import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
 import {
+  deleteSocialMetricsAccount,
   extractSocialMetrics,
   readSocialMarketingProfile,
   saveSocialMetricsAccount,
@@ -23,7 +25,12 @@ function platformMeta(platform) {
 }
 
 function formatNumber(value) {
-  return Number(value || 0).toLocaleString()
+  if (value === null || value === undefined || value === '') return '—'
+  return Number(value).toLocaleString()
+}
+
+function nullableMetric(value) {
+  return value === '' || value === null || value === undefined ? null : Number(value)
 }
 
 function formatUpdateDate(value) {
@@ -41,6 +48,8 @@ function normalizeHandle(value) {
 function ProfileMarketingPanel() {
   const [accounts, setAccounts] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [reloadKey, setReloadKey] = useState(0)
+  const [loadError, setLoadError] = useState('')
   const [error, setError] = useState('')
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [platform, setPlatform] = useState('Instagram')
@@ -51,17 +60,25 @@ function ProfileMarketingPanel() {
   const [screenshotUpload, setScreenshotUpload] = useState(null)
   const [isExtracting, setIsExtracting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [accountPendingRemoval, setAccountPendingRemoval] = useState(null)
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false)
   const [extractionNote, setExtractionNote] = useState('')
   const [extractionConfidence, setExtractionConfidence] = useState(0)
 
   useEffect(() => {
     let isActive = true
     readSocialMarketingProfile()
-      .then((result) => { if (isActive) setAccounts(result.accounts || []) })
-      .catch((reason) => { if (isActive) setError(reason.message || 'Social profiles could not be loaded.') })
+      .then((result) => {
+        if (!isActive) return
+        setAccounts(result.accounts || [])
+        setLoadError('')
+      })
+      .catch(() => {
+        if (isActive) setLoadError('We could not load your social profiles.')
+      })
       .finally(() => { if (isActive) setIsLoading(false) })
     return () => { isActive = false }
-  }, [])
+  }, [reloadKey])
 
   const summary = useMemo(() => ({
     followers: accounts.reduce((total, account) => total + Number(account.followers || 0), 0),
@@ -69,8 +86,16 @@ function ProfileMarketingPanel() {
     due: accounts.filter((account) => account.isStale).length,
   }), [accounts])
 
+  function retryLoading() {
+    setIsLoading(true)
+    setLoadError('')
+    setReloadKey((key) => key + 1)
+  }
+
   function openEditor(account = null) {
-    const nextPlatform = account?.platform || 'Instagram'
+    const nextPlatform = account?.platform || SOCIAL_PLATFORMS.find(({ id }) => (
+      !accounts.some((item) => item.platform.toLowerCase() === id.toLowerCase())
+    ))?.id || 'Instagram'
     setPlatform(nextPlatform)
     setHandle(account?.handle || '')
     setConnectedHandle(account?.handle || '')
@@ -85,6 +110,7 @@ function ProfileMarketingPanel() {
     setExtractionNote('')
     setExtractionConfidence(0)
     setError('')
+    setAccountPendingRemoval(null)
     setIsEditorOpen(true)
   }
 
@@ -116,15 +142,16 @@ function ProfileMarketingPanel() {
       setDetectedHandle(result.handleCheck?.detectedHandle || extraction.handle || '')
       if (!connectedHandle && !handle.trim() && extraction.handle) setHandle(extraction.handle)
       setMetrics((current) => ({
-        followers: extraction.followers ?? current.followers,
-        averageLikes: extraction.averageLikes ?? current.averageLikes,
-        averageEngagement: extraction.averageEngagement ?? current.averageEngagement,
+        ...current,
+        followers: extraction.followers ?? '',
+        averageLikes: extraction.averageLikes ?? '',
+        averageEngagement: extraction.averageEngagement ?? '',
       }))
       const found = Number(extraction.detectedCount || 0)
       setExtractionNote(
         found === 3
           ? 'All three metrics were read from your screenshot. Review them, then save.'
-          : `${found} of 3 metrics were read automatically. Complete or correct the fields before saving.`,
+          : `${found} of 3 metrics were read automatically. You can correct them or leave unread metrics empty.`,
       )
     } catch (reason) {
       setError(reason.message || 'The screenshot could not be analysed.')
@@ -142,9 +169,9 @@ function ProfileMarketingPanel() {
       const result = await saveSocialMetricsAccount({
         platform,
         handle,
-        followers: Number(metrics.followers || 0),
-        averageLikes: Number(metrics.averageLikes || 0),
-        averageEngagement: Number(metrics.averageEngagement || 0),
+        followers: nullableMetric(metrics.followers),
+        averageLikes: nullableMetric(metrics.averageLikes),
+        averageEngagement: nullableMetric(metrics.averageEngagement),
         screenshotUploadId: screenshotUpload.id,
         extractionConfidence,
       })
@@ -161,6 +188,26 @@ function ProfileMarketingPanel() {
     }
   }
 
+  async function removeAccount() {
+    if (!accountPendingRemoval || isDeletingAccount) return
+    setIsDeletingAccount(true)
+    setError('')
+    try {
+      await deleteSocialMetricsAccount(accountPendingRemoval.platform)
+      setAccounts((current) => current.filter((account) => (
+        account.platform.toLowerCase() !== accountPendingRemoval.platform.toLowerCase()
+      )))
+      setAccountPendingRemoval(null)
+      setIsEditorOpen(false)
+      setScreenshotUpload(null)
+    } catch (reason) {
+      setAccountPendingRemoval(null)
+      setError(reason.message || 'The social account could not be removed.')
+    } finally {
+      setIsDeletingAccount(false)
+    }
+  }
+
   const expectedVerificationHandle = normalizeHandle(connectedHandle || handle)
   const normalizedDetectedHandle = normalizeHandle(detectedHandle)
   const handleMatches = Boolean(
@@ -172,37 +219,45 @@ function ProfileMarketingPanel() {
   const handleMismatch = Boolean(screenshotUpload && expectedVerificationHandle && normalizedDetectedHandle && !handleMatches)
   const handleWasNotDetected = Boolean(screenshotUpload && !normalizedDetectedHandle)
 
-  if (isLoading) return <section className="profile-marketing-state">Loading your social profiles…</section>
+  if (isLoading) return <section className="profile-marketing-state" aria-busy="true"><span /><span /><span /><p>Loading creator analytics…</p></section>
 
   return (
     <section className="profile-marketing-panel">
       <header className="profile-marketing-heading">
         <div>
-          <span>Creator eligibility</span>
-          <h2>Social reach</h2>
-          <p>Upload a fresh analytics screenshot every week. We read the numbers and use the verified metrics to match you with campaigns.</p>
+          <span>Marketing profile</span>
+          <h2>Creator analytics</h2>
+          <p>Keep your audience numbers current to qualify for campaigns.</p>
         </div>
-        <button type="button" onClick={() => openEditor()}>
+        {accounts.length ? <button type="button" onClick={() => openEditor()}>
           <FiUploadCloud aria-hidden="true" /> Add social profile
-        </button>
+        </button> : null}
       </header>
 
-      <div className="profile-marketing-summary" aria-label="Social profile summary">
-        <article>
-          <FiArrowUp aria-hidden="true" />
-          <div><strong>{formatNumber(summary.followers)}</strong><span>Total followers</span></div>
-        </article>
-        <article>
-          <FiShield aria-hidden="true" />
-          <div><strong>{summary.verified}</strong><span>Current profiles</span></div>
-        </article>
-        <article className={summary.due ? 'is-due' : ''}>
-          <FiClock aria-hidden="true" />
-          <div><strong>{summary.due}</strong><span>Updates due</span></div>
-        </article>
-      </div>
+      {!loadError ? (
+        <div className="profile-marketing-summary" aria-label="Social profile summary">
+          <article>
+            <FiArrowUp aria-hidden="true" />
+            <div><strong>{formatNumber(summary.followers)}</strong><span>Followers</span></div>
+          </article>
+          <article>
+            <FiShield aria-hidden="true" />
+            <div><strong>{summary.verified}</strong><span>Verified</span></div>
+          </article>
+          <article className={summary.due ? 'is-due' : ''}>
+            <FiClock aria-hidden="true" />
+            <div><strong>{summary.due}</strong><span>Updates due</span></div>
+          </article>
+        </div>
+      ) : null}
 
-      {error && !isEditorOpen ? <p className="profile-marketing-error" role="alert">{error}</p> : null}
+      {loadError ? (
+        <div className="profile-marketing-load-error" role="alert">
+          <FiAlertTriangle aria-hidden="true" />
+          <div><strong>Creator profiles unavailable</strong><span>{loadError} Check your connection, then try again.</span></div>
+          <button type="button" onClick={retryLoading}><FiRefreshCw aria-hidden="true" /> Retry</button>
+        </div>
+      ) : null}
 
       <div className="profile-marketing-accounts">
         {accounts.map((account) => {
@@ -227,50 +282,86 @@ function ProfileMarketingPanel() {
           )
         })}
 
-        {!accounts.length ? (
+        {!accounts.length && !loadError ? (
           <div className="profile-marketing-empty">
-            <FiUploadCloud aria-hidden="true" />
-            <h3>Add your first creator profile</h3>
-            <p>Start with an Instagram, TikTok, YouTube, Facebook, or X analytics screenshot.</p>
-            <button type="button" onClick={() => openEditor()}>Upload screenshot</button>
+            <div className="profile-marketing-platforms" aria-label="Supported platforms">
+              {SOCIAL_PLATFORMS.map(({ id, Icon }) => <span key={id} title={id}><Icon aria-hidden="true" /></span>)}
+            </div>
+            <h3>Add your first social account</h3>
+            <p>Upload one analytics screenshot. We&apos;ll read the audience numbers for you.</p>
+            <button type="button" onClick={() => openEditor()}><FiUploadCloud aria-hidden="true" /> Add social profile</button>
           </div>
         ) : null}
       </div>
 
       <aside className="profile-marketing-weekly-note">
         <FiCheckCircle aria-hidden="true" />
-        <div><strong>Why weekly?</strong><p>Fresh numbers let growing accounts qualify for better campaigns and prevent old analytics from being used.</p></div>
+        <div><strong>Updated weekly</strong><p>Fresh numbers improve campaign matching.</p></div>
       </aside>
 
       {isEditorOpen ? (
         <div className="profile-marketing-editor" role="dialog" aria-modal="true" aria-labelledby="social-metrics-title">
           <form onSubmit={saveAccount}>
             <header>
-              <div><span>Weekly verification</span><h2 id="social-metrics-title">Update social metrics</h2></div>
-              <button type="button" onClick={closeEditor} aria-label="Close social metrics editor">×</button>
+              <div>
+                <span>Creator verification</span>
+                <h2 id="social-metrics-title">Update your reach</h2>
+                <p>Share a fresh analytics screenshot.</p>
+              </div>
+              <button type="button" onClick={closeEditor} aria-label="Close social metrics editor"><FiX aria-hidden="true" /></button>
             </header>
 
             <div className="profile-marketing-editor-grid">
-              <label>Platform
-                <select value={platform} onChange={(event) => setPlatform(event.target.value)} disabled={isExtracting || Boolean(screenshotUpload)}>
-                  {SOCIAL_PLATFORMS.map((item) => <option key={item.id}>{item.id}</option>)}
-                </select>
-              </label>
-              <label>Profile handle
-                <input
-                  value={handle}
-                  onChange={(event) => setHandle(event.target.value)}
-                  placeholder="@yourhandle"
-                  required
-                  disabled={Boolean(connectedHandle)}
-                />
-              </label>
+              <div className="profile-marketing-platform-field">
+                <span id="social-platform-label">Platform</span>
+                <div className="profile-marketing-platform-picker" role="radiogroup" aria-labelledby="social-platform-label">
+                  {SOCIAL_PLATFORMS.map(({ id, Icon }) => (
+                    <button
+                      key={id}
+                      type="button"
+                      role="radio"
+                      aria-checked={platform === id}
+                      aria-label={id}
+                      className={platform === id ? 'is-selected' : ''}
+                      onClick={() => setPlatform(id)}
+                      disabled={isExtracting || Boolean(screenshotUpload) || Boolean(connectedHandle) || accounts.some((account) => account.platform.toLowerCase() === id.toLowerCase())}
+                    >
+                      <Icon aria-hidden="true" /><span>{id}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              {connectedHandle ? (
+                <div className="profile-marketing-locked-account">
+                  <span className="profile-marketing-locked-icon"><FiLock aria-hidden="true" /></span>
+                  <div>
+                    <span>Connected account</span>
+                    <strong>{normalizeHandle(connectedHandle)}</strong>
+                    <small>The handle is locked after its first verification.</small>
+                  </div>
+                  <button type="button" onClick={() => setAccountPendingRemoval({ platform, handle: connectedHandle })}>
+                    <FiTrash2 aria-hidden="true" /> Remove and start fresh
+                  </button>
+                </div>
+              ) : (
+                <label>Profile handle
+                  <input
+                    value={handle}
+                    onChange={(event) => setHandle(event.target.value)}
+                    placeholder="@yourhandle"
+                    required
+                  />
+                </label>
+              )}
             </div>
 
             <label className={`profile-marketing-upload${isExtracting ? ' is-reading' : ''}`}>
-              <FiUploadCloud aria-hidden="true" />
-              <strong>{isExtracting ? 'Reading your screenshot…' : screenshotUpload ? screenshotUpload.fileName : 'Upload analytics screenshot'}</strong>
-              <span>PNG, JPG or WebP · show followers, likes and engagement</span>
+              <span className="profile-marketing-upload-icon"><FiUploadCloud aria-hidden="true" /></span>
+              <span className="profile-marketing-upload-copy">
+                <strong>{isExtracting ? 'Reading your screenshot…' : screenshotUpload ? screenshotUpload.fileName : 'Choose analytics screenshot'}</strong>
+                <span>{screenshotUpload ? 'Tap to use a different image' : 'PNG, JPG or WebP · include your handle and insights'}</span>
+              </span>
+              <span className="profile-marketing-upload-action">{screenshotUpload ? 'Replace' : 'Upload'}</span>
               <input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => analyseScreenshot(event.target.files?.[0])} disabled={isExtracting || isSaving} />
             </label>
 
@@ -297,12 +388,14 @@ function ProfileMarketingPanel() {
             ) : null}
             {error ? <p className="profile-marketing-error" role="alert">{error}</p> : null}
 
-            <fieldset disabled={isExtracting}>
-              <legend>Extracted metrics</legend>
-              <label>Followers<input type="number" min="0" value={metrics.followers} onChange={(event) => setMetrics((current) => ({ ...current, followers: event.target.value }))} required /></label>
-              <label>Average likes<input type="number" min="0" value={metrics.averageLikes} onChange={(event) => setMetrics((current) => ({ ...current, averageLikes: event.target.value }))} required /></label>
-              <label>Average engagements<input type="number" min="0" value={metrics.averageEngagement} onChange={(event) => setMetrics((current) => ({ ...current, averageEngagement: event.target.value }))} required /></label>
-            </fieldset>
+            {screenshotUpload ? (
+              <fieldset disabled={isExtracting}>
+                <legend>Review metrics</legend>
+                <label>Followers <small>Optional</small><input type="number" min="0" value={metrics.followers} placeholder="—" onChange={(event) => setMetrics((current) => ({ ...current, followers: event.target.value }))} /></label>
+                <label>Avg. likes <small>Optional</small><input type="number" min="0" value={metrics.averageLikes} placeholder="—" onChange={(event) => setMetrics((current) => ({ ...current, averageLikes: event.target.value }))} /></label>
+                <label>Avg. engagement <small>Optional</small><input type="number" min="0" value={metrics.averageEngagement} placeholder="—" onChange={(event) => setMetrics((current) => ({ ...current, averageEngagement: event.target.value }))} /></label>
+              </fieldset>
+            ) : null}
 
             <footer>
               <button type="button" onClick={closeEditor}>Cancel</button>
@@ -313,6 +406,17 @@ function ProfileMarketingPanel() {
           </form>
         </div>
       ) : null}
+
+      <ConfirmDialog
+        cancelLabel="Keep account"
+        confirmLabel="Remove account"
+        description={accountPendingRemoval ? `This removes ${normalizeHandle(accountPendingRemoval.handle)} and its verified metric history from Zumbarl. You can then add ${accountPendingRemoval.platform} again with a different handle.` : ''}
+        isOpen={Boolean(accountPendingRemoval)}
+        isPending={isDeletingAccount}
+        onCancel={() => { if (!isDeletingAccount) setAccountPendingRemoval(null) }}
+        onConfirm={removeAccount}
+        title={accountPendingRemoval ? `Remove ${normalizeHandle(accountPendingRemoval.handle)}?` : 'Remove social account?'}
+      />
     </section>
   )
 }

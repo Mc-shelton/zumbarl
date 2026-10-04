@@ -5,9 +5,14 @@ import {
   FiEdit3,
   FiExternalLink,
   FiGlobe,
+  FiImage,
+  FiLink,
   FiMapPin,
+  FiMessageCircle,
+  FiPlus,
   FiShield,
   FiTarget,
+  FiThumbsUp,
   FiUsers,
 } from "react-icons/fi";
 import { Link } from "react-router-dom";
@@ -15,10 +20,14 @@ import Seo from "../components/Seo";
 import { BusinessWorkspaceSidebar } from "../features/business/components/BusinessApplicantSidebar";
 import { BusinessWorkspaceHeader } from "../features/business/components/BusinessWorkspaceHeader";
 import { hydrateBusinessProfileFromBackend } from "../features/business/services/businessProfileService";
+import { createBusinessPost, readBusinessDashboard } from "../features/business/services/readBusinessDashboard";
+import ExplorePostComposer from "../features/explore/components/ExplorePostComposer";
 import { listBackendBusinessOpportunities } from "../features/business/services/persistBusinessOpportunity";
+import { normalizeZumbarlFileUrl } from "../lib/normalizeZumbarlFileUrl";
 import "../styles/campus.css";
 import "../styles/business.css";
 import "../styles/business-company-profile.css";
+import "../styles/explore-campus.css";
 
 const TABS = ["Overview", "Opportunities", "People", "Updates"];
 
@@ -28,21 +37,51 @@ function statusLabel(value) {
     .replace(/\b\w/g, (letter) => letter.toUpperCase());
 }
 
+function updateTypeLabel(type) {
+  if (type === "image") return "Photo update";
+  if (type === "video") return "Video update";
+  if (type === "poll") return "Campus poll";
+  if (type === "feeling") return "Milestone";
+  return "Company update";
+}
+
+function relativeUpdateTime(value) {
+  const timestamp = new Date(value).getTime();
+  if (!Number.isFinite(timestamp)) return "Recently";
+  const minutes = Math.max(0, Math.round((Date.now() - timestamp) / 60000));
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  if (minutes < 1440) return `${Math.round(minutes / 60)}h ago`;
+  return new Date(timestamp).toLocaleDateString("en-KE", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
 export default function BusinessCompanyProfilePage() {
   const [profile, setProfile] = useState(null);
   const [opportunities, setOpportunities] = useState([]);
+  const [posts, setPosts] = useState([]);
+  const [postCount, setPostCount] = useState(0);
   const [activeTab, setActiveTab] = useState("Overview");
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [isPostComposerOpen, setIsPostComposerOpen] = useState(false);
+  const [postComposerType, setPostComposerType] = useState("post");
 
   useEffect(() => {
     let active = true;
     Promise.all([
       hydrateBusinessProfileFromBackend(),
       listBackendBusinessOpportunities().catch(() => ({ data: [] })),
+      readBusinessDashboard().catch(() => ({ posts: [], postCount: 0 })),
     ])
-      .then(([company, response]) => {
+      .then(([company, response, dashboard]) => {
         if (!active) return;
         setProfile(company);
+        setPosts(dashboard.posts || []);
+        setPostCount(Number(dashboard.postCount || 0));
         setOpportunities(
           Array.isArray(response) ? response : response?.data || [],
         );
@@ -80,6 +119,34 @@ export default function BusinessCompanyProfilePage() {
       ].filter(Boolean).length
     : 0;
   const completeness = Math.round((completedFields / 6) * 100);
+
+  function openPostComposer(type = "post") {
+    setNotice("");
+    setPostComposerType(type);
+    setIsPostComposerOpen(true);
+  }
+
+  async function publishUpdate(payload) {
+    await createBusinessPost(payload);
+    const dashboard = await readBusinessDashboard().catch(() => null);
+    if (dashboard) {
+      setPosts(dashboard.posts || []);
+      setPostCount(Number(dashboard.postCount || 0));
+      if (dashboard.business) setProfile(dashboard.business);
+    }
+    setActiveTab("Updates");
+    setNotice("Your company update is live in Explore Campus.");
+  }
+
+  async function copyStudentLink(postId) {
+    try {
+      const url = new URL(`/campus/explore/posts/${encodeURIComponent(postId)}`, window.location.origin);
+      await navigator.clipboard.writeText(url.toString());
+      setNotice("Student-facing post link copied to your clipboard.");
+    } catch {
+      setNotice("Copying is unavailable in this browser. Open Zumbarl over HTTPS and try again.");
+    }
+  }
 
   if (error)
     return (
@@ -159,6 +226,9 @@ export default function BusinessCompanyProfilePage() {
                   </footer>
                 </div>
                 <aside>
+                  <button className="business-company-update-action" type="button" onClick={() => openPostComposer()}>
+                    <FiEdit3 /> Post update
+                  </button>
                   <Link to="/business/settings">
                     <FiEdit3 /> Edit profile
                   </Link>
@@ -202,7 +272,7 @@ export default function BusinessCompanyProfilePage() {
                   className={activeTab === tab ? "is-active" : ""}
                   onClick={() => setActiveTab(tab)}
                 >
-                  {tab}
+                  {tab}{tab === "Updates" ? <span>{postCount}</span> : null}
                 </button>
               ))}
             </nav>
@@ -379,29 +449,68 @@ export default function BusinessCompanyProfilePage() {
               </section>
             ) : null}
             {activeTab === "Updates" ? (
-              <section className="business-company-list">
-                <header>
+              <section className="business-company-list business-company-updates">
+                <header className="business-company-updates-heading">
                   <div>
+                    <span>Explore Campus</span>
                     <h2>Company updates</h2>
                     <p>
-                      News, milestones and campus-facing announcements from your
-                      organization.
+                      Share news, useful ideas, work culture and milestones with students.
                     </p>
                   </div>
+                  <button type="button" onClick={() => openPostComposer()}><FiPlus /> Post update</button>
                 </header>
-                <div className="business-company-empty">
-                  <FiTarget />
-                  <h3>No updates published</h3>
-                  <p>
-                    Publishing tools will appear here as your company starts
-                    engaging its campus audience.
-                  </p>
+                {notice ? <p className="business-company-update-notice" role="status">{notice}</p> : null}
+                <div className="business-company-update-starter">
+                  <span className="business-company-update-avatar">
+                    {profile.logoUrl ? <img src={normalizeZumbarlFileUrl(profile.logoUrl)} alt="" /> : <strong>{profile.name?.slice(0, 2).toUpperCase()}</strong>}
+                  </span>
+                  <button type="button" onClick={() => openPostComposer()}>Share an update from {profile.name}…</button>
+                  <footer>
+                    <button type="button" onClick={() => openPostComposer("media")}><FiImage /> Photo or video</button>
+                    <button type="button" onClick={() => openPostComposer("poll")}><FiMessageCircle /> Ask students</button>
+                    <button type="button" onClick={() => openPostComposer("feeling")}><FiTarget /> Share milestone</button>
+                  </footer>
                 </div>
+                {posts.length ? <div className="business-company-update-list">
+                  {posts.map((post) => {
+                    const mediaUrl = normalizeZumbarlFileUrl(post.mediaUrls?.[0]);
+                    return <article className="business-company-update-card" key={post.id}>
+                      <header>
+                        <span className="business-company-update-avatar">
+                          {profile.logoUrl ? <img src={normalizeZumbarlFileUrl(profile.logoUrl)} alt="" /> : <strong>{profile.name?.slice(0, 2).toUpperCase()}</strong>}
+                        </span>
+                        <div><strong>{profile.name}</strong><small>{updateTypeLabel(post.type)} · {relativeUpdateTime(post.createdAt)}</small></div>
+                        <button type="button" onClick={() => copyStudentLink(post.id)}><FiLink /> Copy student link</button>
+                      </header>
+                      <p>{post.body}</p>
+                      {mediaUrl ? <div className="business-company-update-media">{post.type === "video" ? <video src={mediaUrl} controls /> : <img src={mediaUrl} alt="" loading="lazy" />}</div> : null}
+                      <footer><span><FiThumbsUp /> {post.reactions || 0}</span><span><FiMessageCircle /> {post.comments || 0}</span><small>Visible in Explore Campus</small></footer>
+                    </article>;
+                  })}
+                </div> : <div className="business-company-empty business-company-update-empty">
+                  <FiEdit3 />
+                  <h3>Your company has something worth sharing.</h3>
+                  <p>Publish your first update and it will appear in Explore Campus under your business identity.</p>
+                  <button type="button" onClick={() => openPostComposer()}><FiPlus /> Create first update</button>
+                </div>}
               </section>
             ) : null}
           </section>
         </div>
       </div>
+      <ExplorePostComposer
+        allowedTypes={["post", "media", "poll", "feeling"]}
+        eyebrow="Company update"
+        identity={{ name: profile.name, avatarUrl: profile.logoUrl }}
+        initialType={postComposerType}
+        isOpen={isPostComposerOpen}
+        onClose={() => setIsPostComposerOpen(false)}
+        onPublish={publishUpdate}
+        placeholder={`Share an update from ${profile.name} with students…`}
+        publishLabel="Publish update"
+        title={`Post as ${profile.name}`}
+      />
     </main>
   );
 }

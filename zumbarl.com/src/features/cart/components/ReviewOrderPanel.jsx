@@ -2,24 +2,17 @@ import {
   FiArrowRight,
   FiGift,
   FiLock,
-  FiMail,
   FiMapPin,
-  FiMessageCircle,
   FiTruck,
   FiUser,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
-import {
-  CUSTOMER_DETAILS,
-  DELIVERY_ESTIMATE,
-  PAYMENT_SUMMARY,
-} from '../checkoutData'
 import { formatKes, getLineItemPrice, getLineItemQuantity } from '../pricing'
 
-export function ReviewOrderPanel({ error = '', hasUnavailableItems = false, isPlacingOrder = false, items, onBack, onPlaceOrder }) {
+export function ReviewOrderPanel({ customer, error = '', hasUnavailableItems = false, isPlacingOrder = false, items, onBack, onPlaceOrder }) {
   return (
     <section className="campus-checkout-panel campus-review-stack">
-      <DeliveryInformationCard />
+      <DeliveryInformationCard customer={customer} items={items} />
       <PaymentInformationCard />
       <ReviewItemsCard items={items} />
 
@@ -40,32 +33,31 @@ export function ReviewOrderPanel({ error = '', hasUnavailableItems = false, isPl
   )
 }
 
-function DeliveryInformationCard() {
+function DeliveryInformationCard({ customer, items }) {
+  const locations = [...new Set(items.map((item) => item.fulfilment?.location).filter(Boolean))]
+  const customerName = customer?.user?.name || [customer?.student?.firstName, customer?.student?.lastName].filter(Boolean).join(' ')
+
   return (
     <article className="campus-review-card">
       <header>
         <h2>Delivery Information</h2>
-        <button type="button">Edit</button>
+        <Link to="/campus/cart">Edit</Link>
       </header>
       <div className="campus-review-delivery-grid">
         <div className="campus-review-detail-list">
-          <p><FiUser aria-hidden="true" /> {CUSTOMER_DETAILS.name}</p>
-          <p><FiMessageCircle aria-hidden="true" /> {CUSTOMER_DETAILS.phone}</p>
-          <p><FiMail aria-hidden="true" /> {CUSTOMER_DETAILS.email}</p>
+          <p><FiUser aria-hidden="true" /> {customerName || 'Signed-in student'}</p>
         </div>
         <div className="campus-review-detail-list">
-          <p><FiMapPin aria-hidden="true" /> {CUSTOMER_DETAILS.location}</p>
-          <p>{CUSTOMER_DETAILS.county}</p>
-          <p>{CUSTOMER_DETAILS.postal}</p>
+          {locations.map((location) => <p key={location}><FiMapPin aria-hidden="true" /> {location}</p>)}
         </div>
         <article className="campus-review-mini-delivery">
           <FiTruck aria-hidden="true" />
           <div>
-            <h3>Estimated Delivery</h3>
-            <strong>{DELIVERY_ESTIMATE.dateRange}</strong>
-            <p>{DELIVERY_ESTIMATE.location}</p>
+            <h3>Selected fulfilment</h3>
+            <strong>{items.every((item) => item.fulfilment?.quoted) ? 'Ready for checkout' : 'Selection required'}</strong>
+            <p>{locations.join(' · ') || 'Return to the cart and choose pickup or delivery.'}</p>
           </div>
-          <button type="button">Change</button>
+          <Link to="/campus/cart">Change</Link>
         </article>
       </div>
     </article>
@@ -77,11 +69,11 @@ function PaymentInformationCard() {
     <article className="campus-review-card">
       <header>
         <h2>Payment Information</h2>
-        <button type="button">Edit</button>
+        <Link to="/campus/cart/payment">Edit</Link>
       </header>
       <div className="campus-review-payment-row">
-        <span>{PAYMENT_SUMMARY.brand}</span>
-        <p>{PAYMENT_SUMMARY.method} <strong>{PAYMENT_SUMMARY.card}</strong></p>
+        <span>WALLET</span>
+        <p>Zumbarl Wallet <strong>Balance rechecked when placing the order</strong></p>
         <em><FiLock aria-hidden="true" /> Secure Payment</em>
       </div>
     </article>

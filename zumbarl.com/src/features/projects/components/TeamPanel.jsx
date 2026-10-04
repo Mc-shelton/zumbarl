@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { FiPlus, FiSearch } from 'react-icons/fi'
+import { FiAlertCircle, FiCheckCircle, FiPlus, FiSearch, FiUsers } from 'react-icons/fi'
 
 const COUNTED_TASK_STATUSES = ['todo', 'in_progress', 'blocked', 'submitted', 'done']
 
@@ -78,9 +78,24 @@ function TeamPanel({ invites = [], members = [], onInviteMembers, tasks = [], vi
     (roleFilter === 'all' || row.role === roleFilter)
     && (!normalizedQuery || `${row.name} ${row.role || ''} ${row.school || ''}`.toLowerCase().includes(normalizedQuery))
   ))
+  const activeMembers = rows.filter((row) => row.status === 'Active').length
+  const openTaskCount = rows.reduce((total, row) => total + Number(row.tasks || 0), 0)
+  const blockedTaskCount = rows.reduce((total, row) => total + Number(row.blocked || 0), 0)
 
   return (
     <section className="team-members-panel">
+      <header className="project-panel-intro team-panel-intro">
+        <div>
+          <span>Project crew</span>
+          <h2>Team workspace</h2>
+          <p>See who owns the work, where review is waiting, and how approved contribution is shared.</p>
+        </div>
+        <dl aria-label="Team summary">
+          <div><dt><FiUsers aria-hidden="true" /> Active</dt><dd>{activeMembers}</dd></div>
+          <div><dt><FiCheckCircle aria-hidden="true" /> Assigned tasks</dt><dd>{openTaskCount}</dd></div>
+          <div className={blockedTaskCount ? 'is-alert' : ''}><dt><FiAlertCircle aria-hidden="true" /> Blocked</dt><dd>{blockedTaskCount}</dd></div>
+        </dl>
+      </header>
       <div className="team-tab-tools">
         <label>
           <FiSearch aria-hidden="true" />
