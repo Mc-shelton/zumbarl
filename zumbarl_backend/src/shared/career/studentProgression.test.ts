@@ -60,6 +60,11 @@ describe('student progression', () => {
       { id: 'higher-pay', title: 'Campus event assistant', skills: ['Events'], budgetAmount: 5000 }
     ]
     expect(rankOpportunitiesForStudentMode(opportunities, { mode: 'EARN', skills: ['Graphic Design'], careerPath: 'Design' })[0].id).toBe('higher-pay')
-    expect(rankOpportunitiesForStudentMode(opportunities, { mode: 'CAREER', skills: ['Graphic Design'], careerPath: 'Design' })[0].id).toBe('career-fit')
+    const careerRanked = rankOpportunitiesForStudentMode(opportunities, { mode: 'CAREER', skills: ['Graphic Design'], careerPath: 'Design' })
+    expect(careerRanked[0].id).toBe('career-fit')
+    expect(careerRanked[0].progressionMatch).toMatchObject({
+      matchedSkills: ['Graphic Design'],
+      reason: 'Builds Graphic Design'
+    })
   })
 })

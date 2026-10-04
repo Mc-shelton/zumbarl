@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { careEnrollmentUpdateSchema, careProgramEnrollmentSchema, careProgressCheckInSchema, supportCaseStatusSchema, wellbeingCheckInSchema, wellbeingHandoffSchema } from './validateSupportPayloads.js'
+import { careEnrollmentUpdateSchema, careProgramEnrollmentSchema, careProgressCheckInSchema, studentCareEnrollmentActionSchema, supportCaseStatusSchema, wellbeingCheckInSchema, wellbeingHandoffSchema } from './validateSupportPayloads.js'
 
 describe('student care payload validation', () => {
   it('accepts peer-pressure and substance-use context in a private check-in', () => {
@@ -25,5 +25,11 @@ describe('student care payload validation', () => {
   it('supports operational states for reports, appointments and care plans', () => {
     expect(supportCaseStatusSchema.safeParse({ status: 'confirmed' }).success).toBe(true)
     expect(careEnrollmentUpdateSchema.safeParse({ status: 'active', studentVisibleNote: 'Your plan is active.' }).success).toBe(true)
+  })
+
+  it('limits student-owned plan changes to pause, resume and withdrawal', () => {
+    expect(studentCareEnrollmentActionSchema.safeParse({ status: 'paused' }).success).toBe(true)
+    expect(studentCareEnrollmentActionSchema.safeParse({ status: 'withdrawn' }).success).toBe(true)
+    expect(studentCareEnrollmentActionSchema.safeParse({ status: 'completed' }).success).toBe(false)
   })
 })

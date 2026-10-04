@@ -1,4 +1,5 @@
 import cors from '@fastify/cors'
+import cookie from '@fastify/cookie'
 import helmet from '@fastify/helmet'
 import jwt from '@fastify/jwt'
 import multipart from '@fastify/multipart'
@@ -6,7 +7,7 @@ import rateLimit from '@fastify/rate-limit'
 import fastifyStatic from '@fastify/static'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
-import Fastify from 'fastify'
+import Fastify, { LogController } from 'fastify'
 import { ZodError } from 'zod'
 import { env } from './config/env.js'
 import { LOCAL_STORAGE_PUBLIC_PREFIX, LOCAL_STORAGE_ROOT } from './adapters/storage/index.js'
@@ -36,7 +37,25 @@ async function buildApp() {
     logger: {
       level: env.NODE_ENV === 'test' ? 'silent' : 'info'
     },
-    requestIdHeader: 'x-request-id'
+    requestIdHeader: 'x-request-id',
+    requestTimeout: env.HTTP_REQUEST_TIMEOUT_MS,
+    connectionTimeout: env.HTTP_CONNECTION_TIMEOUT_MS,
+    keepAliveTimeout: env.HTTP_KEEP_ALIVE_TIMEOUT_MS,
+    trustProxy: env.TRUST_PROXY_HOPS > 0
+      ? (_address: string, hop: number) => hop < env.TRUST_PROXY_HOPS
+      : false,
+    // M-Pesa callback secrets are path parameters. Default request logging
+    // would persist those one-time credentials in application logs.
+    logController: new LogController({ disableRequestLogging: true })
+  })
+
+  app.addHook('onResponse', async (request, reply) => {
+    request.log.info({
+      method: request.method,
+      route: request.routeOptions.url,
+      statusCode: reply.statusCode,
+      responseTimeMs: Math.round(reply.elapsedTime)
+    }, 'request completed')
   })
 
   await app.register(helmet, {
@@ -49,6 +68,7 @@ async function buildApp() {
     credentials: true,
     methods: ['GET', 'HEAD', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS']
   })
+  await app.register(cookie)
   await connectRedisCache()
 
   await app.register(rateLimit, {
@@ -58,7 +78,13 @@ async function buildApp() {
     nameSpace: 'zumbarl:rate-limit:',
     skipOnError: true
   })
-  await app.register(jwt, { secret: env.JWT_SECRET })
+  await app.register(jwt, {
+    secret: env.JWT_SECRET,
+    cookie: {
+      cookieName: env.AUTH_COOKIE_NAME,
+      signed: false
+    }
+  })
   await app.register(multipart, {
     limits: {
       fileSize: 50 * 1024 * 1024,
@@ -68,36 +94,38 @@ async function buildApp() {
   await app.register(fastifyStatic, {
     root: LOCAL_STORAGE_ROOT,
     prefix: `${LOCAL_STORAGE_PUBLIC_PREFIX}/`,
-    allowedPath: (pathName) => !pathName.replace(/^\/+/, '').startsWith('zumbarl-kyc-private/'),
+    allowedPath: (pathName) => pathName.replace(/^\/+/, '').startsWith('zumbarl-public-assets/'),
     decorateReply: false
   })
-  await app.register(swagger, {
-    openapi: {
-      info: {
-        title: 'Zumbarl Backend API',
-        version: '0.1.0'
-      },
-      tags: [
-        { name: 'auth' },
-        { name: 'business' },
-        { name: 'campus' },
-        { name: 'earn' },
-        { name: 'evergreen' },
-        { name: 'projects' },
-        { name: 'marketing' },
-        { name: 'learn' },
-        { name: 'connect' },
-        { name: 'marketplace' },
-        { name: 'recommendations' },
-        { name: 'finance' },
-        { name: 'skills' },
-        { name: 'support' },
-        { name: 'uploads' },
-        { name: 'admin' }
-      ]
-    }
-  })
-  await app.register(swaggerUi, { routePrefix: '/docs' })
+  if (env.NODE_ENV !== 'production') {
+    await app.register(swagger, {
+      openapi: {
+        info: {
+          title: 'Zumbarl Backend API',
+          version: '0.1.0'
+        },
+        tags: [
+          { name: 'auth' },
+          { name: 'business' },
+          { name: 'campus' },
+          { name: 'earn' },
+          { name: 'evergreen' },
+          { name: 'projects' },
+          { name: 'marketing' },
+          { name: 'learn' },
+          { name: 'connect' },
+          { name: 'marketplace' },
+          { name: 'recommendations' },
+          { name: 'finance' },
+          { name: 'skills' },
+          { name: 'support' },
+          { name: 'uploads' },
+          { name: 'admin' }
+        ]
+      }
+    })
+    await app.register(swaggerUi, { routePrefix: '/docs' })
+  }
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof ZodError) {

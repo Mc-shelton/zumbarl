@@ -40,6 +40,7 @@ type AuthUser = {
   role: Role
   businessId?: string
   studentId?: string
+  sessionId?: string
 }
 
 declare module 'fastify' {
@@ -60,7 +61,13 @@ function hasAnyRole(user: AuthUser | undefined, allowed: Role[]) {
   return Boolean(user && allowed.includes(user.role))
 }
 
-async function requireAuth(request: FastifyRequest) {
+async function requireAuth(request: FastifyRequest, options: { allowCookieForUnsafeMethod?: boolean } = {}) {
+  const hasBearerToken = /^Bearer\s+\S+/i.test(request.headers.authorization || '')
+  const isReadRequest = request.method === 'GET' || request.method === 'HEAD'
+  if (!hasBearerToken && !isReadRequest && !options.allowCookieForUnsafeMethod) {
+    forbidden('Authentication is required')
+  }
+
   let decoded: AuthUser
   try {
     decoded = await request.jwtVerify<AuthUser>()
@@ -68,30 +75,46 @@ async function requireAuth(request: FastifyRequest) {
     forbidden('Authentication is required')
   }
 
+  if (!decoded.sessionId) forbidden('Your session is no longer valid. Sign in again.')
+
+  const session = await prisma.session.findFirst({
+    where: {
+      id: decoded.sessionId,
+      userId: decoded.id,
+      revokedAt: null,
+      expiresAt: { gt: new Date() }
+    },
+    select: {
+      user: {
+        select: {
+          id: true,
+          email: true,
+          role: true,
+          isActive: true,
+          studentProfile: { select: { id: true } },
+          companyContact: { select: { companyId: true } }
+        }
+      }
+    }
+  })
+  if (!session) forbidden('Your session is no longer valid. Sign in again.')
+
   // The token carries the profile ids it was minted with, and those ids are
   // written straight into rows that have foreign keys to them. A token that
   // outlives its profile - a database reset, a deleted account - therefore used
   // to fail deep inside Prisma as a constraint violation and reach the client as
   // an opaque 500. Reading the identity back turns that into a plain 403 the
   // client can act on, and keeps role or profile changes from needing a new token.
-  const user = await prisma.user.findUnique({
-    where: { id: decoded.id },
-    select: {
-      id: true,
-      email: true,
-      role: true,
-      studentProfile: { select: { id: true } },
-      companyContact: { select: { companyId: true } }
-    }
-  })
-  if (!user) forbidden('Your session is no longer valid. Sign in again.')
+  const user = session.user
+  if (!user || !user.isActive) forbidden('Your session is no longer valid. Sign in again.')
 
   request.authUser = {
     id: user.id,
     email: user.email,
     role: user.role as Role,
     studentId: user.studentProfile?.id,
-    businessId: user.companyContact?.companyId
+    businessId: user.companyContact?.companyId,
+    sessionId: decoded.sessionId
   }
 }
 

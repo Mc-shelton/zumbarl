@@ -128,16 +128,40 @@ export function rankOpportunitiesForStudentMode<T extends ProgressionOpportunity
     const opportunityTerms = matchingTerms([opportunity.title, opportunity.category, ...(opportunity.skills || [])])
     const skillMatches = [...studentSkills].filter((term) => opportunityTerms.has(term)).length
     const careerMatches = [...careerTerms].filter((term) => opportunityTerms.has(term)).length
+    const matchedSkills = (input.skills || []).filter((skill) => (
+      [...matchingTerms([skill])].some((term) => opportunityTerms.has(term))
+    ))
     const skillFit = studentSkills.size ? Math.min(1, skillMatches / Math.max(1, Math.min(3, studentSkills.size))) : 0
     const careerFit = careerTerms.size ? Math.min(1, careerMatches / Math.max(1, Math.min(3, careerTerms.size))) : 0
     const earningFit = clamp(Number(opportunity.budgetAmount || 0) / maximumBudget, 0, 1)
     const score = skillFit * weights.skill + careerFit * weights.career + earningFit * weights.earnings
+    const skillSummary = matchedSkills.slice(0, 2).join(' and ')
     const reason = mode === 'EARN'
-      ? earningFit >= skillFit ? 'Strong earning opportunity' : 'Paid work matching verified skills'
+      ? earningFit >= skillFit
+        ? 'Higher-value opportunity for your Earn now focus'
+        : `Paid work matching ${skillSummary || 'your demonstrated skills'}`
       : mode === 'CAREER'
-        ? skillFit + careerFit > 0 ? 'Builds skills aligned to your career direction' : 'Adds new verified career evidence'
-        : skillFit + careerFit >= earningFit ? 'Balances relevant experience with earnings' : 'Balances strong earning potential with progression'
-    return { opportunity, originalIndex, progressionMatch: { mode, score: Math.round(score * 100), reason } }
+        ? skillFit + careerFit > 0
+          ? `Builds ${skillSummary || 'skills aligned to your career direction'}`
+          : 'Adds new career evidence outside your existing skills'
+        : skillFit + careerFit >= earningFit
+          ? `Balances earnings with ${skillSummary || 'relevant career experience'}`
+          : 'Balances stronger earning potential with career progression'
+    return {
+      opportunity,
+      originalIndex,
+      progressionMatch: {
+        mode,
+        score: Math.round(score * 100),
+        reason,
+        matchedSkills,
+        signals: {
+          skill: Math.round(skillFit * 100),
+          career: Math.round(careerFit * 100),
+          earnings: Math.round(earningFit * 100)
+        }
+      }
+    }
   }).sort((left, right) => right.progressionMatch.score - left.progressionMatch.score || left.originalIndex - right.originalIndex)
     .map(({ opportunity, progressionMatch }) => ({ ...opportunity, progressionMatch }))
 }

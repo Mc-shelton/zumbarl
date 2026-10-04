@@ -1,4 +1,25 @@
+import nodemailer, { type Transporter } from 'nodemailer'
 import { env } from '../../../config/env.js'
+
+let smtpTransporter: Transporter | null = null
+
+function getSmtpTransporter() {
+  if (!smtpTransporter) {
+    const hasCredentials = Boolean(env.MAIL_USER && env.MAIL_PASS)
+    smtpTransporter = nodemailer.createTransport({
+      host: env.MAIL_HOST,
+      port: env.MAIL_PORT,
+      secure: env.MAIL_SECURE ?? env.MAIL_PORT === 465,
+      auth: hasCredentials
+        ? { user: env.MAIL_USER, pass: env.MAIL_PASS }
+        : undefined,
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000
+    })
+  }
+  return smtpTransporter
+}
 
 async function sendTransactionalEmail(to: string, subject: string, html: string) {
   const message = {
@@ -17,38 +38,23 @@ async function sendTransactionalEmail(to: string, subject: string, html: string)
   }
 
   try {
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${env.EMAIL_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        personalizations: [{ to: [{ email: to }] }],
-        from: { email: env.EMAIL_FROM },
-        subject,
-        content: [{ type: 'text/html', value: html }]
-      }),
-      signal: AbortSignal.timeout(10_000)
+    const result = await getSmtpTransporter().sendMail({
+      from: env.EMAIL_FROM,
+      to,
+      subject,
+      html
     })
-
-    if (!response.ok) {
-      return {
-        ...message,
-        status: 'failed',
-        error: `SendGrid rejected the email with status ${response.status}`
-      }
-    }
 
     return {
       ...message,
-      status: 'sent'
+      status: 'sent',
+      messageId: result.messageId
     }
   } catch (error) {
     return {
       ...message,
       status: 'failed',
-      error: error instanceof Error ? error.message : 'Unable to reach SendGrid'
+      error: error instanceof Error ? error.message : 'Unable to send email through SMTP'
     }
   }
 }

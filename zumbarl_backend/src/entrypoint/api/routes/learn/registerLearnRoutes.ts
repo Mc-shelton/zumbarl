@@ -32,9 +32,13 @@ import {
   removeKnowledgeManagerController,
   readLearnBaselineController,
   readRoadmapCoachingPlanController,
+  refreshRoadmapResourcesController,
   submitLearningPracticeController,
   updateKnowledgeFollowingController,
+  updateKnowledgeResourceController,
   updateRoadmapCoachingFocusController,
+  updateRoadmapResourceProgressController,
+  updateRoadmapResourceSelectionController,
   takeDownKnowledgeSpacePostController,
   updateKnowledgeMembershipController,
   updateKnowledgeRoomController,
@@ -74,6 +78,7 @@ async function registerLearnRoutes(app: FastifyInstance) {
   app.get('/knowledge/rooms/:id/messages', { preHandler: students }, listKnowledgeRoomMessagesController)
   app.post('/knowledge/rooms/:id/messages', { preHandler: students }, createKnowledgeRoomMessageController)
   app.post('/knowledge/resources', { preHandler: students }, createKnowledgeResourceController)
+  app.patch('/knowledge/resources/:id', { preHandler: students }, updateKnowledgeResourceController)
   app.post('/knowledge/resources/:id/access', { preHandler: students }, accessKnowledgeResourceController)
   app.get('/knowledge/resources/:id/checkout', { preHandler: students }, readKnowledgeResourceCheckoutController)
   app.post('/knowledge/resources/:id/purchase', { preHandler: students }, purchaseKnowledgeResourceController)
@@ -84,6 +89,9 @@ async function registerLearnRoutes(app: FastifyInstance) {
   app.post('/roadmaps/:id/lock', { preHandler: students }, lockRoadmapController)
   app.get('/roadmaps/:id/coaching-plan', { preHandler: students }, readRoadmapCoachingPlanController)
   app.patch('/roadmaps/:id/coaching-focus', { preHandler: students }, updateRoadmapCoachingFocusController)
+  app.post('/roadmaps/:id/resources/refresh', { preHandler: students }, refreshRoadmapResourcesController)
+  app.patch('/roadmaps/:id/resources/:resourceId/selection', { preHandler: students }, updateRoadmapResourceSelectionController)
+  app.patch('/roadmaps/:id/resources/:resourceId', { preHandler: students }, updateRoadmapResourceProgressController)
   app.post('/roadmaps/:id/evidence', { preHandler: students }, addRoadmapEvidenceController)
   app.post('/roadmaps/:id/practice-submissions', { preHandler: students }, submitLearningPracticeController)
   app.post('/evidence/:id/verify', { preHandler: admins }, verifyRoadmapEvidenceController)

@@ -44,6 +44,9 @@ const careProgressCheckInSchema = z.object({
   note: z.string().trim().max(1000).optional(),
   requestFollowUp: z.boolean().default(false)
 })
+const studentCareEnrollmentActionSchema = z.object({
+  status: z.enum(['active', 'paused', 'withdrawn'])
+})
 const careEnrollmentUpdateSchema = z.object({
   status: z.enum(['requested', 'active', 'paused', 'completed', 'withdrawn']).optional(),
   currentStep: z.number().int().min(0).max(50).optional(),
@@ -65,6 +68,7 @@ export {
   careEnrollmentUpdateSchema,
   careProgramEnrollmentSchema,
   careProgressCheckInSchema,
+  studentCareEnrollmentActionSchema,
   supportCaseStatusSchema,
   supportCaseParamsSchema,
   supportCircleReviewSchema,

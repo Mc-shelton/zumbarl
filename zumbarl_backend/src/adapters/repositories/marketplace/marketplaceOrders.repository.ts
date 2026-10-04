@@ -722,10 +722,21 @@ class MarketplaceOrdersRepository {
   async readCampusVendorFinance(userId: string, slug: string) {
     const shop = await this.findOwnedCampusVendor(userId, slug, ['owner', 'admin'])
     if (!shop) return null
-    const [orders, withdrawals, wallet] = await Promise.all([
+    const [orders, withdrawals, wallet, viewer] = await Promise.all([
       this.listSellerOrders(shop.ownerId, shop.id),
       vendorWithdrawals.listAll((record) => record.type === 'vendor_withdrawal' && record.shopId === shop.id),
-      prisma.wallet.findUnique({ where: { studentId_type: { studentId: shop.ownerId, type: 'MAIN' } } })
+      prisma.wallet.findUnique({ where: { studentId_type: { studentId: shop.ownerId, type: 'MAIN' } } }),
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          name: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+          studentProfile: { select: { id: true, avatarUrl: true } }
+        }
+      })
     ])
     const currency = wallet?.currency || orders[0]?.currency || 'KES'
     const completedOrders = orders.filter((order) => order.escrowReleasedAt || order.status === 'completed')
@@ -749,7 +760,7 @@ class MarketplaceOrdersRepository {
       id: withdrawal.id,
       type: 'withdrawal',
       label: 'Withdrawal request',
-      detail: `${String(withdrawal.method || 'payout').toUpperCase()} · ${withdrawal.destinationMasked || 'Saved payout destination'}`,
+      detail: `${withdrawal.recipientName ? `${withdrawal.recipientName} · ` : ''}${String(withdrawal.method || 'payout').toUpperCase()} · ${withdrawal.destinationMasked || 'Saved payout destination'}`,
       amount: -Number(withdrawal.amount || 0),
       currency: withdrawal.currency || currency,
       status: withdrawal.status,
@@ -762,6 +773,13 @@ class MarketplaceOrdersRepository {
       pendingBalance,
       lifetimeIncome,
       processingWithdrawals,
+      viewer: viewer?.studentProfile ? {
+        id: viewer.id,
+        studentId: viewer.studentProfile.id,
+        name: viewer.name || `${viewer.firstName || ''} ${viewer.lastName || ''}`.trim() || viewer.username || 'Zumbarl member',
+        username: viewer.username,
+        avatarUrl: viewer.studentProfile.avatarUrl
+      } : null,
       incomeStreams: [
         { id: 'marketplace-sales', label: 'Marketplace sales', amount: lifetimeIncome, status: 'released' },
         { id: 'orders-in-escrow', label: 'Orders in escrow', amount: pendingBalance, status: 'pending' }
@@ -785,6 +803,22 @@ class MarketplaceOrdersRepository {
       const payouts = createRepository('payouts')
       const withdrawals = await payouts.listAll((record) => record.type === 'vendor_withdrawal' && record.shopId === ownedShop.id)
       const wallet = await tx.wallet.findUnique({ where: { studentId_type: { studentId: ownedShop.ownerId, type: 'MAIN' } } })
+      const recipientUserId = String(payload.recipientUserId || ownedShop.owner.userId)
+      const recipient = await tx.user.findFirst({
+        where: { id: recipientUserId, isActive: true },
+        select: {
+          id: true,
+          name: true,
+          firstName: true,
+          lastName: true,
+          username: true,
+          studentProfile: { select: { id: true } }
+        }
+      })
+      if (!recipient?.studentProfile) {
+        throw new ApiError(422, 'Choose an active Zumbarl user who has a student profile', 'INVALID_WITHDRAWAL_RECIPIENT')
+      }
+      const recipientName = recipient.name || `${recipient.firstName || ''} ${recipient.lastName || ''}`.trim() || recipient.username || 'Zumbarl member'
       const currency = String(payload.currency || wallet?.currency || 'KES').toUpperCase()
       const amount = normalizeMoney(payload.amount, currency)
       const lifetimeIncome = normalizeMoney(orders.filter((order) => (order.escrowReleasedAt || order.status === 'completed') && order.currency === currency).reduce((sum, order) => sum + Number(order.sellerAmount || 0), 0), currency)
@@ -799,7 +833,11 @@ class MarketplaceOrdersRepository {
         type: 'vendor_withdrawal',
         shopId: ownedShop.id,
         pageName: ownedShop.name,
-        studentId: ownedShop.ownerId,
+        studentId: recipient.studentProfile.id,
+        sourceStudentId: ownedShop.ownerId,
+        recipientUserId: recipient.id,
+        recipientName,
+        recipientUsername: recipient.username,
         requestedByUserId: userId,
         amount,
         currency,
@@ -813,9 +851,21 @@ class MarketplaceOrdersRepository {
         type: 'STUDENT_PAYOUT',
         currency,
         reference: `vendor-withdrawal:${payout.id}`,
-        description: `Withdrawal requested for ${ownedShop.name}`,
-        metadata: { payoutId: payout.id, shopId: ownedShop.id, requestedByUserId: userId, direction: 'withdrawal' }
+        description: `Withdrawal requested for ${ownedShop.name} to ${recipientName}`,
+        metadata: { payoutId: payout.id, shopId: ownedShop.id, requestedByUserId: userId, recipientUserId: recipient.id, recipientStudentId: recipient.studentProfile.id, direction: 'withdrawal' }
       })
+      if (recipient.id !== userId) {
+        await tx.notification.create({
+          data: {
+            userId: recipient.id,
+            type: 'PAGE_WITHDRAWAL_RECIPIENT',
+            title: `${ownedShop.name} selected you for a payout`,
+            body: `${currency} ${amount.toLocaleString()} is awaiting finance processing.`,
+            data: jsonInput({ payoutId: payout.id, shopId: ownedShop.id, pageName: ownedShop.name, amount, currency }),
+            sentVia: ['IN_APP']
+          }
+        })
+      }
       return payout
     })
   }

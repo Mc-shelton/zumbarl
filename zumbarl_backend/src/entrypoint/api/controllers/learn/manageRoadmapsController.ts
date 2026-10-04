@@ -11,9 +11,12 @@ import {
   lockRoadmapService,
   readRoadmapService,
   readRoadmapCoachingPlanService,
+  refreshRoadmapResourcesService,
   readLearnBaselineService,
   submitLearningPracticeService,
   updateRoadmapCoachingFocusService,
+  updateRoadmapResourceProgressService,
+  updateRoadmapResourceSelectionService,
   verifyRoadmapEvidenceService,
   verifyRoadmapService
 } from '../../../../adapters/services/learn/index.js'
@@ -23,11 +26,13 @@ import {
   createRoadmapSchema,
   submitLearningPracticeSchema,
   updateRoadmapCoachingFocusSchema,
+  updateRoadmapResourceProgressSchema,
+  updateRoadmapResourceSelectionSchema,
   verifyRoadmapEvidenceSchema
 } from '../../../validators/learn/index.js'
 
-async function listCareerLaddersController(_request: FastifyRequest, reply: FastifyReply) {
-  return reply.send(await listCareerLaddersService())
+async function listCareerLaddersController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await listCareerLaddersService(request.query as Record<string, unknown>))
 }
 
 async function readLearnBaselineController(request: FastifyRequest, reply: FastifyReply) {
@@ -60,6 +65,21 @@ async function updateRoadmapCoachingFocusController(request: FastifyRequest, rep
 async function readRoadmapCoachingPlanController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
   return reply.send(await readRoadmapCoachingPlanService(id, request.authUser?.studentId))
+}
+
+async function refreshRoadmapResourcesController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await refreshRoadmapResourcesService(id, request.authUser?.studentId))
+}
+
+async function updateRoadmapResourceProgressController(request: FastifyRequest, reply: FastifyReply) {
+  const params = requireParams(idParamSchema.extend({ resourceId: idParamSchema.shape.id }), request)
+  return reply.send(await updateRoadmapResourceProgressService(params.id, params.resourceId, request.authUser?.studentId, requireBody(updateRoadmapResourceProgressSchema, request)))
+}
+
+async function updateRoadmapResourceSelectionController(request: FastifyRequest, reply: FastifyReply) {
+  const params = requireParams(idParamSchema.extend({ resourceId: idParamSchema.shape.id }), request)
+  return reply.send(await updateRoadmapResourceSelectionService(params.id, params.resourceId, request.authUser?.studentId, requireBody(updateRoadmapResourceSelectionSchema, request)))
 }
 
 async function addRoadmapEvidenceController(request: FastifyRequest, reply: FastifyReply) {
@@ -108,8 +128,11 @@ export {
   readRoadmapController,
   readLearnBaselineController,
   readRoadmapCoachingPlanController,
+  refreshRoadmapResourcesController,
   submitLearningPracticeController,
   updateRoadmapCoachingFocusController,
+  updateRoadmapResourceProgressController,
+  updateRoadmapResourceSelectionController,
   verifyRoadmapEvidenceController,
   verifyRoadmapController
 }

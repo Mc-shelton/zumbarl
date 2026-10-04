@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { registerUserSchema } from './validateAuthPayloads.js'
+import { registerUserSchema, requestEmailOtpSchema, verifyEmailOtpSchema } from './validateAuthPayloads.js'
 
 const baseRegistration = {
   email: 'person@example.com',
@@ -7,7 +7,9 @@ const baseRegistration = {
   password: 'password123',
   firstName: 'Test',
   lastName: 'Person',
-  username: 'test_person'
+  username: 'test_person',
+  acceptedTerms: true,
+  acceptedPrivacy: true
 }
 
 describe('public registration roles', () => {
@@ -44,5 +46,46 @@ describe('public registration roles', () => {
     const result = registerUserSchema.safeParse({ ...baseRegistration, role: 'COMPANY_STANDARD' })
     expect(result.success).toBe(false)
     if (!result.success) expect(result.error.flatten().fieldErrors.businessName).toBeDefined()
+  })
+
+  it('requires explicit acceptance of both current policies', () => {
+    expect(registerUserSchema.safeParse({ ...baseRegistration, acceptedTerms: false }).success).toBe(false)
+    expect(registerUserSchema.safeParse({ ...baseRegistration, acceptedPrivacy: false }).success).toBe(false)
+    expect(registerUserSchema.safeParse({ ...baseRegistration, acceptedTerms: undefined }).success).toBe(false)
+  })
+
+  it('accepts a verified-email registration token instead of a password', () => {
+    expect(registerUserSchema.safeParse({
+      ...baseRegistration,
+      password: undefined,
+      registrationToken: 'signed-registration-token',
+      role: 'COMPANY_STANDARD',
+      businessName: 'Example SME'
+    }).success).toBe(true)
+  })
+
+  it('rejects registration without a password or verified-email token', () => {
+    const result = registerUserSchema.safeParse({
+      ...baseRegistration,
+      password: undefined,
+      role: 'COMPANY_STANDARD',
+      businessName: 'Example SME'
+    })
+    expect(result.success).toBe(false)
+    if (!result.success) expect(result.error.flatten().fieldErrors.registrationToken).toBeDefined()
+  })
+})
+
+describe('email OTP validation', () => {
+  it('accepts login and registration code requests', () => {
+    expect(requestEmailOtpSchema.safeParse({ email: 'person@example.com', purpose: 'login' }).success).toBe(true)
+    expect(requestEmailOtpSchema.safeParse({ email: 'person@example.com', purpose: 'register' }).success).toBe(true)
+  })
+
+  it('requires an exact six-digit verification code', () => {
+    const challengeId = 'fd1af8ec-7f54-4a04-8d23-ff43300bf24b'
+    expect(verifyEmailOtpSchema.safeParse({ challengeId, code: '123456' }).success).toBe(true)
+    expect(verifyEmailOtpSchema.safeParse({ challengeId, code: '12345' }).success).toBe(false)
+    expect(verifyEmailOtpSchema.safeParse({ challengeId, code: '12345a' }).success).toBe(false)
   })
 })

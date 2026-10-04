@@ -399,6 +399,42 @@ async function createKnowledgeResourceService(studentId: string | undefined, pay
   return mapResource(resource, resolvedStudentId)
 }
 
+async function updateKnowledgeResourceService(resourceId: string, studentId: string | undefined, payload: Record<string, any>) {
+  const resolvedStudentId = requireStudentId(studentId)
+  const existing = await learnKnowledgeRepository.findResource(resourceId, resolvedStudentId)
+  if (!existing) notFound('Knowledge resource')
+  if (existing.ownerStudentId !== resolvedStudentId) forbidden('Only the resource owner can edit it')
+
+  const studentInstitution = await learnKnowledgeRepository.findStudentInstitution(resolvedStudentId)
+  payload.institution = studentInstitution?.campus?.name || existing.institution || payload.institution
+  payload.sourceMessageId = existing.sourceMessageId || undefined
+  if (payload.unitId || payload.unitName) {
+    const unit = await learnKnowledgeRepository.resolveUnit(payload.unitId, payload.unitName, payload.createUnit)
+    if (!unit) notFound('Knowledge unit')
+    payload.unitId = unit.id
+  }
+  if (payload.accessMode === 'MEMBERS_ONLY' && !payload.spaceId) {
+    forbidden('Member-only resources must belong to a library or study group')
+  }
+  if (payload.spaceId) {
+    const space = await learnKnowledgeRepository.findSpace(payload.spaceId, resolvedStudentId)
+    if (!space) notFound('Knowledge space')
+    if (space.type === 'GROUP' && payload.accessMode !== 'MEMBERS_ONLY') forbidden('Group resources are members-only')
+    const membership = space.memberships[0]
+    if (space.ownerStudentId !== resolvedStudentId && membership?.status !== 'ACTIVE') {
+      forbidden('Only active members can publish in this space')
+    }
+    payload.status = existing.status
+  } else {
+    payload.accessMode = 'FREE_READ'
+    payload.price = undefined
+    payload.availableCopies = undefined
+    payload.status = 'PUBLISHED'
+  }
+  const resource = await learnKnowledgeRepository.updateResource(resourceId, resolvedStudentId, payload)
+  return mapResource(resource, resolvedStudentId)
+}
+
 async function readKnowledgeResourceCheckoutService(resourceId: string, studentId: string | undefined) {
   const resolvedStudentId = requireStudentId(studentId)
   const resource = await learnKnowledgeRepository.findResource(resourceId, resolvedStudentId)
@@ -726,6 +762,7 @@ export {
   readKnowledgeSpaceService,
   takeDownKnowledgeSpacePostService,
   updateKnowledgeFollowingService,
+  updateKnowledgeResourceService,
   updateKnowledgeManagerService,
   updateKnowledgeMembershipService,
   updateKnowledgeRoomMembershipService,

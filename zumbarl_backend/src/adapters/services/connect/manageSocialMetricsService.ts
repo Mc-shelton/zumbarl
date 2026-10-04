@@ -53,6 +53,19 @@ function compareSocialHandles(expectedHandle: unknown, detectedHandle: unknown) 
   }
 }
 
+function resolveSocialAccountHandle(existingAccount: Record<string, any> | undefined, requestedHandle: unknown) {
+  const requested = normalizeSocialHandle(requestedHandle)
+  const existing = normalizeSocialHandle(existingAccount?.handle)
+  if (existing && requested !== existing) {
+    throw new ApiError(
+      409,
+      `The connected handle ${existing} cannot be changed. Remove this ${existingAccount?.platform || 'social'} account and add it again to use a different handle.`,
+      'SOCIAL_HANDLE_LOCKED'
+    )
+  }
+  return existing || requested
+}
+
 function requireStudentId(studentId?: string) {
   if (!studentId) throw new ApiError(403, 'A student profile is required', 'STUDENT_PROFILE_REQUIRED')
   return studentId
@@ -115,13 +128,35 @@ function metricsFromAdjacentRows(lines: string[]) {
   return metrics
 }
 
+function followersFromProfileStatRows(lines: string[]): number | null {
+  for (let index = 0; index < lines.length; index += 1) {
+    const labels = [...lines[index].matchAll(/\b(posts?|followers?|subscribers?|following)\b/gi)]
+      .map((match) => match[0].toLowerCase())
+    const followerIndex = labels.findIndex((label) => label.startsWith('follower') || label.startsWith('subscriber'))
+    if (followerIndex < 0 || labels.length < 2) continue
+
+    const adjacentRows = [lines[index - 1], lines[index + 1]].filter(Boolean)
+    for (const row of adjacentRows) {
+      const counts = [...row.matchAll(/\b[0-9][0-9,.]*\s*[kKmMbB]?\b/g)]
+        .map((match) => parseCompactCount(match[0]))
+        .filter((value): value is number => value != null)
+      if (counts.length < labels.length) continue
+      const alignedCounts = counts.slice(-labels.length)
+      if (alignedCounts[followerIndex] != null) return alignedCounts[followerIndex]
+    }
+  }
+  return null
+}
+
 function extractSocialMetricsFromText(text: string, platform: string, ocrConfidence = 0) {
   const lines = text
     .split(/\r?\n/)
     .map((line) => line.replace(/[|]/g, ' ').replace(/\s+/g, ' ').trim())
     .filter(Boolean)
   const adjacentMetrics = metricsFromAdjacentRows(lines)
+  const profileFollowers = followersFromProfileStatRows(lines)
   const followers = lines.map((line) => extractMetric(line, 'followers?|subscribers?')).find((value) => value != null)
+    ?? profileFollowers
     ?? adjacentMetrics.followers
   const averageLikes = lines.map((line) => extractMetric(line, 'average\\s+likes?|avg\\.?\\s+likes?|likes?')).find((value) => value != null)
     ?? adjacentMetrics.averageLikes
@@ -214,7 +249,7 @@ async function saveSocialMetricsService(studentId: string | undefined, userId: s
   if (String(verification.platform || '').toLowerCase() !== String(payload.platform || '').toLowerCase()) {
     throw new ApiError(409, 'This screenshot was analysed for a different social platform. Upload the correct screenshot.', 'SOCIAL_PLATFORM_MISMATCH')
   }
-  const expectedHandle = existingAccount?.handle || payload.handle
+  const expectedHandle = resolveSocialAccountHandle(existingAccount, payload.handle)
   const handleCheck = compareSocialHandles(expectedHandle, extraction.handle)
   if (!handleCheck.detectedHandle) {
     throw new ApiError(422, 'We could not confirm the account handle in this screenshot. Upload a full profile or analytics screenshot that clearly shows your username.', 'SCREENSHOT_HANDLE_NOT_DETECTED')
@@ -250,11 +285,23 @@ async function saveSocialMetricsService(studentId: string | undefined, userId: s
   return { account: savedAccount, updateCadenceDays: 7 }
 }
 
+async function removeSocialMetricsAccountService(studentId: string | undefined, platform: string) {
+  const removed = await connectCommunityRepository.removeSocialAccount(requireStudentId(studentId), platform)
+  if (!removed) throw new ApiError(404, `${platform} is not connected to this profile`, 'SOCIAL_ACCOUNT_NOT_FOUND')
+  return {
+    deleted: true,
+    platform: removed.removedAccount.platform,
+    handle: removed.removedAccount.handle
+  }
+}
+
 export {
   compareSocialHandles,
   extractSocialMetricsFromText,
   normalizeSocialHandle,
+  resolveSocialAccountHandle,
   extractSocialMetricsService,
+  removeSocialMetricsAccountService,
   readSocialMarketingProfileService,
   saveSocialMetricsService
 }

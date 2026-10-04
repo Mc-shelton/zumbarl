@@ -6,6 +6,7 @@ import { OPPORTUNITY_APPLICABLE_STATUSES } from '../../../shared/opportunities/o
 import { readMilestoneBudget } from '../../../shared/projects/milestoneBudget.js'
 import { deliverableTasksRepository } from '../projects/deliverableTasks.repository.js'
 import { rankWithRecommendations } from '../../services/recommendations/index.js'
+import { rankOpportunitiesForStudentMode } from '../../../shared/career/studentProgression.js'
 
 const projects = createPrismaRecordRepository('projects')
 const deliverables = createPrismaRecordRepository('deliverables')
@@ -47,6 +48,7 @@ function toOpportunityCard(opportunity: Record<string, any>) {
     duration: opportunity.duration,
     deadline: toIso(opportunity.applicationDeadline) ?? opportunity.deadlineLabel,
     publishedAt: toIso(opportunity.publishedAt) ?? toIso(opportunity.createdAt),
+    createdAt: toIso(opportunity.createdAt),
     overview: opportunity.description ?? opportunity.summary,
     responsibilities: opportunity.requirements ?? [],
     requirements: opportunity.mustHave ?? [],
@@ -66,27 +68,74 @@ function toOpportunityCard(opportunity: Record<string, any>) {
   }
 }
 
+function blendGoalAndLearnedRanking(items: Record<string, any>[]) {
+  const lastPosition = Math.max(1, items.length - 1)
+  return items.map((item, learnedPosition) => {
+    const goalScore = Number(item.progressionMatch?.score || 0)
+    const learnedOrderScore = (1 - learnedPosition / lastPosition) * 100
+    return { item, learnedPosition, score: goalScore * 0.7 + learnedOrderScore * 0.3 }
+  }).sort((left, right) => right.score - left.score || left.learnedPosition - right.learnedPosition)
+    .map(({ item }) => item)
+}
+
 class EarnWorkflowsRepository {
   async listPublishedOpportunities(query: Record<string, unknown>, viewerStudentId?: string) {
-    const items = await prisma.opportunity.findMany({
-      where: {
-        status: { in: OPPORTUNITY_APPLICABLE_STATUSES },
-        visibility: 'public',
-        publishedAt: { not: null }
-      },
-      include: {
-        company: true,
-        requiredAttachments: { orderBy: { sortOrder: 'asc' } }
-      },
-      orderBy: { createdAt: 'desc' }
-    })
+    const [items, student] = await Promise.all([
+      prisma.opportunity.findMany({
+        where: {
+          status: { in: OPPORTUNITY_APPLICABLE_STATUSES },
+          visibility: 'public',
+          publishedAt: { not: null }
+        },
+        include: {
+          company: true,
+          requiredAttachments: { orderBy: { sortOrder: 'asc' } }
+        },
+        orderBy: { createdAt: 'desc' }
+      }),
+      viewerStudentId
+        ? prisma.studentProfile.findUnique({
+            where: { id: viewerStudentId },
+            select: {
+              currentMode: true,
+              careerPath: true,
+              skillLevels: { select: { skillName: true } },
+              studentSkills: { select: { skill: { select: { name: true } } } }
+            }
+          })
+        : Promise.resolve(null)
+    ])
 
-    const ranked = await rankWithRecommendations({
+    const cards = items.map(toOpportunityCard)
+    const requestedIntent = String(query.intent || '').trim().toLowerCase()
+    const rankingMode = requestedIntent === 'career' || requestedIntent === 'build-career'
+      ? 'CAREER'
+      : requestedIntent === 'earn'
+        ? 'EARN'
+        : requestedIntent === 'balanced'
+          ? 'BALANCED'
+          : student?.currentMode
+    const goalRanked = student
+      ? rankOpportunitiesForStudentMode(cards, {
+          mode: rankingMode || student.currentMode,
+          skills: [...new Set([
+            ...student.skillLevels.map((skill) => skill.skillName),
+            ...student.studentSkills.map((skill) => skill.skill.name)
+          ])],
+          careerPath: student.careerPath
+        })
+      : cards
+
+    const learnedRanked = await rankWithRecommendations({
       studentId: viewerStudentId,
       surface: 'opportunities',
       entityType: 'opportunity',
-      items: items.map(toOpportunityCard)
+      items: goalRanked
     })
+    // An explicit earning/career goal must remain the primary signal even when
+    // cached behavioral scores exist. Learned order refines and explores within
+    // that goal-aware baseline instead of silently overriding the user's focus.
+    const ranked = student ? blendGoalAndLearnedRanking(learnedRanked) : learnedRanked
     return pageEnvelope(ranked, query)
   }
 
@@ -585,7 +634,33 @@ class EarnWorkflowsRepository {
         && (item.scopeItemId ?? null) === scopeItemId
       ))
       const isWholeProjectDeliverable = Boolean(scopeReference && isSystemGeneratedDeliverable(scopeReference))
-      const taskIds = Array.isArray(payload.taskIds) ? payload.taskIds.map(String) : []
+      const taskIds = Array.isArray(payload.taskIds)
+        ? [...new Set(payload.taskIds.map(String).filter(Boolean))]
+        : []
+
+      // A task submission belongs to the student assigned to that task. Check
+      // this before the scope-level duplicate check: otherwise a teammate
+      // attempting to submit someone else's task receives the misleading
+      // "already submitted" revision error for the deliverable as a whole.
+      if (taskIds.length) {
+        const selectedTasks = await tx.deliverableTask.findMany({
+          where: { id: { in: taskIds }, projectId },
+          select: { id: true, ownerId: true }
+        })
+        if (selectedTasks.length !== taskIds.length) {
+          throw new ApiError(404, 'One or more selected tasks were not found for this project.', 'DELIVERABLE_TASK_NOT_FOUND')
+        }
+        if (selectedTasks.some((task) => task.ownerId && task.ownerId !== studentId)) {
+          throw new ApiError(
+            409,
+            'This work is assigned to someone else. Only the assigned student can submit it for review.',
+            'DELIVERABLE_TASK_ASSIGNED_TO_ANOTHER_STUDENT'
+          )
+        }
+        if (selectedTasks.some((task) => !task.ownerId)) {
+          throw new ApiError(409, 'Claim this work before submitting it for review.', 'DELIVERABLE_TASK_UNASSIGNED')
+        }
+      }
       // Team deliverables may contain several independent task submissions, but
       // a plain second upload with no declared tasks is still a duplicate and
       // must go through the explicit revision chain.

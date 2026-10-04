@@ -73,8 +73,8 @@ const markUserNotificationReadService = async (userId: string | undefined, notif
 }
 const markAllUserNotificationsReadService = (userId: string | undefined) => campusExperienceRepository.markAllNotificationsRead(userId)
 
-async function readStudentProfileExperienceService(studentId: string | undefined) {
-  const experience = await campusExperienceRepository.readProfileExperience(studentId) ?? notFound('Student profile')
+async function readStudentProfileExperienceService(studentId: string | undefined, options: { includePrivatePortfolio?: boolean } = {}) {
+  const experience = await campusExperienceRepository.readProfileExperience(studentId, options) ?? notFound('Student profile')
   const progression = experience.header?.id
     ? await readStudentProgressionService(experience.header.id)
     : null

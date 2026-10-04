@@ -159,6 +159,61 @@ describe('Zumbarl API', () => {
     expect(response.json().status).toBe('ok')
   })
 
+  it('reports dependency readiness', async () => {
+    const response = await app.inject({ method: 'GET', url: '/ready' })
+    expect(response.statusCode).toBe(200)
+    expect(response.json()).toMatchObject({
+      status: 'ready',
+      dependencies: { postgres: 'ok', redis: 'ok', objectStorage: 'local' }
+    })
+  })
+
+  it('uses an HTTP-only cookie for protected reads, requires bearer auth for writes, and revokes logout sessions', async () => {
+    const loginResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/login',
+      payload: { email: 'student@zumbarl.test', password: 'password123' }
+    })
+    expect(loginResponse.statusCode).toBe(200)
+    const token = loginResponse.json().token as string
+    const setCookie = String(loginResponse.headers['set-cookie'])
+    const cookie = setCookie.split(';')[0]
+    expect(setCookie).toContain('zumbarl_session=')
+    expect(setCookie).toContain('HttpOnly')
+    expect(setCookie).toContain('SameSite=Lax')
+
+    const cookieReadResponse = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/me',
+      headers: { cookie }
+    })
+    expect(cookieReadResponse.statusCode).toBe(200)
+    expect(cookieReadResponse.json().user.email).toBe('student@zumbarl.test')
+
+    const cookieWriteResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/connect/presence/heartbeat',
+      headers: { cookie },
+      payload: {}
+    })
+    expect(cookieWriteResponse.statusCode).toBe(403)
+
+    const logoutResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/logout',
+      headers: { authorization: `Bearer ${token}`, cookie }
+    })
+    expect(logoutResponse.statusCode).toBe(204)
+    expect(String(logoutResponse.headers['set-cookie'])).toContain('zumbarl_session=;')
+
+    const revokedResponse = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/me',
+      headers: { authorization: `Bearer ${token}` }
+    })
+    expect(revokedResponse.statusCode).toBe(403)
+  })
+
   it('serves the persisted Bayesian Zumbarl score', async () => {
     const studentToken = await login('student@zumbarl.test')
     const response = await app.inject({
@@ -687,6 +742,28 @@ describe('Zumbarl API', () => {
     expect(activeOpportunities).toBeDefined()
   })
 
+  it('returns persisted public student talent to authenticated businesses', async () => {
+    const token = await login('business@zumbarl.test')
+    const response = await app.inject({
+      method: 'GET',
+      url: '/api/v1/business/talent?q=Aisha',
+      headers: { authorization: `Bearer ${token}` }
+    })
+
+    expect(response.statusCode).toBe(200)
+    const talent = response.json().data
+    expect(talent).toHaveLength(1)
+    expect(talent[0]).toMatchObject({
+      name: 'Aisha Mwangi',
+      handle: '@aisha_mwangi'
+    })
+    expect(Array.isArray(talent[0].tags)).toBe(true)
+    expect(Array.isArray(talent[0].services)).toBe(true)
+    expect(Array.isArray(talent[0].portfolio)).toBe(true)
+    expect(talent[0]).not.toHaveProperty('email')
+    expect(talent[0]).not.toHaveProperty('phone')
+  })
+
   it('persists sample work and only allows draft opportunities to be deleted', async () => {
     const token = await login('business@zumbarl.test')
     const sampleUrl = 'https://example.com/reference-design.png'
@@ -890,13 +967,22 @@ describe('Zumbarl API', () => {
       expect.objectContaining({ id: assessmentAttemptId, checkpointId: firstCheckpoint.id })
     ]))
 
+    const practiceResource = firstCheckpoint.resources[0]
+    const selectPracticeResourceResponse = await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/learn/roadmaps/${enrollment.id}/resources/${practiceResource.id}/selection`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: { selected: true }
+    })
+    expect(selectPracticeResourceResponse.statusCode).toBe(200)
+
     const practiceResponse = await app.inject({
       method: 'POST',
       url: `/api/v1/learn/roadmaps/${enrollment.id}/practice-submissions`,
       headers: { authorization: `Bearer ${studentToken}` },
       payload: {
         checkpointId: firstCheckpoint.id,
-        resourceId: firstCheckpoint.resources[0].id,
+        resourceId: practiceResource.id,
         competencyId: firstCheckpoint.competencies[0].id,
         responses: { audience: 'First-year students learning to budget for their first semester.' },
         reflection: 'I would define the audience need before choosing a post format.'
@@ -931,6 +1017,10 @@ describe('Zumbarl API', () => {
 
     await prisma.roadmapEvidence.delete({ where: { id: practiceEvidenceId } })
     await prisma.learningPracticeSubmission.delete({ where: { id: practiceSubmissionId } })
+    await prisma.studentRoadmapResource.updateMany({
+      where: { enrollmentId: enrollment.id, resourceId: practiceResource.id },
+      data: { status: 'SUGGESTED', progressPercent: 0, startedAt: null, completedAt: null }
+    })
     await prisma.roadmapAssessmentAttempt.delete({ where: { id: assessmentAttemptId } })
     await prisma.roadmapEvidence.delete({ where: { id: evidenceId } })
     await prisma.studentCompetencyState.deleteMany({

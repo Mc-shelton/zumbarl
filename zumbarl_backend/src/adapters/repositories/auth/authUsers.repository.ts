@@ -49,6 +49,7 @@ function toAuthUser(user: Record<string, any>, profileIds: Record<string, string
     phone: user.phone,
     passwordHash: user.passwordHash,
     role: user.role,
+    isVerified: user.isVerified,
     status: user.isActive === false ? 'inactive' : user.status ?? 'active',
     studentId: profileIds.studentId ?? user.studentProfile?.id ?? user.studentId,
     businessId: profileIds.businessId ?? user.companyContact?.companyId ?? user.businessId,
@@ -94,6 +95,7 @@ function toStudentProfile(student: Record<string, any> | null) {
     firstName: student.firstName,
     lastName: student.lastName,
     name: [student.firstName, student.lastName].filter(Boolean).join(' '),
+    gender: student.gender,
     avatarUrl: student.avatarUrl,
     campus: student.campus?.name ?? student.campus ?? 'Unassigned campus',
     campusPage: managedCampusPage?.type === 'campus' && managedCampusPage.status === 'active'
@@ -149,7 +151,12 @@ class AuthUsersRepository {
         phone: getUniquePhone(payload.phone, payload.email),
         passwordHash: payload.passwordHash,
         role: toUserRole(payload.role),
-        isActive: payload.status !== 'inactive'
+        isActive: payload.status !== 'inactive',
+        isVerified: payload.emailVerified === true,
+        termsAcceptedAt: payload.termsAcceptedAt,
+        termsVersion: payload.termsVersion,
+        privacyAcceptedAt: payload.privacyAcceptedAt,
+        privacyVersion: payload.privacyVersion
       }
     })
     return toAuthUser(user) as AnyRecord
@@ -192,7 +199,12 @@ class AuthUsersRepository {
           phone: getUniquePhone(payload.phone, payload.email),
           passwordHash: payload.passwordHash,
           role: toUserRole(payload.role),
-          isActive: payload.status !== 'inactive'
+          isActive: payload.status !== 'inactive',
+          isVerified: payload.emailVerified === true,
+          termsAcceptedAt: payload.termsAcceptedAt,
+          termsVersion: payload.termsVersion,
+          privacyAcceptedAt: payload.privacyAcceptedAt,
+          privacyVersion: payload.privacyVersion
         }
       })
       const yearJoined = Number(payload.yearJoined || new Date().getFullYear())
@@ -233,7 +245,12 @@ class AuthUsersRepository {
           phone: getUniquePhone(payload.phone, payload.email),
           passwordHash: payload.passwordHash,
           role: toUserRole(payload.role),
-          isActive: payload.status !== 'inactive'
+          isActive: payload.status !== 'inactive',
+          isVerified: payload.emailVerified === true,
+          termsAcceptedAt: payload.termsAcceptedAt,
+          termsVersion: payload.termsVersion,
+          privacyAcceptedAt: payload.privacyAcceptedAt,
+          privacyVersion: payload.privacyVersion
         }
       })
       const company = await transaction.company.create({
@@ -307,6 +324,13 @@ class AuthUsersRepository {
       }
     })
   }
+
+  async revokeSessionRecord(sessionId: string) {
+    return prisma.session.updateMany({
+      where: { id: sessionId, revokedAt: null },
+      data: { revokedAt: new Date() }
+    })
+  }
 }
 
 const authUsersRepository = new AuthUsersRepository()
@@ -320,6 +344,7 @@ const createUserWithBusinessProfile = authUsersRepository.createUserWithBusiness
 const findStudentProfileById = authUsersRepository.findStudentProfileById.bind(authUsersRepository)
 const findBusinessProfileById = authUsersRepository.findBusinessProfileById.bind(authUsersRepository)
 const createSessionRecord = authUsersRepository.createSessionRecord.bind(authUsersRepository)
+const revokeSessionRecord = authUsersRepository.revokeSessionRecord.bind(authUsersRepository)
 const listActiveCampuses = authUsersRepository.listActiveCampuses.bind(authUsersRepository)
 const listCourses = authUsersRepository.listCourses.bind(authUsersRepository)
 
@@ -335,6 +360,7 @@ export {
   findStudentProfileById,
   findBusinessProfileById,
   createSessionRecord,
+  revokeSessionRecord,
   listActiveCampuses
   ,listCourses
 }

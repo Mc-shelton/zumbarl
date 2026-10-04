@@ -132,6 +132,7 @@ const errandStatusSchema = z.object({
 const vendorWithdrawalSchema = z.object({
   amount: z.coerce.number().positive(),
   currency: z.string().trim().length(3).default('KES'),
+  recipientUserId: z.string().trim().min(1).optional(),
   method: z.enum(['mpesa', 'bank']),
   destination: z.string().trim().min(6).max(120)
 })

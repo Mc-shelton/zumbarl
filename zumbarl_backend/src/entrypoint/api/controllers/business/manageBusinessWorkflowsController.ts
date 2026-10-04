@@ -9,10 +9,12 @@ import {
   createOpportunityDeliverablesService,
   awardApplicantProjectService,
   counterOfferApplicantBidService,
+  createBusinessPostService,
   fundBusinessOpportunityService,
   inviteOpportunityBiddersService,
   listOpportunityInviteCandidatesService,
   listBusinessActivityService,
+  listBusinessTalentService,
   listBusinessOpportunitiesService,
   listBusinessIndustriesService,
   listOpportunityDeliverablesService,
@@ -30,6 +32,7 @@ import {
   updateBusinessProfileService
 } from '../../../../adapters/services/business/index.js'
 import { z } from 'zod'
+import { postSchema } from '../../../validators/connect/index.js'
 import {
   createOpportunityDeliverablesSchema,
   createBusinessIndustrySchema,
@@ -54,8 +57,20 @@ async function readBusinessDashboardController(request: FastifyRequest, reply: F
   return reply.send(await readBusinessDashboardService(request.authUser?.businessId))
 }
 
+async function createBusinessPostController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.code(201).send(await createBusinessPostService(
+    request.authUser?.businessId,
+    request.authUser?.id,
+    requireBody(postSchema, request)
+  ))
+}
+
 async function listBusinessActivityController(request: FastifyRequest, reply: FastifyReply) {
   return reply.send(await listBusinessActivityService(request.authUser?.businessId))
+}
+
+async function listBusinessTalentController(request: FastifyRequest, reply: FastifyReply) {
+  return reply.send(await listBusinessTalentService(request.authUser?.businessId, request.query as Record<string, unknown>))
 }
 
 async function readBusinessProfileController(request: FastifyRequest, reply: FastifyReply) {
@@ -114,10 +129,11 @@ async function publishBusinessOpportunityController(request: FastifyRequest, rep
 
 async function fundBusinessOpportunityController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.code(201).send(await fundBusinessOpportunityService(
+  const payload = requireBody(fundOpportunitySchema, request)
+  return reply.code(payload.method === 'mobile_money' ? 202 : 201).send(await fundBusinessOpportunityService(
     id,
     request.authUser?.businessId,
-    requireBody(fundOpportunitySchema, request),
+    payload,
     request.authUser?.id
   ))
 }
@@ -207,7 +223,9 @@ async function counterOfferApplicantBidController(request: FastifyRequest, reply
 
 export {
   readBusinessDashboardController,
+  createBusinessPostController,
   listBusinessActivityController,
+  listBusinessTalentController,
   readBusinessProfileController,
   updateBusinessProfileController,
   readBusinessKycController,

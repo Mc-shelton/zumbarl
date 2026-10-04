@@ -1,7 +1,9 @@
 import type { FastifyReply, FastifyRequest } from 'fastify'
+import { z } from 'zod'
 import { ApiError, idParamSchema, requireBody, requireParams } from '../../../../lib/http.js'
+import { requireAuth } from '../../../../lib/security.js'
 import { completeUploadSchema, presignUploadSchema } from '../../../validators/uploads/index.js'
-import { completeUploadService, presignUploadService, storeUploadedFileService } from '../../../../adapters/services/uploads/index.js'
+import { completeUploadService, presignUploadService, readStoredFileService, storeUploadedFileService } from '../../../../adapters/services/uploads/index.js'
 
 function readMultipartField(fields: Record<string, any>, fieldName: string) {
   const field = fields[fieldName]
@@ -38,11 +40,25 @@ async function uploadLocalFileController(request: FastifyRequest, reply: Fastify
 
 async function completeUploadController(request: FastifyRequest, reply: FastifyReply) {
   const { id } = requireParams(idParamSchema, request)
-  return reply.send(await completeUploadService(id, requireBody(completeUploadSchema, request)))
+  requireBody(completeUploadSchema, request)
+  return reply.send(await completeUploadService(id, request.authUser?.id))
+}
+
+async function readStoredFileController(request: FastifyRequest, reply: FastifyReply) {
+  const { bucket, '*': storageKey } = z.object({ bucket: z.string().min(1), '*': z.string().min(1) }).parse(request.params)
+  if (bucket !== 'zumbarl-public-assets') await requireAuth(request)
+  const file = await readStoredFileService(request.authUser, bucket, storageKey)
+  const safeFileName = file.upload.fileName.replace(/["\\\r\n]/g, '_')
+  if (file.contentLength) reply.header('Content-Length', file.contentLength)
+  return reply
+    .type(file.upload.mimeType)
+    .header('Content-Disposition', `inline; filename="${safeFileName}"`)
+    .send(file.body)
 }
 
 export {
   presignUploadController,
   uploadLocalFileController,
-  completeUploadController
+  completeUploadController,
+  readStoredFileController
 }

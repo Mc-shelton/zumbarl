@@ -1,13 +1,59 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import type { UserRole } from '@prisma/client'
 import { hashPassword } from '../lib/security.js'
 import { prisma } from '../lib/prisma.js'
 import { copyLocalSeedAsset } from '../adapters/storage/index.js'
-import { createPrismaRecordRepository } from '../shared/repositories/index.js'
-
-const projects = createPrismaRecordRepository('projects')
 
 type SeedAssets = Awaited<ReturnType<typeof seedLocalFileAssets>>
+
+type SeedUser = {
+  email: string
+  username: string
+  name: string
+  firstName: string
+  lastName: string
+  phone: string
+  role: UserRole
+}
+
+async function upsertSeedUser(seed: SeedUser) {
+  const matches = await prisma.user.findMany({
+    where: {
+      OR: [{ email: seed.email }, { username: seed.username }]
+    },
+    select: { id: true, email: true, username: true }
+  })
+  const emailOwner = matches.find((user) => user.email === seed.email)
+  const usernameOwner = matches.find((user) => user.username === seed.username)
+  const passwordHash = await hashPassword('password123')
+  const existingUser = emailOwner ?? usernameOwner
+
+  if (!existingUser) {
+    return prisma.user.create({
+      data: { ...seed, passwordHash, isActive: true }
+    })
+  }
+
+  const usernameBelongsToAnotherUser = Boolean(
+    emailOwner && usernameOwner && emailOwner.id !== usernameOwner.id
+  )
+
+  return prisma.user.update({
+    where: { id: existingUser.id },
+    data: {
+      email: seed.email,
+      name: seed.name,
+      firstName: seed.firstName,
+      lastName: seed.lastName,
+      ...(usernameBelongsToAnotherUser ? {} : { username: seed.username }),
+      phone: seed.phone,
+      passwordHash,
+      role: seed.role,
+      isActive: true
+    }
+  })
+}
 
 const SKILL_CATEGORY_SEEDS = [
   {
@@ -27,12 +73,6 @@ const SKILL_CATEGORY_SEEDS = [
     skills: ['Web Development', 'Data Analysis', 'HTML', 'CSS']
   }
 ]
-
-async function upsertWorkflowRecord(repository: ReturnType<typeof createPrismaRecordRepository>, seedKey: string, payload: Record<string, any>) {
-  const existing = await repository.findByField('seedKey', seedKey)
-  if (existing) return repository.updateById(existing.id, { ...payload, seedKey })
-  return repository.create({ ...payload, seedKey })
-}
 
 function normalizeSkillName(name: string) {
   return name.trim().replace(/\s+/g, ' ')
@@ -1255,71 +1295,32 @@ async function seedDatabase() {
   })
   const assets = await seedLocalFileAssets()
 
-  const studentUser = await prisma.user.upsert({
-    where: { email: 'student@zumbarl.test' },
-    update: {
-      name: 'Aisha Mwangi',
-      firstName: 'Aisha',
-      lastName: 'Mwangi',
-      username: 'aisha_mwangi',
-      role: 'STUDENT_TRANSITION',
-      isActive: true
-    },
-    create: {
-      email: 'student@zumbarl.test',
-      name: 'Aisha Mwangi',
-      firstName: 'Aisha',
-      lastName: 'Mwangi',
-      username: 'aisha_mwangi',
-      phone: '+254700100001',
-      passwordHash: await hashPassword('password123'),
-      role: 'STUDENT_TRANSITION',
-      isActive: true
-    }
+  const studentUser = await upsertSeedUser({
+    email: 'student@zumbarl.test',
+    name: 'Aisha Mwangi',
+    firstName: 'Aisha',
+    lastName: 'Mwangi',
+    username: 'aisha_mwangi',
+    phone: '+254700100001',
+    role: 'STUDENT_TRANSITION'
   })
-  const businessUser = await prisma.user.upsert({
-    where: { email: 'business@zumbarl.test' },
-    update: {
-      name: 'Zetech Studios',
-      firstName: 'Zetech',
-      lastName: 'Studios',
-      username: 'zetech_studios',
-      role: 'COMPANY_PIPELINE_PARTNER',
-      isActive: true
-    },
-    create: {
-      email: 'business@zumbarl.test',
-      name: 'Zetech Studios',
-      firstName: 'Zetech',
-      lastName: 'Studios',
-      username: 'zetech_studios',
-      phone: '+254700100002',
-      passwordHash: await hashPassword('password123'),
-      role: 'COMPANY_PIPELINE_PARTNER',
-      isActive: true
-    }
+  const businessUser = await upsertSeedUser({
+    email: 'business@zumbarl.test',
+    name: 'Zetech Studios',
+    firstName: 'Zetech',
+    lastName: 'Studios',
+    username: 'zetech_studios',
+    phone: '+254700100002',
+    role: 'COMPANY_PIPELINE_PARTNER'
   })
-  const adminUser = await prisma.user.upsert({
-    where: { email: 'admin@zumbarl.test' },
-    update: {
-      name: 'Zumbarl Admin',
-      firstName: 'Zumbarl',
-      lastName: 'Admin',
-      username: 'zumbarl_admin',
-      role: 'SUPER_ADMIN',
-      isActive: true
-    },
-    create: {
-      email: 'admin@zumbarl.test',
-      name: 'Zumbarl Admin',
-      firstName: 'Zumbarl',
-      lastName: 'Admin',
-      username: 'zumbarl_admin',
-      phone: '+254700100003',
-      passwordHash: await hashPassword('password123'),
-      role: 'SUPER_ADMIN',
-      isActive: true
-    }
+  const adminUser = await upsertSeedUser({
+    email: 'admin@zumbarl.test',
+    name: 'Zumbarl Admin',
+    firstName: 'Zumbarl',
+    lastName: 'Admin',
+    username: 'zumbarl_admin',
+    phone: '+254700100003',
+    role: 'SUPER_ADMIN'
   })
 
   const kenyattaProfile = await prisma.managedProfile.upsert({
@@ -1489,7 +1490,6 @@ async function seedDatabase() {
     }
   })
 
-  const candidatePasswordHash = await hashPassword('password123')
   const projectTeamCandidateSeeds = [
     {
       email: 'brian.otieno@zumbarl.test',
@@ -1516,27 +1516,14 @@ async function seedDatabase() {
 
   for (const candidateSeed of projectTeamCandidateSeeds) {
     const name = `${candidateSeed.firstName} ${candidateSeed.lastName}`
-    const candidateUser = await prisma.user.upsert({
-      where: { email: candidateSeed.email },
-      update: {
-        name,
-        firstName: candidateSeed.firstName,
-        lastName: candidateSeed.lastName,
-        passwordHash: candidatePasswordHash,
-        role: 'STUDENT_STANDARD',
-        isActive: true
-      },
-      create: {
-        email: candidateSeed.email,
-        name,
-        firstName: candidateSeed.firstName,
-        lastName: candidateSeed.lastName,
-        username: `${candidateSeed.firstName}_${candidateSeed.lastName}`.toLowerCase(),
-        phone: candidateSeed.phone,
-        passwordHash: candidatePasswordHash,
-        role: 'STUDENT_STANDARD',
-        isActive: true
-      }
+    const candidateUser = await upsertSeedUser({
+      email: candidateSeed.email,
+      name,
+      firstName: candidateSeed.firstName,
+      lastName: candidateSeed.lastName,
+      username: `${candidateSeed.firstName}_${candidateSeed.lastName}`.toLowerCase(),
+      phone: candidateSeed.phone,
+      role: 'STUDENT_STANDARD'
     })
     const candidateProfile = await prisma.studentProfile.upsert({
       where: { userId: candidateUser.id },
@@ -2103,16 +2090,40 @@ async function seedDatabase() {
     where: { studentId: student.id, type: 'MAIN' },
     orderBy: { createdAt: 'asc' }
   })
-  if (existingMainWallet) {
-    await prisma.wallet.update({
+  const mainWallet = existingMainWallet
+    ? await prisma.wallet.update({
       where: { id: existingMainWallet.id },
       data: { balance: 7850, pendingBalance: 1200, currency: 'KES' }
     })
-  } else {
-    await prisma.wallet.create({
+    : await prisma.wallet.create({
       data: { studentId: student.id, type: 'MAIN', balance: 7850, pendingBalance: 1200, currency: 'KES' }
     })
-  }
+  await prisma.transaction.upsert({
+    where: { reference: `seed-student-wallet-opening:${student.id}` },
+    update: {
+      walletId: mainWallet.id,
+      type: 'STUDENT_PAYOUT',
+      status: 'COMPLETED',
+      amount: 7850,
+      netAmount: 7850,
+      currency: 'KES',
+      description: 'Payout for completed deliverable',
+      processedAt: new Date(),
+      metadata: { source: 'seed', direction: 'student_credit' }
+    },
+    create: {
+      walletId: mainWallet.id,
+      type: 'STUDENT_PAYOUT',
+      status: 'COMPLETED',
+      amount: 7850,
+      netAmount: 7850,
+      currency: 'KES',
+      reference: `seed-student-wallet-opening:${student.id}`,
+      description: 'Payout for completed deliverable',
+      processedAt: new Date(),
+      metadata: { source: 'seed', direction: 'student_credit' }
+    }
+  })
 
   await Promise.all(['Social Media', 'Graphic Design', 'Canva', 'Copywriting', 'Analytics', 'Video Editing'].map((skillName, index) => prisma.skillLevel_.upsert({
     where: { studentId_skillName: { studentId: student.id, skillName } },

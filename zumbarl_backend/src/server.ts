@@ -1,39 +1,37 @@
 import { buildApp } from './app.js'
 import { env } from './config/env.js'
-import { migrateLegacyAppRecords, migrateWorkflowDomains } from './data/index.js'
-import { backfillDefaultProjectDeliverables } from './shared/projects/ensureDefaultProjectDeliverable.js'
-import { processMarketplaceDeliveryDeadlinesService } from './adapters/services/marketplace/index.js'
-import { scheduleDueScoreRefreshes } from './adapters/services/scores/index.js'
-import { runEvergreenMaintenanceService } from './adapters/services/evergreen/index.js'
-
-await migrateLegacyAppRecords()
-await migrateWorkflowDomains()
-await backfillDefaultProjectDeliverables()
+import { startMaintenanceJobs } from './background/maintenanceJobs.js'
 
 const app = await buildApp()
 
-// Run once on boot and hourly thereafter. The repository guards every payout,
-// so retries and overlapping application instances remain idempotent.
-await processMarketplaceDeliveryDeadlinesService()
-await scheduleDueScoreRefreshes()
-const marketplaceEscrowTimer = globalThis.setInterval(() => {
-  void processMarketplaceDeliveryDeadlinesService().catch((error) => app.log.error(error, 'Marketplace escrow deadline processing failed'))
-}, 60 * 60 * 1000)
-marketplaceEscrowTimer.unref()
-
-// Recency decay changes Bayesian evidence even without a new engagement. Check
-// hourly and refresh only scores whose 18-day cycle is due.
-const scoreRefreshTimer = globalThis.setInterval(() => {
-  void scheduleDueScoreRefreshes().catch((error) => app.log.error(error, 'Zumbarl score refresh failed'))
-}, 60 * 60 * 1000)
-scoreRefreshTimer.unref()
-
-// Evergreen maintenance jobs acquire database leases, persist each run, and
-// can also be replayed from the audited operations endpoint.
-void runEvergreenMaintenanceService().catch((error) => app.log.error(error, 'Evergreen maintenance failed'))
-const evergreenMaintenanceTimer = globalThis.setInterval(() => {
-  void runEvergreenMaintenanceService().catch((error) => app.log.error(error, 'Evergreen maintenance failed'))
-}, 15 * 60 * 1000)
-evergreenMaintenanceTimer.unref()
+const stopMaintenanceJobs = env.BACKGROUND_JOBS_MODE === 'inline'
+  ? await startMaintenanceJobs(app.log)
+  : () => {}
 
 await app.listen({ host: env.HOST, port: env.PORT })
+
+let shuttingDown = false
+async function shutdown(signal: 'SIGTERM' | 'SIGINT') {
+  if (shuttingDown) return
+  shuttingDown = true
+  app.log.info({ signal }, 'Graceful shutdown started')
+  stopMaintenanceJobs()
+
+  const forcedExit = globalThis.setTimeout(() => {
+    app.log.error({ signal }, 'Graceful shutdown timed out')
+    process.exitCode = 1
+  }, env.SHUTDOWN_TIMEOUT_MS)
+  forcedExit.unref()
+
+  try {
+    await app.close()
+    globalThis.clearTimeout(forcedExit)
+    app.log.info({ signal }, 'Graceful shutdown completed')
+  } catch (error) {
+    app.log.error(error, 'Graceful shutdown failed')
+    process.exitCode = 1
+  }
+}
+
+process.once('SIGTERM', () => { void shutdown('SIGTERM') })
+process.once('SIGINT', () => { void shutdown('SIGINT') })

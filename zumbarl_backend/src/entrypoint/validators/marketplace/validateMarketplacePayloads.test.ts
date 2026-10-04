@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { campusVendorListingSchema, cartItemSchema, errandStatusSchema, listingSchema, managedVendorUpdateSchema, marketplaceListingUpdateSchema, shopErrandsSchema, studentKitchenSchema, vendorPostSchema } from './validateMarketplacePayloads.js'
+import { campusVendorListingSchema, cartItemSchema, errandStatusSchema, listingSchema, managedVendorUpdateSchema, marketplaceListingUpdateSchema, shopErrandsSchema, studentKitchenSchema, vendorPostSchema, vendorWithdrawalSchema } from './validateMarketplacePayloads.js'
 
 describe('marketplace service validation', () => {
   it('requires the buyer delivery code only at the delivered checkpoint', () => {
@@ -18,6 +18,28 @@ describe('marketplace service validation', () => {
 
   it('rejects a page delivery rate above the supported range', () => {
     expect(shopErrandsSchema.safeParse({ acceptingErranders: true, deliveryFee: 5001, enabled: true, freeCampusDelivery: false }).success).toBe(false)
+  })
+
+  it('accepts a page withdrawal assigned to a Zumbarl recipient', () => {
+    const result = vendorWithdrawalSchema.safeParse({
+      amount: '2500',
+      currency: 'KES',
+      recipientUserId: 'recipient-user-id',
+      method: 'mpesa',
+      destination: '+254712345678',
+    })
+
+    expect(result.success).toBe(true)
+    expect(result.success && result.data.amount).toBe(2500)
+    expect(result.success && result.data.recipientUserId).toBe('recipient-user-id')
+  })
+
+  it('keeps older owner withdrawals valid when no recipient is supplied', () => {
+    expect(vendorWithdrawalSchema.safeParse({
+      amount: 1000,
+      method: 'bank',
+      destination: 'KCB 123456789',
+    }).success).toBe(true)
   })
 
   it('accepts an appointment-based campus service listing', () => {

@@ -5,6 +5,7 @@ import { prisma } from '../../../lib/prisma.js'
 import { createPrismaRecordRepository } from '../../../shared/repositories/index.js'
 import { normalizeCurrency, normalizeMoney } from '../../../shared/services/money.js'
 import { debitStudentWallet } from '../../../shared/services/walletLedger.js'
+import { OPPORTUNITY_APPLICABLE_STATUSES } from '../../../shared/opportunities/opportunityLifecycle.js'
 import { rankWithRecommendations } from '../../services/recommendations/index.js'
 
 const moderationCases = createPrismaRecordRepository('moderationCases')
@@ -87,6 +88,30 @@ function toRecord(record: Record<string, any>) {
   return { ...payloadObject(payload), ...rest }
 }
 
+function toPublishedProfileOpportunity(opportunity: Record<string, any>) {
+  const splash = payloadObject(opportunity.opportunitySplash)
+  const metadata = payloadObject(opportunity.metadata)
+  return {
+    id: opportunity.id,
+    title: opportunity.title,
+    summary: opportunity.summary,
+    category: opportunity.category,
+    opportunityType: opportunity.opportunityType,
+    engagementMode: opportunity.engagementMode ?? opportunity.mode,
+    duration: opportunity.duration,
+    budget: opportunity.budgetLabel ?? `${opportunity.currency || 'KES'} ${Math.round(opportunity.budgetAmount ?? 0).toLocaleString('en-KE')}`,
+    budgetAmount: opportunity.budgetAmount,
+    currency: opportunity.currency,
+    applicants: opportunity.applicants,
+    skills: opportunity.skills ?? [],
+    imageUrl: splash.url ?? splash.previewUrl ?? null,
+    applicationDeadline: opportunity.applicationDeadline,
+    publishedAt: opportunity.publishedAt,
+    status: opportunity.status,
+    applicationsClosed: Boolean(metadata.applicationsClosed)
+  }
+}
+
 class ConnectCommunityRepository {
   async listManagedProfiles(userId: string) {
     return prisma.managedProfile.findMany({
@@ -131,7 +156,16 @@ class ConnectCommunityRepository {
 
   async findManagedProfile(reference: string, viewerUserId?: string) {
     const profile = await prisma.managedProfile.findFirst({
-      where: { OR: [{ id: reference }, { slug: reference }], status: 'active' },
+      where: {
+        OR: [
+          { id: reference },
+          { slug: reference },
+          { campusId: reference },
+          { communityGroupId: reference },
+          { companyId: reference }
+        ],
+        status: 'active'
+      },
       include: {
         campus: true,
         communityGroup: true,
@@ -175,6 +209,17 @@ class ConnectCommunityRepository {
           }
         })
       : []
+    const publishedOpportunities = profile.type === 'business' && profile.companyId
+      ? (await prisma.opportunity.findMany({
+          where: {
+            companyId: profile.companyId,
+            status: { in: OPPORTUNITY_APPLICABLE_STATUSES },
+            visibility: 'public',
+            publishedAt: { not: null }
+          },
+          orderBy: [{ publishedAt: 'desc' }, { createdAt: 'desc' }]
+        })).map(toPublishedProfileOpportunity)
+      : []
     const [followRecord, viewerStudent] = viewerUserId ? await Promise.all([
       prisma.managedProfileFollower.findUnique({ where: { managedProfileId_userId: { managedProfileId: profile.id, userId: viewerUserId } } }),
       prisma.studentProfile.findUnique({ where: { userId: viewerUserId }, select: { id: true } })
@@ -204,7 +249,7 @@ class ConnectCommunityRepository {
     const locationLabel = profile.type === 'campus'
       ? profile.campus?.locationLabel || profile.campus?.city || profile.locationLabel
       : profile.locationLabel
-    return { ...profile, locationLabel, posts, attachedServices, isFollowing: Boolean(followRecord) }
+    return { ...profile, locationLabel, posts, attachedServices, publishedOpportunities, isFollowing: Boolean(followRecord) }
   }
 
   async setManagedProfileFollow(managedProfileId: string, userId: string, active: boolean) {
@@ -1962,6 +2007,27 @@ class ConnectCommunityRepository {
       }
     })
     return toRecord(profile)
+  }
+
+  async removeSocialAccount(studentId: string, platformName: string) {
+    const existing = await prisma.connectProfile.findUnique({ where: { studentId } })
+    if (!existing) return null
+    const existingPayload = payloadObject(existing.payload)
+    const socialAccounts = Array.isArray(existingPayload.socialAccounts)
+      ? existingPayload.socialAccounts.map((item) => payloadObject(item))
+      : []
+    const platform = String(platformName || '').toLowerCase()
+    const removedAccount = socialAccounts.find((item) => String(item.platform || '').toLowerCase() === platform)
+    if (!removedAccount) return null
+    const payload = {
+      ...existingPayload,
+      socialAccounts: socialAccounts.filter((item) => String(item.platform || '').toLowerCase() !== platform)
+    }
+    const profile = await prisma.connectProfile.update({
+      where: { studentId },
+      data: { payload: jsonInput(payload) }
+    })
+    return { profile: toRecord(profile), removedAccount }
   }
 
   async readProfile(studentId: string | undefined): Promise<Record<string, any> | null> {

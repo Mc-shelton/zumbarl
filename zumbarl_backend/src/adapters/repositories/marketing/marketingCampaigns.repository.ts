@@ -523,6 +523,20 @@ class MarketingCampaignsRepository {
       if (!acceptance || acceptance.status !== 'accepted') {
         return { submitted: false, reason: 'campaign_not_claimed' }
       }
+
+      // One accepted creator produces one review package. The transaction lock
+      // closes the double-click/concurrent-request race without preventing the
+      // business from changing the package's later review status.
+      await tx.$executeRawUnsafe(
+        'SELECT pg_advisory_xact_lock(hashtext($1))',
+        `campaign-proof:${id}:${studentId}`
+      )
+      const existing = await tx.marketingCampaignProof.findFirst({
+        where: { campaignId: id, studentId },
+        orderBy: { createdAt: 'asc' }
+      })
+      if (existing) return existing
+
       const proof = await tx.marketingCampaignProof.create({
         data: {
           campaignId: id,

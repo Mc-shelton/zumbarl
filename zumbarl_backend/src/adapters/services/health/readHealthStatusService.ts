@@ -9,9 +9,12 @@ function readHealthStatusService() {
 }
 
 async function readReadinessStatusService() {
+  const dependencies = await readSystemReadinessRepository()
+  const requiredDependencies = [dependencies.postgres, dependencies.redis]
+  if (dependencies.objectStorage !== 'local') requiredDependencies.push(dependencies.objectStorage)
   return {
-    status: 'ready',
-    dependencies: await readSystemReadinessRepository()
+    status: requiredDependencies.every((status) => status === 'ok') ? 'ready' : 'not_ready',
+    dependencies
   }
 }
 

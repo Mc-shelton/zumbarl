@@ -107,6 +107,36 @@ class StudentCareRepository {
     })
   }
 
+  async updateEnrollmentForStudent(id: string, studentId: string, status: 'active' | 'paused' | 'withdrawn') {
+    return prisma.$transaction(async (tx) => {
+      const current = await tx.studentCareProgramEnrollment.findFirst({ where: { id, studentId } })
+      if (!current) return null
+      await tx.studentCareProgress.create({
+        data: {
+          enrollmentId: id,
+          kind: 'student_plan_update',
+          status,
+          note: status === 'paused' ? 'Plan paused by student.' : status === 'active' ? 'Plan resumed by student.' : 'Student withdrew from this plan.',
+          studentVisible: true,
+          payload: jsonInput({ previousStatus: current.status })
+        }
+      })
+      const updated = await tx.studentCareProgramEnrollment.update({
+        where: { id },
+        data: {
+          status,
+          ...(status === 'active' && !current.startedAt ? { startedAt: new Date() } : {}),
+          ...(status === 'withdrawn' ? { completedAt: new Date() } : {})
+        },
+        include: { program: true, progress: { where: { studentVisible: true }, orderBy: { occurredAt: 'desc' }, take: 20 } }
+      })
+      if (current.supportCaseId && status === 'withdrawn') {
+        await tx.wellnessReport.updateMany({ where: { id: current.supportCaseId }, data: { status: 'resolved', updatedAt: new Date() } })
+      }
+      return updated
+    })
+  }
+
   async readOperations() {
     const [reports, bookings, enrollments, programs, pendingCircles] = await Promise.all([
       prisma.wellnessReport.findMany({ orderBy: [{ urgency: 'desc' }, { createdAt: 'desc' }], take: 100 }),

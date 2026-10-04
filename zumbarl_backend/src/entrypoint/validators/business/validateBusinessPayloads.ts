@@ -174,7 +174,24 @@ const fundOpportunitySchema = z.object({
   amount: z.coerce.number().positive(),
   currency: z.string().length(3).default('KES'),
   method: z.enum(['wallet', 'mobile_money', 'bank', 'card']).default('wallet'),
-  reference: z.string().optional()
+  reference: z.string().optional(),
+  phoneNumber: z.string().optional(),
+  publishAfterFunding: z.boolean().optional()
+}).superRefine((value, context) => {
+  if (value.method === 'mobile_money' && !value.phoneNumber?.trim()) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['phoneNumber'],
+      message: 'An M-Pesa phone number is required'
+    })
+  }
+  if (value.method === 'mobile_money' && value.currency.toUpperCase() === 'KES' && !Number.isInteger(value.amount)) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['amount'],
+      message: 'M-Pesa KES payments must use a whole-shilling amount'
+    })
+  }
 })
 
 const reviewApplicantSchema = z.object({

@@ -1,5 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { eventResponseSchema, groupMembershipSchema, groupMessageSchema, groupSchema, pollVoteSchema, supportCircleAudioPresenceSchema, supportCircleAudioRoomSchema, supportCircleMemberRoleSchema, supportCirclePostSchema, supportCircleScheduleAdmissionSchema, supportCircleScheduleResponseSchema, supportCircleScheduleSchema } from './validateConnectPayloads.js'
+import { eventResponseSchema, groupMembershipSchema, groupMessageSchema, groupSchema, pollVoteSchema, socialMetricsAccountSchema, supportCircleAudioPresenceSchema, supportCircleAudioRoomSchema, supportCircleMemberRoleSchema, supportCirclePostSchema, supportCircleScheduleAdmissionSchema, supportCircleScheduleResponseSchema, supportCircleScheduleSchema } from './validateConnectPayloads.js'
+
+describe('social metrics validation', () => {
+  it('allows unread metrics to be saved as null', () => {
+    expect(socialMetricsAccountSchema.parse({
+      platform: 'Instagram',
+      handle: '@creator',
+      followers: 62,
+      averageLikes: null,
+      averageEngagement: 60,
+      screenshotUploadId: 'upload-1',
+    })).toMatchObject({
+      followers: 62,
+      averageLikes: null,
+      averageEngagement: 60,
+    })
+  })
+})
 
 describe('event response validation', () => {
   it.each(['GOING', 'INTERESTED', 'CANCELLED'])('accepts %s', (status) => {

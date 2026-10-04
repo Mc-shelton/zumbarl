@@ -1,14 +1,30 @@
 import { z } from 'zod'
 
-const createRoadmapSchema = z.object({
-  ladderId: z.string(),
-  intent: z.enum(['explore', 'earn-while-learning', 'attachment-readiness', 'internship-readiness', 'job-readiness'])
-})
+const pathIntentSchema = z.enum(['explore', 'earn-while-learning', 'attachment-readiness', 'internship-readiness', 'job-readiness'])
+
+const createRoadmapSchema = z.union([
+  z.object({ ladderId: z.string().min(1), intent: pathIntentSchema }),
+  z.object({
+    title: z.string().trim().min(3).max(100),
+    description: z.string().trim().max(600).optional(),
+    careerFamily: z.string().trim().max(100).optional(),
+    estimatedWeeks: z.coerce.number().int().min(1).max(52).default(8),
+    skillIds: z.array(z.string().min(1)).min(1).max(20),
+    outcomes: z.array(z.string().trim().min(2).max(160)).max(10).default([]),
+    intent: pathIntentSchema
+  })
+])
 
 const updateRoadmapCoachingFocusSchema = z.object({
-  skillIds: z.array(z.string().min(1)).min(1).max(5),
-  weeklyTarget: z.coerce.number().int().min(1).max(7).default(3)
+  skillIds: z.array(z.string().min(1)).min(1).max(20),
+  weeklyTarget: z.coerce.number().int().min(1).max(14).default(3)
 })
+
+const updateRoadmapResourceProgressSchema = z.object({
+  progressPercent: z.coerce.number().int().min(0).max(100)
+})
+
+const updateRoadmapResourceSelectionSchema = z.object({ selected: z.boolean() })
 
 const addRoadmapEvidenceSchema = z.object({
   checkpointId: z.string(),
@@ -83,6 +99,8 @@ const createKnowledgeResourceSchema = z.object({
   if (value.createUnit && !value.unitName) context.addIssue({ code: 'custom', path: ['unitName'], message: 'Enter the new unit name' })
 })
 
+const updateKnowledgeResourceSchema = createKnowledgeResourceSchema
+
 const knowledgeToggleSchema = z.object({ active: z.boolean() })
 const knowledgeAccessSchema = z.object({ action: z.enum(['READ', 'BORROW', 'PURCHASE', 'SAVE']) })
 const knowledgePurchaseSchema = z.object({ paymentMethod: z.literal('WALLET') })
@@ -145,6 +163,8 @@ const updateKnowledgePostSchema = z.object({
 export {
   createRoadmapSchema,
   updateRoadmapCoachingFocusSchema,
+  updateRoadmapResourceProgressSchema,
+  updateRoadmapResourceSelectionSchema,
   addRoadmapEvidenceSchema,
   completeCheckpointTestSchema,
   createKnowledgeRoomMessageSchema,
@@ -163,6 +183,7 @@ export {
   knowledgeToggleSchema,
   submitLearningPracticeSchema,
   updateKnowledgeSpaceSchema,
+  updateKnowledgeResourceSchema,
   updateKnowledgePostSchema,
   updateKnowledgeRoomSchema,
   verifyRoadmapEvidenceSchema

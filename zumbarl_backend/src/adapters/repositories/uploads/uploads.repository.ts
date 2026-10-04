@@ -48,6 +48,10 @@ class UploadsRepository {
   findUpload(id: string) {
     return prisma.uploadedFile.findUnique({ where: { id } })
   }
+
+  findStoredUpload(bucket: string, storageKey: string) {
+    return prisma.uploadedFile.findUnique({ where: { bucket_storageKey: { bucket, storageKey } } })
+  }
 }
 
 const uploadsRepository = new UploadsRepository()

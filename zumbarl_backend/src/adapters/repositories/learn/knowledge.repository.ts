@@ -517,6 +517,35 @@ class LearnKnowledgeRepository {
     })
   }
 
+  async updateResource(id: string, studentId: string, payload: Record<string, any>) {
+    return prisma.knowledgeResource.update({
+      where: { id },
+      data: {
+        spaceId: payload.spaceId || null,
+        sourceMessageId: payload.sourceMessageId,
+        title: payload.title,
+        description: payload.description,
+        resourceType: payload.resourceType,
+        accessMode: payload.accessMode,
+        subject: payload.subject,
+        courseCode: payload.courseCode,
+        unitId: payload.unitId,
+        academicYear: payload.academicYear,
+        institution: payload.institution,
+        price: payload.accessMode === 'BUY' ? payload.price : null,
+        currency: payload.currency,
+        sourceMode: payload.sourceMode,
+        fileUrl: payload.sourceMode === 'LINK' ? payload.fileUrl : null,
+        fileUrls: payload.sourceMode === 'FILES' ? payload.fileUrls : [],
+        coverImageUrl: payload.coverImageUrl,
+        previewText: payload.previewText,
+        availableCopies: payload.accessMode === 'BORROW' ? payload.availableCopies : null,
+        status: payload.status
+      },
+      include: knowledgeResourceInclude(studentId)
+    })
+  }
+
   async setMembership(spaceId: string, studentId: string, active: boolean, status: string) {
     await prisma.$transaction(async (tx) => {
       const space = await tx.knowledgeSpace.findUnique({ where: { id: spaceId } })

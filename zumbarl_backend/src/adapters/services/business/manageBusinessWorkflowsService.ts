@@ -2,6 +2,8 @@ import { ApiError, notFound } from '../../../lib/http.js'
 import { deleteCacheByPattern, readCache, writeCache } from '../../cache/index.js'
 import { sendTransactionalEmail } from '../../notification/index.js'
 import { businessWorkflowsRepository } from '../../repositories/business/index.js'
+import { connectCommunityRepository } from '../../repositories/connect/index.js'
+import { initiateOpportunityMpesaFundingService } from '../finance/index.js'
 import { ensureProjectDeliverableReference } from '../../../shared/projects/ensureDefaultProjectDeliverable.js'
 
 const DEFAULT_BUSINESS_INDUSTRIES = [
@@ -138,18 +140,19 @@ function getUpcomingActions(opportunities: Record<string, any>[], kycSummary: Re
 }
 
 async function readBusinessDashboardService(businessId: string | undefined) {
-  const cacheKey = `business-dashboard:v3:${businessId ?? 'all'}`
+  const cacheKey = `business-dashboard:v4:${businessId ?? 'all'}`
   const cachedDashboard = await readCache<Record<string, any>>(cacheKey)
   if (cachedDashboard) return cachedDashboard
 
   const opportunities = ((await businessWorkflowsRepository.listBusinessOpportunities(businessId, {})).data ?? []).filter(Boolean) as Record<string, any>[]
-  const [businessProfile, kyc, campaigns, projects, bids, reviewEvents] = await Promise.all([
+  const [businessProfile, kyc, campaigns, projects, bids, reviewEvents, businessPosts] = await Promise.all([
     businessWorkflowsRepository.findBusinessProfile(businessId),
     businessWorkflowsRepository.findBusinessKyc(businessId),
     businessWorkflowsRepository.listBusinessCampaigns(businessId),
     businessWorkflowsRepository.listBusinessProjects(businessId),
     businessWorkflowsRepository.listBusinessBids(businessId),
-    businessWorkflowsRepository.listBusinessReviewEvents(businessId)
+    businessWorkflowsRepository.listBusinessReviewEvents(businessId),
+    businessWorkflowsRepository.listBusinessPosts(businessId)
   ])
   const kycSummary = getKycRequirements(kyc)
   const activeOpportunities = opportunities.filter((opportunity) => !['archived', 'closed', 'completed'].includes(String(opportunity.status ?? '').toLowerCase()))
@@ -173,6 +176,8 @@ async function readBusinessDashboardService(businessId: string | undefined) {
     applicants: bids.slice(0, 6).map(toRecentApplicant),
     insights: getApplicantInsights(bids),
     upcomingActions: getUpcomingActions(opportunities, kycSummary),
+    posts: businessPosts.data,
+    postCount: businessPosts.total,
     opportunities: opportunities.slice(0, 10),
     campaigns: campaigns.slice(0, 10),
     projects: projects.slice(0, 10)
@@ -181,8 +186,31 @@ async function readBusinessDashboardService(businessId: string | undefined) {
   return dashboard
 }
 
+async function createBusinessPostService(businessId: string | undefined, actorId: string | undefined, payload: Record<string, any>) {
+  if (!businessId || !actorId) throw new ApiError(403, 'A business workspace is required to publish', 'BUSINESS_PROFILE_REQUIRED')
+  const publisher = await businessWorkflowsRepository.ensureBusinessPublisher(businessId, actorId) ?? notFound('Business profile')
+  const post = await connectCommunityRepository.createManagedProfilePost(publisher.id, payload)
+  await deleteCacheByPattern(`business-dashboard:*:${businessId}`)
+  return {
+    ...post,
+    publisher: {
+      id: publisher.id,
+      slug: publisher.slug,
+      name: publisher.name,
+      handle: `@${publisher.handle}`,
+      avatarUrl: publisher.avatarUrl,
+      isVerified: publisher.isVerified
+    },
+    explorePath: `/campus/explore/posts/${post.id}`
+  }
+}
+
 async function listBusinessActivityService(businessId: string | undefined) {
   return { data: await businessWorkflowsRepository.listBusinessActivity(businessId) }
+}
+
+async function listBusinessTalentService(businessId: string | undefined, query: Record<string, unknown>) {
+  return { data: await businessWorkflowsRepository.listTalentCandidates(businessId, query) }
 }
 
 function readBusinessProfileService(businessId: string | undefined) {
@@ -190,7 +218,9 @@ function readBusinessProfileService(businessId: string | undefined) {
 }
 
 async function updateBusinessProfileService(businessId: string | undefined, payload: Record<string, any>) {
-  return await businessWorkflowsRepository.updateBusinessProfile(businessId ?? '', payload) ?? notFound('Business profile')
+  const profile = await businessWorkflowsRepository.updateBusinessProfile(businessId ?? '', payload) ?? notFound('Business profile')
+  await deleteCacheByPattern(businessId ? `business-dashboard:*:${businessId}` : 'business-dashboard:*')
+  return profile
 }
 
 async function readBusinessKycService(businessId: string | undefined) {
@@ -203,7 +233,7 @@ async function readBusinessKycService(businessId: string | undefined) {
 
 async function submitBusinessKycService(businessId: string | undefined, payload: Record<string, any>, actorId: string | undefined) {
   const kyc = await businessWorkflowsRepository.upsertBusinessKycWithEvent(businessId ?? '', payload, actorId) ?? notFound('Business profile')
-  await deleteCacheByPattern(`business-dashboard:${businessId ?? '*'}*`)
+  await deleteCacheByPattern(businessId ? `business-dashboard:*:${businessId}` : 'business-dashboard:*')
   return {
     data: kyc,
     summary: getKycRequirements(kyc)
@@ -238,7 +268,7 @@ async function createBusinessOpportunityService(businessId: string | undefined, 
     applicants: 0,
     escrowStatus: 'unfunded'
   }, actorId)
-  await deleteCacheByPattern(`business-dashboard:${businessId ?? '*'}*`)
+  await deleteCacheByPattern(businessId ? `business-dashboard:*:${businessId}` : 'business-dashboard:*')
   return opportunity
 }
 
@@ -263,7 +293,7 @@ async function updateBusinessOpportunityService(id: string, businessId: string |
     publishedAt: existingOpportunity.publishedAt
   }
   const opportunity = await businessWorkflowsRepository.updateOpportunityWithEvent(id, patch, actorId) ?? notFound('Opportunity')
-  await deleteCacheByPattern(`business-dashboard:${businessId ?? '*'}*`)
+  await deleteCacheByPattern(businessId ? `business-dashboard:*:${businessId}` : 'business-dashboard:*')
   return opportunity
 }
 
@@ -271,7 +301,7 @@ async function setOpportunityApplicationsClosedService(id: string, businessId: s
   const opportunity = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
   if (businessId && opportunity.businessId && opportunity.businessId !== businessId) notFound('Opportunity')
   const updated = await businessWorkflowsRepository.setOpportunityApplicationsClosed(id, closed) ?? notFound('Opportunity')
-  await deleteCacheByPattern(`business-dashboard:${businessId ?? '*'}*`)
+  await deleteCacheByPattern(businessId ? `business-dashboard:*:${businessId}` : 'business-dashboard:*')
   return updated
 }
 
@@ -290,7 +320,7 @@ async function deleteBusinessOpportunityService(id: string, businessId: string |
 
   const deleted = await businessWorkflowsRepository.deleteOpportunity(id)
   if (!deleted) notFound('Opportunity')
-  await deleteCacheByPattern(`business-dashboard:${businessId ?? '*'}*`)
+  await deleteCacheByPattern(businessId ? `business-dashboard:*:${businessId}` : 'business-dashboard:*')
 }
 
 async function publishBusinessOpportunityService(
@@ -329,7 +359,18 @@ async function fundBusinessOpportunityService(
 ) {
   const existing = await businessWorkflowsRepository.findOpportunity(id) ?? notFound('Opportunity')
   if (businessId && existing.businessId !== businessId) notFound('Opportunity')
-  if ((payload.method || 'wallet') !== 'wallet') {
+  const paymentMethod = payload.method || 'wallet'
+  if (paymentMethod === 'mobile_money') {
+    const funding = await initiateOpportunityMpesaFundingService(
+      id,
+      businessId || existing.businessId,
+      payload,
+      actorId
+    )
+    await deleteCacheByPattern(existing.businessId ? `business-dashboard:*:${existing.businessId}` : 'business-dashboard:*')
+    return funding
+  }
+  if (paymentMethod !== 'wallet') {
     throw new ApiError(409, 'This payment method cannot fund escrow until its provider confirms the payment. Use the company wallet for now.', 'PAYMENT_PROVIDER_CONFIRMATION_REQUIRED')
   }
   if (payload.currency && payload.currency !== existing.currency) {
@@ -341,7 +382,7 @@ async function fundBusinessOpportunityService(
   }
   const funded = await businessWorkflowsRepository.fundOpportunity(id, payload, actorId) ?? notFound('Opportunity')
   const { opportunity, escrow } = funded as { opportunity: Record<string, any>, escrow: Record<string, any> }
-  await deleteCacheByPattern(`business-dashboard:${opportunity.businessId ?? '*'}*`)
+  await deleteCacheByPattern(opportunity.businessId ? `business-dashboard:*:${opportunity.businessId}` : 'business-dashboard:*')
   return escrow
 }
 
@@ -376,7 +417,7 @@ async function createOpportunityDeliverablesService(
   }
   const result = await businessWorkflowsRepository.createOpportunityDeliverablesWithEvent(id, payload, actorId) ?? notFound('Opportunity')
   if (!result.opportunity) notFound('Opportunity')
-  await deleteCacheByPattern(`business-dashboard:${result.opportunity.businessId ?? '*'}*`)
+  await deleteCacheByPattern(result.opportunity.businessId ? `business-dashboard:*:${result.opportunity.businessId}` : 'business-dashboard:*')
   return result
 }
 
@@ -562,7 +603,9 @@ async function awardApplicantProjectService(id: string, actorId: string | undefi
 
 export {
   readBusinessDashboardService,
+  createBusinessPostService,
   listBusinessActivityService,
+  listBusinessTalentService,
   readBusinessProfileService,
   updateBusinessProfileService,
   readBusinessKycService,

@@ -3,6 +3,7 @@ import { requireRoles, roleGroups } from '../../../../lib/security.js'
 import {
   awardApplicantProjectController,
   counterOfferApplicantBidController,
+  createBusinessPostController,
   createBusinessIndustryController,
   createApplicantReviewEventController,
   createBusinessOpportunityController,
@@ -12,6 +13,7 @@ import {
   fundBusinessOpportunityController,
   inviteOpportunityBiddersController,
   listBusinessActivityController,
+  listBusinessTalentController,
   listOpportunityInviteCandidatesController,
   listBusinessOpportunitiesController,
   listBusinessIndustriesController,
@@ -33,7 +35,9 @@ import {
 async function registerBusinessRoutes(app: FastifyInstance) {
   const businessOnly = requireRoles(...roleGroups.business, ...roleGroups.admin)
   app.get('/dashboard', { preHandler: businessOnly }, readBusinessDashboardController)
+  app.post('/posts', { preHandler: businessOnly }, createBusinessPostController)
   app.get('/activity', { preHandler: businessOnly }, listBusinessActivityController)
+  app.get('/talent', { preHandler: businessOnly }, listBusinessTalentController)
   app.get('/profile', { preHandler: businessOnly }, readBusinessProfileController)
   app.patch('/profile', { preHandler: businessOnly }, updateBusinessProfileController)
   app.get('/kyc', { preHandler: businessOnly }, readBusinessKycController)

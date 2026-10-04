@@ -525,7 +525,7 @@ class AdminOperationsRepository {
     if (!document) return null
     const upload = await prisma.uploadedFile.findFirst({
       where: { bucket: 'zumbarl-kyc-private', storageKey: document.fileKey, status: 'complete' },
-      select: { fileName: true, mimeType: true, bucket: true, storageKey: true }
+      select: { fileName: true, mimeType: true, bucket: true, storageKey: true, provider: true }
     })
     return upload ? { ...document, ...upload } : null
   }

@@ -1,12 +1,13 @@
 import { createHash } from 'node:crypto'
 import { Prisma, type EvergreenCandidateStatus, type EvergreenProgramStatus, type PlacementStatus } from '@prisma/client'
+import { env } from '../../../config/index.js'
 import { evergreenRepository } from '../../repositories/evergreen/index.js'
 import { ApiError, forbidden, notFound } from '../../../lib/http.js'
 import { assertTransition, candidateTransitions, cohortTransitions, evaluateCompanyQualification, offerTransitions, placementTransitions, programTransitions } from '../../../domain/evergreen/index.js'
 import type { AuthUser } from '../../../lib/security.js'
 
-const qualificationGigThreshold = Math.max(1, Number(process.env.EVERGREEN_QUALIFICATION_GIGS ?? 3))
-const repeatHireLimit = Math.max(1, Number(process.env.EVERGREEN_REPEAT_HIRE_LIMIT ?? 3))
+const qualificationGigThreshold = env.EVERGREEN_QUALIFICATION_GIGS
+const repeatHireLimit = env.EVERGREEN_REPEAT_HIRE_LIMIT
 
 function conflict(code: string, message: string, details?: unknown): never {
   throw new ApiError(409, message, code, details)

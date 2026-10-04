@@ -2,6 +2,14 @@ import { ApiError, forbidden, notFound } from '../../../lib/http.js'
 import type { AuthUser } from '../../../lib/security.js'
 import { learnRoadmapsRepository } from '../../repositories/learn/index.js'
 
+const RESOURCE_REFRESH_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000
+
+function shouldRefreshResources(enrollment: Record<string, any>) {
+  if (!enrollment.practiceSkillIds?.length) return true
+  const lastRefresh = new Date(enrollment.resourcesRefreshedAt).getTime()
+  return !lastRefresh || Date.now() - lastRefresh >= RESOURCE_REFRESH_INTERVAL_MS
+}
+
 function requireStudentId(studentId?: string) {
   if (!studentId) forbidden('A student profile is required')
   return studentId
@@ -30,6 +38,8 @@ function mapLadder(roadmap: Record<string, any>) {
     intents: roadmap.intents,
     weights: { evidence: roadmap.evidenceWeight, test: roadmap.testWeight },
     verificationThreshold: roadmap.verificationThreshold,
+    source: roadmap.source,
+    createdByStudentId: roadmap.createdByStudentId,
     checkpoints: roadmap.steps.map((step: Record<string, any>, index: number) => ({
       id: step.id,
       title: step.title,
@@ -67,6 +77,41 @@ function mapLadder(roadmap: Record<string, any>) {
 function mapEnrollment(enrollment: Record<string, any>) {
   const ladder = mapLadder(enrollment.roadmap)
   const progressByStep = new Map(enrollment.stepProgress.map((progress: Record<string, any>) => [progress.stepId, progress]))
+  const assignedByStep = new Map<string, Array<Record<string, any>>>()
+  for (const assignment of enrollment.assignedResources || []) {
+    const resource = {
+      id: assignment.resource.id,
+      title: assignment.resource.title,
+      description: assignment.resource.description,
+      type: assignment.resource.resourceType,
+      url: assignment.resource.url,
+      provider: assignment.resource.provider,
+      content: assignment.resource.content,
+      practice: assignment.resource.practice,
+      progressPercent: assignment.progressPercent,
+      status: assignment.status,
+      matchScore: assignment.matchScore,
+      matchedSkillIds: assignment.matchedSkillIds,
+      selected: assignment.status !== 'SUGGESTED',
+      recommended: true
+    }
+    assignedByStep.set(assignment.stepId, [...(assignedByStep.get(assignment.stepId) || []), resource])
+  }
+  const selectedSkillIds = enrollment.practiceSkillIds || []
+  const pathSkills = (enrollment.student?.studentSkills || []).filter((item: Record<string, any>) => selectedSkillIds.includes(item.skillId)).map((item: Record<string, any>) => ({
+    id: item.skill.id,
+    name: item.skill.name,
+    slug: item.skill.slug,
+    verified: item.verifiedByGigs > 0,
+    verifiedByGigs: item.verifiedByGigs,
+    source: item.source
+  }))
+  const allAssignments = enrollment.assignedResources || []
+  const assignments = allAssignments.filter((item: Record<string, any>) => item.status !== 'SUGGESTED')
+  const completedResources = assignments.filter((item: Record<string, any>) => item.status === 'COMPLETED')
+  const weekStart = new Date()
+  weekStart.setHours(0, 0, 0, 0)
+  weekStart.setDate(weekStart.getDate() - ((weekStart.getDay() + 6) % 7))
   return {
     id: enrollment.id,
     studentId: enrollment.studentId,
@@ -80,10 +125,20 @@ function mapEnrollment(enrollment: Record<string, any>) {
     verifiedAt: enrollment.verifiedAt,
     progressPercent: enrollment.progressPercent,
     practiceSkillIds: enrollment.practiceSkillIds,
+    skills: pathSkills,
     weeklyPracticeTarget: enrollment.weeklyPracticeTarget,
     coachingUpdatedAt: enrollment.coachingUpdatedAt,
+    resourcesRefreshedAt: enrollment.resourcesRefreshedAt,
     createdAt: enrollment.createdAt,
     updatedAt: enrollment.updatedAt,
+    resourceProgress: {
+      total: assignments.length,
+      completed: completedResources.length,
+      remaining: assignments.length - completedResources.length,
+      completedThisWeek: completedResources.filter((item: Record<string, any>) => item.completedAt && item.completedAt >= weekStart).length,
+      weeklyTarget: assignments.length ? enrollment.weeklyPracticeTarget : 0,
+      refreshedAt: allAssignments.reduce((latest: Date | null, item: Record<string, any>) => !latest || item.refreshedAt > latest ? item.refreshedAt : latest, null)
+    },
     evidence: enrollment.evidence.map((item: Record<string, any>) => ({
       id: item.id,
       checkpointId: item.stepId,
@@ -117,6 +172,7 @@ function mapEnrollment(enrollment: Record<string, any>) {
       const testScore = progress?.testScore ?? 0
       return {
         ...checkpoint,
+        resources: assignedByStep.get(checkpoint.id) || [],
         status: (progress?.status ?? 'LOCKED').toLowerCase(),
         evidenceScore,
         testScore,
@@ -127,8 +183,8 @@ function mapEnrollment(enrollment: Record<string, any>) {
   }
 }
 
-async function listCareerLaddersService() {
-  return { data: (await learnRoadmapsRepository.listLadders()).map(mapLadder) }
+async function listCareerLaddersService(query: Record<string, unknown> = {}) {
+  return { data: (await learnRoadmapsRepository.listLadders(String(query.q || ''))).map(mapLadder) }
 }
 
 async function readLearnBaselineService(studentId?: string) {
@@ -139,20 +195,30 @@ async function listRoadmapsService(studentId: string | undefined, query: Record<
   const resolvedStudentId = requireStudentId(studentId)
   const result = await learnRoadmapsRepository.listRoadmaps(resolvedStudentId, query)
   const synchronized = await Promise.all(result.data.map((enrollment) => (
-    learnRoadmapsRepository.syncVerifiedActivityEvidence(enrollment.id, resolvedStudentId)
+    (shouldRefreshResources(enrollment)
+      ? learnRoadmapsRepository.refreshAssignedResources(enrollment.id, resolvedStudentId)
+      : Promise.resolve())
+      .then(() => learnRoadmapsRepository.syncVerifiedActivityEvidence(enrollment.id, resolvedStudentId))
   )))
   return { ...result, data: synchronized.flatMap((enrollment) => enrollment ? [mapEnrollment(enrollment)] : []) }
 }
 
 async function readRoadmapService(id: string, studentId?: string) {
-  const enrollment = await learnRoadmapsRepository.syncVerifiedActivityEvidence(id, requireStudentId(studentId)) ?? notFound('Roadmap enrollment')
+  const resolvedStudentId = requireStudentId(studentId)
+  const existing = await learnRoadmapsRepository.findStudentEnrollment(id, resolvedStudentId) ?? notFound('Roadmap enrollment')
+  if (shouldRefreshResources(existing)) await learnRoadmapsRepository.refreshAssignedResources(id, resolvedStudentId)
+  const enrollment = await learnRoadmapsRepository.syncVerifiedActivityEvidence(id, resolvedStudentId) ?? notFound('Roadmap enrollment')
   return mapEnrollment(enrollment)
 }
 
 async function createRoadmapService(studentId: string | undefined, payload: Record<string, any>) {
-  const ladder = await learnRoadmapsRepository.findLadder(payload.ladderId) ?? notFound('Career ladder')
   const resolvedStudentId = requireStudentId(studentId)
+  const ladder = payload.ladderId
+    ? await learnRoadmapsRepository.findLadder(payload.ladderId) ?? notFound('Career ladder')
+    : await learnRoadmapsRepository.createStudentPath(resolvedStudentId, payload)
+  if (ladder === 'INVALID_SKILL') throw new ApiError(400, 'Choose active skills for this learning path', 'INVALID_PATH_SKILL')
   const enrollment = await learnRoadmapsRepository.createEnrollment(resolvedStudentId, ladder.id, payload.intent)
+  await learnRoadmapsRepository.refreshAssignedResources(enrollment.id, resolvedStudentId)
   const synchronized = await learnRoadmapsRepository.syncVerifiedActivityEvidence(enrollment.id, resolvedStudentId)
   return mapEnrollment(synchronized || enrollment)
 }
@@ -163,9 +229,29 @@ async function lockRoadmapService(id: string, studentId?: string) {
 }
 
 async function updateRoadmapCoachingFocusService(id: string, studentId: string | undefined, payload: Record<string, any>) {
-  const result = await learnRoadmapsRepository.updateCoachingFocus(id, requireStudentId(studentId), payload.skillIds, payload.weeklyTarget)
-  if (result === 'INVALID_SKILL') throw new ApiError(400, 'Choose skills from this career path', 'INVALID_COACHING_SKILL')
-  return mapEnrollment(result ?? notFound('Roadmap enrollment'))
+  const resolvedStudentId = requireStudentId(studentId)
+  const result = await learnRoadmapsRepository.updateCoachingFocus(id, resolvedStudentId, payload.skillIds, payload.weeklyTarget)
+  if (result === 'INVALID_SKILL') throw new ApiError(400, 'Choose active skills for this learning path', 'INVALID_COACHING_SKILL')
+  if (!result) notFound('Roadmap enrollment')
+  const refreshed = await learnRoadmapsRepository.refreshAssignedResources(id, resolvedStudentId)
+  return mapEnrollment(refreshed ?? result)
+}
+
+async function refreshRoadmapResourcesService(id: string, studentId?: string) {
+  const refreshed = await learnRoadmapsRepository.refreshAssignedResources(id, requireStudentId(studentId)) ?? notFound('Roadmap enrollment')
+  return mapEnrollment(refreshed)
+}
+
+async function updateRoadmapResourceProgressService(id: string, resourceId: string, studentId: string | undefined, payload: Record<string, any>) {
+  await learnRoadmapsRepository.updateAssignedResourceProgress(id, requireStudentId(studentId), resourceId, payload.progressPercent) ?? notFound('Learning path resource')
+  return await readRoadmapService(id, studentId)
+}
+
+async function updateRoadmapResourceSelectionService(id: string, resourceId: string, studentId: string | undefined, payload: Record<string, any>) {
+  const result = await learnRoadmapsRepository.updateAssignedResourceSelection(id, requireStudentId(studentId), resourceId, payload.selected)
+  if (result === 'HAS_PROGRESS') throw new ApiError(409, 'A resource with progress cannot be removed from your plan', 'RESOURCE_HAS_PROGRESS')
+  if (!result) notFound('Learning path resource')
+  return await readRoadmapService(id, studentId)
 }
 
 async function readRoadmapCoachingPlanService(id: string, studentId?: string) {
@@ -264,8 +350,11 @@ export {
   readRoadmapService,
   readLearnBaselineService,
   readRoadmapCoachingPlanService,
+  refreshRoadmapResourcesService,
   submitLearningPracticeService,
   updateRoadmapCoachingFocusService,
+  updateRoadmapResourceProgressService,
+  updateRoadmapResourceSelectionService,
   verifyRoadmapEvidenceService,
   verifyRoadmapService
 }

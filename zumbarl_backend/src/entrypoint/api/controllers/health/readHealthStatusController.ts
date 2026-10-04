@@ -6,7 +6,8 @@ async function readHealthStatusController(_request: FastifyRequest, reply: Fasti
 }
 
 async function readReadinessStatusController(_request: FastifyRequest, reply: FastifyReply) {
-  return reply.send(await readReadinessStatusService())
+  const readiness = await readReadinessStatusService()
+  return reply.code(readiness.status === 'ready' ? 200 : 503).send(readiness)
 }
 
 export {

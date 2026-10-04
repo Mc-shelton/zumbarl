@@ -3,11 +3,25 @@ import { prisma } from '../../../lib/prisma.js'
 import { ApiError, forbidden, notFound } from '../../../lib/http.js'
 import { readCache, writeCache } from '../../cache/redis/redisCache.adapter.js'
 import { env } from '../../../config/env.js'
+import { emitRealtimeEvent } from '../../../lib/realtimeEvents.js'
 
 const PRESENCE_TTL_SECONDS = 25
 const CALL_RING_SECONDS = 45
 
 type CallStatus = 'ringing' | 'accepted' | 'declined' | 'cancelled' | 'missed' | 'ended'
+
+type CallUpdate = {
+  id: string
+  callerId: string
+  recipientId: string
+  status: string
+}
+
+function emitCallUpdate(call: CallUpdate) {
+  const event = { type: 'call.updated' as const, data: { id: call.id, status: call.status } }
+  emitRealtimeEvent(call.callerId, event)
+  if (call.recipientId !== call.callerId) emitRealtimeEvent(call.recipientId, event)
+}
 
 function presenceKey(userId: string) {
   return `presence:${userId}`
@@ -81,6 +95,7 @@ async function createCallService(
     }
   })
 
+  emitRealtimeEvent(input.recipientId, { type: 'call.created', data: call })
   return call
 }
 
@@ -121,12 +136,14 @@ async function respondToCallService(callId: string, userId: string | undefined, 
   }
   const now = new Date()
   const status: CallStatus = response === 'accept' ? 'accepted' : 'declined'
-  return prisma.callSession.update({
+  const updatedCall = await prisma.callSession.update({
     where: { id: callId },
     data: response === 'accept'
       ? { status, acceptedAt: now }
       : { status, declinedAt: now, endedAt: now }
   })
+  emitCallUpdate(updatedCall)
+  return updatedCall
 }
 
 async function cancelCallService(callId: string, userId?: string) {
@@ -135,10 +152,12 @@ async function cancelCallService(callId: string, userId?: string) {
   if (call.status !== 'ringing') {
     throw new ApiError(409, `This call is already ${call.status}`, 'CALL_NOT_RINGING')
   }
-  return prisma.callSession.update({
+  const updatedCall = await prisma.callSession.update({
     where: { id: callId },
     data: { status: 'cancelled', endedAt: new Date() }
   })
+  emitCallUpdate(updatedCall)
+  return updatedCall
 }
 
 async function endCallService(callId: string, userId?: string) {
@@ -147,10 +166,12 @@ async function endCallService(callId: string, userId?: string) {
   if (['declined', 'cancelled', 'missed', 'ended'].includes(call.status)) {
     return call
   }
-  return prisma.callSession.update({
+  const updatedCall = await prisma.callSession.update({
     where: { id: callId },
     data: { status: 'ended', endedAt: new Date() }
   })
+  emitCallUpdate(updatedCall)
+  return updatedCall
 }
 
 export {

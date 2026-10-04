@@ -8,6 +8,7 @@ import {
   type WeightedOutcome
 } from '../../../shared/scores/zumbarlScoreCalculator.js'
 import { refreshStudentProgressionService } from '../career/index.js'
+import { studentPortfolioRepository } from '../../repositories/campus/studentPortfolio.repository.js'
 
 const REFRESH_INTERVAL_DAYS = 18
 
@@ -49,6 +50,34 @@ function nextRefreshDate(from = new Date()) {
   const date = new Date(from)
   date.setDate(date.getDate() + REFRESH_INTERVAL_DAYS)
   return date
+}
+
+function verifiedProjectFiles(deliverables: Array<Record<string, any>>, tasks: Array<Record<string, any>>) {
+  const values = [
+    ...deliverables.filter((item) => item.status === 'approved').flatMap((item) => Array.isArray(item.files) ? item.files : []),
+    ...tasks.filter((item) => item.status === 'done').flatMap((item) => Array.isArray(item.evidence) ? item.evidence : [])
+  ]
+  return [...new Set(values.map((value) => {
+    const file = jsonObject(value)
+    return String(file.url || file.fileUrl || file.artifactReference || '')
+  }).filter(Boolean))]
+}
+
+function portfolioThumbnail(deliverables: Array<Record<string, any>>, fileUrls: string[]) {
+  const imageFile = deliverables
+    .flatMap((item) => Array.isArray(item.files) ? item.files : [])
+    .map((value) => jsonObject(value))
+    .find((file) => String(file.mimeType || '').startsWith('image/') || /\.(?:png|jpe?g|gif|webp|svg)(?:\?|$)/i.test(String(file.url || '')))
+  return String(imageFile?.url || fileUrls.find((url) => /\.(?:png|jpe?g|gif|webp|svg)(?:\?|$)/i.test(url)) || '') || null
+}
+
+function portfolioDescription(opportunity: Record<string, any>, deliverables: Array<Record<string, any>>) {
+  const summary = String(opportunity.summary || opportunity.description || `Completed ${opportunity.title}.`).trim()
+  const titles = [...new Set(deliverables
+    .filter((item) => item.status === 'approved')
+    .map((item) => String(item.title || '').trim())
+    .filter(Boolean))]
+  return [summary, titles.length ? `Verified deliverables: ${titles.join(', ')}.` : ''].filter(Boolean).join('\n\n').slice(0, 2000)
 }
 
 function scoreTrend(previousScore: number | null | undefined, currentScore: number) {
@@ -282,7 +311,7 @@ export async function recordCompletedProjectOutcomes(projectId: string, review: 
   if (String(project.status).toLowerCase() !== 'completed' || !project.opportunityId || !project.businessId) return []
 
   const [opportunity, payoutRecords, deliverableRecords, tasks] = await Promise.all([
-    prisma.opportunity.findUnique({ where: { id: String(project.opportunityId) } }),
+    prisma.opportunity.findUnique({ where: { id: String(project.opportunityId) }, include: { company: true } }),
     prisma.workflowRecord.findMany({ where: { collection: 'payouts' } }),
     prisma.workflowRecord.findMany({ where: { collection: 'deliverables' } }),
     prisma.deliverableTask.findMany({ where: { projectId } })
@@ -419,6 +448,46 @@ export async function recordCompletedProjectOutcomes(projectId: string, review: 
       await prisma.opportunityRating.create({
         data: { opportunityId: opportunity.id, studentId, companyId: String(project.businessId), ...ratingData }
       })
+    }
+
+    const fileUrls = verifiedProjectFiles(studentDeliverables, studentTasks)
+    const portfolioDraft = await studentPortfolioRepository.upsertProjectDraft({
+      studentId,
+      opportunityId: opportunity.id,
+      projectId,
+      title: opportunity.title,
+      description: portfolioDescription(opportunity, studentDeliverables),
+      category: opportunity.category || 'Project',
+      fileUrls,
+      thumbnailUrl: portfolioThumbnail(studentDeliverables, fileUrls),
+      companyName: opportunity.company.name,
+      clientFeedback: review.publicFeedback || null,
+      impactMetrics: [
+        { label: 'Verified deliverables', value: String(studentDeliverables.filter((item) => item.status === 'approved').length) },
+        { label: 'Client satisfaction', value: `${clientSatisfactionRating.toFixed(1)}/5` }
+      ] as unknown as Prisma.InputJsonValue
+    })
+    if (portfolioDraft.created) {
+      const student = await prisma.studentProfile.findUnique({ where: { id: studentId }, select: { userId: true } })
+      if (student) {
+        await prisma.notification.upsert({
+          where: { id: `portfolio-draft-${projectId}-${studentId}` },
+          update: {},
+          create: {
+            id: `portfolio-draft-${projectId}-${studentId}`,
+            userId: student.userId,
+            type: 'PORTFOLIO_DRAFT_CREATED',
+            title: 'Your project is ready for your portfolio',
+            body: `Review ${opportunity.title}, choose what is public, and publish it when you are ready.`,
+            data: {
+              portfolioItemId: portfolioDraft.item.id,
+              projectId,
+              deepLink: `/campus/profile?tab=portfolio&portfolio=${encodeURIComponent(portfolioDraft.item.id)}&edit=1`
+            },
+            sentVia: ['IN_APP']
+          }
+        })
+      }
     }
 
     await refreshStudentScore(studentId, 'GIG_COMPLETED')

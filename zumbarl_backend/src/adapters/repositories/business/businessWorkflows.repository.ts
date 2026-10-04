@@ -29,6 +29,19 @@ function createIndustrySlug(name: string) {
     .replace(/(^-|-$)/g, '')
 }
 
+function createBusinessProfileKey(name: string, companyId: string) {
+  const nameKey = String(name || 'business')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '') || 'business'
+  return `${nameKey}-${companyId.slice(-8).toLowerCase()}`
+}
+
+function jsonObject(value: unknown) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, any> : {}
+}
+
 function toKycStatus(status: string | undefined) {
   const normalizedStatus = String(status || '').toUpperCase()
   if (normalizedStatus === 'IN_REVIEW') return KycStatus.UNDER_REVIEW
@@ -66,6 +79,14 @@ function toBusinessProfile(company: Record<string, any> | null) {
     verificationStatus: fromKycStatus(company.kycStatus),
     kycStatus: fromKycStatus(company.kycStatus),
     hiringGuardrailLimit: 3,
+    publisher: company.managedProfile ? {
+      id: company.managedProfile.id,
+      slug: company.managedProfile.slug,
+      handle: `@${company.managedProfile.handle}`,
+      name: company.managedProfile.name,
+      avatarUrl: company.managedProfile.avatarUrl,
+      isVerified: company.managedProfile.isVerified
+    } : null,
     createdAt: company.createdAt instanceof Date ? company.createdAt.toISOString() : company.createdAt,
     updatedAt: company.updatedAt instanceof Date ? company.updatedAt.toISOString() : company.updatedAt
   }
@@ -739,31 +760,110 @@ class BusinessWorkflowsRepository {
 
   async findBusinessProfile(id?: string) {
     if (!id) return null
-    const company = await prisma.company.findUnique({ where: { id } })
+    const company = await prisma.company.findUnique({ where: { id }, include: { managedProfile: true } })
     return toBusinessProfile(company)
+  }
+
+  async listBusinessPosts(id?: string, limit = 6) {
+    if (!id) return { data: [], total: 0 }
+    const where = { managedProfile: { companyId: id }, status: 'published' }
+    const [posts, total] = await Promise.all([
+      prisma.connectPost.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit
+      }),
+      prisma.connectPost.count({ where })
+    ])
+    return {
+      data: posts.map((post) => ({
+        ...jsonObject(post.payload),
+        id: post.id,
+        type: post.type,
+        body: post.body,
+        tags: post.tags,
+        visibility: post.visibility,
+        reactions: Object.keys(jsonObject(post.reactions)).length,
+        comments: 0,
+        reposts: post.reposts,
+        createdAt: toIso(post.createdAt),
+        updatedAt: toIso(post.updatedAt)
+      })),
+      total
+    }
+  }
+
+  async ensureBusinessPublisher(id: string, userId: string) {
+    return prisma.$transaction(async (transaction) => {
+      const company = await transaction.company.findUnique({ where: { id }, include: { managedProfile: true } })
+      if (!company) return null
+      const profileKey = createBusinessProfileKey(company.name, company.id)
+      const publisherData = {
+        type: 'business',
+        name: company.name,
+        bio: company.description,
+        avatarUrl: company.logoUrl,
+        locationLabel: company.locationAddress || company.locationCity,
+        websiteUrl: company.website,
+        isVerified: company.kycStatus === KycStatus.APPROVED,
+        status: 'active',
+        details: toJson({ sector: company.sector, size: company.size })
+      }
+      const publisher = company.managedProfile
+        ? await transaction.managedProfile.update({ where: { id: company.managedProfile.id }, data: publisherData })
+        : await transaction.managedProfile.create({
+          data: {
+            ...publisherData,
+            slug: profileKey,
+            handle: profileKey.replace(/-/g, '_'),
+            companyId: company.id
+          }
+        })
+      await transaction.managedProfileManager.upsert({
+        where: { managedProfileId_userId: { managedProfileId: publisher.id, userId } },
+        update: {},
+        create: { managedProfileId: publisher.id, userId, role: 'owner' }
+      })
+      return publisher
+    })
   }
 
   async updateBusinessProfile(id: string, patch: Record<string, any>) {
     const company = await prisma.company.findUnique({ where: { id } })
     if (!company) return null
 
-    const updatedCompany = await prisma.company.update({
-      where: { id },
-      data: {
-        name: patch.name,
-        sector: patch.industry ?? patch.sector,
-        size: patch.teamSize ?? patch.size,
-        website: patch.website,
-        description: patch.description,
-        locationCity: patch.locationCity ?? patch.location,
-        locationAddress: patch.locationAddress ?? patch.physicalAddress,
-        latitude: patch.latitude === undefined || patch.latitude === '' ? undefined : Number(patch.latitude),
-        longitude: patch.longitude === undefined || patch.longitude === '' ? undefined : Number(patch.longitude),
-        hiringGoals: patch.hiringGoals,
-        onboardingCompleted: patch.onboardingCompleted,
-        registrationNumber: patch.registrationNumber,
-        logoUrl: patch.logoUrl
-      }
+    const updatedCompany = await prisma.$transaction(async (transaction) => {
+      const updated = await transaction.company.update({
+        where: { id },
+        data: {
+          name: patch.name,
+          sector: patch.industry ?? patch.sector,
+          size: patch.teamSize ?? patch.size,
+          website: patch.website,
+          description: patch.description,
+          locationCity: patch.locationCity ?? patch.location,
+          locationAddress: patch.locationAddress ?? patch.physicalAddress,
+          latitude: patch.latitude === undefined || patch.latitude === '' ? undefined : Number(patch.latitude),
+          longitude: patch.longitude === undefined || patch.longitude === '' ? undefined : Number(patch.longitude),
+          hiringGoals: patch.hiringGoals,
+          onboardingCompleted: patch.onboardingCompleted,
+          registrationNumber: patch.registrationNumber,
+          logoUrl: patch.logoUrl
+        }
+      })
+      await transaction.managedProfile.updateMany({
+        where: { companyId: id },
+        data: {
+          name: updated.name,
+          bio: updated.description,
+          avatarUrl: updated.logoUrl,
+          websiteUrl: updated.website,
+          locationLabel: updated.locationAddress || updated.locationCity,
+          isVerified: updated.kycStatus === KycStatus.APPROVED,
+          details: toJson({ sector: updated.sector, size: updated.size })
+        }
+      })
+      return transaction.company.findUnique({ where: { id }, include: { managedProfile: true } })
     })
     return toBusinessProfile(updatedCompany)
   }
@@ -978,6 +1078,82 @@ class BusinessWorkflowsRepository {
       include: { sampleWork: true }
     })
     return item ? toOpportunityScopeItem(item) : null
+  }
+
+  async listTalentCandidates(businessId: string | undefined, query: Record<string, unknown>) {
+    const search = String(query.search || query.q || '').trim()
+    const students = await prisma.studentProfile.findMany({
+      where: {
+        user: {
+          isActive: true,
+          ...(search ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { firstName: { contains: search, mode: 'insensitive' } },
+              { lastName: { contains: search, mode: 'insensitive' } },
+              { username: { contains: search, mode: 'insensitive' } }
+            ]
+          } : {})
+        }
+      },
+      include: {
+        campus: true,
+        course: true,
+        user: true,
+        zumbarl: true,
+        studentSkills: { include: { skill: true }, orderBy: { verifiedByGigs: 'desc' } },
+        portfolioItems: { where: { status: 'PUBLISHED', isPublic: true }, orderBy: { publishedAt: 'desc' }, take: 3 },
+        marketplaceListings: { where: { listingType: 'SERVICE', status: 'ACTIVE' }, orderBy: { updatedAt: 'desc' }, take: 3 },
+        pipelineRelationships: { where: businessId ? { companyId: businessId } : { id: '__none__' }, take: 1 }
+      },
+      orderBy: { updatedAt: 'desc' },
+      take: 100
+    })
+
+    return students.map((student) => {
+      const relationship = student.pipelineRelationships?.[0]
+      const score = Math.round(student.zumbarl?.currentScore || 0)
+      return {
+        id: student.id,
+        userId: student.userId,
+        name: `${student.firstName} ${student.lastName}`.trim() || student.user.name,
+        handle: student.user.username ? `@${student.user.username}` : '',
+        headline: [student.careerPath, student.campus?.name].filter(Boolean).join(' · '),
+        location: student.locationCity,
+        bio: student.bio || '',
+        image: student.avatarUrl || null,
+        availability: student.isOpenToHire ? 'Available now' : 'Not currently open to hire',
+        status: relationship?.gigsCompleted
+          ? relationship.gigsCompleted > 1 ? 'Repeat' : 'Worked with you'
+          : relationship?.isFlagged ? 'Pipeline candidate' : 'New',
+        score,
+        match: Math.round(relationship?.readinessScore || score),
+        tags: student.studentSkills.map((item) => item.skill.name),
+        services: student.marketplaceListings.map((listing) => ({
+          category: listing.category,
+          deliveryOptions: listing.deliveryOptions,
+          description: listing.description,
+          id: listing.id,
+          image: listing.images[0] || null,
+          location: listing.locationLabel,
+          title: listing.title,
+          priceAmount: listing.priceAmount,
+          currency: listing.currency,
+          updatedAt: listing.updatedAt
+        })),
+        portfolio: student.portfolioItems.map((item) => ({
+          id: item.id,
+          title: item.title,
+          description: item.description,
+          image: item.thumbnailUrl || item.fileUrls[0] || null
+        })),
+        relationship: relationship ? {
+          gigsCompleted: relationship.gigsCompleted,
+          status: relationship.status,
+          targetRole: relationship.targetRole
+        } : null
+      }
+    })
   }
 
   async listOpportunityInviteCandidates(id: string, query: Record<string, unknown>) {

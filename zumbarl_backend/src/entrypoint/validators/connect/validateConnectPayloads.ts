@@ -9,9 +9,9 @@ const socialMetricsExtractionSchema = z.object({
 const socialMetricsAccountSchema = z.object({
   platform: socialPlatformSchema,
   handle: z.string().trim().min(2).max(120),
-  followers: z.coerce.number().int().min(0).max(2_000_000_000),
-  averageLikes: z.coerce.number().int().min(0).max(2_000_000_000),
-  averageEngagement: z.coerce.number().int().min(0).max(2_000_000_000),
+  followers: z.coerce.number().int().min(0).max(2_000_000_000).nullable(),
+  averageLikes: z.coerce.number().int().min(0).max(2_000_000_000).nullable(),
+  averageEngagement: z.coerce.number().int().min(0).max(2_000_000_000).nullable(),
   screenshotUploadId: z.string().min(1),
   extractionConfidence: z.coerce.number().min(0).max(100).optional()
 })

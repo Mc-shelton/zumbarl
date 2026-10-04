@@ -92,6 +92,7 @@ async function reviewUserKycController(request: FastifyRequest, reply: FastifyRe
 async function readStudentKycDocumentController(request: FastifyRequest, reply: FastifyReply) {
   const { id, documentId } = z.object({ id: z.string().min(1), documentId: z.string().min(1) }).parse(request.params)
   const document = await readStudentKycDocumentService(id, documentId)
+  if ('downloadUrl' in document) return reply.redirect(document.downloadUrl)
   const safeFileName = document.fileName.replace(/["\\\r\n]/g, '_')
   return reply.type(document.mimeType).header('Content-Disposition', `inline; filename="${safeFileName}"`).send(createReadStream(document.diskPath))
 }

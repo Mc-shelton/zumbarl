@@ -1,5 +1,6 @@
 import { notFound } from '../../../lib/http.js'
-import { resolveLocalStoragePath } from '../../storage/index.js'
+import { env } from '../../../config/env.js'
+import { createSignedDownloadUrl, objectStorageKey, resolveLocalStoragePath } from '../../storage/index.js'
 import { adminOperationsRepository } from '../../repositories/admin/index.js'
 
 function removePasswordHash(record: Record<string, any>) {
@@ -29,6 +30,12 @@ async function revokeUserSessionsService(id: string, payload: Record<string, any
 async function reviewUserKycService(id: string, payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.reviewUserKyc(id, payload, context) ?? notFound('User KYC profile') }
 async function readStudentKycDocumentService(userId: string, documentId: string) {
   const document = await adminOperationsRepository.readStudentKycDocument(userId, documentId) ?? notFound('Student KYC document')
+  if (document.provider === 's3') {
+    return {
+      ...document,
+      downloadUrl: await createSignedDownloadUrl(env.OBJECT_STORAGE_BUCKET, objectStorageKey(document.bucket, document.storageKey))
+    }
+  }
   return { ...document, diskPath: resolveLocalStoragePath(document.bucket, document.storageKey) }
 }
 async function mergeDuplicateAccountsService(payload: Record<string, any>, context?: AuditContext) { return await adminOperationsRepository.mergeDuplicateAccounts(payload, context) ?? notFound('Duplicate account pair') }

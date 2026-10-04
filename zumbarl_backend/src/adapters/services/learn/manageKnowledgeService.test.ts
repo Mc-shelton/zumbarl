@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { learnKnowledgeRepository } from '../../repositories/learn/index.js'
-import { createKnowledgeResourceService, updateKnowledgeMembershipService } from './manageKnowledgeService.js'
+import { createKnowledgeResourceService, updateKnowledgeMembershipService, updateKnowledgeResourceService } from './manageKnowledgeService.js'
 
 const baseSpace = {
   id: 'knowledge-space-test',
@@ -109,5 +109,63 @@ describe('group chat resources', () => {
     expect(createResource).toHaveBeenCalledWith('student-member', expect.objectContaining({ status: 'PUBLISHED' }))
     expect(result.status).toBe('published')
     expect(result.sourceMessageId).toBe('message-test')
+  })
+})
+
+describe('knowledge resource ownership', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  const resource = {
+    id: 'resource-owned',
+    ownerStudentId: 'student-owner',
+    spaceId: null,
+    sourceMessageId: null,
+    title: 'Java Book',
+    description: 'A Java guide',
+    resourceType: 'BOOK',
+    accessMode: 'FREE_READ',
+    subject: null,
+    courseCode: null,
+    unit: { id: 'unit-java', name: 'Java Programming' },
+    academicYear: null,
+    institution: 'Test Campus',
+    price: null,
+    currency: 'KES',
+    sourceMode: 'LINK',
+    fileUrl: 'https://example.com/java',
+    fileUrls: [],
+    coverImageUrl: null,
+    previewText: 'Start here',
+    availableCopies: null,
+    status: 'PUBLISHED',
+    owner: baseSpace.owner,
+    space: null,
+    accesses: [],
+    _count: { accesses: 0 },
+    createdAt: new Date()
+  }
+
+  it('lets the owner edit their resource', async () => {
+    vi.spyOn(learnKnowledgeRepository, 'findResource').mockResolvedValue(resource as never)
+    vi.spyOn(learnKnowledgeRepository, 'findStudentInstitution').mockResolvedValue({ campus: { name: 'Test Campus' } } as never)
+    vi.spyOn(learnKnowledgeRepository, 'resolveUnit').mockResolvedValue({ id: 'unit-java', name: 'Java Programming' } as never)
+    const updateResource = vi.spyOn(learnKnowledgeRepository, 'updateResource').mockResolvedValue({ ...resource, title: 'Modern Java Book' } as never)
+
+    const result = await updateKnowledgeResourceService(resource.id, 'student-owner', {
+      title: 'Modern Java Book', resourceType: 'BOOK', accessMode: 'FREE_READ', unitId: 'unit-java',
+      sourceMode: 'LINK', fileUrl: 'https://example.com/java', fileUrls: [], currency: 'KES'
+    })
+
+    expect(updateResource).toHaveBeenCalledWith(resource.id, 'student-owner', expect.objectContaining({ title: 'Modern Java Book' }))
+    expect(result.title).toBe('Modern Java Book')
+    expect(result.ownedByViewer).toBe(true)
+  })
+
+  it('rejects edits from anyone except the resource owner', async () => {
+    vi.spyOn(learnKnowledgeRepository, 'findResource').mockResolvedValue(resource as never)
+    const updateResource = vi.spyOn(learnKnowledgeRepository, 'updateResource')
+
+    await expect(updateKnowledgeResourceService(resource.id, 'student-viewer', {})).rejects.toMatchObject({ statusCode: 403 })
+    expect(updateResource).not.toHaveBeenCalled()
   })
 })

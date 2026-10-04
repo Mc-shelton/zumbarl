@@ -38,6 +38,21 @@ async function recordStudentCareCheckInService(studentId: string | undefined, en
   return studentCareRepository.addStudentProgress(enrollment, payload)
 }
 
+async function updateOwnStudentCareEnrollmentService(studentId: string | undefined, enrollmentId: string, payload: { status: 'active' | 'paused' | 'withdrawn' }) {
+  const id = requireStudentId(studentId)
+  const enrollment = await studentCareRepository.findEnrollmentForStudent(enrollmentId, id)
+  if (!enrollment) notFound('Care program enrollment')
+  const allowedTransitions: Record<string, string[]> = {
+    requested: ['withdrawn'],
+    active: ['paused', 'withdrawn'],
+    paused: ['active', 'withdrawn']
+  }
+  if (!allowedTransitions[enrollment.status]?.includes(payload.status)) {
+    throw new ApiError(409, 'That change is not available for this care pathway', 'CARE_PROGRAM_STATUS_CHANGE_NOT_ALLOWED')
+  }
+  return await studentCareRepository.updateEnrollmentForStudent(enrollmentId, id, payload.status) ?? notFound('Care program enrollment')
+}
+
 const readStudentCareOperationsService = () => studentCareRepository.readOperations()
 
 async function updateStudentCareEnrollmentService(id: string, actorUserId: string | undefined, payload: Record<string, any>) {
@@ -55,6 +70,7 @@ export {
   listStudentCareProgramsService,
   readStudentCareOperationsService,
   recordStudentCareCheckInService,
+  updateOwnStudentCareEnrollmentService,
   reviewStudentCareCircleService,
   updateStudentCareEnrollmentService
 }

@@ -20,6 +20,7 @@ import {
   readKnowledgeResourceCheckoutService,
   readKnowledgeRoomService,
   updateKnowledgeFollowingService,
+  updateKnowledgeResourceService,
   updateKnowledgeManagerService,
   updateKnowledgeMembershipService,
   updateKnowledgeRoomMembershipService,
@@ -45,6 +46,7 @@ import {
   updateKnowledgeRoomSchema,
   updateKnowledgePostSchema,
   updateKnowledgeSpaceSchema,
+  updateKnowledgeResourceSchema,
   knowledgeToggleSchema
 } from '../../../validators/learn/index.js'
 
@@ -67,6 +69,11 @@ async function readKnowledgeSpaceController(request: FastifyRequest, reply: Fast
 
 async function createKnowledgeResourceController(request: FastifyRequest, reply: FastifyReply) {
   return reply.code(201).send(await createKnowledgeResourceService(request.authUser?.studentId, requireBody(createKnowledgeResourceSchema, request)))
+}
+
+async function updateKnowledgeResourceController(request: FastifyRequest, reply: FastifyReply) {
+  const { id } = requireParams(idParamSchema, request)
+  return reply.send(await updateKnowledgeResourceService(id, request.authUser?.studentId, requireBody(updateKnowledgeResourceSchema, request)))
 }
 
 async function decideKnowledgeResourceSubmissionController(request: FastifyRequest, reply: FastifyReply) {
@@ -219,6 +226,7 @@ export {
   readKnowledgeRoomController,
   removeKnowledgeManagerController,
   updateKnowledgeFollowingController,
+  updateKnowledgeResourceController,
   takeDownKnowledgeSpacePostController,
   updateKnowledgeSpaceController,
   updateKnowledgeSpacePostController,

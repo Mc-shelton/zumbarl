@@ -7,6 +7,7 @@ import {
   createProjectGroupMessageService,
   createPageConversationService,
   createPageMessageService,
+  heartbeatService,
   listConversationsService,
   listMessageNetworkService,
   listMessagesService,
@@ -82,6 +83,8 @@ async function realtimeEventsController(request: FastifyRequest, reply: FastifyR
   const userId = request.authUser?.id
   if (!userId) return reply.code(401).send({ error: 'UNAUTHORIZED' })
 
+  await heartbeatService(userId)
+
   reply.hijack()
   reply.raw.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -98,12 +101,15 @@ async function realtimeEventsController(request: FastifyRequest, reply: FastifyR
       reply.raw.write(`event: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`)
     }
   })
-  const heartbeat = setInterval(() => {
-    if (!reply.raw.destroyed) reply.raw.write(': heartbeat\n\n')
+  const heartbeat = globalThis.setInterval(() => {
+    if (!reply.raw.destroyed) {
+      reply.raw.write(': heartbeat\n\n')
+      void heartbeatService(userId).catch((error) => request.log.warn({ error }, 'Unable to refresh realtime presence'))
+    }
   }, 15000)
 
   request.raw.on('close', () => {
-    clearInterval(heartbeat)
+    globalThis.clearInterval(heartbeat)
     unsubscribe()
   })
 }

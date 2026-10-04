@@ -4,11 +4,14 @@ import { publicRegistrationRoles } from '../../../lib/security.js'
 const registerUserSchema = z.object({
   email: z.string().email(),
   phone: z.string().min(7).default('+254700000000'),
-  password: z.string().min(8),
+  password: z.string().min(8).optional(),
+  registrationToken: z.string().min(1).optional(),
   firstName: z.string().min(2),
   lastName: z.string().min(2),
   username: z.string().min(3).max(30).regex(/^@?[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
   name: z.string().min(2).optional(),
+  acceptedTerms: z.literal(true, { errorMap: () => ({ message: 'Accept the Terms of Use to create an account' }) }),
+  acceptedPrivacy: z.literal(true, { errorMap: () => ({ message: 'Acknowledge the Privacy Notice to create an account' }) }),
   role: z.enum(publicRegistrationRoles).default('STUDENT_STANDARD'),
   yearJoined: z.coerce.number().int().min(new Date().getFullYear() - 15).max(new Date().getFullYear()).optional(),
   campus: z.union([
@@ -28,6 +31,9 @@ const registerUserSchema = z.object({
   ]).optional(),
   businessName: z.string().trim().min(2).max(160).optional()
 }).superRefine((payload, context) => {
+  if (!payload.password && !payload.registrationToken) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['registrationToken'], message: 'Verified email registration is required' })
+  }
   if ((payload.role === 'student' || payload.role === 'STUDENT_STANDARD') && !payload.yearJoined) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ['yearJoined'], message: 'Year joined campus is required' })
   }
@@ -48,7 +54,19 @@ const loginUserSchema = z.object({
   password: z.string().min(1)
 })
 
+const requestEmailOtpSchema = z.object({
+  email: z.string().trim().email(),
+  purpose: z.enum(['login', 'register'])
+})
+
+const verifyEmailOtpSchema = z.object({
+  challengeId: z.string().uuid(),
+  code: z.string().regex(/^\d{6}$/, 'Enter the six-digit code')
+})
+
 export {
   registerUserSchema,
-  loginUserSchema
+  loginUserSchema,
+  requestEmailOtpSchema,
+  verifyEmailOtpSchema
 }

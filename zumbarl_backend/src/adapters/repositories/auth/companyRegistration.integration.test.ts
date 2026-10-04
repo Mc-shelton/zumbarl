@@ -17,6 +17,7 @@ afterAll(async () => {
 
 describe('company self-service registration', () => {
   it('atomically creates an owner membership and company wallet', async () => {
+    const acceptedAt = new Date()
     const result = await createUserWithBusinessProfile({
       name: 'Registration Owner',
       firstName: 'Registration',
@@ -26,11 +27,24 @@ describe('company self-service registration', () => {
       phone: `+25473${String(Date.now()).slice(-7)}`,
       passwordHash: 'test-only',
       role: 'COMPANY_STANDARD',
-      status: 'active'
+      status: 'active',
+      termsAcceptedAt: acceptedAt,
+      termsVersion: '2026-09-30',
+      privacyAcceptedAt: acceptedAt,
+      privacyVersion: '2026-09-30'
     }, 'Registered Test SME')
     if (!result.business) throw new Error('Expected company profile')
     const membership = await prisma.companyContact.findUnique({ where: { userId: result.user.id } })
     expect(membership).toMatchObject({ companyId: result.business.id, isOwner: true })
     expect(await prisma.companyWallet.findUnique({ where: { companyId: result.business.id } })).not.toBeNull()
+    expect(await prisma.user.findUnique({
+      where: { id: result.user.id },
+      select: { termsAcceptedAt: true, termsVersion: true, privacyAcceptedAt: true, privacyVersion: true }
+    })).toEqual({
+      termsAcceptedAt: acceptedAt,
+      termsVersion: '2026-09-30',
+      privacyAcceptedAt: acceptedAt,
+      privacyVersion: '2026-09-30'
+    })
   })
 })
