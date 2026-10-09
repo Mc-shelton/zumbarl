@@ -1417,7 +1417,6 @@ async function seedDatabase() {
       courseId: course.id,
       bio: 'Digital marketer and social media creator passionate about helping students and young professionals grow their skills and careers.',
       careerPath: 'Marketing & Design',
-      avatarUrl: assets.avatar,
       kycStatus: 'APPROVED',
       transitionUnlockedAt: new Date()
     },
@@ -1433,7 +1432,6 @@ async function seedDatabase() {
       expectedGraduation: new Date(`${new Date().getFullYear() + 2}-12-31T00:00:00.000Z`),
       bio: 'Digital marketer and social media creator passionate about helping students and young professionals grow their skills and careers.',
       careerPath: 'Marketing & Design',
-      avatarUrl: assets.avatar,
       isOpenToHire: true,
       kycStatus: 'APPROVED',
       transitionUnlockedAt: new Date()
@@ -1532,7 +1530,6 @@ async function seedDatabase() {
         lastName: candidateSeed.lastName,
         campusId: campus.id,
         courseId: course.id,
-        avatarUrl: assets.avatar,
         isOpenToHire: true,
         kycStatus: 'APPROVED'
       },
@@ -1548,7 +1545,6 @@ async function seedDatabase() {
         expectedGraduation: new Date(`${new Date().getFullYear() + 2}-12-31T00:00:00.000Z`),
         bio: `${name} is available for collaborative student projects.`,
         careerPath: 'Marketing & Design',
-        avatarUrl: assets.avatar,
         isOpenToHire: true,
         kycStatus: 'APPROVED'
       }
@@ -1676,6 +1672,247 @@ async function seedDatabase() {
       sourceReference: 'evergreen-seed-zetech-qualification',
       confirmedById: adminUser.id,
       confirmedAt: evergreenValidFrom
+    }
+  })
+
+  const evergreenApplicationOpensAt = new Date(evergreenValidFrom)
+  evergreenApplicationOpensAt.setDate(evergreenApplicationOpensAt.getDate() - 60)
+  const evergreenApplicationClosesAt = new Date(evergreenValidFrom)
+  evergreenApplicationClosesAt.setDate(evergreenApplicationClosesAt.getDate() - 30)
+  const evergreenPlacementStartsAt = new Date(evergreenValidFrom)
+  evergreenPlacementStartsAt.setDate(evergreenPlacementStartsAt.getDate() - 14)
+  const evergreenPlacementEndsAt = new Date(evergreenPlacementStartsAt)
+  evergreenPlacementEndsAt.setDate(evergreenPlacementEndsAt.getDate() + (12 * 7))
+
+  const evergreenDemoProgram = await prisma.evergreenProgram.upsert({
+    where: { id: 'evergreen-demo-zetech-program' },
+    update: {
+      companyId: business.id,
+      createdById: businessUser.id,
+      approvedById: adminUser.id,
+      title: 'Zetech Creative Growth Internship',
+      description: 'A supervised placement where students plan campaigns, create launch assets, and report on audience performance.',
+      placementType: 'INTERNSHIP',
+      workMode: 'HYBRID',
+      location: 'Zetech University, Ruiru',
+      durationWeeks: 12,
+      defaultSeatCount: 5,
+      stipendAmount: 15000,
+      currency: 'KES',
+      stipendFrequency: 'monthly',
+      supervisionPlan: 'Weekly mentor check-ins, fortnightly portfolio reviews, and a final evidence-based evaluation.',
+      learningOutcomes: ['Campaign planning', 'Content production', 'Performance reporting'],
+      status: 'ACTIVE',
+      pipelineOptIn: true,
+      approvedAt: evergreenValidFrom,
+      archivedAt: null
+    },
+    create: {
+      id: 'evergreen-demo-zetech-program',
+      companyId: business.id,
+      createdById: businessUser.id,
+      approvedById: adminUser.id,
+      title: 'Zetech Creative Growth Internship',
+      description: 'A supervised placement where students plan campaigns, create launch assets, and report on audience performance.',
+      placementType: 'INTERNSHIP',
+      workMode: 'HYBRID',
+      location: 'Zetech University, Ruiru',
+      durationWeeks: 12,
+      defaultSeatCount: 5,
+      stipendAmount: 15000,
+      currency: 'KES',
+      stipendFrequency: 'monthly',
+      supervisionPlan: 'Weekly mentor check-ins, fortnightly portfolio reviews, and a final evidence-based evaluation.',
+      learningOutcomes: ['Campaign planning', 'Content production', 'Performance reporting'],
+      status: 'ACTIVE',
+      pipelineOptIn: true,
+      approvedAt: evergreenValidFrom
+    }
+  })
+
+  const evergreenDemoCohort = await prisma.evergreenCohort.upsert({
+    where: { id: 'evergreen-demo-zetech-cohort' },
+    update: {
+      programId: evergreenDemoProgram.id,
+      sequenceNumber: 1,
+      applicationOpensAt: evergreenApplicationOpensAt,
+      applicationClosesAt: evergreenApplicationClosesAt,
+      placementStartsAt: evergreenPlacementStartsAt,
+      placementEndsAt: evergreenPlacementEndsAt,
+      seatCount: 5,
+      reservedSeats: 0,
+      filledSeats: 1,
+      status: 'IN_PROGRESS',
+      openedAt: evergreenApplicationOpensAt,
+      closedAt: evergreenApplicationClosesAt
+    },
+    create: {
+      id: 'evergreen-demo-zetech-cohort',
+      programId: evergreenDemoProgram.id,
+      sequenceNumber: 1,
+      applicationOpensAt: evergreenApplicationOpensAt,
+      applicationClosesAt: evergreenApplicationClosesAt,
+      placementStartsAt: evergreenPlacementStartsAt,
+      placementEndsAt: evergreenPlacementEndsAt,
+      seatCount: 5,
+      filledSeats: 1,
+      status: 'IN_PROGRESS',
+      openedAt: evergreenApplicationOpensAt,
+      closedAt: evergreenApplicationClosesAt
+    }
+  })
+
+  const evergreenDemoCandidate = await prisma.evergreenCandidate.upsert({
+    where: { id: 'evergreen-demo-aisha-candidate' },
+    update: {
+      cohortId: evergreenDemoCohort.id,
+      studentId: student.id,
+      source: 'demo-seed',
+      status: 'STARTED',
+      matchScore: 92,
+      matchVersion: 'evergreen-seed-v1',
+      matchReasons: ['Relevant content production skills', 'Available for hybrid internship'],
+      eligibilitySnapshot: { placementReady: true, availabilityActive: true },
+      consentSnapshot: { version: 'evergreen-seed-v1', companyVisibleFields: ['name', 'skills', 'portfolio'] },
+      lastActorId: businessUser.id
+    },
+    create: {
+      id: 'evergreen-demo-aisha-candidate',
+      cohortId: evergreenDemoCohort.id,
+      studentId: student.id,
+      source: 'demo-seed',
+      status: 'STARTED',
+      matchScore: 92,
+      matchVersion: 'evergreen-seed-v1',
+      matchReasons: ['Relevant content production skills', 'Available for hybrid internship'],
+      eligibilitySnapshot: { placementReady: true, availabilityActive: true },
+      consentSnapshot: { version: 'evergreen-seed-v1', companyVisibleFields: ['name', 'skills', 'portfolio'] },
+      lastActorId: businessUser.id
+    }
+  })
+
+  const evergreenDemoOffer = await prisma.placementOffer.upsert({
+    where: { id: 'evergreen-demo-aisha-offer' },
+    update: {
+      candidateId: evergreenDemoCandidate.id,
+      companyId: business.id,
+      studentId: student.id,
+      createdById: businessUser.id,
+      supervisorId: businessContact.id,
+      role: 'Creative growth intern',
+      duties: 'Build campaign plans, produce approved content, and submit weekly performance evidence.',
+      placementType: 'INTERNSHIP',
+      workMode: 'HYBRID',
+      location: 'Zetech University, Ruiru',
+      stipendAmount: 15000,
+      currency: 'KES',
+      stipendFrequency: 'monthly',
+      startDate: evergreenPlacementStartsAt,
+      endDate: evergreenPlacementEndsAt,
+      termsSnapshot: { durationWeeks: 12, supervision: 'Weekly mentor check-ins and fortnightly portfolio reviews.' },
+      status: 'ACCEPTED',
+      sentAt: evergreenApplicationClosesAt,
+      viewedAt: evergreenApplicationClosesAt,
+      respondBy: evergreenApplicationClosesAt,
+      respondedAt: evergreenApplicationClosesAt,
+      idempotencyKey: 'evergreen-demo-aisha-offer'
+    },
+    create: {
+      id: 'evergreen-demo-aisha-offer',
+      candidateId: evergreenDemoCandidate.id,
+      companyId: business.id,
+      studentId: student.id,
+      createdById: businessUser.id,
+      supervisorId: businessContact.id,
+      role: 'Creative growth intern',
+      duties: 'Build campaign plans, produce approved content, and submit weekly performance evidence.',
+      placementType: 'INTERNSHIP',
+      workMode: 'HYBRID',
+      location: 'Zetech University, Ruiru',
+      stipendAmount: 15000,
+      currency: 'KES',
+      stipendFrequency: 'monthly',
+      startDate: evergreenPlacementStartsAt,
+      endDate: evergreenPlacementEndsAt,
+      termsSnapshot: { durationWeeks: 12, supervision: 'Weekly mentor check-ins and fortnightly portfolio reviews.' },
+      status: 'ACCEPTED',
+      sentAt: evergreenApplicationClosesAt,
+      viewedAt: evergreenApplicationClosesAt,
+      respondBy: evergreenApplicationClosesAt,
+      respondedAt: evergreenApplicationClosesAt,
+      idempotencyKey: 'evergreen-demo-aisha-offer'
+    }
+  })
+
+  const evergreenDemoPlacement = await prisma.placement.upsert({
+    where: { id: 'evergreen-demo-aisha-placement' },
+    update: {
+      studentId: student.id,
+      companyId: business.id,
+      programId: evergreenDemoProgram.id,
+      cohortId: evergreenDemoCohort.id,
+      candidateId: evergreenDemoCandidate.id,
+      offerId: evergreenDemoOffer.id,
+      supervisorId: businessContact.id,
+      type: 'INTERNSHIP',
+      role: 'Creative growth intern',
+      duties: 'Build campaign plans, produce approved content, and submit weekly performance evidence.',
+      status: 'ACTIVE',
+      workMode: 'HYBRID',
+      location: 'Zetech University, Ruiru',
+      startDate: evergreenPlacementStartsAt,
+      endDate: evergreenPlacementEndsAt,
+      stipendAmount: 15000,
+      currency: 'KES',
+      stipendFrequency: 'monthly',
+      termsSnapshot: { durationWeeks: 12, supervision: 'Weekly mentor check-ins and fortnightly portfolio reviews.' },
+      acceptedAt: evergreenApplicationClosesAt,
+      readyAt: evergreenApplicationClosesAt,
+      startedAt: evergreenPlacementStartsAt,
+      isLocked: true
+    },
+    create: {
+      id: 'evergreen-demo-aisha-placement',
+      studentId: student.id,
+      companyId: business.id,
+      programId: evergreenDemoProgram.id,
+      cohortId: evergreenDemoCohort.id,
+      candidateId: evergreenDemoCandidate.id,
+      offerId: evergreenDemoOffer.id,
+      supervisorId: businessContact.id,
+      type: 'INTERNSHIP',
+      role: 'Creative growth intern',
+      duties: 'Build campaign plans, produce approved content, and submit weekly performance evidence.',
+      status: 'ACTIVE',
+      workMode: 'HYBRID',
+      location: 'Zetech University, Ruiru',
+      startDate: evergreenPlacementStartsAt,
+      endDate: evergreenPlacementEndsAt,
+      stipendAmount: 15000,
+      currency: 'KES',
+      stipendFrequency: 'monthly',
+      termsSnapshot: { durationWeeks: 12, supervision: 'Weekly mentor check-ins and fortnightly portfolio reviews.' },
+      acceptedAt: evergreenApplicationClosesAt,
+      readyAt: evergreenApplicationClosesAt,
+      startedAt: evergreenPlacementStartsAt,
+      isLocked: true
+    }
+  })
+
+  await prisma.activePlacementLock.upsert({
+    where: { id: 'evergreen-demo-aisha-active-lock' },
+    update: {
+      studentId: student.id,
+      placementId: evergreenDemoPlacement.id,
+      acquiredFromOfferId: evergreenDemoOffer.id,
+      acquiredAt: evergreenApplicationClosesAt
+    },
+    create: {
+      id: 'evergreen-demo-aisha-active-lock',
+      studentId: student.id,
+      placementId: evergreenDemoPlacement.id,
+      acquiredFromOfferId: evergreenDemoOffer.id,
+      acquiredAt: evergreenApplicationClosesAt
     }
   })
   const businessProfile = await prisma.managedProfile.upsert({
@@ -2309,9 +2546,10 @@ async function seedDatabase() {
   if (!opportunity) throw new Error('Failed to seed social media manager opportunity')
   await syncSeedOpportunitySkills(opportunity.id, ['Social Media', 'Content Strategy', 'Canva', 'Copywriting'])
 
-  await prisma.bid.upsert({
+  const interviewBid = await prisma.bid.upsert({
     where: { opportunityId_studentId: { opportunityId: opportunity.id, studentId: student.id } },
     update: {
+      status: 'shortlisted',
       bidAmount: 8000,
       intentId: 'build-career',
       intentLabel: 'Build Career',
@@ -2325,6 +2563,44 @@ async function seedDatabase() {
       intentId: 'build-career',
       intentLabel: 'Build Career',
       proposal: 'I can deliver weekly content and performance reports.'
+    }
+  })
+  const interviewScheduledAt = new Date()
+  interviewScheduledAt.setDate(interviewScheduledAt.getDate() + 2)
+  interviewScheduledAt.setHours(11, 0, 0, 0)
+  await prisma.opportunityInterview.upsert({
+    where: { id: 'demo-interview-aisha-social-media' },
+    update: {
+      bidId: interviewBid.id,
+      opportunityId: opportunity.id,
+      studentId: student.id,
+      scheduledById: businessUser.id,
+      interviewType: 'video',
+      scheduledAt: interviewScheduledAt,
+      durationMinutes: 30,
+      timezone: 'Africa/Nairobi',
+      meetingOption: 'generated',
+      meetingUrl: 'https://meet.jit.si/zumbarl-demo-aisha-social-media',
+      note: 'Bring one campaign example and be ready to explain the audience, creative choice, and result.',
+      status: 'pending',
+      studentResponseNote: null,
+      proposedAt: null,
+      respondedAt: null
+    },
+    create: {
+      id: 'demo-interview-aisha-social-media',
+      bidId: interviewBid.id,
+      opportunityId: opportunity.id,
+      studentId: student.id,
+      scheduledById: businessUser.id,
+      interviewType: 'video',
+      scheduledAt: interviewScheduledAt,
+      durationMinutes: 30,
+      timezone: 'Africa/Nairobi',
+      meetingOption: 'generated',
+      meetingUrl: 'https://meet.jit.si/zumbarl-demo-aisha-social-media',
+      note: 'Bring one campaign example and be ready to explain the audience, creative choice, and result.',
+      status: 'pending'
     }
   })
   const socialMediaProjectDefaults = {

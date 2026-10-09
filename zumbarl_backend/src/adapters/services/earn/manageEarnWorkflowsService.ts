@@ -3,6 +3,7 @@ import { sendTransactionalEmail } from '../../notification/index.js'
 import { earnWorkflowsRepository } from '../../repositories/earn/index.js'
 import { businessWorkflowsRepository } from '../../repositories/business/index.js'
 import { OPPORTUNITY_APPLICABLE_STATUSES, normalizeOpportunityStatus } from '../../../shared/opportunities/opportunityLifecycle.js'
+import { normalizeMoney } from '../../../shared/services/money.js'
 import { readStudentScoreSnapshot } from '../scores/index.js'
 
 function listEarnOpportunitiesService(query: Record<string, unknown>, studentId?: string) {
@@ -54,6 +55,34 @@ function assertOpportunityAcceptsApplications(opportunity: Record<string, any>) 
   }
 }
 
+function resolveSubmittedBidPricing(opportunity: Record<string, any>, payload: Record<string, any>): Record<string, any> {
+  const currency = String(opportunity.currency || payload.currency || 'KES').toUpperCase()
+  const submittedRate = normalizeMoney(payload.amount || 0, currency)
+  const pricingType = String(payload.pricingType || 'fixed').toLowerCase()
+  const estimatedUnits = Number(payload.estimatedUnits || 0)
+  const proposedTotal = pricingType === 'fixed'
+    ? submittedRate
+    : normalizeMoney(submittedRate * estimatedUnits, currency)
+  const opportunityBudget = normalizeMoney(opportunity.budgetAmount || 0, currency)
+  const amount = proposedTotal > 0 ? proposedTotal : opportunityBudget
+
+  if (amount <= 0) {
+    throw new ApiError(
+      400,
+      'Enter a bid amount greater than zero. This opportunity does not have a budget to use as the default.',
+      'BID_AMOUNT_REQUIRED'
+    )
+  }
+
+  return {
+    ...payload,
+    amount,
+    currency,
+    amountSource: proposedTotal > 0 ? 'student_bid' : 'opportunity_budget',
+    unitRate: pricingType === 'fixed' ? null : submittedRate
+  }
+}
+
 function listStudentBidsService(studentId: string | undefined, query: Record<string, unknown>) {
   return earnWorkflowsRepository.listStudentBids(studentId, query)
 }
@@ -71,7 +100,13 @@ async function saveOpportunityBidDraftService(
 ) {
   const opportunity = await earnWorkflowsRepository.findOpportunity(opportunityId) ?? notFound('Opportunity')
   assertOpportunityAcceptsApplications(opportunity)
-  const result = await earnWorkflowsRepository.saveStudentBidDraft(opportunityId, studentId, payload)
+  const draftPayload = {
+    ...payload,
+    // Zero is never a contract price. Keep an unfinished draft unset; final
+    // submission will use the opportunity budget if the student leaves it blank.
+    amount: Number(payload.amount || 0) > 0 ? payload.amount : null
+  }
+  const result = await earnWorkflowsRepository.saveStudentBidDraft(opportunityId, studentId, draftPayload)
     ?? notFound('Opportunity')
   if (result.conflict) {
     throw new ApiError(409, 'This application has already been submitted and can no longer be saved as a draft.', 'APPLICATION_ALREADY_SUBMITTED')
@@ -82,7 +117,8 @@ async function saveOpportunityBidDraftService(
 async function submitOpportunityBidService(opportunityId: string, studentId: string | undefined, payload: Record<string, any>) {
   const opportunity = await earnWorkflowsRepository.findOpportunity(opportunityId) ?? notFound('Opportunity')
   assertOpportunityAcceptsApplications(opportunity)
-  const answers = Array.isArray(payload.questionAnswers) ? payload.questionAnswers : []
+  const pricedPayload = resolveSubmittedBidPricing(opportunity, payload)
+  const answers = Array.isArray(pricedPayload.questionAnswers) ? pricedPayload.questionAnswers : []
   const missingQuestions = opportunity.qualificationQuestions.filter((question) => (
     !answers.some((item: Record<string, unknown>) => item.question === question && String(item.answer ?? '').trim())
   ))
@@ -90,7 +126,7 @@ async function submitOpportunityBidService(opportunityId: string, studentId: str
     throw new ApiError(400, `Answer all application questions: ${missingQuestions.join(', ')}`, 'APPLICATION_ANSWERS_REQUIRED')
   }
 
-  const attachments = Array.isArray(payload.attachments) ? payload.attachments : []
+  const attachments = Array.isArray(pricedPayload.attachments) ? pricedPayload.attachments : []
   const missingAttachments = opportunity.requiredAttachments
     .filter((requirement) => requirement.required)
     .filter((requirement) => !attachments.some((item: Record<string, unknown>) => (
@@ -104,7 +140,7 @@ async function submitOpportunityBidService(opportunityId: string, studentId: str
     )
   }
 
-  const result = await earnWorkflowsRepository.submitBidWithEvent(opportunityId, studentId, payload) ?? notFound('Opportunity')
+  const result = await earnWorkflowsRepository.submitBidWithEvent(opportunityId, studentId, pricedPayload) ?? notFound('Opportunity')
   const { bid } = result
   return bid
 }
@@ -181,5 +217,6 @@ export {
   listStudentProjectsService,
   submitProjectDeliverableService,
   respondToBidCounterOfferService,
-  readStudentTrustSnapshotService
+  readStudentTrustSnapshotService,
+  resolveSubmittedBidPricing
 }

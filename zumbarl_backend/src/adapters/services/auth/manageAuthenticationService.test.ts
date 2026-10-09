@@ -36,7 +36,7 @@ vi.mock('../../repositories/auth/index.js', () => ({
 
 import { requestEmailOtpService } from './manageAuthenticationService.js'
 
-describe('login email OTP eligibility', () => {
+describe('unified email OTP access', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mocks.redisSet.mockResolvedValue('OK')
@@ -44,37 +44,41 @@ describe('login email OTP eligibility', () => {
     mocks.sendTransactionalEmail.mockResolvedValue({ status: 'sent' })
   })
 
-  it('does not send a login OTP when the email has no database user', async () => {
+  it('sends a registration OTP when the email has no database user', async () => {
     mocks.findUserByEmail.mockResolvedValue(null)
 
-    const result = await requestEmailOtpService({ email: 'missing@example.test', purpose: 'login' })
+    await requestEmailOtpService({ email: 'missing@example.test', purpose: 'access' })
 
-    expect(result).not.toHaveProperty('developmentCode')
-    expect(mocks.sendTransactionalEmail).not.toHaveBeenCalled()
+    expect(mocks.sendTransactionalEmail).toHaveBeenCalledOnce()
+    expect(mocks.sendTransactionalEmail).toHaveBeenCalledWith(
+      'missing@example.test',
+      expect.stringContaining('Zumbarl code'),
+      expect.stringContaining('finish joining Zumbarl')
+    )
     expect(mocks.writeCache).toHaveBeenCalledWith(
       expect.stringMatching(/^auth:email-otp:/),
-      expect.objectContaining({ email: 'missing@example.test', purpose: 'login', eligible: false }),
+      expect.objectContaining({ email: 'missing@example.test', purpose: 'register', eligible: true }),
       600
     )
   })
 
-  it('does not send a login OTP for an inactive database user', async () => {
+  it('does not send an OTP for an inactive database user', async () => {
     mocks.findUserByEmail.mockResolvedValue({ id: 'user-disabled', status: 'inactive' })
 
-    await requestEmailOtpService({ email: 'disabled@example.test', purpose: 'login' })
+    await requestEmailOtpService({ email: 'disabled@example.test', purpose: 'access' })
 
     expect(mocks.sendTransactionalEmail).not.toHaveBeenCalled()
     expect(mocks.writeCache).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({ eligible: false }),
+      expect.objectContaining({ purpose: 'login', eligible: false }),
       600
     )
   })
 
-  it('sends a login OTP only for an active database user', async () => {
+  it('sends a login OTP for an active database user', async () => {
     mocks.findUserByEmail.mockResolvedValue({ id: 'user-active', status: 'active' })
 
-    await requestEmailOtpService({ email: 'member@example.test', purpose: 'login' })
+    await requestEmailOtpService({ email: 'member@example.test', purpose: 'access' })
 
     expect(mocks.sendTransactionalEmail).toHaveBeenCalledOnce()
     expect(mocks.sendTransactionalEmail).toHaveBeenCalledWith(
@@ -85,6 +89,18 @@ describe('login email OTP eligibility', () => {
     expect(mocks.writeCache).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({ eligible: true }),
+      600
+    )
+  })
+
+  it('ignores a legacy client purpose and resolves the flow from the account', async () => {
+    mocks.findUserByEmail.mockResolvedValue(null)
+
+    await requestEmailOtpService({ email: 'new@example.test', purpose: 'login' })
+
+    expect(mocks.writeCache).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ purpose: 'register', eligible: true }),
       600
     )
   })

@@ -1683,7 +1683,7 @@ model UploadedFile {
   storageKey String
   url        String
   provider   String   @default("local")
-  status     String   @default("complete") // pending | complete | failed | deleted
+  status     String   @default("complete") // pending | optimizing | processing | complete | failed | deleted
   isSeed     Boolean  @default(false)
   metadata   Json?
   createdAt  DateTime @default(now())
@@ -2012,9 +2012,8 @@ model DeliverableDependency {
   @@map("deliverable_dependencies")
 }
 
-// The workload split for one deliverable, frozen when the team submits it.
-// Payout reads this snapshot, never the live tasks, so weights edited after a
-// submission can never move money that was already agreed.
+// The workload split for one deliverable. Pending locks are legacy/team-review
+// snapshots; completion writes a finalized snapshot atomically with payout.
 model DeliverableSplitLock {
   id           String    @id @default(cuid())
   projectId    String
@@ -2023,7 +2022,7 @@ model DeliverableSplitLock {
   shares       Json
   confirmedBy  String[]  @default([])
   contributors String[]  @default([])
-  // pending | confirmed
+  // pending | confirmed | finalized
   status       String    @default("pending")
   lockedAt     DateTime  @default(now())
   confirmedAt  DateTime?

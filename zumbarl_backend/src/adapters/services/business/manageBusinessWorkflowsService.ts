@@ -80,17 +80,30 @@ function getDateLabel(value: string | undefined) {
 function toRecentApplicant(bid: Record<string, any>) {
   const name = bid.studentName || bid.applicantName || bid.creatorName || 'Student applicant'
   const status = bid.status || bid.action || 'new'
+  const rawScore = bid.score ?? bid.zumbarlScore
+  const score = rawScore === null || rawScore === undefined || rawScore === ''
+    ? null
+    : Math.round(Number(rawScore))
+  const match = bid.match
+    || (bid.scoreConfidence === 'PROVISIONAL'
+      ? 'Provisional'
+      : score === null || !Number.isFinite(score)
+        ? 'Not scored'
+        : score >= 70 ? 'High Match' : 'Review profile')
   return {
     id: bid.id,
+    studentId: bid.studentId,
+    opportunityId: bid.opportunityId,
+    opportunityTitle: bid.opportunityTitle,
     name,
-    role: bid.role || bid.headline || bid.opportunityTitle || 'Applicant',
-    school: bid.school || bid.campus || 'Campus not provided',
-    score: bid.score ?? bid.zumbarlScore ?? 0,
-    match: bid.match || (bid.score >= 70 ? 'High Match' : 'New applicant'),
+    role: bid.role || bid.headline || bid.careerPath || bid.course || bid.opportunityTitle || 'Applicant',
+    school: bid.school || bid.campus || bid.locationCity || 'Campus not provided',
+    score: Number.isFinite(score) ? score : null,
+    match,
     applied: getDateLabel(bid.createdAt || bid.appliedAt),
     status: getReadableStatus(status),
     tone: STATUS_TONES[status] ?? 'purple',
-    avatar: bid.avatar || '/assets/index/bee_nobg.png'
+    avatar: bid.avatar || null
   }
 }
 
@@ -107,7 +120,7 @@ function getApplicantInsights(bids: Record<string, any>[]) {
     .slice(0, 4)
     .map(([label, count], index) => ({
       label,
-      value: Math.round((count / total) * 100),
+      value: Math.round((count / total) * 1000) / 10,
       tone: tones[index] ?? 'blue'
     }))
 
@@ -125,7 +138,17 @@ function getUpcomingActions(opportunities: Record<string, any>[], kycSummary: Re
     })
   }
   opportunities
-    .filter((opportunity) => opportunity.applicationDeadline || opportunity.deadline)
+    .filter((opportunity) => {
+      const deadline = new Date(opportunity.applicationDeadline || opportunity.deadline)
+      const status = String(opportunity.status || '').toLowerCase()
+      return !Number.isNaN(deadline.getTime())
+        && deadline.getTime() >= Date.now()
+        && !['archived', 'closed', 'completed'].includes(status)
+    })
+    .sort((first, second) => (
+      new Date(first.applicationDeadline || first.deadline).getTime()
+      - new Date(second.applicationDeadline || second.deadline).getTime()
+    ))
     .slice(0, 3)
     .forEach((opportunity) => {
       actions.push({
@@ -140,37 +163,39 @@ function getUpcomingActions(opportunities: Record<string, any>[], kycSummary: Re
 }
 
 async function readBusinessDashboardService(businessId: string | undefined) {
-  const cacheKey = `business-dashboard:v4:${businessId ?? 'all'}`
+  const cacheKey = `business-dashboard:v6:${businessId ?? 'all'}`
   const cachedDashboard = await readCache<Record<string, any>>(cacheKey)
   if (cachedDashboard) return cachedDashboard
 
   const opportunities = ((await businessWorkflowsRepository.listBusinessOpportunities(businessId, {})).data ?? []).filter(Boolean) as Record<string, any>[]
-  const [businessProfile, kyc, campaigns, projects, bids, reviewEvents, businessPosts] = await Promise.all([
+  const [businessProfile, kyc, campaigns, projects, bids, businessPosts] = await Promise.all([
     businessWorkflowsRepository.findBusinessProfile(businessId),
     businessWorkflowsRepository.findBusinessKyc(businessId),
     businessWorkflowsRepository.listBusinessCampaigns(businessId),
     businessWorkflowsRepository.listBusinessProjects(businessId),
     businessWorkflowsRepository.listBusinessBids(businessId),
-    businessWorkflowsRepository.listBusinessReviewEvents(businessId),
     businessWorkflowsRepository.listBusinessPosts(businessId)
   ])
   const kycSummary = getKycRequirements(kyc)
   const activeOpportunities = opportunities.filter((opportunity) => !['archived', 'closed', 'completed'].includes(String(opportunity.status ?? '').toLowerCase()))
-  const awardedCount = bids.filter((bid) => bid.status === 'awarded').length + reviewEvents.filter((event) => event.action === 'awarded').length
+  const awardedCount = bids.filter((bid) => bid.status === 'awarded').length
+  const activePipelineBids = bids.filter((bid) => !['awarded', 'rejected', 'removed'].includes(String(bid.status ?? '').toLowerCase()))
+  const activePipelineOpportunityCount = new Set(activePipelineBids.map((bid) => bid.opportunityId).filter(Boolean)).size
   const pipelineStages = PIPELINE_STAGES.map((stage) => ({
     label: stage.label,
     tone: stage.tone,
-    value: bids.filter((bid) => bid.status === stage.key).length + reviewEvents.filter((event) => event.action === stage.key).length,
+    value: bids.filter((bid) => bid.status === stage.key).length,
     trend: '-'
   }))
   const dashboard = {
     business: businessProfile,
     kyc: kycSummary,
+    applicantCount: bids.length,
     metrics: [
       { icon: 'briefcase', label: 'Active Opportunities', meta: `${opportunities.length} total`, tone: 'purple', value: activeOpportunities.length },
       { icon: 'users', label: 'Total Applicants', meta: `${bids.length} from database`, tone: 'orange', value: bids.length },
-      { icon: 'trending', label: 'In Pipeline', meta: `${projects.length} projects`, tone: 'green', value: bids.filter((bid) => !['awarded', 'rejected', 'removed'].includes(String(bid.status ?? '').toLowerCase())).length },
-      { icon: 'check', label: 'Hires / Awarded', meta: `${campaigns.length} campaigns`, tone: 'blue', value: awardedCount }
+      { icon: 'trending', label: 'In Pipeline', meta: `${activePipelineOpportunityCount} opportunities`, tone: 'green', value: activePipelineBids.length },
+      { icon: 'check', label: 'Hires / Awarded', meta: `${projects.length} projects`, tone: 'blue', value: awardedCount }
     ],
     pipelineStages,
     applicants: bids.slice(0, 6).map(toRecentApplicant),
@@ -413,6 +438,18 @@ async function createOpportunityDeliverablesService(
       'Deliverables cannot be added after the project has started.',
       'OPPORTUNITY_SCOPE_LOCKED_AFTER_PROJECT_START',
       { projectId: lockedProject.id }
+    )
+  }
+  const addedBudget = (Array.isArray(payload.deliverables) ? payload.deliverables : [])
+    .reduce((total, deliverable) => {
+      const amount = Number(String(deliverable.budgetAmount ?? deliverable.budget ?? 0).replace(/[^\d.-]/g, ''))
+      return total + (Number.isFinite(amount) ? amount : 0)
+    }, 0)
+  if (!Number.isFinite(addedBudget) || addedBudget <= 0) {
+    throw new ApiError(
+      400,
+      'Add a positive budget for the new deliverables so their escrow can be funded.',
+      'OPPORTUNITY_DELIVERABLE_BUDGET_REQUIRED'
     )
   }
   const result = await businessWorkflowsRepository.createOpportunityDeliverablesWithEvent(id, payload, actorId) ?? notFound('Opportunity')

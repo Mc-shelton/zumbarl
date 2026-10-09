@@ -142,6 +142,14 @@ async function declareDeliverableTaskService(
 ) {
   const { actor, project, isOwningBusiness } = await assertCanWriteTasks(projectId, authUser)
 
+  if (await projectWorkflowsRepository.isTaskTargetSettled(projectId, payload)) {
+    throw new ApiError(
+      409,
+      'This deliverable has already been completed and paid. Add new work through a new deliverable or change order.',
+      'TASK_TARGET_COMPLETED'
+    )
+  }
+
   // A dormant deliverable is one the milestone budget cannot currently cover, so
   // no more work is allowed to accrue against it.
   if (payload.milestoneDeliverableId) {
@@ -174,6 +182,14 @@ async function updateDeliverableTaskService(
 ) {
   const existing = await deliverableTasksRepository.findTask(taskId) ?? notFound('Task')
   const { actor, project, isOwningBusiness } = await assertCanWriteTasks(existing.projectId, authUser)
+
+  if (await projectWorkflowsRepository.isTaskTargetSettled(existing.projectId, existing)) {
+    throw new ApiError(
+      409,
+      'This deliverable has already been completed and paid. Its contribution record is locked.',
+      'TASK_TARGET_COMPLETED'
+    )
+  }
 
   if (payload.ownerId !== undefined && payload.ownerId !== null) {
     const team = await projectWorkflowsRepository.listProjectTeam(existing.projectId)

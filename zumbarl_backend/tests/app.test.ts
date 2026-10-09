@@ -215,6 +215,24 @@ describe('Zumbarl API', () => {
   })
 
   it('serves the persisted Bayesian Zumbarl score', async () => {
+    const scoreOwner = await prisma.user.findUniqueOrThrow({
+      where: { email: 'student@zumbarl.test' },
+      select: { studentProfile: { select: { id: true } } }
+    })
+    await prisma.zumbarlScore.update({
+      where: { studentId: scoreOwner.studentProfile!.id },
+      data: {
+        tier: 'SILVER',
+        confidence: 'ESTABLISHED',
+        conservativeLowerBound: 70,
+        effectiveEngagements: 12,
+        uniqueClients: 7,
+        qualityScore: 76,
+        reliabilityScore: 94,
+        professionalismScore: 82,
+        relationshipScore: 68
+      }
+    })
     const studentToken = await login('student@zumbarl.test')
     const response = await app.inject({
       method: 'GET',
@@ -1688,6 +1706,23 @@ describe('Zumbarl API', () => {
     expect(startProjectResponse.statusCode).toBe(200)
     expect(startProjectResponse.json().project.scopeLocked).toBe(true)
 
+    const student = await prisma.user.findUniqueOrThrow({
+      where: { email: 'student@zumbarl.test' },
+      select: { studentProfile: { select: { id: true } } }
+    })
+    const taskResponse = await app.inject({
+      method: 'POST',
+      url: `/api/v1/projects/${projectId}/deliverable-tasks`,
+      headers: { authorization: `Bearer ${studentToken}` },
+      payload: {
+        scopeItemId: opportunity.deliverableMilestones[0].id,
+        title: 'Create the campaign concept',
+        ownerId: student.studentProfile!.id,
+        weight: 1
+      }
+    })
+    expect(taskResponse.statusCode).toBe(201)
+
     const workSubmissionResponse = await app.inject({
       method: 'POST',
       url: `/api/v1/earn/projects/${projectId}/deliverables`,
@@ -1697,6 +1732,7 @@ describe('Zumbarl API', () => {
         kind: 'final',
         scopeItemId: opportunity.deliverableMilestones[0].id,
         scopeItemLabel: opportunity.deliverableMilestones[0].title,
+        taskIds: [taskResponse.json().id],
         files: [{
           fileName: 'campaign-concept.pdf',
           url: '/files/zumbarl-project-files/project-deliverable/campaign-concept.pdf',
@@ -1705,7 +1741,7 @@ describe('Zumbarl API', () => {
         }]
       }
     })
-    expect(workSubmissionResponse.statusCode).toBe(201)
+    expect(workSubmissionResponse.statusCode, JSON.stringify(workSubmissionResponse.json())).toBe(201)
     expect(workSubmissionResponse.json().files[0].url)
       .toBe('/files/zumbarl-project-files/project-deliverable/campaign-concept.pdf')
     createdWorkflowRecordIds.push(workSubmissionResponse.json().id)

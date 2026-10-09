@@ -28,6 +28,8 @@ const EMAIL_OTP_MAX_ATTEMPTS = 5
 
 type EmailOtpPurpose = 'login' | 'register'
 
+type EmailOtpRequestPurpose = 'access' | EmailOtpPurpose
+
 type EmailOtpChallenge = {
   email: string
   purpose: EmailOtpPurpose
@@ -132,9 +134,9 @@ function emailOtpKey(challengeId: string) {
   return `auth:email-otp:${challengeId}`
 }
 
-function emailOtpCooldownKey(email: string, purpose: EmailOtpPurpose) {
+function emailOtpCooldownKey(email: string) {
   const emailHash = createHash('sha256').update(email).digest('hex')
-  return `auth:email-otp:cooldown:${purpose}:${emailHash}`
+  return `auth:email-otp:cooldown:access:${emailHash}`
 }
 
 function hashEmailOtp(challengeId: string, code: string) {
@@ -151,24 +153,26 @@ function canReceiveLoginOtp(user: Record<string, any> | null): user is Record<st
   return Boolean(user && user.status !== 'inactive')
 }
 
-async function requestEmailOtpService(payload: { email: string, purpose: EmailOtpPurpose }) {
+async function requestEmailOtpService(payload: { email: string, purpose?: EmailOtpRequestPurpose }) {
   const email = payload.email.toLowerCase()
-  const cooldownKey = emailOtpCooldownKey(email, payload.purpose)
+  const cooldownKey = emailOtpCooldownKey(email)
   const acquired = await getRedisClient().set(cooldownKey, '1', 'EX', EMAIL_OTP_COOLDOWN_SECONDS, 'NX')
   if (!acquired) {
     throw new ApiError(429, 'Please wait a moment before requesting another code', 'OTP_RATE_LIMITED')
   }
 
   const user = await findUserByEmail(email)
-  // Keep the response shape identical for eligible and ineligible addresses so
-  // this public endpoint cannot be used to enumerate registered accounts.
-  // Ineligible login challenges are deliberately unusable and never emailed.
-  const eligible = payload.purpose === 'login' ? canReceiveLoginOtp(user) : !user
+  // The server owns the login-versus-registration decision. The optional
+  // request purpose is accepted only so cached clients can migrate safely.
+  const purpose: EmailOtpPurpose = user ? 'login' : 'register'
+  // Keep the response shape identical for new, active, and inactive addresses
+  // so this public endpoint cannot be used to enumerate registered accounts.
+  const eligible = purpose === 'register' || canReceiveLoginOtp(user)
   const challengeId = randomUUID()
   const code = String(randomInt(0, 1_000_000)).padStart(6, '0')
   const challenge: EmailOtpChallenge = {
     email,
-    purpose: payload.purpose,
+    purpose,
     codeHash: hashEmailOtp(challengeId, code),
     attempts: 0,
     eligible
@@ -176,7 +180,7 @@ async function requestEmailOtpService(payload: { email: string, purpose: EmailOt
   await writeCache(emailOtpKey(challengeId), challenge, EMAIL_OTP_TTL_SECONDS)
 
   if (eligible) {
-    const action = payload.purpose === 'login' ? 'sign in to' : 'finish joining'
+    const action = purpose === 'login' ? 'sign in to' : 'finish joining'
     const delivery = await sendTransactionalEmail(
       email,
       `${code} is your Zumbarl code`,
@@ -193,7 +197,7 @@ async function requestEmailOtpService(payload: { email: string, purpose: EmailOt
     deliveryHint: maskEmail(email),
     expiresInSeconds: EMAIL_OTP_TTL_SECONDS,
     retryAfterSeconds: EMAIL_OTP_COOLDOWN_SECONDS,
-    ...(eligible && (env.NODE_ENV === 'test' || env.EMAIL_PROVIDER === 'disabled') ? { developmentCode: code } : {})
+    ...(eligible && env.NODE_ENV !== 'production' ? { developmentCode: code } : {})
   }
 }
 

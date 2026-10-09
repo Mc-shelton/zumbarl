@@ -30,4 +30,12 @@ describe('recommendationEventBatchSchema', () => {
 
     expect(parsed.events[0].eventType).toBe(eventType)
   })
+
+  it('accepts private wellbeing area engagement', () => {
+    const parsed = recommendationEventBatchSchema.parse({ events: [{
+      surface: 'wellbeing', entityType: 'campus_area', entityId: 'wellbeing', eventType: 'open'
+    }] })
+
+    expect(parsed.events[0].surface).toBe('wellbeing')
+  })
 })

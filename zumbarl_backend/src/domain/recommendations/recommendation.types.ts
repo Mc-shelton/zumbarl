@@ -5,6 +5,7 @@ export const recommendationSurfaces = [
   'opportunities',
   'people',
   'learning',
+  'wellbeing',
   'campus_home'
 ] as const
 

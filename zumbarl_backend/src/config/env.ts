@@ -48,6 +48,7 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   REDIS_URL: z.string().url(),
   JWT_SECRET: z.string().min(32),
+  DEPLOYMENT_PURPOSE: z.enum(['live', 'demo']).default('live'),
   AUTH_COOKIE_NAME: z.string().regex(/^[A-Za-z0-9_-]+$/).default('zumbarl_session'),
   AUTH_SESSION_TTL_SECONDS: z.coerce.number().int().positive().max(30 * 24 * 60 * 60).default(7 * 24 * 60 * 60),
   LEGAL_POLICIES_APPROVED: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
@@ -58,6 +59,7 @@ const envSchema = z.object({
   RATE_LIMIT_WINDOW: z.string().trim().min(1),
   EVERGREEN_QUALIFICATION_GIGS: z.coerce.number().int().positive(),
   EVERGREEN_REPEAT_HIRE_LIMIT: z.coerce.number().int().positive(),
+  MPESA_PROVIDER: z.enum(['daraja', 'disabled']).default('daraja'),
   MPESA_BASE_URL: z.string().url(),
   MPESA_CONSUMER_KEY: z.string().min(1),
   MPESA_CONSUMER_SECRET: z.string().min(1),
@@ -72,7 +74,8 @@ const envSchema = z.object({
   SMS_PROVIDER: z.enum(['africas_talking', 'disabled']),
   SMS_API_KEY: z.string().min(1),
   SMS_USERNAME: z.string().min(1),
-  WHATSAPP_PROVIDER: z.enum(['twilio', 'africas_talking', 'disabled']),
+  WHATSAPP_PROVIDER: z.enum(['twilio', 'disabled']),
+  WHATSAPP_ACCOUNT_SID: z.preprocess((value) => value === '' ? undefined : value, z.string().regex(/^AC[0-9a-fA-F]{32}$/).optional()),
   WHATSAPP_ACCESS_TOKEN: z.string().min(1),
   WHATSAPP_SENDER_ID: z.string().min(1),
   EMAIL_PROVIDER: z.enum(['smtp', 'disabled']),
@@ -134,6 +137,14 @@ const envSchema = z.object({
     }
   }
 
+  if (values.WHATSAPP_PROVIDER === 'twilio' && values.NODE_ENV === 'production' && !values.WHATSAPP_ACCOUNT_SID) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'is required in production when Twilio WhatsApp delivery is enabled',
+      path: ['WHATSAPP_ACCOUNT_SID']
+    })
+  }
+
   if (values.NODE_ENV === 'production') {
     const requirePublicHttps = (key: 'SERVER_PUBLIC_URL' | 'MPESA_CALLBACK_BASE_URL' | 'OBJECT_STORAGE_ENDPOINT', value?: string) => {
       if (!value || !isPublicHttpsUrl(value)) {
@@ -146,7 +157,9 @@ const envSchema = z.object({
     }
 
     requirePublicHttps('SERVER_PUBLIC_URL', values.SERVER_PUBLIC_URL)
-    requirePublicHttps('MPESA_CALLBACK_BASE_URL', values.MPESA_CALLBACK_BASE_URL)
+    if (values.MPESA_PROVIDER === 'daraja') {
+      requirePublicHttps('MPESA_CALLBACK_BASE_URL', values.MPESA_CALLBACK_BASE_URL)
+    }
     requirePublicHttps('OBJECT_STORAGE_ENDPOINT', values.OBJECT_STORAGE_ENDPOINT)
     if (!isPublicHttpsUrl(values.JITSI_PUBLIC_URL)) {
       context.addIssue({
@@ -163,14 +176,14 @@ const envSchema = z.object({
         path: ['STORAGE_PROVIDER']
       })
     }
-    if (!values.LEGAL_POLICIES_APPROVED) {
+    if (values.DEPLOYMENT_PURPOSE === 'live' && !values.LEGAL_POLICIES_APPROVED) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'must be true after legal approval before production launch',
         path: ['LEGAL_POLICIES_APPROVED']
       })
     }
-    if (!values.ODPC_REGISTRATION_NUMBER) {
+    if (values.DEPLOYMENT_PURPOSE === 'live' && !values.ODPC_REGISTRATION_NUMBER) {
       context.addIssue({
         code: z.ZodIssueCode.custom,
         message: 'is required in production before processing live user data',
@@ -199,7 +212,7 @@ const envSchema = z.object({
         path: ['CORS_ORIGIN']
       })
     }
-    if (!configuredB2cValues.every(Boolean)) {
+    if (values.MPESA_PROVIDER === 'daraja' && !configuredB2cValues.every(Boolean)) {
       for (const key of ['MPESA_B2C_SHORT_CODE', 'MPESA_INITIATOR_NAME', 'MPESA_SECURITY_CREDENTIAL'] as const) {
         if (!values[key]) {
           context.addIssue({
@@ -221,9 +234,11 @@ const envSchema = z.object({
 
     const placeholders: ReadonlyArray<readonly [string, string | undefined]> = [
       ['JWT_SECRET', values.JWT_SECRET],
-      ['MPESA_CONSUMER_KEY', values.MPESA_CONSUMER_KEY],
-      ['MPESA_CONSUMER_SECRET', values.MPESA_CONSUMER_SECRET],
-      ['MPESA_PASSKEY', values.MPESA_PASSKEY],
+      ...(values.MPESA_PROVIDER === 'disabled' ? [] : [
+        ['MPESA_CONSUMER_KEY', values.MPESA_CONSUMER_KEY] as const,
+        ['MPESA_CONSUMER_SECRET', values.MPESA_CONSUMER_SECRET] as const,
+        ['MPESA_PASSKEY', values.MPESA_PASSKEY] as const
+      ]),
       ['OBJECT_STORAGE_ACCESS_KEY_ID', values.OBJECT_STORAGE_ACCESS_KEY_ID],
       ['OBJECT_STORAGE_SECRET_ACCESS_KEY', values.OBJECT_STORAGE_SECRET_ACCESS_KEY],
       ...(values.SMS_PROVIDER === 'disabled' ? [] : [
@@ -231,6 +246,7 @@ const envSchema = z.object({
         ['SMS_USERNAME', values.SMS_USERNAME] as const
       ]),
       ...(values.WHATSAPP_PROVIDER === 'disabled' ? [] : [
+        ['WHATSAPP_ACCOUNT_SID', values.WHATSAPP_ACCOUNT_SID] as const,
         ['WHATSAPP_ACCESS_TOKEN', values.WHATSAPP_ACCESS_TOKEN] as const,
         ['WHATSAPP_SENDER_ID', values.WHATSAPP_SENDER_ID] as const
       ]),

@@ -18,6 +18,7 @@ coverage/
 .env.*
 !.env.example
 !**/.env.example
+!**/.env.*.example
 *.local
 
 # Editor and OS files
@@ -35,7 +36,10 @@ coverage/
 .git.empty-parent-backup
 
 # Local backend bucket emulator
-zumbarl_backend/bucket/*
-!zumbarl_backend/bucket/.gitkeep
+zumbarl_backend/bucket/**
 !zumbarl_backend/bucket/**/
 !zumbarl_backend/bucket/**/.gitkeep
+
+# Browser test output
+zumbarl.com/test-results/
+zumbarl.com/playwright-report/

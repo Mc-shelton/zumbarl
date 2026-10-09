@@ -1,0 +1,162 @@
+name: zumbarl-bootstrap
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    env_file: .env.bootstrap
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    command:
+      - postgres
+      - -c
+      - shared_buffers=48MB
+      - -c
+      - max_connections=30
+      - -c
+      - work_mem=1MB
+      - -c
+      - maintenance_work_mem=24MB
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    mem_limit: 256m
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    env_file: .env.bootstrap
+    command:
+      - sh
+      - -c
+      - exec redis-server --appendonly yes --maxmemory 48mb --maxmemory-policy allkeys-lru --requirepass "$$REDIS_PASSWORD"
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a $$REDIS_PASSWORD ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - redis_data:/data
+    mem_limit: 80m
+    restart: unless-stopped
+
+  migrate:
+    profiles: [release]
+    image: ${MIGRATION_IMAGE:-zumbarl-migration:bootstrap}
+    env_file: .env.bootstrap
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 4100
+      BACKGROUND_JOBS_MODE: external
+      NODE_OPTIONS: --max-old-space-size=256
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    mem_limit: 384m
+    restart: "no"
+
+  seed:
+    profiles: [release]
+    image: ${MIGRATION_IMAGE:-zumbarl-migration:bootstrap}
+    command: ["npm", "run", "demo:seed"]
+    env_file: .env.bootstrap
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 4100
+      BACKGROUND_JOBS_MODE: external
+      NODE_OPTIONS: --max-old-space-size=256
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - backend_files:/app/bucket
+      - ./seed-public:/zumbarl.com/public:ro
+    mem_limit: 384m
+    restart: "no"
+
+  backend:
+    image: ${BACKEND_IMAGE:-zumbarl-backend:bootstrap}
+    env_file: .env.bootstrap
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 4100
+      BACKGROUND_JOBS_MODE: external
+      NODE_OPTIONS: --max-old-space-size=256
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose: ["4100"]
+    volumes:
+      - backend_files:/app/bucket
+    mem_limit: 384m
+    stop_grace_period: 20s
+    restart: unless-stopped
+
+  worker:
+    image: ${BACKEND_IMAGE:-zumbarl-backend:bootstrap}
+    command: ["node", "dist/worker.js"]
+    env_file: .env.bootstrap
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 4100
+      BACKGROUND_JOBS_MODE: external
+      NODE_OPTIONS: --max-old-space-size=128
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - backend_files:/app/bucket
+    mem_limit: 384m
+    healthcheck:
+      disable: true
+    stop_grace_period: 30s
+    restart: unless-stopped
+
+  frontend:
+    image: ${FRONTEND_IMAGE:-zumbarl-frontend:bootstrap}
+    depends_on:
+      backend:
+        condition: service_healthy
+    expose: ["8080"]
+    mem_limit: 64m
+    restart: unless-stopped
+
+  edge:
+    image: caddy:2.10-alpine
+    env_file: .env.bootstrap
+    depends_on:
+      frontend:
+        condition: service_healthy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile.bootstrap:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    mem_limit: 64m
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_files:
+  caddy_data:
+  caddy_config:

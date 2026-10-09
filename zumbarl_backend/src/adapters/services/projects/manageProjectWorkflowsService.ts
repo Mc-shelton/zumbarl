@@ -3,6 +3,7 @@ import type { AuthUser } from '../../../lib/security.js'
 import { sendTransactionalEmail } from '../../notification/index.js'
 import { businessWorkflowsRepository } from '../../repositories/business/index.js'
 import { projectWorkflowsRepository } from '../../repositories/projects/index.js'
+import { deliverableTasksRepository } from '../../repositories/projects/deliverableTasks.repository.js'
 import { milestoneWorkspaceRepository } from '../../repositories/projects/milestoneWorkspace.repository.js'
 import { ensureProjectDeliverableReference } from '../../../shared/projects/ensureDefaultProjectDeliverable.js'
 
@@ -105,6 +106,18 @@ async function inviteProjectTeamMembersService(
   const project = await projectWorkflowsRepository.findProject(projectId) ?? notFound('Project')
   assertCanManageProject(project, authUser)
   const actor = requireAuthenticatedUser(authUser)
+  const normalizedRole = String(payload.role || '').trim().toLowerCase()
+  if (normalizedRole === 'intern' || normalizedRole === 'attachee') {
+    const settings = await deliverableTasksRepository.readProjectSettings(projectId)
+    const isAllowed = normalizedRole === 'intern' ? settings.allowInterns : settings.allowAttachees
+    if (!isAllowed) {
+      throw new ApiError(
+        409,
+        `Enable ${normalizedRole === 'intern' ? 'interns' : 'attachees'} in Project Settings before sending this invite`,
+        'PROJECT_ROLE_NOT_ENABLED'
+      )
+    }
+  }
   const result = await projectWorkflowsRepository.createProjectTeamInvites(projectId, actor.id, {
     ...payload,
     projectTitle: project.title || 'your project'
@@ -238,6 +251,15 @@ async function completeScopeTargetService(projectId: string, payload: Record<str
   }
   const result = await projectWorkflowsRepository.completeScopeTarget(projectId, payload) ?? notFound('Project')
   if (result.completed === false) {
+    if (result.reason === 'submission_required') {
+      throw new ApiError(409, 'At least one work submission is required before this deliverable can be completed.', 'COMPLETE_TARGET_SUBMISSION_REQUIRED')
+    }
+    if (result.reason === 'submissions_not_approved') {
+      throw new ApiError(409, 'Review every current submission before completing and paying this deliverable.', 'COMPLETE_TARGET_REVIEW_REQUIRED')
+    }
+    if (result.reason === 'tasks_not_ready') {
+      throw new ApiError(409, 'Finish or drop every open task before completing and paying this deliverable.', 'COMPLETE_TARGET_TASKS_OPEN')
+    }
     throw new ApiError(404, 'That deliverable or milestone was not found on this project.', 'COMPLETE_TARGET_NOT_FOUND')
   }
   return result

@@ -343,6 +343,12 @@ function toOpportunity(opportunity: Record<string, any> | null) {
     applicants: opportunity.applicants,
     invitedCount: opportunity.invitedCount,
     escrowStatus: opportunity.escrowStatus,
+    escrowCoverage: Array.isArray(opportunity.escrowHolds)
+      ? opportunity.escrowHolds.reduce((total: number, hold: Record<string, any>) => total + toNumber(hold.amount), 0)
+      : undefined,
+    activeMpesaPayment: Array.isArray(opportunity.mpesaPaymentRequests) && opportunity.mpesaPaymentRequests.length
+      ? opportunity.mpesaPaymentRequests[0]
+      : null,
     deliverablesStatus: opportunity.deliverablesStatus,
     deliverableCount: opportunity.deliverableCount,
     skills: opportunity.skills?.join?.(', ') ?? '',
@@ -359,6 +365,7 @@ function toOpportunity(opportunity: Record<string, any> | null) {
     applicationDeadline: toIso(opportunity.applicationDeadline),
     deadline: opportunity.deadlineLabel ?? toIso(opportunity.applicationDeadline),
     company: opportunity.companyName ?? opportunity.company?.name,
+    companyLogoUrl: opportunity.company?.logoUrl,
     companyDescription: opportunity.companyDescription,
     acceptanceCriteria: opportunity.acceptanceCriteria,
     deliverables: opportunity.deliverablesSummary,
@@ -638,6 +645,21 @@ class BusinessWorkflowsRepository {
       where: businessId ? { companyId: businessId } : undefined,
       include: {
         company: true,
+        escrowHolds: { where: { status: { in: ['FUNDED', 'HELD'] } }, select: { amount: true } },
+        mpesaPaymentRequests: {
+          where: { direction: 'STK_PUSH', status: { in: ['PENDING', 'PROCESSING'] } },
+          orderBy: { requestedAt: 'desc' },
+          take: 1,
+          select: {
+            id: true,
+            status: true,
+            amount: true,
+            currency: true,
+            phoneNumber: true,
+            requestedAt: true,
+            lastQueriedAt: true
+          }
+        },
         scopeItems: { include: { sampleWork: true }, orderBy: { sequence: 'asc' } },
         requiredAttachments: { orderBy: { sortOrder: 'asc' } }
       },
@@ -710,10 +732,42 @@ class BusinessWorkflowsRepository {
   async listBusinessBids(businessId: string | undefined) {
     const items = await prisma.bid.findMany({
       where: businessId ? { opportunity: { companyId: businessId } } : undefined,
+      include: {
+        opportunity: {
+          select: {
+            category: true,
+            title: true
+          }
+        },
+        student: {
+          include: {
+            campus: { select: { name: true } },
+            course: { select: { category: true, name: true } },
+            user: { select: { email: true, name: true, username: true } },
+            zumbarl: true
+          }
+        }
+      },
       orderBy: { appliedAt: 'desc' }
     })
     return items.map((item) => ({
       ...item,
+      opportunityTitle: item.opportunity.title,
+      category: item.opportunity.category || item.student.course?.category || 'Other',
+      studentName: `${item.student.firstName} ${item.student.lastName}`.trim()
+        || item.student.user.name
+        || item.student.user.email,
+      username: item.student.user.username,
+      avatar: item.student.avatarUrl,
+      campus: item.student.campus?.name,
+      course: item.student.course?.name,
+      careerPath: item.student.careerPath,
+      locationCity: item.student.locationCity,
+      score: item.student.zumbarl?.confidence === 'PROVISIONAL'
+        ? null
+        : item.student.zumbarl?.currentScore ?? null,
+      matchingScore: item.student.zumbarl?.conservativeLowerBound ?? null,
+      scoreConfidence: item.student.zumbarl?.confidence ?? null,
       appliedAt: toIso(item.appliedAt),
       respondedAt: toIso(item.respondedAt)
     }))
@@ -968,6 +1022,7 @@ class BusinessWorkflowsRepository {
       data: toOpportunityCreateData(payload, payload.businessId),
       include: {
         company: true,
+        escrowHolds: { where: { status: { in: ['FUNDED', 'HELD'] } }, select: { amount: true } },
         scopeItems: { include: { sampleWork: true }, orderBy: { sequence: 'asc' } },
         requiredAttachments: { orderBy: { sortOrder: 'asc' } }
       }
@@ -980,6 +1035,7 @@ class BusinessWorkflowsRepository {
       where: { id },
       include: {
         company: true,
+        escrowHolds: { where: { status: { in: ['FUNDED', 'HELD'] } }, select: { amount: true } },
         scopeItems: { include: { sampleWork: true }, orderBy: { sequence: 'asc' } },
         requiredAttachments: { orderBy: { sortOrder: 'asc' } }
       }
@@ -1257,9 +1313,18 @@ class BusinessWorkflowsRepository {
       },
       orderBy: { appliedAt: 'desc' }
     })
-    const escrowCoverage = await this.getOpportunityEscrowCoverage(opportunityId)
+    const [escrowCoverage, opportunity] = await Promise.all([
+      this.getOpportunityEscrowCoverage(opportunityId),
+      prisma.opportunity.findUnique({ where: { id: opportunityId }, select: { budgetAmount: true } })
+    ])
+    const defaultBidAmount = Number(opportunity?.budgetAmount || 0)
     return Promise.all(items.map(async (item) => {
       const project = item.projectId ? await projects.findById(item.projectId) : null
+      const storedBidAmount = Number(item.bidAmount || 0)
+      const effectiveBidAmount = storedBidAmount > 0 ? storedBidAmount : defaultBidAmount
+      const bidMetadata = item.metadata && typeof item.metadata === 'object' && !Array.isArray(item.metadata)
+        ? item.metadata as Record<string, any>
+        : {}
       return {
       id: item.id,
       opportunityId: item.opportunityId,
@@ -1267,7 +1332,7 @@ class BusinessWorkflowsRepository {
       project: project ? {
         id: project.id,
         status: project.status,
-        agreedAmount: Number(project.agreedAmount) || Number(item.bidAmount) || 0,
+        agreedAmount: Number(project.agreedAmount) || effectiveBidAmount,
         agreedCurrency: project.agreedCurrency ?? item.currency ?? 'KES',
         escrowCoverage,
         startedAt: project.startedAt ?? null,
@@ -1276,11 +1341,10 @@ class BusinessWorkflowsRepository {
       status: item.status,
       coverNote: item.coverNote,
       proposal: item.proposal,
-      bidAmount: item.bidAmount,
+      bidAmount: effectiveBidAmount,
+      bidAmountSource: bidMetadata.amountSource || (storedBidAmount > 0 ? 'student_bid' : 'opportunity_budget'),
       currency: item.currency,
-      counterOffer: (item.metadata && typeof item.metadata === 'object' && !Array.isArray(item.metadata))
-        ? ((item.metadata as Record<string, any>).counterOffer ?? null)
-        : null,
+      counterOffer: bidMetadata.counterOffer ?? null,
       deliveryTime: item.deliveryTime,
       intentId: item.intentId,
       intentLabel: item.intentLabel,
@@ -1502,12 +1566,29 @@ class BusinessWorkflowsRepository {
 
   createOpportunityDeliverablesWithEvent(id: string, payload: Record<string, any>, actorId: string | undefined) {
     return prisma.$transaction(async (transaction) => {
+      await transaction.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `opportunity-scope:${id}`)
       const opportunity = await transaction.opportunity.findUnique({ where: { id } })
       if (!opportunity) return null
 
+      const existingScopeItems = await transaction.opportunityScopeItem.findMany({
+        where: { opportunityId: id },
+        orderBy: { sequence: 'asc' }
+      })
+      const startingSequence = existingScopeItems.reduce((highest, item) => Math.max(highest, item.sequence), 0)
+      const addedBudget = normalizeMoney(
+        payload.deliverables.reduce((total: number, deliverable: Record<string, any>) => total + getScopeItemBudget(deliverable), 0),
+        opportunity.currency
+      )
+      const updatedBudget = normalizeMoney(opportunity.budgetAmount + addedBudget, opportunity.currency)
+
       const deliverables = await Promise.all(payload.deliverables.map(async (deliverable: Record<string, any>, index: number) => {
         const scopeItem = await transaction.opportunityScopeItem.create({
-          data: toScopeItemCreateData(id, { ...deliverable, status: deliverable.status ?? 'pending_payment' }, 'deliverable', index + 1)
+          data: toScopeItemCreateData(
+            id,
+            { ...deliverable, status: 'pending_payment' },
+            'deliverable',
+            startingSequence + index + 1
+          )
         })
         const sampleWork = Array.isArray(deliverable.sampleWork) ? deliverable.sampleWork : []
         if (sampleWork.length) {
@@ -1527,24 +1608,42 @@ class BusinessWorkflowsRepository {
         })
       }))
 
-      const escrow = payload.payment
-        ? await transaction.opportunityEscrowHold.create({
-            data: {
-              opportunityId: id,
-              companyId: opportunity.companyId,
-              amount: toNumber(payload.payment.amount),
-              currency: payload.payment.currency ?? 'KES',
-              status: 'PENDING',
-              transactionRef: payload.payment.reference
-            }
-          })
-        : null
+      const allScopeItems = await transaction.opportunityScopeItem.findMany({
+        where: { opportunityId: id },
+        orderBy: { sequence: 'asc' }
+      })
+      let assignedPercent = 0
+      await Promise.all(allScopeItems.map((scopeItem, index) => {
+        const paymentPercent = index === allScopeItems.length - 1
+          ? Math.max(0, Math.round((100 - assignedPercent) * 100) / 100)
+          : Math.round((scopeItem.budgetAmount / updatedBudget) * 10_000) / 100
+        assignedPercent += paymentPercent
+        return transaction.opportunityScopeItem.update({
+          where: { id: scopeItem.id },
+          data: { paymentPercent }
+        })
+      }))
+
+      const fundedHolds = await transaction.opportunityEscrowHold.findMany({
+        where: { opportunityId: id, status: { in: ['FUNDED', 'HELD'] } },
+        select: { amount: true }
+      })
+      const escrowCoverage = normalizeMoney(
+        fundedHolds.reduce((total, hold) => total + toNumber(hold.amount), 0),
+        opportunity.currency
+      )
+      const fundingRequired = normalizeMoney(Math.max(0, updatedBudget - escrowCoverage), opportunity.currency)
 
       const updatedOpportunity = await transaction.opportunity.update({
         where: { id },
         data: {
-          deliverableCount: deliverables.length,
-          deliverablesStatus: escrow ? 'pending_payment' : 'created'
+          budgetAmount: updatedBudget,
+          budgetLabel: toBudgetLabel(updatedBudget, opportunity.currency),
+          deliverableCount: allScopeItems.length,
+          deliverablesStatus: fundingRequired > 0 ? 'pending_payment' : 'created',
+          escrowStatus: fundingRequired > 0
+            ? escrowCoverage > 0 ? 'partially_funded' : 'unfunded'
+            : 'funded'
         },
         include: {
           company: true,
@@ -1560,12 +1659,24 @@ class BusinessWorkflowsRepository {
           note: payload.note,
           metadata: toJson({
             deliverableIds: deliverables.map((deliverable) => deliverable.id),
-            escrowId: escrow?.id,
+            addedBudget,
+            fundingRequired,
             count: deliverables.length
           })
         }
       })
-      return { opportunity: toOpportunity(updatedOpportunity), deliverables: deliverables.map((deliverable) => toOpportunityScopeItem(deliverable)), escrow }
+      const refreshedDeliverables = await transaction.opportunityScopeItem.findMany({
+        where: { id: { in: deliverables.map((deliverable) => deliverable.id) } },
+        include: { sampleWork: true },
+        orderBy: { sequence: 'asc' }
+      })
+      return {
+        opportunity: toOpportunity(updatedOpportunity),
+        deliverables: refreshedDeliverables.map((deliverable) => toOpportunityScopeItem(deliverable)),
+        addedBudget,
+        escrowCoverage,
+        fundingRequired
+      }
     })
   }
 
@@ -1710,10 +1821,12 @@ class BusinessWorkflowsRepository {
         select: { amount: true }
       })
       const escrowCoverage = fundedHolds.reduce((total, hold) => total + toNumber(hold.amount), 0)
+      const fullyFunded = escrowCoverage >= opportunity.budgetAmount
       const updatedOpportunity = await transaction.opportunity.update({
         where: { id },
         data: {
-          escrowStatus: escrowCoverage >= opportunity.budgetAmount ? 'funded' : 'partially_funded'
+          escrowStatus: fullyFunded ? 'funded' : 'partially_funded',
+          ...(fullyFunded ? { deliverablesStatus: 'created' } : {})
         },
         include: {
           company: true,
@@ -1721,6 +1834,12 @@ class BusinessWorkflowsRepository {
           requiredAttachments: { orderBy: { sortOrder: 'asc' } }
         }
       })
+      if (fullyFunded) {
+        await transaction.opportunityScopeItem.updateMany({
+          where: { opportunityId: id, status: 'pending_payment' },
+          data: { status: 'ready' }
+        })
+      }
       await transaction.opportunityActivityEvent.create({
         data: {
           action: 'funded',

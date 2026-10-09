@@ -25,6 +25,7 @@ const validEnvironment = {
   SMS_API_KEY: 'sms-key',
   SMS_USERNAME: 'sandbox',
   WHATSAPP_PROVIDER: 'twilio',
+  WHATSAPP_ACCOUNT_SID: 'AC00000000000000000000000000000000',
   WHATSAPP_ACCESS_TOKEN: 'whatsapp-token',
   WHATSAPP_SENDER_ID: 'whatsapp:+14155238886',
   EMAIL_PROVIDER: 'smtp',
@@ -91,6 +92,14 @@ describe('environment configuration', () => {
     expect(() => parseEnv(unsafeProductionEnvironment)).toThrowError(/NODE_TLS_REJECT_UNAUTHORIZED: must not disable TLS/)
   })
 
+  it('requires the Twilio account SID for production WhatsApp delivery', () => {
+    expect(() => parseEnv({
+      ...validEnvironment,
+      NODE_ENV: 'production',
+      WHATSAPP_ACCOUNT_SID: undefined
+    })).toThrowError(/WHATSAPP_ACCOUNT_SID: is required in production/)
+  })
+
   it('accepts a complete production configuration', () => {
     expect(parseEnv({
       ...validEnvironment,
@@ -114,5 +123,34 @@ describe('environment configuration', () => {
       BACKGROUND_JOBS_MODE: 'external',
       NODE_TLS_REJECT_UNAUTHORIZED: '1'
     })).toMatchObject({ NODE_ENV: 'production', STORAGE_PROVIDER: 's3' })
+  })
+
+  it('accepts production runtime hardening for a provider-disabled private demo', () => {
+    expect(parseEnv({
+      ...validEnvironment,
+      NODE_ENV: 'production',
+      DEPLOYMENT_PURPOSE: 'demo',
+      SERVER_PUBLIC_URL: 'https://demo.zumbarl.example',
+      JITSI_PUBLIC_URL: 'https://meet.jit.si',
+      MPESA_PROVIDER: 'disabled',
+      MPESA_CALLBACK_BASE_URL: undefined,
+      STORAGE_PROVIDER: 's3',
+      CORS_ORIGIN: 'https://demo.zumbarl.example',
+      EMAIL_PROVIDER: 'disabled',
+      EMAIL_FROM: 'demo@zumbarl.invalid',
+      SMS_PROVIDER: 'disabled',
+      WHATSAPP_PROVIDER: 'disabled',
+      OBJECT_STORAGE_ENDPOINT: 'https://namespace.compat.objectstorage.eu-stockholm-1.oraclecloud.com',
+      OBJECT_STORAGE_ACCESS_KEY_ID: 'production-storage-key',
+      OBJECT_STORAGE_SECRET_ACCESS_KEY: 'production-storage-credential',
+      LEGAL_POLICIES_APPROVED: 'false',
+      ODPC_REGISTRATION_NUMBER: undefined,
+      BACKGROUND_JOBS_MODE: 'external'
+    })).toMatchObject({
+      NODE_ENV: 'production',
+      DEPLOYMENT_PURPOSE: 'demo',
+      MPESA_PROVIDER: 'disabled',
+      STORAGE_PROVIDER: 's3'
+    })
   })
 })

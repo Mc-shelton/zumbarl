@@ -86,7 +86,7 @@ afterAll(async () => {
 })
 
 describe('M-Pesa opportunity funding ledger', () => {
-  it('converts one verified callback into one escrow hold and remains idempotent', async () => {
+  it('finalizes a verified status query once and enriches it from a delayed callback', async () => {
     const prepared = await mpesaPaymentsRepository.prepareOpportunityStkRequest({
       opportunityId,
       companyId,
@@ -141,11 +141,30 @@ describe('M-Pesa opportunity funding ledger', () => {
       phoneNumber: '254712345678',
       rawPayload: callback
     }
-    const first = await mpesaPaymentsRepository.completeOpportunityStkRequest(paymentId, completion)
+    const queryCompletion = {
+      resultCode: 0,
+      resultDescription: 'The service request is processed successfully.',
+      amount: 1250,
+      receipt: null,
+      phoneNumber: '254712345678',
+      confirmationSource: 'query' as const,
+      rawPayload: {
+        ResultCode: '0',
+        ResultDesc: 'The service request is processed successfully.',
+        CheckoutRequestID: `${marker}-checkout`,
+        MerchantRequestID: `${marker}-merchant`
+      }
+    }
+    const first = await mpesaPaymentsRepository.completeOpportunityStkRequest(paymentId, queryCompletion)
+    const enriched = await mpesaPaymentsRepository.completeOpportunityStkRequest(paymentId, completion)
     const repeated = await mpesaPaymentsRepository.completeOpportunityStkRequest(paymentId, completion)
 
-    expect(first?.payment).toMatchObject({ status: 'COMPLETED', providerReceipt: `${marker}-receipt` })
+    expect(first?.payment).toMatchObject({ status: 'COMPLETED', providerReceipt: null })
     expect(first?.opportunity).toMatchObject({ status: 'published', escrowStatus: 'funded' })
+    expect(enriched).toMatchObject({
+      duplicate: true,
+      payment: { status: 'COMPLETED', providerReceipt: `${marker}-receipt` }
+    })
     expect(repeated).toMatchObject({ duplicate: true })
     expect(await prisma.opportunityEscrowHold.count({ where: { opportunityId } })).toBe(1)
     expect(await prisma.transaction.count({ where: { opportunityId } })).toBe(2)

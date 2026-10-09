@@ -1,6 +1,7 @@
 import { processMarketplaceDeliveryDeadlinesService } from '../adapters/services/marketplace/index.js'
 import { scheduleDueScoreRefreshes } from '../adapters/services/scores/index.js'
 import { runEvergreenMaintenanceService } from '../adapters/services/evergreen/index.js'
+import { processPendingMediaOptimizationsService } from '../adapters/services/uploads/index.js'
 
 type MaintenanceLogger = {
   error: (value: unknown, message: string) => void
@@ -14,6 +15,11 @@ type MaintenanceJob = {
 }
 
 const jobs: MaintenanceJob[] = [
+  {
+    name: 'media optimization',
+    intervalMs: 15 * 1000,
+    run: processPendingMediaOptimizationsService
+  },
   {
     name: 'marketplace escrow deadline processing',
     intervalMs: 60 * 60 * 1000,

@@ -56,7 +56,9 @@ const loginUserSchema = z.object({
 
 const requestEmailOtpSchema = z.object({
   email: z.string().trim().email(),
-  purpose: z.enum(['login', 'register'])
+  // `login` and `register` remain accepted during the deployment transition,
+  // but the server deliberately ignores them and resolves the flow by email.
+  purpose: z.enum(['access', 'login', 'register']).optional()
 })
 
 const verifyEmailOtpSchema = z.object({

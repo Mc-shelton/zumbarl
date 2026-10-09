@@ -39,5 +39,20 @@ links:
 - page management is by users from anywhere, but now pages from particular campuses should be only managed by users in that campus
 - adding share, play, expand, open as metric on the recommendation system
 - for complete anonymousity, lets encrypt sensitive data using the user's password as the key. that way, mental wellbeing data is technically untracable to the user without their password
+- creation and tracking of projects -- page 3 of the intro
+
+
+Partially.
+
+- Unexpected HTTP 500 errors are logged through Fastify/Pino at [app.ts:125](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl_backend/src/app.ts:125), but only to stdout/stderr. There is no configured log file, database table, Sentry, or other persistent error service.
+- Validation errors, expected `ApiError`s, and other 4xx errors are returned to clients but are not logged as errors.
+- Background-task failures are printed to the same transient logger in [server.ts:19](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl_backend/src/server.ts:19).
+- Evergreen job and outbox failures are stored in PostgreSQL using `failureReason` and `lastError` fields ([schema.prisma:3721](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl_backend/prisma/schema.prisma:3721), [schema.prisma:3786](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl_backend/prisma/schema.prisma:3786)).
+- Payment failures are also persisted with failure details.
+- `AuditLog` stores administrative actions, not general server exceptions.
+
+So the key answer is: **general server errors are logged, but not durably stored by the application**. They disappear when the terminal/process logs are lost unless the production platform captures stdout. Also, the current 500 logger uses `app.log` instead of `request.log`, so its error entries may lack useful request-ID and route context.
+
+- sharing one connection across tabs would require a later SharedWorker or leader-election layer.
 
 https://www.itl.nist.gov/div898/handbook/apr/section2/apr1a.htm

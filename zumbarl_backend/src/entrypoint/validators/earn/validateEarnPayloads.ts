@@ -1,7 +1,21 @@
 import { z } from 'zod'
 
 const uploadedFileUrlSchema = z.string().max(4000).refine((value) => {
-  if (value.startsWith('/files/') && !value.includes('..')) return true
+  if (value.startsWith('/')) {
+    let decodedValue: string
+    try {
+      decodedValue = decodeURIComponent(value)
+    } catch {
+      return false
+    }
+
+    const isKnownZumbarlPath = decodedValue.startsWith('/files/')
+      || decodedValue.startsWith('/api/v1/uploads/content/')
+    return isKnownZumbarlPath
+      && !decodedValue.includes('..')
+      && !decodedValue.includes('\\')
+      && !/[\r\n]/.test(decodedValue)
+  }
   try {
     const parsed = new URL(value)
     return parsed.protocol === 'http:' || parsed.protocol === 'https:'
@@ -78,8 +92,9 @@ const submitProjectDeliverableSchema = z.object({
   feedbackRequest: z.string().max(1000).optional(),
   files: z.array(z.object({
     fileName: z.string(),
-    // Local uploads are normalized to /files/... by the frontend so saved
-    // submissions remain valid if the API host changes.
+    // Public uploads use /files/... while authenticated project uploads use
+    // /api/v1/uploads/content/.... Keeping both relative means they continue
+    // to work when the API host changes.
     url: uploadedFileUrlSchema.optional(),
     mimeType: z.string().optional(),
     sizeBytes: z.coerce.number().int().nonnegative().optional()

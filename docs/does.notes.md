@@ -32,18 +32,25 @@ The current flow starts with an **opportunity**, not a project:
    
    Approval creates a payout record, increments the relational `Wallet.balance`, reduces any `pendingBalance`, and writes a completed `STUDENT_PAYOUT` transaction atomically. [walletLedger.ts](/Users/pro/olscorpe_wd/subsidiaries/zumbarl/zumbarl_backend/src/shared/services/walletLedger.ts:47)
 
-**Important Reality Check**
+**Important Reality Check — updated 10 September 2026**
 
-Escrow currently enforces the workflow, but it is **not yet real payment custody**:
+The core gig-to-career money path is now relational and provider-backed:
 
-- Funding does not debit `CompanyWallet`.
-- Wallet, card, bank, and M-Pesa selections do not actually contact a payment provider.
-- The API trusts the submitted amount/reference and immediately records it as `FUNDED`.
-- Student payouts credit their wallet without drawing down `OpportunityEscrowHold`.
-- The relational hold remains `FUNDED`; release bookkeeping still uses the older generic `escrows` and `payouts` records.
-- Payout currency is currently hardcoded to `KES`.
+- Wallet funding debits the company wallet before creating the opportunity hold.
+- M-Pesa STK funding contacts Daraja and creates escrow only after a callback
+  with the matching request IDs, amount, phone and receipt.
+- Approved project work consumes `OpportunityEscrowHold` before crediting the
+  student wallet.
+- Students can request a B2C withdrawal; successful receipts complete it and
+  explicit failure/timeout callbacks restore the reserved amount once.
+- Callback replay and duplicate initiation are guarded at the database layer.
 
-So the lifecycle guards work, and students receive database wallet credit, but real money has not yet moved from the business into a safeguarded escrow account. The next finance phase needs to connect company debits/payment confirmation, escrow allocation, release/refund, and student withdrawal into one relational ledger.
+This does not by itself make Zumbarl a legally approved custodian. Daraja
+credentials and controlled sandbox outcomes still need external sign-off, and
+production settlement accounts, reconciliation ownership, refund/dispute
+operations and applicable regulatory controls must be approved before live
+money. Card, bank-transfer and marketplace checkout settlement remain separate
+unfinished payment paths. See [M-Pesa integration](./mpesa-integration.md).
 
 
 

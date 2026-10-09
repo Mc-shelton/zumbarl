@@ -52,6 +52,29 @@ class UploadsRepository {
   findStoredUpload(bucket: string, storageKey: string) {
     return prisma.uploadedFile.findUnique({ where: { bucket_storageKey: { bucket, storageKey } } })
   }
+
+  listUploadsByStatus(status: string, limit = 2) {
+    return prisma.uploadedFile.findMany({
+      where: { status },
+      orderBy: { createdAt: 'asc' },
+      take: limit
+    })
+  }
+
+  async claimUpload(id: string, expectedStatus: string, nextStatus: string) {
+    const result = await prisma.uploadedFile.updateMany({
+      where: { id, status: expectedStatus },
+      data: { status: nextStatus }
+    })
+    return result.count === 1
+  }
+
+  recoverStaleOptimizations(before: Date) {
+    return prisma.uploadedFile.updateMany({
+      where: { status: 'processing', updatedAt: { lt: before } },
+      data: { status: 'optimizing' }
+    })
+  }
 }
 
 const uploadsRepository = new UploadsRepository()

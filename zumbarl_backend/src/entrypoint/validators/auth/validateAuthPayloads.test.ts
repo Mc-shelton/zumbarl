@@ -77,7 +77,9 @@ describe('public registration roles', () => {
 })
 
 describe('email OTP validation', () => {
-  it('accepts login and registration code requests', () => {
+  it('accepts the unified access request and cached legacy clients', () => {
+    expect(requestEmailOtpSchema.safeParse({ email: 'person@example.com' }).success).toBe(true)
+    expect(requestEmailOtpSchema.safeParse({ email: 'person@example.com', purpose: 'access' }).success).toBe(true)
     expect(requestEmailOtpSchema.safeParse({ email: 'person@example.com', purpose: 'login' }).success).toBe(true)
     expect(requestEmailOtpSchema.safeParse({ email: 'person@example.com', purpose: 'register' }).success).toBe(true)
   })

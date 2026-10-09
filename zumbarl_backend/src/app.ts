@@ -8,6 +8,7 @@ import fastifyStatic from '@fastify/static'
 import swagger from '@fastify/swagger'
 import swaggerUi from '@fastify/swagger-ui'
 import Fastify, { LogController } from 'fastify'
+import { createHash } from 'node:crypto'
 import { ZodError } from 'zod'
 import { env } from './config/env.js'
 import { LOCAL_STORAGE_PUBLIC_PREFIX, LOCAL_STORAGE_ROOT } from './adapters/storage/index.js'
@@ -31,6 +32,15 @@ import { registerRecommendationRoutes } from './entrypoint/api/routes/recommenda
 import { registerSkillRoutes } from './entrypoint/api/routes/skills/index.js'
 import { registerSupportRoutes } from './entrypoint/api/routes/support/index.js'
 import { registerUploadRoutes } from './entrypoint/api/routes/uploads/index.js'
+
+function rateLimitIdentity(request: { headers: { authorization?: string }; ip: string }) {
+  const authorization = request.headers.authorization
+  if (!authorization?.startsWith('Bearer ')) return `ip:${request.ip}`
+
+  const token = authorization.slice('Bearer '.length).trim()
+  if (!token) return `ip:${request.ip}`
+  return `session:${createHash('sha256').update(token).digest('hex')}`
+}
 
 async function buildApp() {
   const app = Fastify({
@@ -74,6 +84,7 @@ async function buildApp() {
   await app.register(rateLimit, {
     max: env.RATE_LIMIT_MAX,
     timeWindow: env.RATE_LIMIT_WINDOW,
+    keyGenerator: rateLimitIdentity,
     redis: getRedisClient(),
     nameSpace: 'zumbarl:rate-limit:',
     skipOnError: true
@@ -186,5 +197,6 @@ async function buildApp() {
 }
 
 export {
-  buildApp
+  buildApp,
+  rateLimitIdentity
 }

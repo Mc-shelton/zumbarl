@@ -735,7 +735,7 @@ class CampusExperienceRepository {
 
     const portfolioOpportunityIds = student.portfolioItems.flatMap((item) => item.opportunityId ? [item.opportunityId] : [])
 
-    const [profileListings, profilePosts, profileStories, profileRoadmaps, walletTransactions, followerCount, followingCount, campusPostTotals, connectPosts, portfolioRatings, portfolioSkills] = await Promise.all([
+    const [profileListings, profilePosts, profileStories, profileRoadmaps, walletTransactions, followerCount, followingCount, campusPostTotals, connectPosts, portfolioRatings, portfolioSkills, portfolioOpportunities] = await Promise.all([
       prisma.marketplaceListing.findMany({
         where: { sellerId: student.id, status: 'ACTIVE' },
         include: { shop: true, seller: true },
@@ -783,12 +783,17 @@ class CampusExperienceRepository {
       portfolioOpportunityIds.length ? prisma.opportunitySkill.findMany({
         where: { opportunityId: { in: portfolioOpportunityIds } },
         include: { skill: true }
+      }) : [],
+      portfolioOpportunityIds.length ? prisma.opportunity.findMany({
+        where: { id: { in: portfolioOpportunityIds } },
+        select: { id: true, company: { select: { logoUrl: true } } }
       }) : []
     ])
     const score = student.zumbarl
     const endorsements = student.endorsementsReceived.map((endorsement) => ({
       id: endorsement.id,
       company: endorsement.company.name,
+      companyLogoUrl: endorsement.company.logoUrl,
       author: endorsement.endorsedByName,
       role: endorsement.endorsedByTitle,
       note: endorsement.note,
@@ -800,6 +805,7 @@ class CampusExperienceRepository {
       0
     )
     const portfolioRatingByOpportunityId = new Map(portfolioRatings.map((rating) => [rating.opportunityId, rating]))
+    const portfolioCompanyLogoByOpportunityId = new Map(portfolioOpportunities.map((opportunity) => [opportunity.id, opportunity.company?.logoUrl]))
     const portfolioSkillsByOpportunityId = new Map<string, typeof portfolioSkills>()
     portfolioSkills.forEach((link) => portfolioSkillsByOpportunityId.set(
       link.opportunityId,
@@ -854,6 +860,9 @@ class CampusExperienceRepository {
         filter: item.category.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
         category: item.category,
         client: item.showClientName || includePrivatePortfolio ? item.companyName : 'Client private',
+        companyLogoUrl: item.showClientName || includePrivatePortfolio
+          ? portfolioCompanyLogoByOpportunityId.get(item.opportunityId || '')
+          : null,
         clientName: includePrivatePortfolio ? item.companyName : undefined,
         showClientName: item.showClientName,
         image: item.thumbnailUrl,
@@ -888,6 +897,7 @@ class CampusExperienceRepository {
       relationships: student.pipelineRelationships.map((relationship) => ({
         id: relationship.id,
         company: relationship.company.name,
+        companyLogoUrl: relationship.company.logoUrl,
         gigs: relationship.gigsCompleted,
         status: relationship.status,
         targetRole: relationship.targetRole

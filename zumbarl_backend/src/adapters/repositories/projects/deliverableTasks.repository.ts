@@ -334,10 +334,9 @@ class DeliverableTasksRepository {
     }
   }
 
-  // Snapshots the workload split for a deliverable at submission time. Payout
-  // reads this, never the live tasks, so weights edited after the team submits
-  // can no longer move money that was already agreed. Re-submitting a revision
-  // refreshes a split nobody has confirmed yet, but never a confirmed one.
+  // Snapshots a deliverable's approved workload. The completion transaction
+  // finalizes this immediately before payout; pending legacy locks may still be
+  // refreshed, but a confirmed snapshot is immutable.
   async lockDeliverableSplit(projectId: string, scopeItemId: string) {
     const tasks = await prisma.deliverableTask.findMany({ where: { projectId, scopeItemId } })
     const shares = computeWorkloadShares(tasks)

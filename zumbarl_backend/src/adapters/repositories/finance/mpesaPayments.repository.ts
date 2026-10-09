@@ -22,6 +22,7 @@ type StkCompletion = {
   amount?: number | null
   phoneNumber?: string | null
   receipt?: string | null
+  confirmationSource?: 'callback' | 'query'
   rawPayload: Record<string, any>
 }
 
@@ -247,7 +248,28 @@ class MpesaPaymentsRepository {
       await tx.$executeRawUnsafe('SELECT pg_advisory_xact_lock(hashtext($1))', `mpesa-payment:${id}`)
       const payment = await tx.mpesaPaymentRequest.findUnique({ where: { id } })
       if (!payment) return null
-      if (payment.status === 'COMPLETED') return { payment: paymentDto(payment), duplicate: true }
+      if (payment.status === 'COMPLETED') {
+        // A successful status query can arrive before (or instead of) Safaricom's
+        // callback. If the delayed callback later supplies the receipt, enrich
+        // the completed records without replaying any wallet or escrow entries.
+        if (completion.receipt && !payment.providerReceipt) {
+          const enriched = await tx.mpesaPaymentRequest.update({
+            where: { id },
+            data: {
+              providerReceipt: completion.receipt,
+              callbackPayload: json(completion.rawPayload)
+            }
+          })
+          if (payment.transactionId) {
+            await tx.transaction.updateMany({
+              where: { id: payment.transactionId, mpesaRef: null },
+              data: { mpesaRef: completion.receipt }
+            })
+          }
+          return { payment: paymentDto(enriched), duplicate: true }
+        }
+        return { payment: paymentDto(payment), duplicate: true }
+      }
       if (payment.direction !== 'STK_PUSH' || payment.purpose !== 'OPPORTUNITY_ESCROW' || !payment.opportunityId || !payment.companyId) {
         throw new ApiError(409, 'This callback does not match an opportunity payment.', 'MPESA_PAYMENT_PURPOSE_MISMATCH')
       }
@@ -274,11 +296,13 @@ class MpesaPaymentsRepository {
       }
 
       const paidAmount = completion.amount == null ? null : normalizeMoney(completion.amount, payment.currency)
-      if (paidAmount !== payment.amount || !completion.receipt) {
+      const confirmedByProviderQuery = completion.confirmationSource === 'query'
+      if (paidAmount !== payment.amount || (!completion.receipt && !confirmedByProviderQuery)) {
         throw new ApiError(409, 'The M-Pesa callback did not contain the expected amount and receipt.', 'MPESA_CALLBACK_MISMATCH', {
           expectedAmount: payment.amount,
           receivedAmount: paidAmount,
-          hasReceipt: Boolean(completion.receipt)
+          hasReceipt: Boolean(completion.receipt),
+          confirmationSource: completion.confirmationSource || 'callback'
         })
       }
       if (completion.phoneNumber && completion.phoneNumber !== payment.phoneNumber) {
@@ -297,7 +321,7 @@ class MpesaPaymentsRepository {
           data: {
             companyWalletId: wallet.id,
             status: 'COMPLETED',
-            mpesaRef: completion.receipt,
+            mpesaRef: completion.receipt || null,
             processedAt: new Date(),
             failureReason: null,
             failedAt: null,
@@ -305,7 +329,8 @@ class MpesaPaymentsRepository {
               provider: 'mpesa',
               purpose: 'opportunity_escrow',
               mpesaPaymentRequestId: payment.id,
-              checkoutRequestId: payment.checkoutRequestId
+              checkoutRequestId: payment.checkoutRequestId,
+              confirmationSource: completion.confirmationSource || 'callback'
             })
           }
         })
@@ -350,11 +375,18 @@ class MpesaPaymentsRepository {
         where: { id: opportunity.id },
         data: {
           escrowStatus: fullyFunded ? 'funded' : 'partially_funded',
+          ...(fullyFunded ? { deliverablesStatus: 'created' } : {}),
           ...(publishAfterFunding && opportunity.status !== 'published'
             ? { status: 'published', visibility: 'public', publishedAt: new Date() }
             : {})
         }
       })
+      if (fullyFunded) {
+        await tx.opportunityScopeItem.updateMany({
+          where: { opportunityId: opportunity.id, status: 'pending_payment' },
+          data: { status: 'ready' }
+        })
+      }
       await tx.opportunityActivityEvent.create({
         data: {
           action: 'funded',
@@ -379,8 +411,10 @@ class MpesaPaymentsRepository {
           status: 'COMPLETED',
           resultCode: 0,
           resultDescription: completion.resultDescription,
-          providerReceipt: completion.receipt,
-          callbackPayload: json(completion.rawPayload),
+          providerReceipt: completion.receipt || null,
+          ...(completion.confirmationSource === 'query'
+            ? { responsePayload: json(completion.rawPayload) }
+            : { callbackPayload: json(completion.rawPayload) }),
           completedAt: new Date(),
           failedAt: null
         }

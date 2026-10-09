@@ -2,10 +2,28 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { callbackTokenHash, mpesaPaymentsRepository } from '../../repositories/finance/index.js'
 import {
   handleMpesaB2cResultService,
-  handleMpesaStkCallbackService
+  handleMpesaStkCallbackService,
+  isPendingStkQueryResponse,
+  readMpesaPaymentService
 } from './manageMpesaPaymentsService.js'
 
 afterEach(() => vi.restoreAllMocks())
+
+describe('M-Pesa STK query status', () => {
+  it('keeps Safaricom 4999 under-processing responses pending', () => {
+    expect(isPendingStkQueryResponse({
+      ResultCode: '4999',
+      ResultDesc: 'The transaction is still under processing'
+    })).toBe(true)
+  })
+
+  it('does not hide terminal failures as pending', () => {
+    expect(isPendingStkQueryResponse({
+      ResultCode: '1032',
+      ResultDesc: 'Request cancelled by user.'
+    })).toBe(false)
+  })
+})
 
 describe('M-Pesa callback verification', () => {
   it('rejects an invalid callback token before touching the ledger', async () => {
@@ -83,5 +101,41 @@ describe('M-Pesa callback verification', () => {
       }
     })).rejects.toMatchObject({ statusCode: 409, code: 'MPESA_PAYOUT_AMOUNT_MISMATCH' })
     expect(complete).not.toHaveBeenCalled()
+  })
+})
+
+describe('M-Pesa payment access', () => {
+  it('lets the owning business poll its STK payment without exposing secret fields', async () => {
+    vi.spyOn(mpesaPaymentsRepository, 'findPaymentWithSecrets').mockResolvedValue({
+      id: 'payment-1',
+      companyId: 'company-1',
+      callbackTokenHash: 'secret-hash'
+    } as never)
+    vi.spyOn(mpesaPaymentsRepository, 'findPayment').mockResolvedValue({
+      id: 'payment-1',
+      status: 'PROCESSING'
+    } as never)
+
+    await expect(readMpesaPaymentService('payment-1', {
+      id: 'user-1',
+      email: 'owner@example.test',
+      role: 'COMPANY_STANDARD',
+      businessId: 'company-1'
+    })).resolves.toEqual({ payment: { id: 'payment-1', status: 'PROCESSING' } })
+  })
+
+  it('rejects a different business polling the payment', async () => {
+    vi.spyOn(mpesaPaymentsRepository, 'findPaymentWithSecrets').mockResolvedValue({
+      id: 'payment-1',
+      companyId: 'company-1',
+      callbackTokenHash: 'secret-hash'
+    } as never)
+
+    await expect(readMpesaPaymentService('payment-1', {
+      id: 'user-2',
+      email: 'other@example.test',
+      role: 'COMPANY_STANDARD',
+      businessId: 'company-2'
+    })).rejects.toMatchObject({ statusCode: 403 })
   })
 })

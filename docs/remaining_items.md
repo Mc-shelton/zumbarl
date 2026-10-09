@@ -1,52 +1,54 @@
 # Zumbarl Remaining Items
 
-Last reviewed: 7 July 2026 (full `docs/` folder sweep — all 15 documents)
+Last reviewed: 30 September 2026
 
 This is the current implementation backlog. Completed items from
 `fe-_issue_log.md` are intentionally excluded. The older
 `product_process_coverage.md` understates the current backend: most product
-areas now have routes and persistent models, but several frontend flows still
-use mock or browser-local state and need to be connected and productionized.
+areas now have routes and persistent models. Core runtime record fallbacks were
+removed in September; the remaining work is productionization, deeper workflow
+completion, and release control.
 A per-document review is at the end of this file.
 
 ## P0 — Make the Current Product Reliably Testable
 
-- [ ] Make backend tests independent of a developer Redis instance, or start
-  Redis automatically in the test environment. The suite currently exits
-  before collecting tests when Redis is unavailable.
-- [ ] Add frontend unit and integration tests; the frontend currently has no
-  test script.
+- [x] Add an isolated backend test command that starts disposable PostgreSQL
+  and Redis services, applies the migration chain from empty, and cleans up.
+- [ ] Expand frontend unit and integration coverage beyond the initial
+  marketplace-pricing and role-access suites now run by `npm test`.
 - [ ] Add end-to-end tests for the critical role-based flow:
   business registration/KYC → opportunity → funding → student bid/invite →
   interview → award → project submission → review → payout.
 - [ ] Add end-to-end coverage for marketplace checkout/fulfilment and
   messaging/calls.
-- [ ] Add CI checks for frontend build/lint and backend build/lint/test.
-- [ ] Replace the generic Vite frontend README with Zumbarl-specific local
+- [x] Add CI checks for frontend build/lint and backend build/lint/test, schema
+  migrations, and production dependency audits.
+- [x] Replace the generic Vite frontend README with Zumbarl-specific local
   setup, environment, architecture, and verification instructions.
 
 ## P0 — Finish Frontend-to-Backend Integration
 
-- [ ] Remove remaining `localStorage` workflow repositories from Earn,
-  business opportunities, and business marketing after their API equivalents
-  are confirmed.
-- [ ] Replace remaining project workspace mock data with project, milestone,
+- [x] Remove `localStorage` workflow repositories from Earn, business
+  opportunities, and business marketing; API failures now surface explicitly.
+- [x] Replace project workspace mock data with project, milestone,
   task, file, message, submission, review, and activity APIs.
-- [ ] Replace the Connect mock contribution ledger with the real chama wallet
-  and ledger flow.
-- [ ] Replace the student marketing mock proof form with uploaded,
+- [ ] Implement the chama wallet and contribution ledger as a real finance
+  workflow; the disconnected Connect prototype was removed.
+- [x] Replace the student marketing mock proof form with uploaded,
   persisted, reviewable campaign proof.
 - [ ] Connect Learn progress to real evidence from completed gigs, projects,
   campaigns, portfolio items, reviews, and endorsements.
 - [ ] Persist opportunity intent, view preferences, and other important user
   preferences on the user profile where cross-device behavior is required.
-- [ ] Remove duplicate/mock datasets after every screen reads from one
-  authoritative API source.
+- [x] Remove runtime duplicate/mock record datasets from the connected core
+  screens. Development/test seed fixtures remain explicit and opt-in.
 
 ## P0 — Complete Money Movement
 
-- [ ] Integrate a real payment provider, including M-Pesa where applicable.
-- [ ] Implement verified payment webhooks with signature checks, idempotency,
+- [x] Integrate M-Pesa STK funding and B2C withdrawal adapters for the core
+  gig-to-career journey. External sandbox credential sign-off remains tracked
+  in `docs/mpesa-integration.md`.
+- [x] Implement tokenized, provider-reference-validated M-Pesa callbacks with idempotency,
   retry handling, and reconciliation.
 - [ ] Complete opportunity and milestone escrow funding, release, refund, and
   dispute paths.
@@ -103,9 +105,13 @@ A per-document review is at the end of this file.
 
 - [ ] Register with the ODPC as a data controller before handling real student
   data at scale.
-- [ ] Publish a privacy policy, terms of service, internal data protection
-  policy, and an explicit consent framework (KYC, counseling, financial
-  profiling, location, notifications, marketing).
+- [x] Publish operational privacy, terms, and safety pages; require explicit
+  registration acknowledgement and store the accepted policy versions and
+  timestamps.
+- [ ] Obtain Kenyan legal approval for the public policies, appoint the
+  data-protection owner, publish the internal data protection policy, and add
+  purpose-specific consent for KYC, counseling, financial profiling,
+  location, notifications, and marketing.
 - [ ] Define retention and deletion rules for sensitive categories (IDs,
   finances, counseling and mental-health data, locations).
 
@@ -133,7 +139,7 @@ A per-document review is at the end of this file.
 
 ### Learn and Career Progression
 
-- [ ] Replace mock roadmap state with API-backed enrollment and progress.
+- [x] Replace mock roadmap state with API-backed enrollment and progress.
 - [ ] Add real mentor, coaching, program, certification, and opportunity
   recommendation inventory.
 - [x] Define and enforce evidence-based skill-level and career-stage gates, with
@@ -156,20 +162,29 @@ A per-document review is at the end of this file.
 
 ## P1 — Production Infrastructure and Security
 
-- [ ] Move uploads from the repository-local bucket to production object
-  storage with private access, signed URLs, validation, malware scanning, and
-  cleanup.
+- [ ] Configure the implemented S3-compatible upload adapter against the
+  production private bucket and complete malware scanning, retention, and
+  cleanup operations. Production startup rejects local storage.
 - [ ] Add background workers/queues for email, notifications, moderation,
   campaign statistics, payouts, reminders, and evidence scoring.
+- [x] Extract recurring maintenance jobs into a dedicated production worker so
+  they are not duplicated across API instances.
 - [ ] Configure reliable realtime fanout for multiple backend instances.
-- [ ] Add database migrations and deployment-safe migration procedures instead
-  of relying on `prisma db push`.
+- [x] Add versioned database migrations and deployment-safe schema/data
+  migration procedures instead of relying on `prisma db push`.
+- [x] Add production Docker images, HTTPS edge/API proxying, a Compose topology,
+  health checks, and a release/rollback/backup runbook.
 - [ ] Add structured logs, error tracking, metrics, traces, uptime checks, and
   alerting.
 - [ ] Add database backups and test restoration.
-- [ ] Review authentication/session expiry, account recovery, RBAC, KYC access,
-  rate limits, CORS, secrets, and audit coverage.
-- [ ] Add privacy controls for export, deletion, consent, and retention.
+- [x] Add bounded authentication-session expiry, database-backed revocation,
+  HTTP-only protected-read cookies, bearer-only mutation authorization, and
+  logout revocation.
+- [ ] Complete account recovery and review RBAC, KYC access, rate limits, CORS,
+  secrets, and audit coverage.
+- [ ] Add privacy controls for export, deletion, purpose-specific consent, and
+  enforced retention. Registration policy consent is already versioned and
+  persisted.
 - [ ] Load-test discovery, feed, search, messaging, and high-cardinality lists;
   adopt cursor pagination where needed.
 

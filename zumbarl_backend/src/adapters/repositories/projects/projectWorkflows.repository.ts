@@ -54,7 +54,7 @@ async function resolveDeclaredWorkloadShares(
       where: { projectId_scopeItemId: { projectId, scopeItemId } }
     })
     const lockedShares = Array.isArray(lock?.shares) ? (lock?.shares as unknown as WorkloadShare[]) : []
-    if (lockedShares.length) return lockedShares
+    if (['confirmed', 'finalized'].includes(String(lock?.status)) && lockedShares.length) return lockedShares
   }
 
   // A milestone pays out of its own budget, so its share comes from every task
@@ -210,6 +210,32 @@ class ProjectWorkflowsRepository {
 
   updateProject(id: string, patch: Record<string, any>) {
     return projects.updateById(id, patch)
+  }
+
+  async isTaskTargetSettled(projectId: string, target: {
+    scopeItemId?: string | null
+    milestoneId?: string | null
+    milestoneDeliverableId?: string | null
+  }) {
+    let milestoneId = target.milestoneId ?? null
+    if (!milestoneId && target.milestoneDeliverableId) {
+      const deliverable = await prisma.milestoneDeliverable.findFirst({
+        where: { id: target.milestoneDeliverableId, projectId },
+        select: { milestoneId: true }
+      })
+      milestoneId = deliverable?.milestoneId ?? null
+    }
+
+    const finalPayouts = await payouts.listAll((item) => (
+      item.projectId === projectId
+      && item.payoutKind !== 'task_interim'
+      && (milestoneId
+        ? item.milestoneId === milestoneId
+        : target.scopeItemId
+          ? item.scopeItemId === target.scopeItemId
+          : !item.milestoneId && !item.scopeItemId)
+    ))
+    return finalPayouts.length > 0
   }
 
   createApplication(payload: Record<string, any>) {
@@ -915,6 +941,25 @@ class ProjectWorkflowsRepository {
       const alreadyPaid = targetPayouts.some((item) => item.payoutKind !== 'task_interim')
       if (alreadyPaid) return { completed: true as const, alreadyCompleted: true }
 
+      const targetSubmissions = await transactionDeliverables.listAll((item) => (
+        item.projectId === projectId && item.status !== 'superseded' && matchesTarget(item)
+      ))
+      if (!targetSubmissions.length) {
+        return { completed: false as const, reason: 'submission_required' as const }
+      }
+      if (targetSubmissions.some((submission) => submission.status !== 'approved')) {
+        return { completed: false as const, reason: 'submissions_not_approved' as const }
+      }
+
+      const targetTasks = await tx.deliverableTask.findMany({
+        where: targetMilestoneId
+          ? { projectId, milestoneId: targetMilestoneId }
+          : { projectId, scopeItemId: targetScopeItemId }
+      })
+      if (targetTasks.some((task) => !['done', 'dropped'].includes(task.status))) {
+        return { completed: false as const, reason: 'tasks_not_ready' as const }
+      }
+
       let amount = contractAmount
       let allDone = false
       if (targetMilestoneId) {
@@ -989,36 +1034,60 @@ class ProjectWorkflowsRepository {
         }
       }
 
-      // Split by how many distinct task submissions each student made (superseded
-      // revisions excluded), then mark those submissions approved.
-      const targetSubmissions = await transactionDeliverables.listAll((item) => (
-        item.projectId === projectId && item.status !== 'superseded' && matchesTarget(item)
-      ))
+      // Prefer approved task weights. Legacy approved submissions that predate
+      // automatic contribution tasks retain their historical submission-count
+      // split so existing work can still be settled fairly.
       const counts = new Map<string, number>()
       for (const submission of targetSubmissions) {
         if (!submission.studentId) continue
         counts.set(submission.studentId, (counts.get(submission.studentId) ?? 0) + 1)
       }
       const declaredShares = await resolveDeclaredWorkloadShares(tx, projectId, targetScopeItemId, targetMilestoneId)
-      const students = declaredShares ? declaredShares.map((share) => share.studentId) : [...counts.keys()]
+      const totalSubmissionCount = [...counts.values()].reduce((sum, value) => sum + value, 0)
+      const fallbackShares: WorkloadShare[] = totalSubmissionCount
+        ? [...counts.entries()].map(([studentId, weight]) => ({
+            studentId,
+            weight,
+            sharePercent: Math.round((weight / totalSubmissionCount) * 1000) / 10
+          }))
+        : []
+      const payoutShares = declaredShares ?? fallbackShares
+      const students = payoutShares.map((share) => share.studentId)
+
+      // Completion is the immutable boundary. Store the exact split used for a
+      // deliverable payout in the same transaction as the ledger release.
+      if (targetScopeItemId && payoutShares.length) {
+        const contributors = payoutShares.map((share) => share.studentId)
+        await tx.deliverableSplitLock.upsert({
+          where: { projectId_scopeItemId: { projectId, scopeItemId: targetScopeItemId } },
+          update: {
+            shares: payoutShares as unknown as Prisma.InputJsonValue,
+            contributors,
+            confirmedBy: [],
+            status: 'finalized',
+            lockedAt: new Date(),
+            confirmedAt: new Date()
+          },
+          create: {
+            projectId,
+            scopeItemId: targetScopeItemId,
+            shares: payoutShares as unknown as Prisma.InputJsonValue,
+            contributors,
+            confirmedBy: [],
+            status: 'finalized',
+            lockedAt: new Date(),
+            confirmedAt: new Date()
+          }
+        })
+      }
+
       if (students.length === 0) {
         // No contributors: record a zero marker so the target counts as settled.
         await disburse(null, 0)
-      } else if (declaredShares) {
-        for (const payout of distributeByShares(amount, declaredShares)) {
+      } else {
+        for (const payout of distributeByShares(amount, payoutShares)) {
           await disburse(payout.studentId, payout.amount)
         }
-        await Promise.all(targetSubmissions.map((submission) => transactionDeliverables.updateById(submission.id, { status: 'approved' })))
-      } else {
-        const totalCount = [...counts.values()].reduce((sum, value) => sum + value, 0) || 1
-        let assigned = 0
-        for (let index = 0; index < students.length; index += 1) {
-          const isLast = index === students.length - 1
-          const studentShare = isLast ? amount - assigned : Math.round(amount * ((counts.get(students[index]) ?? 0) / totalCount))
-          assigned += studentShare
-          await disburse(students[index], studentShare)
-        }
-        await Promise.all(targetSubmissions.map((submission) => transactionDeliverables.updateById(submission.id, { status: 'approved' })))
       }
 
       return { completed: true as const, amount, recipients: students.length, allDone }

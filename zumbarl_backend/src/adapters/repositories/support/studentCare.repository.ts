@@ -146,7 +146,7 @@ class StudentCareRepository {
         take: 100,
         include: {
           program: true,
-          student: { select: { id: true, firstName: true, lastName: true, campus: { select: { name: true } } } },
+          student: { select: { id: true, firstName: true, lastName: true, avatarUrl: true, campus: { select: { name: true } } } },
           progress: { orderBy: { occurredAt: 'desc' }, take: 5 }
         }
       }),

@@ -25,6 +25,7 @@ function toOpportunityCard(opportunity: Record<string, any>) {
     title: opportunity.title,
     company: opportunity.companyName ?? opportunity.company?.name,
     companyDescription: opportunity.companyDescription ?? opportunity.company?.description,
+    companyLogoUrl: opportunity.company?.logoUrl,
     image: opportunity.opportunitySplash?.url ?? opportunity.opportunitySplash?.previewUrl,
     previewImage: opportunity.opportunitySplash?.url ?? opportunity.opportunitySplash?.previewUrl,
     opportunityType: opportunity.opportunityType,
@@ -465,7 +466,12 @@ class EarnWorkflowsRepository {
           coverNote: payload.message,
           questionAnswers: payload.questionAnswers,
           attachments: payload.attachments,
-          metadata: { estimatedUnits: payload.estimatedUnits, pricingType: payload.pricingType },
+          metadata: {
+            amountSource: payload.amountSource ?? 'student_bid',
+            estimatedUnits: payload.estimatedUnits,
+            pricingType: payload.pricingType,
+            unitRate: payload.unitRate ?? null
+          },
           status: 'submitted',
           appliedAt: new Date()
         },
@@ -481,7 +487,12 @@ class EarnWorkflowsRepository {
           coverNote: payload.message,
           questionAnswers: payload.questionAnswers,
           attachments: payload.attachments,
-          metadata: { estimatedUnits: payload.estimatedUnits, pricingType: payload.pricingType },
+          metadata: {
+            amountSource: payload.amountSource ?? 'student_bid',
+            estimatedUnits: payload.estimatedUnits,
+            pricingType: payload.pricingType,
+            unitRate: payload.unitRate ?? null
+          },
           status: 'submitted'
         }
       })
@@ -513,7 +524,12 @@ class EarnWorkflowsRepository {
           coverNote: payload.message,
           questionAnswers: payload.questionAnswers,
           attachments: payload.attachments,
-          metadata: { estimatedUnits: payload.estimatedUnits ?? null, pricingType: payload.pricingType ?? null },
+          metadata: {
+            amountSource: payload.amountSource ?? 'student_bid',
+            estimatedUnits: payload.estimatedUnits ?? null,
+            pricingType: payload.pricingType ?? null,
+            unitRate: payload.unitRate ?? null
+          },
           status: 'submitted',
           appliedAt: new Date()
         },
@@ -529,7 +545,12 @@ class EarnWorkflowsRepository {
           coverNote: payload.message,
           questionAnswers: payload.questionAnswers,
           attachments: payload.attachments,
-          metadata: { estimatedUnits: payload.estimatedUnits ?? null, pricingType: payload.pricingType ?? null },
+          metadata: {
+            amountSource: payload.amountSource ?? 'student_bid',
+            estimatedUnits: payload.estimatedUnits ?? null,
+            pricingType: payload.pricingType ?? null,
+            unitRate: payload.unitRate ?? null
+          },
           status: 'submitted'
         }
       })
@@ -555,6 +576,7 @@ class EarnWorkflowsRepository {
   async submitProjectDeliverable(projectId: string, studentId: string | undefined, payload: Record<string, any>) {
     const sourceProject = await projects.findById(projectId)
     if (!sourceProject) return null
+    const isTeamProject = Boolean(sourceProject.isTeamProject || sourceProject.hasTeam)
     let submissionPayload = { ...payload }
     let scopeReference = null
     let milestoneDeliverable = null
@@ -645,7 +667,14 @@ class EarnWorkflowsRepository {
       if (taskIds.length) {
         const selectedTasks = await tx.deliverableTask.findMany({
           where: { id: { in: taskIds }, projectId },
-          select: { id: true, ownerId: true }
+          select: {
+            id: true,
+            ownerId: true,
+            status: true,
+            scopeItemId: true,
+            milestoneId: true,
+            milestoneDeliverableId: true
+          }
         })
         if (selectedTasks.length !== taskIds.length) {
           throw new ApiError(404, 'One or more selected tasks were not found for this project.', 'DELIVERABLE_TASK_NOT_FOUND')
@@ -660,17 +689,31 @@ class EarnWorkflowsRepository {
         if (selectedTasks.some((task) => !task.ownerId)) {
           throw new ApiError(409, 'Claim this work before submitting it for review.', 'DELIVERABLE_TASK_UNASSIGNED')
         }
+        if (selectedTasks.some((task) => !['todo', 'in_progress', 'blocked'].includes(task.status))) {
+          throw new ApiError(409, 'Only open tasks can be included in a new submission.', 'DELIVERABLE_TASK_NOT_OPEN')
+        }
+        const taskBelongsToTarget = (task: typeof selectedTasks[number]) => (
+          milestoneDeliverableId
+            ? task.milestoneDeliverableId === milestoneDeliverableId
+            : milestoneId
+              ? task.milestoneId === milestoneId
+              : task.scopeItemId === scopeItemId
+        )
+        if (selectedTasks.some((task) => !taskBelongsToTarget(task))) {
+          throw new ApiError(409, 'A selected task belongs to a different deliverable.', 'DELIVERABLE_TASK_TARGET_MISMATCH')
+        }
       }
       // Team deliverables may contain several independent task submissions, but
       // a plain second upload with no declared tasks is still a duplicate and
       // must go through the explicit revision chain.
-      const allowMultipleTasks = Boolean(sourceProject.isTeamProject)
+      const allowMultipleTasks = isTeamProject
         && !isWholeProjectDeliverable
         && taskIds.length > 0
 
       // A completed (paid-out) deliverable/milestone no longer accepts submissions.
       const targetPayouts = await payouts.listAll((item) => (
         item.projectId === projectId
+        && item.payoutKind !== 'task_interim'
         && (milestoneId ? item.milestoneId === milestoneId : scopeItemId ? item.scopeItemId === scopeItemId : (!item.milestoneId && !item.scopeItemId))
       ))
       if (targetPayouts.length > 0) {
@@ -678,6 +721,7 @@ class EarnWorkflowsRepository {
       }
 
       let parentSubmission = null
+      let inheritedTaskIds: string[] = []
       if (submissionPayload.revisionOfId) {
         parentSubmission = scopeDeliverables.find((item) => item.id === submissionPayload.revisionOfId) ?? null
         if (!parentSubmission) {
@@ -703,6 +747,27 @@ class EarnWorkflowsRepository {
           }
           throw new ApiError(409, 'This work has already been submitted. Revise the existing submission instead.', 'DELIVERABLE_REVISION_REQUIRED')
         }
+      }
+
+      if (parentSubmission && !taskIds.length) {
+        inheritedTaskIds = (await tx.deliverableTask.findMany({
+          where: {
+            submissionId: parentSubmission.id,
+            status: { in: ['todo', 'in_progress', 'blocked', 'submitted'] }
+          },
+          select: { id: true }
+        })).map((task) => task.id)
+      }
+      // Team contributions must be declared before they can be submitted. This
+      // keeps ownership, review and payout tied to the same task record instead
+      // of inventing an implicit one-point contribution after the work arrives.
+      // Revisions may omit taskIds only when they inherit attached tasks.
+      if (isTeamProject && !taskIds.length && !inheritedTaskIds.length) {
+        throw new ApiError(
+          409,
+          'Declare or claim at least one task for this deliverable before submitting work.',
+          'DELIVERABLE_TASK_REQUIRED'
+        )
       }
 
       const isRevision = Boolean(parentSubmission)
@@ -738,7 +803,7 @@ class EarnWorkflowsRepository {
         await transactionProjects.updateById(projectId, { status: 'execution' })
       } else if (milestoneId) {
         await transactionMilestones.updateById(milestoneId, { submissionStatus: 'submitted' })
-      } else if (sourceProject.isTeamProject && scopeItemId) {
+      } else if (isTeamProject && scopeItemId) {
         // One member sending their tasks for review does not put the whole
         // deliverable under review for the rest of the team - the others are
         // still working. Their own tasks carry the `submitted` state instead.
@@ -747,23 +812,17 @@ class EarnWorkflowsRepository {
         await transactionProjects.updateById(projectId, { status: 'submitted' })
       }
 
-      // Carry the student's chosen tasks into the submission: each moves to
-      // `submitted` and inherits the submitted files as its evidence.
-      if (taskIds.length) {
-        await deliverableTasksRepository.attachTasksToSubmission(tx, taskIds, {
+      // Carry the student's chosen tasks into the submission. A revision with
+      // no explicit task selection keeps the contribution tasks from the copy
+      // it replaces; otherwise the old task would remain in progress.
+      const coveredTaskIds = taskIds.length ? taskIds : inheritedTaskIds
+      if (coveredTaskIds.length) {
+        await deliverableTasksRepository.attachTasksToSubmission(tx, coveredTaskIds, {
           id: deliverable.id,
           projectId,
           scopeItemId: milestoneDeliverableId || scopeItemId,
           files: submissionPayload.files
         })
-      }
-
-      // Submitting freezes the workload split for this deliverable so the payout
-      // pays what the team agreed while working, not whatever the weights say
-      // after the business has already seen the work. No declared tasks means no
-      // lock, and the historical equal split still applies.
-      if (sourceProject.isTeamProject && (milestoneDeliverableId || scopeItemId)) {
-        await deliverableTasksRepository.lockDeliverableSplit(projectId, milestoneDeliverableId || scopeItemId)
       }
 
       return { deliverable, isRevision, project }

@@ -13,7 +13,14 @@ import {
 } from '../../payment/index.js'
 import { callbackTokenHash, mpesaPaymentsRepository } from '../../repositories/finance/index.js'
 
+function assertMpesaEnabled() {
+  if (env.MPESA_PROVIDER !== 'daraja') {
+    throw new ApiError(503, 'M-Pesa is disabled for this deployment.', 'MPESA_PROVIDER_DISABLED')
+  }
+}
+
 function callbackBaseUrl() {
+  assertMpesaEnabled()
   const baseUrl = new URL(env.MPESA_CALLBACK_BASE_URL || env.SERVER_PUBLIC_URL)
   if (!isPublicHttpsUrl(baseUrl.toString())) {
     throw new ApiError(503, 'M-Pesa callbacks require a public HTTPS URL.', 'MPESA_CALLBACK_URL_NOT_PUBLIC')
@@ -46,6 +53,12 @@ function callbackMetadata(stkCallback: Record<string, any>) {
   }
 }
 
+function isPendingStkQueryResponse(response: Record<string, any>) {
+  const resultCode = Number(response.ResultCode)
+  const description = String(response.ResultDesc || response.ResponseDescription || '')
+  return resultCode === 4999 && /(?:still\s+under\s+processing|still\s+processing|being\s+processed|pending)/i.test(description)
+}
+
 function b2cResultMetadata(result: Record<string, any>) {
   const items = Array.isArray(result.ResultParameters?.ResultParameter)
     ? result.ResultParameters.ResultParameter
@@ -66,6 +79,7 @@ async function initiateOpportunityMpesaFundingService(
   payload: Record<string, any>,
   actorId?: string
 ) {
+  assertMpesaEnabled()
   let phoneNumber: string
   try {
     phoneNumber = normalizeKenyanPhoneNumber(payload.phoneNumber)
@@ -125,15 +139,16 @@ function assertPaymentAccess(payment: Record<string, any>, actor: AuthUser | und
 }
 
 async function readMpesaPaymentService(id: string, actor: AuthUser | undefined) {
-  const payment = await mpesaPaymentsRepository.findPayment(id) ?? notFound('M-Pesa payment')
-  assertPaymentAccess(payment, actor)
-  return { payment }
+  const paymentWithOwner = await mpesaPaymentsRepository.findPaymentWithSecrets(id) ?? notFound('M-Pesa payment')
+  assertPaymentAccess(paymentWithOwner, actor)
+  return { payment: await mpesaPaymentsRepository.findPayment(id) }
 }
 
 async function initiateStudentMpesaPayoutService(
   studentId: string | undefined,
   payload: Record<string, any>
 ) {
+  assertMpesaEnabled()
   if (!studentId) throw new ApiError(403, 'A student wallet is required for withdrawal.', 'STUDENT_WALLET_REQUIRED')
   let phoneNumber: string
   try {
@@ -185,6 +200,7 @@ async function initiateStudentMpesaPayoutService(
 }
 
 async function reconcileMpesaPaymentService(id: string, actor: AuthUser | undefined) {
+  assertMpesaEnabled()
   const payment = await mpesaPaymentsRepository.findPaymentWithSecrets(id) ?? notFound('M-Pesa payment')
   assertPaymentAccess(payment, actor)
   if (payment.status !== 'PROCESSING' || payment.direction !== 'STK_PUSH' || !payment.checkoutRequestId) {
@@ -194,6 +210,9 @@ async function reconcileMpesaPaymentService(id: string, actor: AuthUser | undefi
     const response = await queryMpesaStkPush(payment.checkoutRequestId)
     await mpesaPaymentsRepository.noteStkQuery(id, response)
     const resultCode = Number(response.ResultCode)
+    if (isPendingStkQueryResponse(response)) {
+      return { payment: await mpesaPaymentsRepository.findPayment(id), awaitingCustomer: true }
+    }
     if (Number.isFinite(resultCode) && resultCode !== 0) {
       const result = await mpesaPaymentsRepository.completeOpportunityStkRequest(id, {
         resultCode,
@@ -202,15 +221,30 @@ async function reconcileMpesaPaymentService(id: string, actor: AuthUser | undefi
       })
       return result || { payment: await mpesaPaymentsRepository.findPayment(id) }
     }
-    // A successful query confirms the checkout state but does not include the
-    // M-Pesa receipt. Money is finalized only by the matching callback.
-    return { payment: await mpesaPaymentsRepository.findPayment(id), awaitingReceipt: resultCode === 0 }
+    if (resultCode === 0) {
+      // Safaricom may lose or delay the callback even though its authenticated
+      // checkout query confirms success. The checkout ID is unique and was
+      // matched above, so it is safe to finalize idempotently; a late callback
+      // will add the provider receipt without replaying the ledger transaction.
+      const result = await mpesaPaymentsRepository.completeOpportunityStkRequest(id, {
+        resultCode: 0,
+        resultDescription: String(response.ResultDesc || response.ResponseDescription || 'M-Pesa payment completed.'),
+        amount: payment.amount,
+        phoneNumber: payment.phoneNumber,
+        receipt: null,
+        confirmationSource: 'query',
+        rawPayload: response
+      })
+      return result || { payment: await mpesaPaymentsRepository.findPayment(id) }
+    }
+    return { payment: await mpesaPaymentsRepository.findPayment(id) }
   } catch (error) {
     throw providerApiError(error)
   }
 }
 
 async function handleMpesaStkCallbackService(id: string, token: string, payload: Record<string, any>) {
+  assertMpesaEnabled()
   const payment = await mpesaPaymentsRepository.findPaymentWithSecrets(id) ?? notFound('M-Pesa payment')
   if (!safelyMatchesToken(token, payment.callbackTokenHash)) {
     throw new ApiError(401, 'Invalid M-Pesa callback token.', 'INVALID_MPESA_CALLBACK_TOKEN')
@@ -241,6 +275,7 @@ async function handleMpesaStkCallbackService(id: string, token: string, payload:
 }
 
 async function handleMpesaB2cResultService(id: string, token: string, payload: Record<string, any>) {
+  assertMpesaEnabled()
   const payment = await mpesaPaymentsRepository.findPaymentWithSecrets(id) ?? notFound('M-Pesa payment')
   if (!safelyMatchesToken(token, payment.callbackTokenHash)) {
     throw new ApiError(401, 'Invalid M-Pesa callback token.', 'INVALID_MPESA_CALLBACK_TOKEN')
@@ -274,6 +309,7 @@ async function handleMpesaB2cResultService(id: string, token: string, payload: R
 }
 
 async function handleMpesaB2cTimeoutService(id: string, token: string, payload: Record<string, any>) {
+  assertMpesaEnabled()
   const payment = await mpesaPaymentsRepository.findPaymentWithSecrets(id) ?? notFound('M-Pesa payment')
   if (!safelyMatchesToken(token, payment.callbackTokenHash)) {
     throw new ApiError(401, 'Invalid M-Pesa callback token.', 'INVALID_MPESA_CALLBACK_TOKEN')
@@ -286,6 +322,7 @@ async function handleMpesaB2cTimeoutService(id: string, token: string, payload: 
 }
 
 export {
+  assertMpesaEnabled,
   callbackBaseUrl,
   callbackMetadata,
   b2cResultMetadata,
@@ -294,6 +331,7 @@ export {
   handleMpesaStkCallbackService,
   initiateOpportunityMpesaFundingService,
   initiateStudentMpesaPayoutService,
+  isPendingStkQueryResponse,
   readMpesaPaymentService,
   reconcileMpesaPaymentService,
   safelyMatchesToken
