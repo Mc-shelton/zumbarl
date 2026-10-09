@@ -52,7 +52,7 @@ function ExploreProductRail({
       },
     })
     setIsOfferOpen(false)
-    setActionStatus(`Your KSh ${amount.toLocaleString('en-KE')} offer was sent to ${sellerName}.`)
+    setActionStatus(`Your KES ${amount.toLocaleString('en-KE')} offer was sent to ${sellerName}.`)
   }
 
   function handleMoreFromSeller() {

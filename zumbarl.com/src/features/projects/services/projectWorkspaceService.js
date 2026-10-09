@@ -27,6 +27,13 @@ export async function reviewProjectDeliverable(deliverableId, { decision, feedba
   })
 }
 
+export async function completeProjectScopeTarget(projectId, payload) {
+  return sendZumbarlApiRequest(`/projects/${projectId}/complete-target`, {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 function formatFileSize(sizeBytes) {
   if (!sizeBytes) return ''
   if (sizeBytes >= 1024 * 1024) return `${(sizeBytes / (1024 * 1024)).toFixed(1)} MB`
@@ -459,6 +466,7 @@ export function toProjectWorkspaceView(workspace) {
       paidLabel: formatWorkspaceDate(payout.paidAt || payout.createdAt, 'Pending'),
       milestoneId: payout.milestoneId ?? null,
       scopeItemId: payout.scopeItemId ?? null,
+      payoutKind: payout.payoutKind || 'final',
     }))
   const totalEarned = payouts
     .filter((payout) => ['paid', 'ready', 'completed'].includes(String(payout.status).toLowerCase()))
@@ -517,10 +525,13 @@ export function toProjectWorkspaceView(workspace) {
   const latestSubmissionStatus = latestDeliverable?.status || deliverables[0]?.status || null
   const autoEndAt = project.completedAt && !project.endedAt ? addWorkingDays(project.completedAt, 3) : null
   const submittedTargetCount = submissionTargets.filter((target) => Boolean(target.submissionStatus)).length
+  const approvedAwaitingReleaseCount = submissionTargets.filter((target) => target.approved && !target.completed).length
   const progressNote = project.endedAt
     ? 'Project ended'
     : timeline[3]?.complete
       ? (autoEndAt ? `Work approved · closes ${formatWorkspaceDate(autoEndAt)}` : 'Work approved · awaiting project closure')
+      : approvedAwaitingReleaseCount
+        ? `${approvedAwaitingReleaseCount} approved · awaiting payment release`
       : latestSubmissionStatus === 'changes_requested'
         ? 'Changes requested by client'
         : submissionTargets.length > 1 && submittedTargetCount < submissionTargets.length
@@ -570,7 +581,9 @@ export function toProjectWorkspaceView(workspace) {
     priceProposal,
     deadline,
     client: company,
+    clientAvatar: opportunity.companyLogoUrl,
     owner: company,
+    ownerAvatar: opportunity.companyLogoUrl,
     category: opportunity.category || 'Campus Work',
     skills: opportunity.skills || '',
     overview: opportunity.description || opportunity.summary || 'Project details will be shared by the client.',

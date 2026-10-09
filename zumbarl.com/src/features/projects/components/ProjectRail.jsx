@@ -1,6 +1,7 @@
 import {
   FiArrowRight,
   FiCheck,
+  FiClock,
   FiDollarSign,
   FiDownload,
   FiFileText,
@@ -11,7 +12,7 @@ import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 import StudentWalletWithdrawal from '../../finance/components/StudentWalletWithdrawal'
 import { Link } from 'react-router-dom'
 
-function ProjectRail({ activeProject, activeTab, isSubmitted, onPaymentCompleted, onSubmitWork, onTabChange }) {
+function ProjectRail({ activeProject, activeTab, isSubmitted, onPaymentCompleted, onSubmitWork, onTabChange, tasks = [] }) {
   const canSubmitWork = hasAccess(ACCESS_KEYS.projects.submitWork)
   const canViewFiles = hasAccess(ACCESS_KEYS.projects.files)
   const project = activeProject
@@ -23,7 +24,18 @@ function ProjectRail({ activeProject, activeTab, isSubmitted, onPaymentCompleted
   const progressWidth = progressLabel
   const progressNote = project.progressNote || (isSubmitted ? 'Pending client review' : 'Work in progress')
   const walletPayouts = Array.isArray(project.payouts) ? project.payouts : []
-  const hasWallet = canSubmitWork && isBackedProject && (Number(project.walletBalance) > 0 || project.totalEarned > 0 || walletPayouts.length)
+  const pendingReleaseTargets = Array.isArray(project.submissionTargets)
+    ? project.submissionTargets.filter((target) => target.approved && !target.completed)
+    : []
+  const openTaskCount = (Array.isArray(tasks) ? tasks : [])
+    .filter((task) => !['done', 'dropped'].includes(String(task.status || '').toLowerCase()))
+    .length
+  const hasWallet = canSubmitWork && isBackedProject && (
+    Number(project.walletBalance) > 0
+    || project.totalEarned > 0
+    || walletPayouts.length
+    || pendingReleaseTargets.length
+  )
 
   return (
     <aside className="campus-rail project-workspace-rail" aria-label="Project details">
@@ -43,6 +55,21 @@ function ProjectRail({ activeProject, activeTab, isSubmitted, onPaymentCompleted
               <strong>{project.totalEarnedLabel}</strong>
             </div>
           </div>
+          {pendingReleaseTargets.length ? (
+            <div className="project-wallet-release-status" role="status">
+              <FiClock aria-hidden="true" />
+              <div>
+                <strong>
+                  {pendingReleaseTargets.length} approved {pendingReleaseTargets.length === 1 ? 'deliverable' : 'deliverables'} awaiting payment
+                </strong>
+                <p>
+                  {openTaskCount
+                    ? `${openTaskCount} open ${openTaskCount === 1 ? 'task must' : 'tasks must'} be finished or dropped before the business can complete and pay.`
+                    : 'Your work is approved. The amount will appear here after the business completes and releases the deliverable.'}
+                </p>
+              </div>
+            </div>
+          ) : null}
           {walletPayouts.length ? (
             <ul className="project-wallet-payouts">
               {walletPayouts.slice(0, 3).map((payout) => (

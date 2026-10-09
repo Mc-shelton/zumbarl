@@ -20,7 +20,7 @@ import {
   FiVolumeX,
   FiX,
 } from 'react-icons/fi'
-import { useDialog } from '../../../components/ui'
+import { ProfileAvatar, useDialog } from '../../../components/ui'
 import MarketplaceOfferModal from '../../opportunities/components/MarketplaceOfferModal'
 import { addMarketplaceListingToCart, readMarketplaceListing, sendMarketplaceOffer } from '../../opportunities/services/marketplaceInteractionService'
 import {
@@ -100,10 +100,12 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
   const [productActionStatus, setProductActionStatus] = useState('')
   const [isProductActionPending, setIsProductActionPending] = useState(false)
   const [productImageIndex, setProductImageIndex] = useState(0)
+  const [failedMediaItemId, setFailedMediaItemId] = useState('')
 
   const activeCreator = stories[creatorIndex] || null
   const activeItems = activeCreator?.items || []
   const activeItem = activeItems[itemIndex] || null
+  const mediaLoadFailed = Boolean(activeItem?.id && failedMediaItemId === activeItem.id)
   const listingId = activeItem?.product?.listingId || activeItem?.product?.id || ''
   const productGallery = activeItem?.product?.gallery?.length ? activeItem.product.gallery : [activeItem?.product?.image || activeItem?.media].filter(Boolean)
   const activeProductImage = productGallery[productImageIndex] || productGallery[0]
@@ -322,7 +324,7 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
     })
     setActiveOffer(response.offer)
     setIsOfferOpen(false)
-    setProductActionStatus(`Your KSh ${Number(amount).toLocaleString('en-KE')} offer was sent to ${activeCreator.name}.`)
+    setProductActionStatus(`Your KES ${Number(amount).toLocaleString('en-KE')} offer was sent to ${activeCreator.name}.`)
   }
 
   function handlePointerDown(event) {
@@ -445,7 +447,7 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
 
           <header className="explore-story-player-head">
             <div>
-              <img src={activeCreator.avatar} alt="" />
+              <ProfileAvatar src={activeCreator.avatar} alt="" />
               <span><strong>{activeCreator.name}</strong><small>{activeItem.time}</small></span>
             </div>
             <div>
@@ -473,7 +475,12 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
             }}
             aria-label={isPaused ? 'Play story' : 'Pause story'}
           >
-            {activeItem.type === 'video' ? (
+            {mediaLoadFailed ? (
+              <div className="explore-story-text-media is-unavailable" key={activeItem.id}>
+                <span>Media unavailable</span>
+                <strong>{activeItem.caption || activeItem.title || 'This story could not be displayed.'}</strong>
+              </div>
+            ) : activeItem.type === 'video' ? (
               <video
                 key={activeItem.id}
                 ref={videoRef}
@@ -483,6 +490,7 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
                 muted={isMuted}
                 playsInline
                 preload="metadata"
+                onError={() => setFailedMediaItemId(activeItem.id)}
                 onLoadedMetadata={(event) => { event.currentTarget.currentTime = activeItem.trimStart || 0 }}
                 onTimeUpdate={(event) => { if (activeItem.trimEnd && event.currentTarget.currentTime >= activeItem.trimEnd) step(1) }}
               />
@@ -491,7 +499,7 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
                 <span>Zumbarl story</span>
                 <strong>{activeItem.caption || activeItem.title}</strong>
               </div>
-            ) : <img key={activeItem.id} src={activeItem.media} alt={mediaAlt} />}
+            ) : <img key={activeItem.id} src={activeItem.media} alt={mediaAlt} onError={() => setFailedMediaItemId(activeItem.id)} />}
           </button>
 
           <div className="explore-story-gradient" />
@@ -557,7 +565,7 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
             <div className="explore-story-comments-list">
               {itemComments.length ? itemComments.map((entry) => (
                 <article key={entry.id}>
-                  <img src={entry.avatar || '/assets/index/bee_nobg.png'} alt="" />
+                  <ProfileAvatar src={entry.avatar} alt="" />
                   <div>
                     <p><strong>{entry.author}</strong><span>{entry.handle} · {entry.time || relativeTime(entry.createdAt)}</span></p>
                     <p>{entry.text || entry.body}</p>
@@ -659,11 +667,11 @@ function ExploreStoryViewer({ activeStoryId, activeStoryItemId = '', onClose, on
               ) : (
                 <div className="explore-story-creator-detail">
                   {activeCreatorProfileHref ? <Link className="explore-story-creator-profile-link" to={activeCreatorProfileHref} aria-label={`View ${activeCreator.name}'s profile`}>
-                    <img src={activeCreator.avatar} alt="" />
+                    <ProfileAvatar src={activeCreator.avatar} alt="" />
                     <h2>{activeCreator.name}</h2>
                     <p>{activeCreator.handle}</p>
                   </Link> : <div className="explore-story-creator-profile-link is-static">
-                    <img src={activeCreator.avatar} alt="" />
+                    <ProfileAvatar src={activeCreator.avatar} alt="" />
                     <h2>{activeCreator.name}</h2>
                     <p>{activeCreator.handle}</p>
                   </div>}

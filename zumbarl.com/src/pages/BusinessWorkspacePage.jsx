@@ -68,6 +68,7 @@ function BusinessWorkspacePage() {
           </section>
 
           <BusinessWorkspaceRail
+            applicantCount={workspace.applicantCount}
             insights={workspace.insights}
             kyc={workspace.kyc}
             upcomingActions={workspace.upcomingActions}

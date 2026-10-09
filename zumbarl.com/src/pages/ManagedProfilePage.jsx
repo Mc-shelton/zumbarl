@@ -23,7 +23,7 @@ import {
 import { Link, useParams } from "react-router-dom";
 import CampusSidebar from "../components/layout/CampusSidebar";
 import Seo from "../components/Seo";
-import { ImageCropper } from "../components/ui";
+import { ImageCropper, ProfileAvatar } from "../components/ui";
 import { cropSquareImageFile } from "../lib/cropSquareImageFile";
 import { uploadZumbarlFile } from "../lib/uploadZumbarlFile";
 import ExplorePostComposer from "../features/explore/components/ExplorePostComposer";
@@ -618,11 +618,11 @@ export default function ManagedProfilePage() {
               {coverError ? <p className="managed-profile-cover-error">{coverError}</p> : null}
             </div>
             <header className="managed-profile-hero">
-              <img
+              <ProfileAvatar
                 className={`managed-profile-avatar${profile.type === "campus" ? " is-logo" : ""}`}
                 width="120"
                 height="120"
-                src={profile.avatarUrl || "/assets/index/bee_nobg.png"}
+                src={profile.avatarUrl}
                 alt=""
               />
               <div className="managed-profile-copy">
@@ -772,7 +772,7 @@ export default function ManagedProfilePage() {
                         className="managed-profile-person"
                         key={manager.user.id}
                       >
-                        <span>{manager.user.name?.slice(0, 1) || "Z"}</span>
+                        <span><ProfileAvatar src={manager.user.avatarUrl} alt="" /></span>
                         <div>
                           <strong>{manager.user.name}</strong>
                           <small>{manager.role}</small>
@@ -878,8 +878,8 @@ export default function ManagedProfilePage() {
                             to={`/campus/vendors/${encodeURIComponent(service.slug || service.id)}`}
                             key={service.id}
                           >
-                            <img
-                              src={service.avatarUrl || "/assets/index/bee_nobg.png"}
+                            <ProfileAvatar
+                              src={service.avatarUrl}
                               alt=""
                             />
                             <span>
@@ -1073,7 +1073,7 @@ export default function ManagedProfilePage() {
                   {(profile.managers || []).map((manager) => (
                     <article className={`is-${manager.role}`} key={manager.user.id}>
                       <span className="managed-profile-people-avatar">
-                        {manager.user.avatarUrl ? <img src={manager.user.avatarUrl} alt="" /> : manager.user.name?.slice(0, 1) || "Z"}
+                        <ProfileAvatar src={manager.user.avatarUrl} alt="" />
                       </span>
                       <div className="managed-profile-people-identity">
                         <strong>{manager.user.name}</strong>

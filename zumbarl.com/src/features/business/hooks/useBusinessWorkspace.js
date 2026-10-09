@@ -3,6 +3,7 @@ import { readBusinessDashboard } from '../services/readBusinessDashboard'
 
 const EMPTY_WORKSPACE = {
   activeOpportunityTab: 'opportunities',
+  applicantCount: 0,
   applicants: [],
   business: null,
   errorMessage: '',

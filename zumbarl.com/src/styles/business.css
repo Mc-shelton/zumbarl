@@ -1455,6 +1455,10 @@ font-size: clamp(10px, 1vw, 18px);
   background: #f6f1ff;
 }
 
+.business-browse-categories > div > button.is-active em {
+  color: #5f6574;
+}
+
 .business-browse-categories button span {
   width: 32px;
   height: 32px;
@@ -1544,6 +1548,27 @@ font-size: clamp(10px, 1vw, 18px);
   font: inherit;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-black);
+}
+
+@media (max-width: 860px) {
+  .business-browse-discovery-card {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .business-browse-discovery-card > label {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 520px) {
+  .business-browse-discovery-card {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .business-browse-discovery-card > label,
+  .business-browse-discovery-card > div {
+    grid-column: 1;
+  }
 }
 
 .business-browse-services,
@@ -2316,7 +2341,7 @@ font-size: clamp(10px, 1vw, 18px);
 .business-dashboard-metric em {
   display: block;
   margin-top: 7px;
-  color: var(--color-success);
+  color: #276f76;
   font-size: var(--text-caption);
   font-style: normal;
   font-weight: 850;
@@ -2558,7 +2583,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-applicant-row dd span {
   margin-left: 6px;
-  color: var(--color-success);
+  color: #276f76;
 }
 
 .business-applicant-row em {
@@ -2584,7 +2609,7 @@ font-size: clamp(10px, 1vw, 18px);
 
 .business-applicant-row em.tone-blue {
   background: rgba(56, 116, 255, 0.12);
-  color: #3267de;
+  color: #2456c4;
 }
 
 .business-applicant-row > a {
@@ -2829,7 +2854,7 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-upcoming-list time {
-  color: var(--theme-orange);
+  color: #805300;
   white-space: nowrap;
 }
 
@@ -7732,12 +7757,74 @@ font-size: clamp(10px, 1vw, 18px);
 }
 
 .business-review-publish-summary,
+.business-review-publish-context,
 .business-review-publish-breakdown,
 .business-review-publish-total {
   padding: 18px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
   background: var(--theme-white);
+}
+
+.business-review-publish-context {
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  background: linear-gradient(135deg, #faf8ff 0%, #f4fbf7 100%);
+}
+
+.business-review-publish-context > div {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.business-review-publish-context > div span,
+.business-review-publish-context dt {
+  color: #686e8c;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-heavy);
+}
+
+.business-review-publish-context > div strong {
+  overflow: hidden;
+  color: var(--theme-dark);
+  font-size: var(--font-size-md);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.business-review-publish-context dl {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
+.business-review-publish-context dl > div {
+  display: grid;
+  gap: 4px;
+}
+
+.business-review-publish-context dt,
+.business-review-publish-context dd {
+  margin: 0;
+}
+
+.business-review-publish-context dd {
+  color: var(--theme-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-black);
+  white-space: nowrap;
+}
+
+.business-review-publish-context dl > div:first-child dd {
+  color: #0f8c46;
 }
 
 .business-review-publish-summary h2,
@@ -8421,6 +8508,79 @@ font-size: clamp(10px, 1vw, 18px);
   gap: 14px;
 }
 
+.business-review-payment-outcome {
+  padding: 14px;
+  border: 1px solid #d7dce8;
+  border-radius: var(--radius-sm);
+  background: #f8fafc;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.business-review-payment-outcome > svg {
+  width: 36px;
+  height: 36px;
+  padding: 9px;
+  border-radius: 50%;
+  background: #eef2ff;
+  color: var(--color-brand-primary);
+}
+
+.business-review-payment-outcome strong {
+  color: var(--theme-dark);
+  font-size: var(--font-size-sm);
+}
+
+.business-review-payment-outcome p {
+  margin: 4px 0 0;
+  color: #4d5374;
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-heavy);
+}
+
+.business-review-payment-outcome.is-paid {
+  border-color: #a7dfbd;
+  background: #effbf4;
+}
+
+.business-review-payment-outcome.is-paid > svg {
+  background: #dff6e9;
+  color: #0f8c46;
+}
+
+.business-review-payment-outcome.is-processing {
+  border-color: #c9b8f6;
+  background: #f8f5ff;
+}
+
+.business-review-payment-outcome.is-processing > svg {
+  background: #eee7ff;
+  color: var(--color-brand-primary);
+  animation: business-payment-pulse 1.6s ease-in-out infinite;
+}
+
+.business-review-payment-outcome.is-failed {
+  border-color: #f0b7b3;
+  background: #fff5f4;
+}
+
+.business-review-payment-outcome.is-failed > svg {
+  background: #fee4e2;
+  color: #b42318;
+}
+
+.business-review-payment-outcome.is-pending {
+  border-color: #f0cf83;
+  background: #fff9eb;
+}
+
+.business-review-payment-outcome.is-pending > svg {
+  background: #fff0c2;
+  color: #9a6700;
+}
+
 .business-review-publish-selected-method {
   min-height: 44px;
   padding: 10px 12px;
@@ -8459,6 +8619,21 @@ font-size: clamp(10px, 1vw, 18px);
   font-size: var(--font-size-xs);
   font-style: normal;
   font-weight: var(--font-weight-black);
+}
+
+.business-review-publish-selected-method.is-failed em {
+  background: #fee4e2;
+  color: #b42318;
+}
+
+.business-review-publish-selected-method.is-processing em {
+  background: #eee7ff;
+  color: var(--color-brand-primary);
+}
+
+.business-review-publish-selected-method.is-pending em {
+  background: #fff0c2;
+  color: #9a6700;
 }
 
 .business-review-publish-amount {
@@ -8680,6 +8855,17 @@ font-size: clamp(10px, 1vw, 18px);
   gap: 8px;
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-heavy);
+}
+
+@keyframes business-payment-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(91, 44, 220, 0.12); }
+  50% { box-shadow: 0 0 0 7px rgba(91, 44, 220, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .business-review-payment-outcome.is-processing > svg {
+    animation: none;
+  }
 }
 
 .business-review-schedule-panel {
@@ -18513,6 +18699,16 @@ font-size: clamp(10px, 1vw, 18px);
 
   .business-review-publish-summary > div {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  .business-review-publish-context {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .business-review-publish-context dl {
+    justify-content: space-between;
+    gap: 14px;
   }
 
   .business-review-publish-breakdown > footer {

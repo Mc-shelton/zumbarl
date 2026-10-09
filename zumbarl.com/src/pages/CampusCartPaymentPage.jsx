@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Seo from '../components/Seo'
 import { CartShell } from '../features/cart/components/CartShell'
@@ -19,7 +20,11 @@ import '../styles/cart.css'
 
 function CampusCartPaymentPage() {
   const navigate = useNavigate()
-  const { cartItems, totals: orderTotals } = useCartPageState()
+  const { cartItems, isLoading, totals: orderTotals } = useCartPageState()
+
+  useEffect(() => {
+    if (!isLoading && cartItems.length === 0) navigate('/campus/cart', { replace: true })
+  }, [cartItems.length, isLoading, navigate])
 
   return (
     <CartShell

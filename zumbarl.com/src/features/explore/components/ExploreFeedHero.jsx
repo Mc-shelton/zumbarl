@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { FiSliders } from 'react-icons/fi'
-import { Breadcrumb } from '../../../components/ui'
+import { Breadcrumb, ProfileAvatar } from '../../../components/ui'
 
 function ExploreFeedHero({
   activeFilter,
@@ -83,7 +83,7 @@ function ExploreFeedHero({
                 aria-label={`View ${story.shortName || story.name}'s stories`}
               >
                 <div className={`explore-campus-story-avatar${story.own ? ' is-own is-published' : ''}`}>
-                  <img src={story.avatar} alt={story.name} loading="lazy" />
+                  <ProfileAvatar src={story.avatar} alt={story.name} loading="lazy" />
                   {story.own ? <span className="explore-campus-story-plus">✓</span> : null}
                   {story.online ? <span className="explore-campus-story-online" /> : null}
                 </div>

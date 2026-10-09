@@ -19,7 +19,7 @@ import {
   FiUploadCloud,
   FiX,
 } from "react-icons/fi";
-import { ImageCropper, useDialog } from "../../../components/ui";
+import { ImageCropper, ProfileAvatar, useDialog } from "../../../components/ui";
 import { normalizeZumbarlFileUrl } from "../../../lib/normalizeZumbarlFileUrl";
 import { uploadZumbarlFile } from "../../../lib/uploadZumbarlFile";
 import {
@@ -381,11 +381,11 @@ function ExplorePostComposer({
             <span>{eyebrow}</span>
             <h2>{title}</h2>
           </div>
-          <button type="button" onClick={onClose}>
-            <FiX />
+          <button type="button" onClick={onClose} aria-label="Close create post">
+            <FiX aria-hidden="true" />
           </button>
         </header>
-        {identity ? <div className="explore-post-identity"><img src={normalizeZumbarlFileUrl(identity.avatarUrl) || "/assets/knowledge/default-group-avatar.svg"} alt="" /><span><small>Posting as</small><strong>{identity.name}</strong></span></div> : null}
+        {identity ? <div className="explore-post-identity"><ProfileAvatar src={identity.avatarUrl} alt="" /><span><small>Posting as</small><strong>{identity.name}</strong></span></div> : null}
         <nav>
           {availableTypes.map((item) => {
             const TypeIcon = item.icon;
@@ -630,11 +630,11 @@ function ExplorePostComposer({
                 <small>{event.latitude !== "" ? "Exact pin selected." : "Select a search result to attach an exact map pin."}</small>
               </div>
               {fixedOrganizerId ? <div className="explore-event-organizer-field">
-                <label>Organizer<div className="explore-event-organizer-input is-selected"><div className="explore-event-organizer-selected"><img src={fixedOrganizerAvatarUrl || "/assets/index/bee_nobg.png"} alt="" /><span><strong>{fixedOrganizerName}</strong><small>{fixedOrganizerHandle || 'Support circle'}</small></span></div></div></label>
+                <label>Organizer<div className="explore-event-organizer-input is-selected"><div className="explore-event-organizer-selected"><ProfileAvatar src={fixedOrganizerAvatarUrl} alt="" /><span><strong>{fixedOrganizerName}</strong><small>{fixedOrganizerHandle || 'Support circle'}</small></span></div></div></label>
                 <small>This event is published under the circle’s identity.</small>
               </div> : <div className="explore-event-organizer-field">
-                <label>Organizer<div className={`explore-event-organizer-input${organizer ? " is-selected" : ""}`}><FiSearch />{organizer ? <div className="explore-event-organizer-selected"><img src={organizer.avatarUrl || "/assets/index/bee_nobg.png"} alt="" /><span><strong>{organizer.name}</strong><small>{organizer.handle || organizer.type}</small></span><button type="button" onClick={() => { setOrganizerDefaultResolved(true); setOrganizer(null); setOrganizerQuery(""); setOrganizerResults([]) }} aria-label="Change organizer"><FiX /></button></div> : <input autoFocus value={organizerQuery} onChange={(e) => setOrganizerQuery(e.target.value)} placeholder="Search people, businesses or campus entities" />}{isSearchingOrganizers && !organizer ? <span>Searching…</span> : null}</div></label>
-                {!organizer && organizerResults.length ? <div className="explore-event-organizer-results">{organizerResults.map((result) => <button type="button" key={`${result.type}-${result.id}`} onClick={() => { setOrganizer(result); setOrganizerResults([]) }}><img src={result.avatarUrl || "/assets/index/bee_nobg.png"} alt="" /><span><strong>{result.name}{result.isSelf ? " (You)" : ""}</strong><small>{result.handle || result.type}</small></span></button>)}</div> : null}
+                <label>Organizer<div className={`explore-event-organizer-input${organizer ? " is-selected" : ""}`}><FiSearch />{organizer ? <div className="explore-event-organizer-selected"><ProfileAvatar src={organizer.avatarUrl} alt="" /><span><strong>{organizer.name}</strong><small>{organizer.handle || organizer.type}</small></span><button type="button" onClick={() => { setOrganizerDefaultResolved(true); setOrganizer(null); setOrganizerQuery(""); setOrganizerResults([]) }} aria-label="Change organizer"><FiX /></button></div> : <input autoFocus value={organizerQuery} onChange={(e) => setOrganizerQuery(e.target.value)} placeholder="Search people, businesses or campus entities" />}{isSearchingOrganizers && !organizer ? <span>Searching…</span> : null}</div></label>
+                {!organizer && organizerResults.length ? <div className="explore-event-organizer-results">{organizerResults.map((result) => <button type="button" key={`${result.type}-${result.id}`} onClick={() => { setOrganizer(result); setOrganizerResults([]) }}><ProfileAvatar src={result.avatarUrl} alt="" /><span><strong>{result.name}{result.isSelf ? " (You)" : ""}</strong><small>{result.handle || result.type}</small></span></button>)}</div> : null}
                 <small>{organizer ? `This event will show ${organizer.name} as organizer.` : "You are the organizer by default."}</small>
               </div>}
             </section>

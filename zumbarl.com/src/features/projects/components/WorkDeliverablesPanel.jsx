@@ -43,6 +43,9 @@ function getSubmissionTargetId(submission) {
 
 function buildDeliverableRows(project, submissions, targets) {
   const scopeItems = Array.isArray(project?.scopeDeliverables) ? project.scopeDeliverables : []
+  const settledScopeIds = new Set((project?.payouts || [])
+    .filter((payout) => payout.payoutKind !== 'task_interim' && payout.scopeItemId)
+    .map((payout) => payout.scopeItemId))
   const consumedScopeIds = new Set()
   const sourceTargets = targets.length ? targets : scopeItems.map((scope) => ({
     kind: scope.kind,
@@ -56,8 +59,9 @@ function buildDeliverableRows(project, submissions, targets) {
     if (scope) consumedScopeIds.add(scope.id)
     const rowSubmissions = submissions.filter((submission) => getSubmissionTargetId(submission) === target.value)
     const latestSubmission = rowSubmissions[0]
-    const statusKey = target.submissionStatus || latestSubmission?.status || ''
-    const status = getSubmissionStatus(statusKey)
+    const isSettled = settledScopeIds.has(target.value)
+    const statusKey = isSettled ? 'completed' : (target.submissionStatus || latestSubmission?.status || '')
+    const status = isSettled ? { label: 'Completed & paid', tone: 'is-approved' } : getSubmissionStatus(statusKey)
     const kind = target.kind || scope?.kind || 'deliverable'
     const actionMode = target.canSubmit ? 'submit' : target.canRevise ? 'revise' : null
 
@@ -75,7 +79,7 @@ function buildDeliverableRows(project, submissions, targets) {
       statusKey,
       statusLabel: target.statusLabel || status.label,
       statusTone: status.tone,
-      actionMode: target.disabled ? null : actionMode,
+      actionMode: isSettled || target.disabled ? null : actionMode,
     }
   })
 
@@ -133,14 +137,17 @@ function buildDeliverableRows(project, submissions, targets) {
 }
 
 function WorkDeliverablesPanel({
+  completionPending = '',
   deliverableTasks,
   isBusinessViewer = false,
+  lifecycleError = '',
   // Milestone briefs replace the deliverable table with the milestone planning
   // surface, keeping Submitted Work and Files exactly where they already are.
   isMilestoneScope = false,
   milestoneContent = null,
   onSelectPhase,
   onReview,
+  onCompleteTarget,
   onSubmitTask,
   onSubmitWork,
   project,
@@ -157,10 +164,18 @@ function WorkDeliverablesPanel({
   const submissions = Array.isArray(project?.deliverables) ? project.deliverables : []
   const targets = Array.isArray(project?.submissionTargets) ? project.submissionTargets : []
   const files = Array.isArray(project?.workFiles) ? project.workFiles : []
-  const deliverableRows = buildDeliverableRows(project, submissions, targets)
+  const deliverableRows = buildDeliverableRows(project, submissions, targets).map((row) => {
+    const rowTasks = deliverableTasks?.tasksByScopeItem?.get(row.id) || []
+    const pendingTasks = rowTasks.filter((task) => !['done', 'dropped'].includes(task.status))
+    return {
+      ...row,
+      pendingTasks,
+      pendingTaskCount: pendingTasks.length,
+    }
+  })
   const normalizedQuery = query.trim().toLowerCase()
   const visibleRows = deliverableRows.filter((row) => (
-    (!normalizedQuery || `${row.title} ${row.description} ${row.type}`.toLowerCase().includes(normalizedQuery))
+    (!normalizedQuery || `${row.title} ${row.description} ${row.type} ${row.pendingTasks.map((task) => task.title).join(' ')}`.toLowerCase().includes(normalizedQuery))
     && (statusFilter === 'all' || row.statusKey === statusFilter)
     && (typeFilter === 'all' || row.kind === typeFilter)
   ))
@@ -191,6 +206,12 @@ function WorkDeliverablesPanel({
 
   if (openDeliverable) {
     const scopeKey = openDeliverable.id
+    const tasksForTarget = deliverableTasks.tasksByScopeItem.get(scopeKey) || []
+    const isClosed = (project?.payouts || []).some((payout) => (
+      payout.payoutKind !== 'task_interim' && payout.scopeItemId === scopeKey
+    ))
+    const isReadyToComplete = openDeliverable.statusKey === 'approved'
+      && tasksForTarget.every((task) => ['done', 'dropped'].includes(task.status))
     return (
       <section className="project-card project-work-deliverables-card">
         <DeliverableRoom
@@ -198,12 +219,16 @@ function WorkDeliverablesPanel({
           isLoading={deliverableTasks.isLoading}
           onRetry={deliverableTasks.refresh}
           deliverable={openDeliverable}
-          error={deliverableTasks.error}
+          error={deliverableTasks.error || lifecycleError}
+          canComplete={Boolean(isBusinessViewer && onCompleteTarget)}
+          completionPending={completionPending === `complete:${scopeKey}`}
+          isClosed={isClosed}
+          isReadyToComplete={isReadyToComplete}
           isPending={Boolean(deliverableTasks.pendingTaskId)}
           dependencies={deliverableTasks.dependencies}
           notes={deliverableTasks.notesByScopeItem.get(scopeKey) || []}
           splitLock={deliverableTasks.splitLockByScopeItem.get(scopeKey)}
-          tasks={deliverableTasks.tasksByScopeItem.get(scopeKey) || []}
+          tasks={tasksForTarget}
           viewerStudentId={deliverableTasks.viewerStudentId}
           onAddNote={(payload) => deliverableTasks.onAddNote({ ...payload, scopeItemId: scopeKey })}
           onConfirmSplit={() => deliverableTasks.onConfirmSplit(scopeKey)}
@@ -212,6 +237,7 @@ function WorkDeliverablesPanel({
           onSetTaskBlockers={deliverableTasks.onSetTaskBlockers}
           onClaimTask={(task) => deliverableTasks.onClaimTask(task.id, deliverableTasks.viewerStudentId)}
           onClose={() => setOpenDeliverableId('')}
+          onComplete={() => onCompleteTarget?.(scopeKey)}
           onSubmitTask={onSubmitTask}
           submitBlockedReason={project?.lifecycleStatus === 'awarded'
             ? 'The business has not started this project yet.'
@@ -356,6 +382,7 @@ function WorkDeliverablesPanel({
               <option value="submitted">Under review</option>
               <option value="changes_requested">Changes requested</option>
               <option value="approved">Approved</option>
+              <option value="completed">Completed &amp; paid</option>
             </select>
             <select value={typeFilter} aria-label={`Filter ${kindPlural.toLowerCase()} by type`} onChange={(event) => setTypeFilter(event.target.value)}>
               <option value="all">Type: All</option>
@@ -370,14 +397,31 @@ function WorkDeliverablesPanel({
               <span>#</span>
               <span>{kindLabel}</span>
               <span>Type</span>
+              <span>Pending tasks</span>
               <span>Description</span>
               <span>Due Date</span>
               <span>Submissions</span>
               <span>Status</span>
               <span>Actions</span>
             </div>
-            {visibleRows.map((row) => (
-              <article className="project-work-deliverable-row" key={row.id}>
+            {visibleRows.map((row) => {
+              const opensDeliverableRoom = usesDeliverableRooms && row.id !== 'whole-project'
+              const pendingTaskNames = row.pendingTasks.map((task) => task.title)
+              return (
+              <article
+                aria-label={opensDeliverableRoom ? `Open ${row.title}` : undefined}
+                className={`project-work-deliverable-row${opensDeliverableRoom ? ' is-clickable' : ''}`}
+                key={row.id}
+                role={opensDeliverableRoom ? 'link' : undefined}
+                tabIndex={opensDeliverableRoom ? 0 : undefined}
+                onClick={opensDeliverableRoom ? () => handleRowAction(row) : undefined}
+                onKeyDown={opensDeliverableRoom ? (event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    handleRowAction(row)
+                  }
+                } : undefined}
+              >
                 <span className="project-work-deliverable-order">{row.index}</span>
                 <div className="project-work-deliverable-title">
                   <span><FiFileText aria-hidden="true" /></span>
@@ -387,6 +431,14 @@ function WorkDeliverablesPanel({
                   </div>
                 </div>
                 <strong>{row.type}</strong>
+                <div className={`project-work-deliverable-task-summary${row.pendingTaskCount ? ' has-pending' : ' is-clear'}`}>
+                  <strong>{row.pendingTaskCount ? `${row.pendingTaskCount} pending` : 'None pending'}</strong>
+                  <span title={pendingTaskNames.join(', ')}>
+                    {row.pendingTaskCount
+                      ? `${pendingTaskNames.slice(0, 2).join(' · ')}${pendingTaskNames.length > 2 ? ` +${pendingTaskNames.length - 2}` : ''}`
+                      : 'Ready for review'}
+                  </span>
+                </div>
                 <p>{row.description}</p>
                 <time>
                   <span><FiCalendar aria-hidden="true" /> {row.deadline}</span>
@@ -395,18 +447,21 @@ function WorkDeliverablesPanel({
                 <strong className="project-work-deliverable-submissions">{row.submissionCount}</strong>
                 <span className={`project-work-deliverable-status ${row.statusTone}`}>{row.statusLabel}</span>
                 <div className="project-work-deliverable-actions">
-                  <button type="button" onClick={() => handleRowAction(row)}>
-                    {usesDeliverableRooms && row.id !== 'whole-project'
-                      ? 'Open'
-                      : canSubmitWork && row.actionMode === 'revise'
+                  {opensDeliverableRoom ? (
+                    <span aria-hidden="true">Open →</span>
+                  ) : (
+                    <button type="button" onClick={() => handleRowAction(row)}>
+                      {canSubmitWork && row.actionMode === 'revise'
                         ? 'Revise Work'
                         : canSubmitWork && row.actionMode === 'submit'
                           ? 'Submit'
                           : isBusinessViewer && row.statusKey === 'submitted' ? 'Review' : 'View'}
-                  </button>
+                    </button>
+                  )}
                 </div>
               </article>
-            ))}
+              )
+            })}
           </div>
 
           <footer className="project-work-deliverable-footer">

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FiArrowLeft, FiArrowRight, FiBox, FiBriefcase, FiCamera, FiChevronRight, FiClock, FiDollarSign, FiEdit2, FiGift, FiMapPin, FiMessageCircle, FiMinus, FiPause, FiPlay, FiPlus, FiPower, FiRefreshCw, FiSearch, FiSettings, FiShield, FiShoppingBag, FiTruck, FiUsers } from 'react-icons/fi'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import CampusSidebar from '../components/layout/CampusSidebar'
+import ProfileAvatar from '../components/ui/ProfileAvatar'
 import Seo from '../components/Seo'
 import { ConfirmDialog } from '../components/ui'
 import ExplorePostComposer from '../features/explore/components/ExplorePostComposer'
@@ -210,14 +211,14 @@ function CampusVendorWorkspacePage() {
   async function saveErrandSettings({ enabled = shop?.errandsEnabled, accepting = acceptingErranders, freeDelivery = shop?.freeCampusDelivery, fee = deliveryFee } = {}, setting = 'enabled') {
     const normalizedFee = Number(fee)
     if (!Number.isFinite(normalizedFee) || normalizedFee < 0 || normalizedFee > 5000) {
-      setFeedback({ type: 'error', text: 'Enter a delivery price between KSh 0 and KSh 5,000.' })
+      setFeedback({ type: 'error', text: 'Enter a delivery price between KES 0 and KES 5,000.' })
       return false
     }
     setSavingErrandSetting(setting)
     try {
       return await runAction(
         () => updateShopErrands(vendorSlug, { acceptingErranders: Boolean(accepting), deliveryFee: normalizedFee, enabled: Boolean(enabled), freeCampusDelivery: Boolean(freeDelivery) }),
-        setting === 'rate' ? `Every completed errand now pays KSh ${normalizedFee.toLocaleString()}.` : freeDelivery ? 'Free in-campus delivery is on.' : enabled ? 'Errand delivery is on. The first available errander to accept gets each delivery.' : 'Delivery settings saved.',
+        setting === 'rate' ? `Every completed errand now pays KES ${normalizedFee.toLocaleString()}.` : freeDelivery ? 'Free in-campus delivery is on.' : enabled ? 'Errand delivery is on. The first available errander to accept gets each delivery.' : 'Delivery settings saved.',
       )
     } finally {
       setSavingErrandSetting('')
@@ -384,11 +385,11 @@ function CampusVendorWorkspacePage() {
             { id: 'followers', Icon: FiUsers, label: 'Followers', value: Number(shop.followerCount || 0), note: 'Campus audience' },
           ]} />
           <section className="vendor-workspace-overview-grid">
-            <CampusVendorInventoryPreview emptyAction={isApproved ? <Link to={inventoryHref}>Add first item <FiArrowRight /></Link> : null} emptyText={isApproved ? 'Add a menu item or service so students can discover and order it.' : 'Menu publishing unlocks after an admin approves this kitchen.'} eyebrow="Sell on Zumbarl" items={workspace.listings.slice(0, 4).map((listing) => ({ id: listing.id, image: listingImage(listing), category: listing.category, title: listing.title, stock: Number(listing.stock ?? listing.stockCount ?? 0), price: `KSh ${Number(listing.priceAmount || 0).toLocaleString()}`, onAction: () => editListing(listing), actionLabel: 'Manage' }))} onViewAll={() => setActiveTab('inventory')} title="Inventory at a glance" />
+            <CampusVendorInventoryPreview emptyAction={isApproved ? <Link to={inventoryHref}>Add first item <FiArrowRight /></Link> : null} emptyText={isApproved ? 'Add a menu item or service so students can discover and order it.' : 'Menu publishing unlocks after an admin approves this kitchen.'} eyebrow="Sell on Zumbarl" items={workspace.listings.slice(0, 4).map((listing) => ({ id: listing.id, image: listingImage(listing), category: listing.category, title: listing.title, stock: Number(listing.stock ?? listing.stockCount ?? 0), price: `KES ${Number(listing.priceAmount || 0).toLocaleString()}`, onAction: () => editListing(listing), actionLabel: 'Manage' }))} onViewAll={() => setActiveTab('inventory')} title="Inventory at a glance" />
             <aside className="vendor-workspace-panel vendor-workspace-access-card">
               <header><div><span>Workspace</span><h2>Team & access</h2></div><FiUsers /></header>
               <div className="vendor-workspace-access-summary"><strong>{shop.managers?.length || 0}</strong><span>assigned operators</span></div>
-              <ul>{(shop.managers || []).slice(0, 4).map((manager) => <li key={manager.user.id}><span>{(manager.user.name || manager.user.email || '?').slice(0, 1).toUpperCase()}</span><div><strong>{manager.user.name || manager.user.email}</strong><small>{manager.role}</small></div></li>)}</ul>
+              <ul>{(shop.managers || []).slice(0, 4).map((manager) => <li key={manager.user.id}><span><ProfileAvatar src={manager.user.avatarUrl} alt="" /></span><div><strong>{manager.user.name || manager.user.email}</strong><small>{manager.role}</small></div></li>)}</ul>
               <button type="button" onClick={() => setActiveTab('settings')}>{canManageVendor ? 'Manage team' : 'View team'} <FiArrowRight /></button>
             </aside>
           </section>
@@ -416,7 +417,7 @@ function CampusVendorWorkspacePage() {
                     <strong>{listing.title}</strong>
                     {listing.description ? <p>{listing.description}</p> : null}
                     <div className="vendor-inventory-pricing">
-                      <b>KSh {Number(listing.priceAmount || 0).toLocaleString()}</b>
+                      <b>KES {Number(listing.priceAmount || 0).toLocaleString()}</b>
                       <span className={stock <= 3 ? `is-low${stock === 0 ? ' is-out' : ''}` : ''}>{stock === 0 ? 'Out of stock' : `${stock} in stock`}</span>
                     </div>
                   </div>
@@ -471,7 +472,7 @@ function CampusVendorWorkspacePage() {
         {workspace && activeTab === 'errands' ? <section className="vendor-workspace-panel vendor-workspace-errands">
           <header><div><span>Campus delivery</span><h2>Errands</h2><p>Set one delivery price for this page. Every available errander receives each offer, and the first to accept gets it.</p></div><span className={`vendor-errand-state ${shop.errandsEnabled || shop.freeCampusDelivery ? 'is-on' : 'is-off'}`}>{shop.freeCampusDelivery ? 'Free delivery' : shop.errandsEnabled ? 'Erranders on' : 'Deliveries off'}</span></header>
           {canManageVendor ? <div className="vendor-errand-settings-grid">
-            <article className="vendor-errand-price-setting is-enabled"><div><FiTruck /><span><strong>Delivery pay</strong><small>One fixed amount paid to whichever errander accepts first.</small></span></div><form onSubmit={saveDeliveryFee}><label htmlFor="vendor-errand-fee"><b>KSh</b><input id="vendor-errand-fee" max="5000" min="0" onChange={(event) => setDeliveryFee(event.target.value)} required step="1" type="number" value={deliveryFee} /></label><button disabled={isSaving} type="submit">{savingErrandSetting === 'rate' ? 'Saving…' : 'Save price'}</button></form></article>
+            <article className="vendor-errand-price-setting is-enabled"><div><FiTruck /><span><strong>Delivery pay</strong><small>One fixed amount paid to whichever errander accepts first.</small></span></div><form onSubmit={saveDeliveryFee}><label htmlFor="vendor-errand-fee"><b>KES</b><input id="vendor-errand-fee" max="5000" min="0" onChange={(event) => setDeliveryFee(event.target.value)} required step="1" type="number" value={deliveryFee} /></label><button disabled={isSaving} type="submit">{savingErrandSetting === 'rate' ? 'Saving…' : 'Save price'}</button></form></article>
             <article className={acceptingErranders ? 'is-enabled' : 'is-disabled'}><div><FiUsers /><span><strong>Accept new erranders</strong><small>Students can register from this business page.</small></span></div><button aria-checked={acceptingErranders} aria-label={`${acceptingErranders ? 'Turn off' : 'Turn on'} new errander registrations`} className={`vendor-setting-toggle ${acceptingErranders ? 'is-active' : ''}`} disabled={isSaving} onClick={async () => { const previous = acceptingErranders; const next = !previous; setAcceptingErranders(next); const saved = await saveErrandSettings({ accepting: next }, 'accepting'); if (!saved) setAcceptingErranders(previous) }} role="switch" type="button"><span className="vendor-setting-toggle-track" aria-hidden="true"><i /></span><span className="vendor-setting-toggle-copy"><strong>{acceptingErranders ? 'Accepting' : 'Closed'}</strong><small>{savingErrandSetting === 'accepting' ? 'Saving…' : acceptingErranders ? 'Click to close' : 'Click to accept'}</small></span></button></article>
             <article className={shop.errandsEnabled ? 'is-enabled' : 'is-disabled'}><div><FiPower /><span><strong>Use student erranders</strong><small>Broadcast new deliveries to every active errander who is available.</small></span></div><button aria-checked={Boolean(shop.errandsEnabled)} aria-label={`${shop.errandsEnabled ? 'Turn off' : 'Turn on'} student errander delivery`} className={`vendor-setting-toggle ${shop.errandsEnabled ? 'is-active' : ''}`} disabled={isSaving} onClick={() => saveErrandSettings({ enabled: !shop.errandsEnabled, freeDelivery: false }, 'enabled')} role="switch" type="button"><span className="vendor-setting-toggle-track" aria-hidden="true"><i /></span><span className="vendor-setting-toggle-copy"><strong>{shop.errandsEnabled ? 'Enabled' : 'Disabled'}</strong><small>{savingErrandSetting === 'enabled' ? 'Saving…' : shop.errandsEnabled ? 'Click to disable' : 'Click to enable'}</small></span></button></article>
             <article className={shop.freeCampusDelivery ? 'is-enabled' : 'is-disabled'}><div><FiGift /><span><strong>Offer free in-campus delivery</strong><small>Your page handles delivery for free. Buyers will not be shown erranders.</small></span></div><button aria-checked={Boolean(shop.freeCampusDelivery)} aria-label={`${shop.freeCampusDelivery ? 'Turn off' : 'Turn on'} free in-campus delivery`} className={`vendor-setting-toggle ${shop.freeCampusDelivery ? 'is-active' : ''}`} disabled={isSaving} onClick={() => saveErrandSettings({ enabled: false, freeDelivery: !shop.freeCampusDelivery }, 'free-delivery')} role="switch" type="button"><span className="vendor-setting-toggle-track" aria-hidden="true"><i /></span><span className="vendor-setting-toggle-copy"><strong>{shop.freeCampusDelivery ? 'Free' : 'Not offered'}</strong><small>{savingErrandSetting === 'free-delivery' ? 'Saving…' : shop.freeCampusDelivery ? 'Click to disable' : 'Click to offer'}</small></span></button></article>
@@ -481,7 +482,7 @@ function CampusVendorWorkspacePage() {
             <header><div><span>Registered people</span><h3>Erranders for this page</h3><p>Remove or flag a student to stop future offers. Existing assigned deliveries remain visible.</p></div><strong>{(workspace.erranders || []).filter((item) => item.status === 'ACTIVE').length} active</strong></header>
             <div>
               {(workspace.erranders || []).map((registration) => <article key={registration.id}>
-                <span className="vendor-errander-person"><img alt="" src={normalizeZumbarlFileUrl(registration.student?.avatarUrl) || '/assets/knowledge/default-group-avatar.svg'} /><span><strong>{registration.student?.name}</strong><small>{registration.student?.isAvailable ? 'Available now' : 'Unavailable'} · {registration.student?.completedCount || 0} completed · KSh {Number(shop.errandFee || 0).toLocaleString()} / delivery</small></span></span>
+                <span className="vendor-errander-person"><ProfileAvatar alt="" src={registration.student?.avatarUrl} /><span><strong>{registration.student?.name}</strong><small>{registration.student?.isAvailable ? 'Available now' : 'Unavailable'} · {registration.student?.completedCount || 0} completed · KES {Number(shop.errandFee || 0).toLocaleString()} / delivery</small></span></span>
                 <span className={`vendor-errander-status is-${String(registration.status).toLowerCase()}`}>{String(registration.status).toLowerCase()}</span>
                 {canManageVendor ? <span className="vendor-errander-actions">{registration.status === 'ACTIVE' ? <><button disabled={isSaving} onClick={() => changeErrander(registration, 'FLAG')} type="button">Flag</button><button disabled={isSaving} onClick={() => changeErrander(registration, 'REMOVE')} type="button">Remove</button></> : <button disabled={isSaving} onClick={() => changeErrander(registration, 'RESTORE')} type="button">Restore</button>}</span> : null}
               </article>)}
@@ -532,7 +533,7 @@ function CampusVendorWorkspacePage() {
               {teammateSearchStatus ? <p className="vendor-teammate-search-status" role="status">{teammateSearchStatus}</p> : null}
               {teammateCandidates.length ? <div className="vendor-teammate-results">
                 {teammateCandidates.map((candidate) => <button className={selectedTeammateId === candidate.id ? 'is-selected' : ''} disabled={candidate.currentRole === 'owner'} key={candidate.id} onClick={() => selectTeammate(candidate)} type="button">
-                  <img src={normalizeZumbarlFileUrl(candidate.avatarUrl) || '/assets/knowledge/default-group-avatar.svg'} alt="" />
+                  <ProfileAvatar src={candidate.avatarUrl} alt="" />
                   <span><strong>{candidate.name}</strong><small>{candidate.username ? `@${candidate.username} · ` : ''}{candidate.email}</small><small>{candidate.campus || 'Zumbarl member'}</small></span>
                   <em>{candidate.currentRole === 'owner' ? 'Owner' : selectedTeammateId === candidate.id ? 'Selected' : candidate.currentRole ? `Edit ${candidate.currentRole}` : 'Select'}</em>
                 </button>)}

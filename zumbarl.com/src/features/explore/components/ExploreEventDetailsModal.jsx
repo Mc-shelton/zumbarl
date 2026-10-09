@@ -1,7 +1,7 @@
 import { FiArrowUpRight, FiCalendar, FiCheck, FiClock, FiHeadphones, FiMapPin, FiNavigation, FiShare2, FiX } from 'react-icons/fi'
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { useDialog } from '../../../components/ui'
+import { ProfileAvatar, useDialog } from '../../../components/ui'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 import { creatorProfilePath, postCreatorProfilePath } from '../utils/creatorProfilePath'
 
@@ -40,7 +40,7 @@ function ExploreEventDetailsModal({ error = '', isResponding = false, post, onCl
     handle: organizer.handle,
   }) || postCreatorProfilePath(post)
   const organizerContent = <>
-    <img src={normalizeZumbarlFileUrl(organizer.avatarUrl || post.avatar) || '/assets/index/bee_nobg.png'} alt="" />
+    <ProfileAvatar src={organizer.avatarUrl || post.avatar} alt="" />
     <p><strong>{organizerName}</strong><small>{organizerHandle}</small></p>
     {organizerPath ? <FiArrowUpRight aria-hidden="true" /> : null}
   </>

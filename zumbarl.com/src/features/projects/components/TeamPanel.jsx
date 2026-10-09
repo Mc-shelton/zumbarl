@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { FiAlertCircle, FiCheckCircle, FiPlus, FiSearch, FiUsers } from 'react-icons/fi'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 const COUNTED_TASK_STATUSES = ['todo', 'in_progress', 'blocked', 'submitted', 'done']
 
@@ -137,7 +138,10 @@ function TeamPanel({ invites = [], members = [], onInviteMembers, tasks = [], vi
         {visibleRows.map((member) => (
           <div key={member.key} className={`team-member-row${member.isViewer ? ' is-viewer' : ''}`}>
             <span>
-              <img src={member.avatar || '/assets/index/bee_nobg.png'} alt="" />
+              <ProfileAvatar
+                src={member.avatar}
+                alt=""
+              />
               <strong>
                 {member.name}
                 {member.isViewer ? <span className="team-member-you">You</span> : null}

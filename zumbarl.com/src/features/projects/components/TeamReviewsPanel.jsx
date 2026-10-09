@@ -1,14 +1,18 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   FiCheckCircle,
   FiClock,
-  FiDownload,
+  FiExternalLink,
   FiFileText,
+  FiImage,
   FiMessageCircle,
+  FiMonitor,
+  FiPlayCircle,
   FiRefreshCw,
   FiUsers,
 } from 'react-icons/fi'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
+import { readZumbarlAuthToken } from '../../../lib/sendZumbarlApiRequest'
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -65,6 +69,124 @@ function uniqueOwners(tasks) {
   return owners.filter((owner, index) => owners.findIndex((candidate) => candidate.id === owner.id) === index)
 }
 
+function filePreviewKind(file) {
+  const value = `${file?.mimeType || ''} ${file?.name || ''}`.toLowerCase()
+  if (value.includes('image/') || /\.(?:png|jpe?g|gif|webp|svg)(?:\?|$)/i.test(value)) return 'image'
+  if (value.includes('application/pdf') || /\.pdf(?:\?|$)/i.test(value)) return 'pdf'
+  if (value.includes('video/') || /\.(?:mp4|mov|webm)(?:\?|$)/i.test(value)) return 'video'
+  return 'file'
+}
+
+function useReviewFileUrl(file) {
+  const normalizedUrl = normalizeZumbarlFileUrl(file?.url)
+  const requiresAuth = normalizedUrl.startsWith('/api/v1/uploads/content/')
+  const [state, setState] = useState({ url: requiresAuth ? '' : normalizedUrl, loading: requiresAuth, error: '' })
+
+  useEffect(() => {
+    if (!requiresAuth) return undefined
+
+    const controller = new AbortController()
+    let objectUrl = ''
+    fetch(normalizedUrl, {
+      credentials: 'include',
+      headers: {
+        ...(readZumbarlAuthToken() ? { Authorization: `Bearer ${readZumbarlAuthToken()}` } : {}),
+      },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`Preview unavailable (${response.status})`)
+        objectUrl = URL.createObjectURL(await response.blob())
+        setState({ url: objectUrl, loading: false, error: '' })
+      })
+      .catch((error) => {
+        if (error?.name !== 'AbortError') setState({ url: '', loading: false, error: 'This file could not be previewed.' })
+      })
+
+    return () => {
+      controller.abort()
+      if (objectUrl) URL.revokeObjectURL(objectUrl)
+    }
+  }, [normalizedUrl, requiresAuth])
+
+  return state
+}
+
+function EvidencePreview({ file }) {
+  const kind = filePreviewKind(file)
+  const preview = useReviewFileUrl(file)
+  const KindIcon = kind === 'image' ? FiImage : kind === 'video' ? FiPlayCircle : FiFileText
+
+  return (
+    <div className={`project-review-evidence-preview is-${kind}`}>
+      <div className="project-review-evidence-stage">
+        {preview.loading ? (
+          <span className="project-review-evidence-placeholder"><FiRefreshCw aria-hidden="true" /> Preparing preview…</span>
+        ) : preview.url && kind === 'image' ? (
+          <img src={preview.url} alt={`Submitted work: ${file.name}`} />
+        ) : preview.url && kind === 'pdf' ? (
+          <iframe src={`${preview.url}#toolbar=0&navpanes=0`} title={`Preview of ${file.name}`} />
+        ) : preview.url && kind === 'video' ? (
+          <video src={preview.url} controls preload="metadata">Your browser cannot preview this video.</video>
+        ) : (
+          <span className="project-review-evidence-placeholder">
+            <KindIcon aria-hidden="true" />
+            <strong>{preview.error || 'Preview is not available for this file type.'}</strong>
+            <small>You can still open the submitted file.</small>
+          </span>
+        )}
+      </div>
+      <footer>
+        <span><strong>{file.name}</strong><small>{file.size || file.mimeType || 'Submitted file'}</small></span>
+        {preview.url ? (
+          <a href={preview.url} target="_blank" rel="noreferrer">
+            <FiExternalLink aria-hidden="true" /> Open full file
+          </a>
+        ) : null}
+      </footer>
+    </div>
+  )
+}
+
+function SubmissionEvidence({ files }) {
+  const [selectedIndex, setSelectedIndex] = useState(0)
+  const selectedFile = files[selectedIndex] || files[0]
+
+  return (
+    <section className="project-review-evidence" aria-labelledby="project-review-evidence-title">
+      <header>
+        <span><FiFileText aria-hidden="true" /></span>
+        <div>
+          <h4 id="project-review-evidence-title">Submitted work</h4>
+          <p>This is the evidence the contributor sent for review. Preview it before making a decision.</p>
+        </div>
+        <strong>{files.length} file{files.length === 1 ? '' : 's'}</strong>
+      </header>
+      {selectedFile ? (
+        <div className="project-review-evidence-layout">
+          <EvidencePreview key={`${selectedFile.name}-${selectedIndex}`} file={selectedFile} />
+          {files.length > 1 ? (
+            <div className="project-review-evidence-picker" aria-label="Submitted files">
+              {files.map((file, index) => (
+                <button
+                  key={`${file.name}-${index}`}
+                  type="button"
+                  className={index === selectedIndex ? 'is-active' : ''}
+                  aria-pressed={index === selectedIndex}
+                  onClick={() => setSelectedIndex(index)}
+                >
+                  <FiFileText aria-hidden="true" />
+                  <span><strong>{file.name}</strong><small>{file.size || file.mimeType || 'File'}</small></span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+        </div>
+      ) : <p className="project-review-evidence-empty">No files were attached to this submission.</p>}
+    </section>
+  )
+}
+
 function TeamReviewsPanel({
   isBusinessViewer = false,
   milestones = [],
@@ -77,7 +199,9 @@ function TeamReviewsPanel({
   const [filter, setFilter] = useState('all')
   const [selectedId, setSelectedId] = useState('')
   const [feedback, setFeedback] = useState('')
+  const [feedbackError, setFeedbackError] = useState('')
   const [scoreReview, setScoreReview] = useState(DEFAULT_SCORE_REVIEW)
+  const feedbackRef = useRef(null)
   const milestoneById = useMemo(() => new Map(milestones.map((item) => [item.id, item.title])), [milestones])
   const submissionRows = useMemo(() => submissions
     .filter((submission) => submission.status !== 'superseded')
@@ -108,7 +232,12 @@ function TeamReviewsPanel({
 
   async function decide(decision) {
     if (!selected || !onReview) return
-    if (decision === 'changes_requested' && !feedback.trim()) return
+    if (decision === 'changes_requested' && !feedback.trim()) {
+      setFeedbackError('Explain what needs to change before sending the work back.')
+      feedbackRef.current?.focus()
+      return
+    }
+    setFeedbackError('')
     const succeeded = await onReview(selected.id, {
       decision,
       feedback: feedback.trim(),
@@ -204,6 +333,8 @@ function TeamReviewsPanel({
               <div><dt>Evidence</dt><dd>{selected.files.length} file{selected.files.length === 1 ? '' : 's'}</dd></div>
             </dl>
 
+            <SubmissionEvidence key={selected.id} files={selected.files} />
+
             {(selected.notes || selected.feedbackRequest) ? (
               <section className="project-review-copy">
                 <h4>Submission note</h4>
@@ -223,22 +354,6 @@ function TeamReviewsPanel({
               ) : <p>No task records were attached to this submission.</p>}
             </section>
 
-            <section className="project-review-files">
-              <h4><FiFileText aria-hidden="true" /> Submitted evidence</h4>
-              {selected.files.length ? (
-                <ul>{selected.files.map((file, index) => (
-                  <li key={`${file.name}-${index}`}>
-                    <span><strong>{file.name}</strong><small>{file.size || file.mimeType || 'File'}</small></span>
-                    {file.url ? (
-                      <a href={normalizeZumbarlFileUrl(file.url)} target="_blank" rel="noreferrer" aria-label={`Open ${file.name}`}>
-                        <FiDownload aria-hidden="true" /> Open
-                      </a>
-                    ) : <em>Unavailable</em>}
-                  </li>
-                ))}</ul>
-              ) : <p>No files were attached.</p>}
-            </section>
-
             {selected.feedback ? (
               <section className={`project-review-existing-feedback ${selectedStatus.tone}`}>
                 <h4>Business feedback</h4>
@@ -247,8 +362,13 @@ function TeamReviewsPanel({
             ) : null}
 
             {isBusinessViewer && selected.status === 'submitted' ? (
-              <section className="project-review-decision">
-                <fieldset className="project-score-review">
+              <>
+                <aside className="project-review-mobile-preview-note" role="note">
+                  <FiMonitor aria-hidden="true" />
+                  <span><strong>Preview only on mobile</strong>Open this review on a desktop computer to approve the work or request changes.</span>
+                </aside>
+                <section className="project-review-decision">
+                  <fieldset className="project-score-review">
                   <legend>Rate this completed work</legend>
                   <p>These ratings update the student’s Zumbarl Score after the full project is completed.</p>
                   <div>
@@ -305,28 +425,42 @@ function TeamReviewsPanel({
                       <span>I would hire this student again</span>
                     </label>
                   </div>
-                </fieldset>
-                <label htmlFor={`review-feedback-${selected.id}`}>Feedback</label>
-                <textarea
-                  id={`review-feedback-${selected.id}`}
-                  value={feedback}
-                  placeholder="Share a clear approval note or explain what needs to change…"
-                  onChange={(event) => setFeedback(event.target.value)}
-                />
-                <div>
-                  <button
-                    type="button"
-                    className="project-soft-btn"
-                    disabled={pending || !feedback.trim()}
-                    onClick={() => decide('changes_requested')}
+                  </fieldset>
+                  <label htmlFor={`review-feedback-${selected.id}`}>Feedback</label>
+                  <textarea
+                    ref={feedbackRef}
+                    id={`review-feedback-${selected.id}`}
+                    value={feedback}
+                    placeholder="Share a clear approval note or explain what needs to change…"
+                    aria-describedby={`review-feedback-help-${selected.id}`}
+                    aria-invalid={Boolean(feedbackError)}
+                    onChange={(event) => {
+                      setFeedback(event.target.value)
+                      if (event.target.value.trim()) setFeedbackError('')
+                    }}
+                  />
+                  <p
+                    id={`review-feedback-help-${selected.id}`}
+                    className={`project-review-feedback-help${feedbackError ? ' is-error' : ''}`}
+                    role={feedbackError ? 'alert' : undefined}
                   >
-                    Request changes
-                  </button>
-                  <button type="button" className="project-primary-btn" disabled={pending} onClick={() => decide('approved')}>
-                    <FiCheckCircle aria-hidden="true" /> Approve work
-                  </button>
-                </div>
-              </section>
+                    {feedbackError || 'Feedback is required when requesting changes; it is optional when approving.'}
+                  </p>
+                  <div>
+                    <button
+                      type="button"
+                      className={`project-soft-btn project-request-changes-btn${feedback.trim() ? ' is-ready' : ' is-waiting'}`}
+                      disabled={pending}
+                      onClick={() => decide('changes_requested')}
+                    >
+                      {feedback.trim() ? 'Request changes' : 'Add feedback to request changes'}
+                    </button>
+                    <button type="button" className="project-primary-btn" disabled={pending} onClick={() => decide('approved')}>
+                      <FiCheckCircle aria-hidden="true" /> Approve work
+                    </button>
+                  </div>
+                </section>
+              </>
             ) : null}
             {reviewState.error && reviewState.pendingId === selected.id ? <p className="project-review-error" role="alert">{reviewState.error}</p> : null}
           </article>

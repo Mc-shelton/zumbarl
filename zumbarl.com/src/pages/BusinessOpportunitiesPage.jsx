@@ -40,6 +40,7 @@ function BusinessOpportunitiesPage() {
                 applications={opportunities.reviewApplicants}
                 applicationsError={opportunities.reviewApplicantsError}
                 isLoadingApplications={opportunities.isLoadingReviewApplicants}
+                onAddDeliverables={opportunities.onAddOpportunityDeliverables}
                 onBack={opportunities.onCloseReviewOpportunity}
                 onChangeApplicationStatus={opportunities.onChangeApplicationStatus}
                 onChangeReviewTab={opportunities.onChangeReviewTab}
@@ -53,6 +54,7 @@ function BusinessOpportunitiesPage() {
                 onStartProject={opportunities.onStartProject}
                 onEndProject={opportunities.onEndProject}
                 onFundOpportunity={opportunities.onFundOpportunity}
+                onResumeOpportunityPayment={opportunities.onResumeOpportunityPayment}
                 projectActionState={opportunities.projectActionState}
                 submissions={opportunities.reviewSubmissions}
                 submissionsError={opportunities.reviewSubmissionsError}

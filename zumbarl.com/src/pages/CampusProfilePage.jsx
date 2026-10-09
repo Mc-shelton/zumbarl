@@ -31,6 +31,7 @@ import { CAMPUS_PROFILE_SEO } from '../features/seo/constants'
 import { decideMarketplaceOffer, readMyErrands, readMyMarketplaceInventory, readMyMarketplaceSales, readMyPendingMarketplaceOffers, updateMarketplaceSaleStatus, updateMyMarketplaceShop } from '../features/opportunities/services/marketplaceInteractionService'
 import { buildOrderConversationHref, buyerOrderHref, sellerOrderHref } from '../features/opportunities/orderMessaging'
 import '../styles/campus.css'
+import '../styles/business.css'
 import '../styles/profile.css'
 
 function CampusProfilePage({ viewContext = 'campus' }) {
@@ -170,7 +171,7 @@ function CampusProfilePage({ viewContext = 'campus' }) {
   useEffect(() => {
     let isMounted = true
     const readProfile = isPublicStudentView
-      ? readStudentProfileExperience(studentId)
+      ? readStudentProfileExperience(studentId, { recordInteraction: !isBusinessView })
       : readMyStudentProfileExperience()
     readProfile
       .then((experience) => {
@@ -180,7 +181,7 @@ function CampusProfilePage({ viewContext = 'campus' }) {
     return () => {
       isMounted = false
     }
-  }, [isPublicStudentView, studentId])
+  }, [isBusinessView, isPublicStudentView, studentId])
 
   useEffect(() => {
     if (!isOwnProfile) return undefined

@@ -5520,7 +5520,7 @@ a.explore-campus-market-result:hover {
 .explore-campus-pulse-header small {
   color: #9a7893;
   font-size: 12px;
-  font-weight: 850;
+  font-weight: 650;
   letter-spacing: 0.075em;
   text-transform: uppercase;
 }
@@ -5529,6 +5529,7 @@ a.explore-campus-market-result:hover {
   margin: 2px 0 0;
   color: #292834;
   font-size: 20px;
+  font-weight: 700;
   line-height: 1.05;
 }
 
@@ -5542,7 +5543,7 @@ a.explore-campus-market-result:hover {
   gap: 5px;
   font-size: 13px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .explore-campus-pulse-header em i {
@@ -5573,12 +5574,14 @@ a.explore-campus-market-result:hover {
 
 .explore-campus-pulse-section .explore-campus-rail-heading small {
   font-size: 11px;
+  font-weight: 650;
 }
 
 .explore-campus-pulse-section .explore-campus-rail-heading h3 {
   margin: 0;
   color: #292834;
   font-size: 17px;
+  font-weight: 650;
   line-height: 1.15;
 }
 
@@ -5594,7 +5597,7 @@ a.explore-campus-market-result:hover {
   align-items: center;
   text-decoration: none;
   font-size: 13px;
-  font-weight: 800;
+  font-weight: 600;
 }
 
 .explore-campus-pulse .explore-campus-people-list,
@@ -5620,6 +5623,7 @@ a.explore-campus-market-result:hover {
 .explore-campus-pulse .explore-campus-person-item h4 {
   overflow: hidden;
   font-size: 16px;
+  font-weight: 650;
   line-height: 1.15;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -5628,6 +5632,7 @@ a.explore-campus-market-result:hover {
 .explore-campus-pulse .explore-campus-person-item p {
   overflow: hidden;
   font-size: 13px;
+  font-weight: 450;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -5636,6 +5641,7 @@ a.explore-campus-market-result:hover {
   height: 28px;
   padding: 0 9px;
   font-size: 13px;
+  font-weight: 550;
 }
 
 .explore-campus-pulse .explore-campus-close-btn {
@@ -5656,6 +5662,7 @@ a.explore-campus-market-result:hover {
   display: -webkit-box;
   overflow: hidden;
   font-size: 16px;
+  font-weight: 650;
   line-height: 1.25;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -5665,6 +5672,7 @@ a.explore-campus-market-result:hover {
   display: -webkit-box;
   overflow: hidden;
   font-size: 14px;
+  font-weight: 450;
   line-height: 1.35;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -5674,6 +5682,15 @@ a.explore-campus-market-result:hover {
 .explore-campus-pulse .explore-campus-announcement-owner small,
 .explore-campus-pulse .explore-campus-announcement-owner-row time {
   font-size: 12px;
+}
+
+.explore-campus-pulse .explore-campus-announcement-owner strong {
+  font-weight: 600;
+}
+
+.explore-campus-pulse .explore-campus-announcement-owner small,
+.explore-campus-pulse .explore-campus-announcement-owner-row time {
+  font-weight: 500;
 }
 
 .explore-campus-pulse .explore-campus-event-item {
@@ -5690,12 +5707,14 @@ a.explore-campus-market-result:hover {
 
 .explore-campus-pulse .explore-campus-event-item h4 {
   font-size: 15px;
+  font-weight: 650;
 }
 
 .explore-campus-pulse .explore-campus-event-item p,
 .explore-campus-pulse .explore-campus-event-item span,
 .explore-campus-pulse .explore-campus-event-reservations {
   font-size: 12px;
+  font-weight: 500;
 }
 
 .explore-campus-pulse .explore-campus-market-item {
@@ -5714,11 +5733,17 @@ a.explore-campus-market-result:hover {
 
 .explore-campus-pulse .explore-campus-market-item h4 {
   font-size: 14px;
+  font-weight: 650;
 }
 
-.explore-campus-pulse .explore-campus-market-copy small,
+.explore-campus-pulse .explore-campus-market-copy small {
+  font-size: 12px;
+  font-weight: 500;
+}
+
 .explore-campus-pulse .explore-campus-market-item p {
   font-size: 12px;
+  font-weight: 600;
 }
 
 .explore-campus-pulse .explore-campus-market-item > a:last-child {

@@ -134,6 +134,7 @@ function formatPublishedLabel(publishedAt) {
 function getBusinessOpportunityOwner(opportunity) {
   return {
     name: opportunity.company || 'Zumbarl business',
+    avatarUrl: opportunity.companyLogoUrl,
     role: 'Verified Zumbarl client',
     background: opportunity.companyDescription || 'This business is hiring student talent through Zumbarl.',
     metrics: [
@@ -147,8 +148,7 @@ function getBusinessOpportunityOwner(opportunity) {
 function getBusinessOpportunityImage(opportunity) {
   const splash = opportunity.opportunitySplash || {}
   const upload = splash.upload || splash.data || {}
-
-  return (
+  const candidate = (
     splash.previewUrl
     || splash.url
     || splash.src
@@ -160,8 +160,9 @@ function getBusinessOpportunityImage(opportunity) {
     || opportunity.imageUrl
     || opportunity.thumbnail
     || opportunity.thumbnailUrl
-    || DEFAULT_OPPORTUNITY_THUMBNAIL
   )
+
+  return normalizeZumbarlFileUrl(candidate, upload.bucket ? upload : splash) || DEFAULT_OPPORTUNITY_THUMBNAIL
 }
 
 function toStudentBusinessOpportunity(opportunity, bidCount = 0, invite = null) {
@@ -179,6 +180,7 @@ function toStudentBusinessOpportunity(opportunity, bidCount = 0, invite = null) 
     ownerSlug: slugifyOwner(opportunity.company || 'zumbarl-business'),
     title: opportunity.title,
     company: opportunity.company,
+    companyLogoUrl: opportunity.companyLogoUrl,
     meta: `${opportunity.opportunityType || 'Project'} · ${opportunity.engagementMode || 'Flexible'}`,
     description: opportunity.summary,
     image: getBusinessOpportunityImage(opportunity),

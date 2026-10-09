@@ -1,5 +1,6 @@
 import { FiArrowRight, FiMoreHorizontal } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 export function BusinessRecentApplicants({ applicants }) {
   return (
@@ -15,7 +16,7 @@ export function BusinessRecentApplicants({ applicants }) {
       <div className="business-applicant-table">
         {applicants.length ? applicants.map((applicant) => (
           <article key={applicant.id} className="business-applicant-row">
-            <img src={applicant.avatar} alt={`${applicant.name} avatar`} />
+            <ProfileAvatar src={applicant.avatar} alt={`${applicant.name} avatar`} />
             <div>
               <h3>{applicant.name}</h3>
               <p>{applicant.role}</p>
@@ -24,7 +25,7 @@ export function BusinessRecentApplicants({ applicants }) {
             <dl>
               <div>
                 <dt>Zumbarl Score</dt>
-                <dd>{applicant.score} <span>{applicant.match}</span></dd>
+                <dd>{applicant.score ?? '—'} <span>{applicant.match}</span></dd>
               </div>
               <div>
                 <dt>Applied</dt>
@@ -35,7 +36,10 @@ export function BusinessRecentApplicants({ applicants }) {
                 <dd><em className={`tone-${applicant.tone}`}>{applicant.status}</em></dd>
               </div>
             </dl>
-            <Link to="/business/applicant-profile" aria-label={`Open ${applicant.name}`}>
+            <Link
+              to={applicant.studentId ? `/business/applicant-profile/${encodeURIComponent(applicant.studentId)}` : '/business/applicants'}
+              aria-label={`Open ${applicant.name}`}
+            >
               <FiMoreHorizontal aria-hidden="true" />
               <FiArrowRight aria-hidden="true" />
             </Link>

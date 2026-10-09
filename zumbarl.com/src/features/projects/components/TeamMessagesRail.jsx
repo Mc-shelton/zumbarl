@@ -1,4 +1,4 @@
-import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 function TeamMessagesRail({ participants = [] }) {
   return (
@@ -7,7 +7,7 @@ function TeamMessagesRail({ participants = [] }) {
         <h3>Project participants</h3>
         {participants.length ? participants.map((participant) => (
           <article key={participant.userId}>
-            <img src={normalizeZumbarlFileUrl(participant.avatarUrl) || '/assets/index/bee_nobg.png'} alt="" />
+            <ProfileAvatar src={participant.avatarUrl} alt="" />
             <span>
               <strong>{participant.name}</strong>
               <small>{participant.role || 'Project participant'}</small>

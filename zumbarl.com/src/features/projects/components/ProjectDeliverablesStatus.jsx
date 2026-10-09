@@ -3,7 +3,8 @@ function ProjectDeliverablesStatus({ project, onSubmit, onSelectPhase, variant =
   if (!targets.length) return null
 
   const targetKindLabel = project.targetKindLabel || 'Deliverable'
-  const pendingCount = targets.filter((item) => item.pending).length
+  const awaitingReleaseCount = targets.filter((item) => item.approved && !item.completed).length
+  const pendingCount = targets.filter((item) => !item.approved && item.pending).length
   const className = variant === 'inline'
     ? 'project-deliverables-status is-inline'
     : 'project-card project-deliverables-status'
@@ -12,7 +13,11 @@ function ProjectDeliverablesStatus({ project, onSubmit, onSelectPhase, variant =
     <section className={className}>
       <header>
         <h2>{targetKindLabel}s</h2>
-        <span>{pendingCount ? `${pendingCount} pending` : 'All submitted'}</span>
+        <span>
+          {awaitingReleaseCount
+            ? `${awaitingReleaseCount} awaiting payment`
+            : pendingCount ? `${pendingCount} pending` : 'All submitted'}
+        </span>
       </header>
       <ul>
         {targets.map((target) => {
@@ -43,7 +48,11 @@ function ProjectDeliverablesStatus({ project, onSubmit, onSelectPhase, variant =
                 <strong>{target.label}</strong>
                 {target.budgetLabel ? <span>{target.budgetLabel}</span> : null}
               </div>
-              <em>{target.statusLabel}</em>
+              <em>
+                {target.completed
+                  ? 'Completed & paid'
+                  : target.approved ? 'Approved · awaiting payment' : target.statusLabel}
+              </em>
               {actionMode && onSubmit ? (
                 <button
                   type="button"
@@ -54,7 +63,7 @@ function ProjectDeliverablesStatus({ project, onSubmit, onSelectPhase, variant =
                     else onSubmit(null, actionMode)
                   }}
                 >
-                  {actionMode === 'revise' ? 'Revise Work' : 'Submit'}
+                  {actionMode === 'revise' ? 'Revise Work' : target.approved ? 'Submit more work' : 'Submit'}
                 </button>
               ) : null}
             </li>

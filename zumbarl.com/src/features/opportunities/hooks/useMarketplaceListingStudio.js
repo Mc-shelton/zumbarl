@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { getMarketplaceItemPath } from '../../../data/marketplace'
+import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
 import { createMarketplaceListing, createMarketplaceListingForShop, readCampusVendorWorkspace, readMarketplaceListing, updateMarketplaceListing } from '../services/marketplaceInteractionService'
 
@@ -20,6 +21,9 @@ const FOOD_INVENTORY_STEPS = [
   { id: 'pricing', label: 'Price & availability', meta: 'Price and servings today' },
   { id: 'review', label: 'Review & publish', meta: 'Preview the menu item' },
 ]
+
+const textValue = (value) => value == null ? '' : String(value)
+const listValue = (value) => Array.isArray(value) ? value : []
 
 const DEFAULT_FORM = {
   kind: 'product',
@@ -64,35 +68,65 @@ function readLocalDraft(storageKey = DRAFT_STORAGE_KEY) {
   if (typeof window === 'undefined') return DEFAULT_FORM
   try {
     const value = JSON.parse(window.localStorage.getItem(storageKey))
-    return value && typeof value === 'object' ? { ...DEFAULT_FORM, ...value } : DEFAULT_FORM
+    return value && typeof value === 'object' ? mapListingToForm(value) : DEFAULT_FORM
   } catch {
     return DEFAULT_FORM
   }
 }
 
 function mapListingToForm(listing) {
+  const source = listing && typeof listing === 'object' ? listing : {}
   return {
     ...DEFAULT_FORM,
-    ...listing,
-    kind: String(listing.listingType || listing.kind || 'PRODUCT').toLowerCase() === 'service' ? 'service' : 'product',
-    gallery: listing.gallery || listing.images || [],
-    deliveryZones: Array.isArray(listing.deliveryZones) ? listing.deliveryZones : [],
-    variantsText: (listing.variants || []).join(', '),
-    priceAmount: listing.priceAmount ?? '',
-    stock: listing.stock ?? listing.stockCount ?? 1,
-    minimumOffer: listing.minimumOffer ?? '',
-    status: String(listing.status || 'DRAFT').toUpperCase() === 'PUBLISHED' ? 'ACTIVE' : String(listing.status || 'DRAFT').toUpperCase(),
+    ...source,
+    kind: String(source.listingType || source.kind || 'PRODUCT').toLowerCase() === 'service' ? 'service' : 'product',
+    serviceMode: textValue(source.serviceMode || DEFAULT_FORM.serviceMode),
+    duration: textValue(source.duration),
+    availabilityText: textValue(source.availabilityText),
+    inventoryType: textValue(source.inventoryType),
+    foodType: textValue(source.foodType || DEFAULT_FORM.foodType),
+    ingredients: textValue(source.ingredients),
+    allergens: textValue(source.allergens),
+    portionSize: textValue(source.portionSize),
+    title: textValue(source.title),
+    subtitle: textValue(source.subtitle),
+    category: textValue(source.category || DEFAULT_FORM.category),
+    condition: textValue(source.condition || DEFAULT_FORM.condition),
+    description: textValue(source.description),
+    gallery: listValue(source.gallery || source.images)
+      .map((image) => normalizeZumbarlFileUrl(image?.previewUrl || image?.url || image, image))
+      .filter(Boolean),
+    brand: textValue(source.brand),
+    model: textValue(source.model),
+    color: textValue(source.color),
+    included: textValue(source.included),
+    deliveryOptions: listValue(source.deliveryOptions),
+    deliveryZones: listValue(source.deliveryZones).map((zone) => ({
+      ...zone,
+      location: textValue(zone?.location),
+      fee: zone?.fee ?? '',
+    })),
+    locationLabel: textValue(source.locationLabel),
+    pickupInstructions: textValue(source.pickupInstructions),
+    returnPolicy: textValue(source.returnPolicy),
+    variantsText: listValue(source.variants).join(', '),
+    priceAmount: source.priceAmount ?? '',
+    stock: source.stock ?? source.stockCount ?? 1,
+    minimumOffer: source.minimumOffer ?? '',
+    latitude: source.latitude ?? '',
+    longitude: source.longitude ?? '',
+    status: String(source.status || 'DRAFT').toUpperCase() === 'PUBLISHED' ? 'ACTIVE' : String(source.status || 'DRAFT').toUpperCase(),
   }
 }
 
 function getStepErrors(stepId, form, foodMode = false) {
   const errors = []
   if (stepId === 'basics') {
-    if (form.title.trim().length < 5) errors.push(foodMode ? 'Use a clear menu item name.' : 'Use a title with at least 5 characters.')
-    if (form.description.trim().length < (foodMode ? 15 : 30)) errors.push(foodMode ? 'Add a short, useful food description.' : 'Describe the item in at least 30 characters.')
+    if (textValue(form.title).trim().length < 5) errors.push(foodMode ? 'Use a clear menu item name.' : 'Use a title with at least 5 characters.')
+    if (textValue(form.description).trim().length < (foodMode ? 15 : 30)) errors.push(foodMode ? 'Add a short, useful food description.' : 'Describe the item in at least 30 characters.')
     if (!form.category) errors.push('Choose a category.')
     if (!foodMode && form.kind === 'service' && !form.serviceMode) errors.push('Choose how customers receive this service.')
-    if (!foodMode && form.kind === 'service' && !form.availabilityText.trim()) errors.push('Explain when this service is available.')
+    if (!foodMode && form.kind === 'service' && !textValue(form.availabilityText).trim()) errors.push('Explain when this service is available.')
   }
   if (stepId === 'media' && !form.gallery.length) errors.push(foodMode ? 'Add a clear photo of this menu item.' : `Add at least one ${form.kind === 'service' ? 'service' : 'product'} image.`)
   if (stepId === 'pricing') {
@@ -103,8 +137,8 @@ function getStepErrors(stepId, form, foodMode = false) {
     }
   }
   if (stepId === 'fulfilment' && !foodMode) {
-    if (!form.deliveryOptions.length) errors.push('Choose at least one fulfilment option.')
-    if (!form.locationLabel.trim()) errors.push('Add a pickup or service location.')
+    if (!listValue(form.deliveryOptions).length) errors.push('Choose at least one fulfilment option.')
+    if (!textValue(form.locationLabel).trim()) errors.push('Add a pickup or service location.')
     if (!Number.isFinite(Number(form.latitude)) || !Number.isFinite(Number(form.longitude)) || form.latitude === '' || form.longitude === '') errors.push('Use your current location so delivery distance can be calculated.')
     if (form.deliveryOptions.includes('Seller delivery') && !form.deliveryZones.length) errors.push('Add at least one delivery area and price.')
   }

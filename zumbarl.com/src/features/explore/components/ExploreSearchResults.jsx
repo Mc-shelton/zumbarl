@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { FiBookOpen, FiBriefcase, FiFileText, FiLayers, FiSearch, FiShoppingBag, FiUsers } from 'react-icons/fi'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 const SECTION_CONFIG = {
   people: { label: 'People', Icon: FiUsers, limit: 8 },
@@ -26,7 +27,7 @@ function ResultHead({ item, query }) {
 function PeopleResults({ items, query }) {
   return <div className="explore-campus-search-directory-grid">{items.map((person) => (
     <Link to={person.href} className="explore-campus-search-person" key={person.id}>
-      <img src={person.avatar} alt="" loading="lazy" />
+      <ProfileAvatar src={person.avatar} alt="" loading="lazy" />
       <div><ResultHead item={person} query={query} />{person.handle ? <span>{person.handle}</span> : null}</div>
       <strong>{person.isSelf ? 'Your profile' : 'View profile'}</strong>
     </Link>
@@ -36,7 +37,7 @@ function PeopleResults({ items, query }) {
 function PageResults({ items, query }) {
   return <div className="explore-campus-search-directory-grid">{items.map((page) => (
     <Link to={page.href} className="explore-campus-search-person" key={page.href || page.id}>
-      <img src={page.avatar} alt="" loading="lazy" />
+      <ProfileAvatar src={page.avatar} alt="" loading="lazy" />
       <div><ResultHead item={page} query={query} />{page.handle ? <span>{page.handle}</span> : null}</div>
       <strong>Open page</strong>
     </Link>
@@ -51,7 +52,7 @@ function MarketplaceResults({ items, query }) {
       <p className="explore-campus-market-meta"><Highlight text={item.category || item.description} query={query} /></p>
       <p className="explore-campus-market-price">{item.price}</p>
       <div className="explore-campus-market-owner">
-        <img src={item.ownerAvatar} alt="" loading="lazy" />
+        <ProfileAvatar src={item.ownerAvatar} alt="" loading="lazy" />
         <div><strong>{item.ownerName}</strong><span>{item.school || item.condition || 'Campus marketplace'}</span></div>
       </div>
     </Link>

@@ -45,7 +45,7 @@ const EATERY_TABS = [
   { id: 'student-kitchens', label: 'Student Kitchens' },
 ]
 
-const MEAL_FILTERS = ['All', 'Meals', 'Quick bites', 'Drinks', 'Under KSh 200']
+const MEAL_FILTERS = ['All', 'Meals', 'Quick bites', 'Drinks', 'Under KES 200']
 const FALLBACK_FOOD_IMAGE = '/assets/index/business_page_images/optimized/bruno-ngarukiye-IzEcrYJ1G34-unsplash.webp'
 const KITCHEN_PROMO_DISMISSAL_KEY = 'zumbarl.eatery.startKitchenDismissed.v1'
 
@@ -62,7 +62,7 @@ function inventoryHasKitchen(inventory) {
 
 function matchesMealFilter(item, filter) {
   if (filter === 'All') return true
-  if (filter === 'Under KSh 200') return Number(item.priceAmount || 0) <= 200
+  if (filter === 'Under KES 200') return Number(item.priceAmount || 0) <= 200
   const searchable = `${item.category || ''} ${item.foodType || ''} ${item.title || ''}`.toLowerCase()
   if (filter === 'Meals') return /meal|fresh food|breakfast|lunch|dinner|plate|biryani|beryani/.test(searchable)
   if (filter === 'Quick bites') return /snack|baked|pastr|cake|mandazi|samosa|quick/.test(searchable)
@@ -217,7 +217,7 @@ function EateryPage() {
   }
 
   function showAffordablePicks() {
-    setActiveFilter('Under KSh 200')
+    setActiveFilter('Under KES 200')
     setQuery('')
     setSearchParams({})
   }
@@ -258,7 +258,7 @@ function EateryPage() {
               <div>
                 <span>Today’s budget picks</span>
                 <h2>Big flavor, small budget.</h2>
-                <p>{isLoading ? 'Finding today’s affordable meals…' : `${affordableListingsCount} meal${affordableListingsCount === 1 ? '' : 's'} available for KSh 200 or less.`}</p>
+                <p>{isLoading ? 'Finding today’s affordable meals…' : `${affordableListingsCount} meal${affordableListingsCount === 1 ? '' : 's'} available for KES 200 or less.`}</p>
                 <button className="eatery-promo-action" type="button" onClick={showAffordablePicks}>Explore budget bites <FiArrowRight aria-hidden="true" /></button>
               </div>
               {affordableListings.length ? (
@@ -272,7 +272,7 @@ function EateryPage() {
                   ))}
                 </div>
               ) : (
-                <div className="eatery-discovery-marks" aria-hidden="true"><span>200</span><small>KSh<br />or less</small></div>
+                <div className="eatery-discovery-marks" aria-hidden="true"><span>200</span><small>KES<br />or less</small></div>
               )}
             </section>
 
@@ -346,7 +346,7 @@ function EateryPage() {
             <section className="eatery-rail-card is-budget">
               <span>Budget bite</span>
               <strong>{affordableListingsCount}</strong>
-              <h2>meals under KSh 200</h2>
+              <h2>meals under KES 200</h2>
               <button type="button" onClick={showAffordablePicks}>Show affordable picks <FiArrowRight /></button>
             </section>
             <section className="eatery-rail-card">

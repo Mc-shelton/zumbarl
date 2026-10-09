@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { FiArrowUpRight, FiBriefcase, FiCheck, FiChevronDown, FiClock, FiMoreHorizontal, FiSliders, FiTrendingUp } from 'react-icons/fi'
+import { FiArrowUpRight, FiBriefcase, FiCheck, FiChevronDown, FiClock, FiImage, FiMoreHorizontal, FiSliders, FiTrendingUp } from 'react-icons/fi'
 
 function handleKeyboardActivation(event, onActivate) {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -30,6 +30,29 @@ function OpportunityTypePill({ activeTypeId, onSelect, option }) {
         {Number(count || 0).toLocaleString()}
       </span>
     </button>
+  )
+}
+
+function OpportunityPreview({ item }) {
+  const [hasImageError, setHasImageError] = useState(false)
+
+  return (
+    <div className={`opportunities-job-avatar${hasImageError ? ' is-missing' : ''}`}>
+      {hasImageError ? (
+        <span className="opportunities-job-avatar-fallback" role="img" aria-label={`${item.title} preview unavailable`}>
+          <FiImage aria-hidden="true" />
+          <strong>Preview unavailable</strong>
+        </span>
+      ) : (
+        <img
+          src={item.image}
+          alt={`${item.title} preview`}
+          loading="lazy"
+          style={item.imageCropStyle || undefined}
+          onError={() => setHasImageError(true)}
+        />
+      )}
+    </div>
   )
 }
 
@@ -162,9 +185,7 @@ function OpportunitiesDiscoverPanel({
               onClick={() => onOpportunitySelect(item.opportunityUuid)}
               onKeyDown={(event) => handleKeyboardActivation(event, () => onOpportunitySelect(item.opportunityUuid))}
             >
-              <div className="opportunities-job-avatar">
-                <img src={item.image} alt={`${item.title} preview`} loading="lazy" style={item.imageCropStyle || undefined} />
-              </div>
+              <OpportunityPreview item={item} />
 
               <div className="opportunities-job-main">
                 <div className="opportunities-job-head">

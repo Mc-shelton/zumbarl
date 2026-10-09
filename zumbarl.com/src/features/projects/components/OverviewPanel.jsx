@@ -1,5 +1,6 @@
 import { FiCheckCircle, FiDownload, FiExternalLink, FiInfo, FiMessageCircle, FiShield } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 import ProjectDeliverablesStatus from './ProjectDeliverablesStatus'
 import SubmittedWorkPreview from './SubmittedWorkPreview'
 
@@ -89,7 +90,7 @@ function OverviewPanel({ project, onOpenMessages, onOpenWorkDeliverables, onSubm
           <div>
             <dt>Client</dt>
             <dd className="has-profile">
-              <img src="/assets/index/bee_nobg.png" alt="" />
+              <ProfileAvatar src={activeProject.clientAvatar} alt="" />
               <span>
                 <strong>{activeProject.client}</strong>
                 <small><FiShield aria-hidden="true" /> Project client</small>
@@ -99,7 +100,7 @@ function OverviewPanel({ project, onOpenMessages, onOpenWorkDeliverables, onSubm
           <div>
             <dt>Project Owner</dt>
             <dd className="has-profile">
-              <img src="/assets/index/bee_nobg.png" alt="" />
+              <ProfileAvatar src={activeProject.ownerAvatar} alt="" />
               <span>
                 <strong>{activeProject.owner}</strong>
                 <small>Workspace owner</small>
@@ -288,7 +289,7 @@ function OverviewPanel({ project, onOpenMessages, onOpenWorkDeliverables, onSubm
           </header>
           {recentMessages.slice(0, 2).map((message) => (
             <article key={`${message.author}-${message.date}`}>
-              <img src="/assets/index/bee_nobg.png" alt="" />
+              <ProfileAvatar src={message.avatarUrl || message.avatar} alt="" />
               <div>
                 <strong>{message.author}</strong>
                 <p>{message.text}</p>

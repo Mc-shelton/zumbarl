@@ -1,4 +1,13 @@
+import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
+
 const DEFAULT_IMAGE = '/assets/index/bee_nobg.png'
+
+function opportunityImage(opportunity = {}) {
+  return normalizeZumbarlFileUrl(
+    opportunity.image || opportunity.previewImage || DEFAULT_IMAGE,
+    opportunity.imageMetadata || opportunity.previewImageMetadata || {},
+  )
+}
 
 export function formatDateLabel(prefix) {
   const date = new Date()
@@ -80,6 +89,7 @@ export function toStudentBidCard(bid) {
     description: bid.proposal || bid.coverNote || (isDraft ? 'Continue this application when you are ready.' : 'Submitted proposal awaiting client review.'),
     client: opportunity.company || 'Client not provided',
     company: opportunity.company || 'Client not provided',
+    companyLogoUrl: opportunity.companyLogoUrl,
     bidAmount: bid.bidAmount != null
       ? `${bid.currency || 'KES'} ${Math.round(bid.bidAmount).toLocaleString('en-KE')}`
       : isDraft ? 'Not set' : opportunity.budget || 'Budget pending',
@@ -93,7 +103,7 @@ export function toStudentBidCard(bid) {
       : isDraft
         ? 'Continue and submit before the opportunity deadline.'
         : 'Your bid is waiting for client review.',
-    image: opportunity.image || opportunity.previewImage || DEFAULT_IMAGE,
+    image: opportunityImage(opportunity),
     status: presentation.status,
     statusTone: presentation.statusTone,
     isDraft,
@@ -138,6 +148,7 @@ export function toStudentInviteCard(invite) {
     opportunityId: invite.opportunityId,
     title: opportunity.title || 'Business opportunity',
     company: opportunity.company || 'Client not provided',
+    companyLogoUrl: opportunity.companyLogoUrl,
     pay: opportunity.budget || 'Budget pending',
     mode: `${opportunity.opportunityType || 'Project'} · ${opportunity.engagementMode || 'Flexible'}`,
     location: opportunity.engagementMode || 'Flexible',
@@ -150,7 +161,7 @@ export function toStudentInviteCard(invite) {
     stageTone: isAccepted ? 'is-open' : status === 'declined' ? 'is-viewed' : 'is-new',
     isAccepted,
     isNew: status === 'sent',
-    image: opportunity.image || opportunity.previewImage || DEFAULT_IMAGE,
+    image: opportunityImage(opportunity),
     tags: skills,
     source: 'database',
   }

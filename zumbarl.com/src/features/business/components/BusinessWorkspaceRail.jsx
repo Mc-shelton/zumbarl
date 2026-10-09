@@ -12,6 +12,7 @@ import { Link } from 'react-router-dom'
 const ACTION_ICONS = [FiCalendar, FiBriefcase, FiCheckCircle, FiBarChart2]
 
 export function BusinessWorkspaceRail({
+  applicantCount,
   insights,
   kyc,
   upcomingActions,
@@ -25,7 +26,7 @@ export function BusinessWorkspaceRail({
           <h2>Business KYC</h2>
           <Link to="/business/kyc" className="business-link-btn">Open</Link>
         </header>
-        <div className="business-kyc-progress" aria-label={`${kyc?.percent || 0}% KYC complete`}>
+        <div className="business-kyc-progress" role="progressbar" aria-label="KYC completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow={kyc?.percent || 0}>
           <span style={{ width: `${kyc?.percent || 0}%` }} />
         </div>
         <p>
@@ -69,10 +70,10 @@ export function BusinessWorkspaceRail({
       <section className="business-profile-card business-insights-card">
         <header>
           <h2>Insights</h2>
-          <button type="button" className="business-workspace-filter">This month</button>
+          <span className="business-workspace-filter">All time</span>
         </header>
-        <div className="business-insight-donut" aria-label={`${insights.reduce((sum, item) => sum + item.value, 0)} applicant insight score`}>
-          <strong>{insights.reduce((sum, item) => sum + item.value, 0)}</strong>
+        <div className="business-insight-donut" aria-label={`${applicantCount} total applicants`}>
+          <strong>{applicantCount}</strong>
           <span>Total Applicants</span>
         </div>
         <ul>
@@ -85,7 +86,7 @@ export function BusinessWorkspaceRail({
           ))}
         </ul>
         <p className="business-insight-note">
-          Great! Your response rate is 28% higher than last month.
+          Applicant mix is calculated from {applicantCount} current {applicantCount === 1 ? 'application' : 'applications'}.
           <FiTrendingUp aria-hidden="true" />
         </p>
       </section>

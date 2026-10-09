@@ -1,24 +1,14 @@
 import { useState } from 'react'
 import { FiArrowDownLeft, FiArrowUpRight, FiCheck, FiClock, FiCreditCard, FiDollarSign, FiRefreshCw, FiSearch, FiShield, FiTrendingUp, FiUser, FiUsers, FiX } from 'react-icons/fi'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 import './PageFinancePanel.css'
 
 function money(amount, currency = 'KES') {
   return new Intl.NumberFormat('en-KE', { style: 'currency', currency, maximumFractionDigits: 0 }).format(Number(amount || 0))
 }
 
-function recipientInitials(recipient) {
-  return String(recipient?.name || recipient?.username || 'Z')
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
-}
-
 function RecipientAvatar({ recipient }) {
-  if (recipient?.avatarUrl) return <img alt="" src={recipient.avatarUrl} />
-  return <span aria-hidden="true">{recipientInitials(recipient)}</span>
+  return <ProfileAvatar alt="" src={recipient?.avatarUrl} />
 }
 
 const emptyForm = {

@@ -11,6 +11,7 @@ import {
   FiX,
 } from 'react-icons/fi'
 import { recordConnectPostOpen, recordProfileSuggestionDismiss } from '../services/postService'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 function RailHeading({ eyebrow, Icon, title }) {
   return (
@@ -86,7 +87,7 @@ function ExploreDefaultRail({
           {visiblePeople.map((person) => (
             <article key={person.id} className="explore-campus-person-item">
               <Link to={person.profileUrl} className="explore-campus-person-avatar" aria-label={`View ${person.name}'s profile`}>
-                <img src={person.avatar || '/assets/index/bee_nobg.png'} alt={person.name} />
+                <ProfileAvatar src={person.avatar} alt={person.name} />
                 {person.isOnline ? <span /> : null}
               </Link>
               <Link to={person.profileUrl} className="explore-campus-person-copy">
@@ -122,12 +123,12 @@ function ExploreDefaultRail({
                 <footer className="explore-campus-announcement-owner-row">
                   {announcement.ownerProfileUrl ? (
                     <Link to={announcement.ownerProfileUrl} className="explore-campus-announcement-owner" aria-label={`View ${announcement.owner}'s profile`}>
-                      <img src={announcement.ownerAvatar} alt="" loading="lazy" />
+                      <ProfileAvatar src={announcement.ownerAvatar} alt="" loading="lazy" />
                       <span><strong>{announcement.owner}</strong>{announcement.ownerHandle ? <small>{announcement.ownerHandle}</small> : null}</span>
                     </Link>
                   ) : (
                     <div className="explore-campus-announcement-owner">
-                      <img src={announcement.ownerAvatar} alt="" loading="lazy" />
+                      <ProfileAvatar src={announcement.ownerAvatar} alt="" loading="lazy" />
                       <span><strong>{announcement.owner}</strong>{announcement.ownerHandle ? <small>{announcement.ownerHandle}</small> : null}</span>
                     </div>
                   )}

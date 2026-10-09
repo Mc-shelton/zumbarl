@@ -109,7 +109,15 @@ function CampusHomeRail({ rail }) {
                 <h4>{group.name}</h4>
                 <p>{group.value}</p>
               </div>
-              <div className="campus-progress" aria-label={`${group.name}: ${group.value}`}>
+              <div
+                className="campus-progress"
+                role="progressbar"
+                aria-label={group.name}
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow={group.progress}
+                aria-valuetext={String(group.value)}
+              >
                 <span style={{ width: `${group.progress}%` }} />
               </div>
               <span className="campus-progress-caption">{group.progress >= 80 ? 'Strong' : group.progress >= 50 ? 'Building' : 'Getting started'}</span>

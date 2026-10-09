@@ -17,6 +17,7 @@ import {
 } from "react-icons/fi";
 import { Link } from "react-router-dom";
 import Seo from "../components/Seo";
+import ProfileAvatar from "../components/ui/ProfileAvatar";
 import { BusinessWorkspaceSidebar } from "../features/business/components/BusinessApplicantSidebar";
 import { BusinessWorkspaceHeader } from "../features/business/components/BusinessWorkspaceHeader";
 import { hydrateBusinessProfileFromBackend } from "../features/business/services/businessProfileService";
@@ -185,11 +186,7 @@ export default function BusinessCompanyProfilePage() {
               </div>
               <div className="business-company-intro">
                 <div className="business-company-logo">
-                  {profile.logoUrl ? (
-                    <img src={profile.logoUrl} alt={`${profile.name} logo`} />
-                  ) : (
-                    <strong>{profile.name?.slice(0, 2).toUpperCase()}</strong>
-                  )}
+                  <ProfileAvatar src={profile.logoUrl} alt={`${profile.name} logo`} />
                 </div>
                 <div>
                   <small>
@@ -463,7 +460,7 @@ export default function BusinessCompanyProfilePage() {
                 {notice ? <p className="business-company-update-notice" role="status">{notice}</p> : null}
                 <div className="business-company-update-starter">
                   <span className="business-company-update-avatar">
-                    {profile.logoUrl ? <img src={normalizeZumbarlFileUrl(profile.logoUrl)} alt="" /> : <strong>{profile.name?.slice(0, 2).toUpperCase()}</strong>}
+                    <ProfileAvatar src={profile.logoUrl} alt="" />
                   </span>
                   <button type="button" onClick={() => openPostComposer()}>Share an update from {profile.name}…</button>
                   <footer>
@@ -478,7 +475,7 @@ export default function BusinessCompanyProfilePage() {
                     return <article className="business-company-update-card" key={post.id}>
                       <header>
                         <span className="business-company-update-avatar">
-                          {profile.logoUrl ? <img src={normalizeZumbarlFileUrl(profile.logoUrl)} alt="" /> : <strong>{profile.name?.slice(0, 2).toUpperCase()}</strong>}
+                          <ProfileAvatar src={profile.logoUrl} alt="" />
                         </span>
                         <div><strong>{profile.name}</strong><small>{updateTypeLabel(post.type)} · {relativeUpdateTime(post.createdAt)}</small></div>
                         <button type="button" onClick={() => copyStudentLink(post.id)}><FiLink /> Copy student link</button>

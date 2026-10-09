@@ -10,6 +10,7 @@ import {
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 const SECTION_LINKS = {
   posts: '/campus/explore',
@@ -108,7 +109,7 @@ function RecommendationCard({
         {item.thumbnail ? <img className="campus-event-reco-cover" src={normalizeZumbarlFileUrl(item.thumbnail)} alt="" loading="lazy" /> : <span className="campus-social-reco-placeholder"><FiImage aria-hidden="true" /></span>}
         <div className="campus-event-reco-body">
           <div className="campus-reco-creator">
-            {item.avatar ? <img src={normalizeZumbarlFileUrl(item.avatar)} alt="" loading="lazy" /> : <span>{String(item.org || 'Z').slice(0, 1).toUpperCase()}</span>}
+            <ProfileAvatar src={item.avatar} alt="" loading="lazy" />
             <p>{item.org}</p>
           </div>
           <h4>{item.title}</h4>

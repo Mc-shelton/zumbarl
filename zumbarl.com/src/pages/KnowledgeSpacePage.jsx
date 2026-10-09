@@ -31,6 +31,8 @@ import {
 import { Link, useParams } from "react-router-dom";
 import CampusSidebar from "../components/layout/CampusSidebar";
 import Seo from "../components/Seo";
+import ProfileAvatar from "../components/ui/ProfileAvatar";
+import { resolveProfileAvatar } from "../components/ui/profileAvatarUtils";
 import KnowledgeResourceCheckoutModal from "../features/learn/components/KnowledgeResourceCheckoutModal";
 import KnowledgeAvatarPicker from "../features/learn/components/KnowledgeAvatarPicker";
 import GeneratedResourceThumbnailPicker from "../features/learn/components/GeneratedResourceThumbnailPicker";
@@ -109,8 +111,8 @@ const EMPTY_SPACE_RESOURCE = {
   fileUrl: "",
 };
 
-const DEFAULT_MEMBER_AVATAR = "/assets/knowledge/default-member-avatar.svg";
-const avatar = (person) => normalizeZumbarlFileUrl(person?.avatarUrl) || DEFAULT_MEMBER_AVATAR;
+const DEFAULT_MEMBER_AVATAR = "/assets/index/bee_nobg.png";
+const avatar = (person) => resolveProfileAvatar(person?.avatarUrl);
 const firstWebLink = (value = "") => value.match(/https?:\/\/[^\s]+/i)?.[0]?.replace(/[),.;]+$/, "") || "";
 const fileLabel = (value = "") => value.replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ").trim();
 const pendingPreviewRevocations = new Map();
@@ -167,7 +169,7 @@ function ChatMessage({ message, canPromote = false, promoting = false, onPromote
   const linkPreviews = Array.isArray(message.linkPreviews) ? message.linkPreviews : [];
   const resources = Array.isArray(message.resources) ? message.resources : [];
   return <article className={message.isMine ? "is-mine" : "is-theirs"}>
-    <img src={avatar(message.author)} alt="" />
+    <ProfileAvatar src={message.author?.avatarUrl} alt="" />
     <div>
       <header><strong>{message.author.name}</strong><time>{relativeTime(message.createdAt)}</time></header>
       {message.body && <p>{message.body}</p>}
@@ -196,7 +198,7 @@ function PersonRow({ person, action, secondaryAction, showDetails = false }) {
   return (
     <article className="knowledge-person-row">
       <Link className="knowledge-person-avatar" to={`/campus/profiles/${person.id}`} aria-label={`View ${person.name}'s profile`}>
-        <img src={avatar(person)} alt="" />
+        <ProfileAvatar src={person.avatarUrl} alt="" />
       </Link>
       <div>
         <Link className="knowledge-person-name" to={`/campus/profiles/${person.id}`}>{person.name}</Link>
@@ -1233,7 +1235,7 @@ export default function KnowledgeSpacePage() {
                 <h1>{space.name}</h1>
                 <p>{space.description || `A student-owned ${isLibrary ? "library" : groupTypeLabel.toLowerCase()} on Zumbarl.`}</p>
                 <div className="knowledge-space-owner-line">
-                  <img src={avatar(space.owner)} alt="" />
+                  <ProfileAvatar src={space.owner.avatarUrl} alt="" />
                   <span>{space.owner.id ? <Link to={`/campus/profiles/${space.owner.id}`}>{space.owner.name}</Link> : <strong>{space.owner.name}</strong>}</span>
                   <small>{space.owner.id ? "Manager" : "Awaiting manager"}</small>
                   {space.owner.campus && <><FiMapPin /><span>{space.owner.campus}</span></>}
@@ -1500,7 +1502,7 @@ export default function KnowledgeSpacePage() {
                   <div className="knowledge-manage-heading"><FiArchive /><div><h2>Borrow requests</h2><p>Approve lending requests before members can open borrowable resources.</p></div></div>
                   <h3>Waiting for approval <span>{management?.pendingAccesses?.length || 0}</span></h3>
                   <div className="knowledge-resource-review-list">{(management?.pendingAccesses || []).map((request) => <article key={request.id}>
-                    <img src={normalizeZumbarlFileUrl(request.requester.avatarUrl) || DEFAULT_MEMBER_AVATAR} alt="" />
+                    <ProfileAvatar src={request.requester.avatarUrl} alt="" />
                     <div><strong>{request.requester.name} requested to borrow {request.resource.title}</strong><span>{[RESOURCE_LABELS[request.resource.type], request.requester.campus, `${request.resource.availableCopies || 0} copies`].filter(Boolean).join(" · ")}</span><p>{relativeTime(request.requestedAt)}</p></div>
                     <div><button type="button" className="is-decline" disabled={working === `access-request-${request.id}`} onClick={() => decideAccessRequest(request.id, "REJECT")}>Decline</button><button type="button" disabled={working === `access-request-${request.id}`} onClick={() => decideAccessRequest(request.id, "APPROVE")}>Approve</button></div>
                   </article>)}</div>
@@ -1511,7 +1513,7 @@ export default function KnowledgeSpacePage() {
                   <div className="knowledge-manage-heading"><FiDollarSign /><div><h2>Library sales</h2><p>Completed resource purchases and gross earnings across this library.</p></div></div>
                   <div className="knowledge-sales-summary"><div><span>Gross earned</span><strong>{management?.earnings?.currency || "KES"} {Number(management?.earnings?.grossAmount || 0).toLocaleString()}</strong></div><div><span>Purchases</span><strong>{management?.earnings?.purchaseCount || 0}</strong></div></div>
                   <div className="knowledge-resource-review-list">{(management?.purchases || []).map((purchase) => <article key={purchase.id}>
-                    <img src={normalizeZumbarlFileUrl(purchase.buyer.avatarUrl) || DEFAULT_MEMBER_AVATAR} alt="" />
+                    <ProfileAvatar src={purchase.buyer.avatarUrl} alt="" />
                     <div><strong>{purchase.buyer.name} bought {purchase.resource.title}</strong><span>{[purchase.publisher?.name ? `Published by ${purchase.publisher.name}` : null, relativeTime(purchase.purchasedAt)].filter(Boolean).join(" · ")}</span><p>Payment completed and access granted</p></div>
                     <b className="knowledge-sale-amount">{purchase.currency} {Number(purchase.amount || 0).toLocaleString()}</b>
                   </article>)}</div>

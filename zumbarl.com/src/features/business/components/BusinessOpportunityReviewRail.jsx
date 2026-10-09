@@ -8,7 +8,7 @@ import {
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 
-function getApplicationSummary(applications) {
+function getApplicationSummary(applications, opportunity = null) {
   const summary = applications.reduce((counts, application) => {
     const status = String(application.status || 'submitted').toLowerCase()
     let key = 'new'
@@ -23,13 +23,23 @@ function getApplicationSummary(applications) {
   }, { new: 0, shortlisted: 0, accepted: 0, rejected: 0 })
   const totalBidAmount = applications.reduce((total, application) => total + Number(application.bidAmount || 0), 0)
 
+  const isTeamProject = opportunity && String(opportunity.opportunityType || '').toLowerCase() !== 'task'
+  const budgetAmount = Number(opportunity?.budgetAmount)
+    || Number(String(opportunity?.budget || '').replace(/[^\d.]/g, ''))
+    || 0
+  const acceptedCount = applications.filter((application) => (
+    ['accepted', 'awarded'].includes(String(application.status || '').toLowerCase())
+  )).length
+
   return {
     ...summary,
     total: applications.length,
     averageBid: applications.length ? Math.round(totalBidAmount / applications.length) : 0,
-    committedAmount: applications
-      .filter((application) => ['accepted', 'awarded'].includes(String(application.status || '').toLowerCase()))
-      .reduce((total, application) => total + Number(application.bidAmount || 0), 0),
+    committedAmount: isTeamProject
+      ? acceptedCount ? budgetAmount : 0
+      : applications
+        .filter((application) => ['accepted', 'awarded'].includes(String(application.status || '').toLowerCase()))
+        .reduce((total, application) => total + Number(application.bidAmount || 0), 0),
     withAttachments: applications.filter((application) => Array.isArray(application.attachments) && application.attachments.length).length,
   }
 }
@@ -54,8 +64,9 @@ function getOpportunityTimeline(opportunity, summary) {
   ]
 }
 
-function ApplicationSummaryCard({ applications }) {
-  const summary = getApplicationSummary(applications)
+function ApplicationSummaryCard({ applications, opportunity }) {
+  const summary = getApplicationSummary(applications, opportunity)
+  const isTeamProject = opportunity && String(opportunity.opportunityType || '').toLowerCase() !== 'task'
 
   return (
     <section className="business-profile-card business-review-summary-card">
@@ -71,7 +82,7 @@ function ApplicationSummaryCard({ applications }) {
       </dl>
       <hr />
       <dl>
-        <div><dt>Average Bid</dt><dd>KES {summary.averageBid.toLocaleString()}</dd></div>
+        <div><dt>{isTeamProject ? 'Shared Budget' : 'Average Bid'}</dt><dd>KES {summary.averageBid.toLocaleString()}</dd></div>
         <div><dt>With Attachments</dt><dd>{summary.withAttachments}</dd></div>
       </dl>
     </section>
@@ -101,19 +112,20 @@ function HelpCard({ title, detail }) {
   )
 }
 
-function ApplicationsRail({ activeApplicationStatus, applications, onChangeApplicationStatus = () => {} }) {
-  const summary = getApplicationSummary(applications)
+function ApplicationsRail({ activeApplicationStatus, applications, onChangeApplicationStatus = () => {}, opportunity }) {
+  const summary = getApplicationSummary(applications, opportunity)
+  const isTeamProject = String(opportunity?.opportunityType || '').toLowerCase() !== 'task'
 
   if (activeApplicationStatus === 'shortlisted') {
     return (
       <>
-        <ApplicationSummaryCard applications={applications} />
+        <ApplicationSummaryCard applications={applications} opportunity={opportunity} />
 
         <section className="business-profile-card business-review-shortlisted-insights-card">
           <h2>Shortlisted Insights</h2>
           <p><FiCheckCircle aria-hidden="true" /> You have {summary.shortlisted} applicant{summary.shortlisted === 1 ? '' : 's'} shortlisted.</p>
           <div>
-            <article><span>Average Bid</span><strong>KES {summary.averageBid.toLocaleString()}</strong></article>
+            <article><span>{isTeamProject ? 'Shared Budget' : 'Average Bid'}</span><strong>KES {summary.averageBid.toLocaleString()}</strong></article>
             <article><span>Attachments</span><strong>{summary.withAttachments}</strong></article>
           </div>
         </section>
@@ -137,7 +149,7 @@ function ApplicationsRail({ activeApplicationStatus, applications, onChangeAppli
 
   return (
     <>
-      <ApplicationSummaryCard applications={applications} />
+      <ApplicationSummaryCard applications={applications} opportunity={opportunity} />
 
       <section className="business-profile-card business-review-quick-actions-card">
         <h2>Quick Actions</h2>
@@ -188,7 +200,7 @@ function DeliverablesRail({ applications, opportunity }) {
 }
 
 function PaymentsRail({ applications, opportunity }) {
-  const summary = getApplicationSummary(applications)
+  const summary = getApplicationSummary(applications, opportunity)
   const budgetAmount = Number(opportunity.budgetAmount)
     || Number(String(opportunity.budget || '').replace(/[^\d.]/g, ''))
     || 0
@@ -197,7 +209,7 @@ function PaymentsRail({ applications, opportunity }) {
 
   return (
     <>
-      <ApplicationSummaryCard applications={applications} />
+      <ApplicationSummaryCard applications={applications} opportunity={opportunity} />
 
       <section className="business-profile-card business-review-payment-overview-card">
         <header>
@@ -228,7 +240,7 @@ export function BusinessOpportunityReviewRail({
   opportunity,
 }) {
   if (!opportunity) return null
-  const applicationSummary = getApplicationSummary(applications)
+  const applicationSummary = getApplicationSummary(applications, opportunity)
   const timeline = getOpportunityTimeline(opportunity, applicationSummary)
   const budgetAmount = Number(opportunity.budgetAmount)
     || Number(String(opportunity.budget || '').replace(/[^\d.]/g, ''))
@@ -244,6 +256,7 @@ export function BusinessOpportunityReviewRail({
           activeApplicationStatus={activeApplicationStatus}
           applications={applications}
           onChangeApplicationStatus={onChangeApplicationStatus}
+          opportunity={opportunity}
         />
       ) : activeReviewTab === 'deliverables' ? (
         <DeliverablesRail applications={applications} opportunity={opportunity} />

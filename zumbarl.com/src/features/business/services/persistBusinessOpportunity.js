@@ -113,6 +113,13 @@ function wait(milliseconds) {
   return new Promise((resolve) => window.setTimeout(resolve, milliseconds))
 }
 
+function mpesaPaymentError(message, code, payment = null) {
+  const error = new Error(message)
+  error.code = code
+  error.payment = payment
+  return error
+}
+
 async function waitForBackendMpesaPayment(paymentId, { intervalMs = 2500, attempts = 48 } = {}) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     if (attempt > 0) await wait(intervalMs)
@@ -131,10 +138,18 @@ async function waitForBackendMpesaPayment(paymentId, { intervalMs = 2500, attemp
     const payment = response?.payment
     if (payment?.status === 'COMPLETED') return payment
     if (payment?.status === 'FAILED' || payment?.status === 'REVERSED') {
-      throw new Error(payment.resultDescription || 'The M-Pesa payment was not completed.')
+      throw mpesaPaymentError(
+        payment.resultDescription || 'The M-Pesa payment was not completed.',
+        'MPESA_PAYMENT_FAILED',
+        payment,
+      )
     }
   }
-  throw new Error('M-Pesa confirmation is still pending. Do not pay again; reopen this opportunity to check its funding status.')
+  throw mpesaPaymentError(
+    'M-Pesa has not confirmed this payment yet. Do not start another payment; you can close this window and fund the opportunity later.',
+    'MPESA_PAYMENT_PENDING',
+    { id: paymentId, status: 'PROCESSING' },
+  )
 }
 
 async function listBackendFinanceWallets() {

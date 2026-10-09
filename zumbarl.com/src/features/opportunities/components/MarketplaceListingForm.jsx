@@ -107,7 +107,7 @@ function ListingPricingStep({ form, foodMode, updateField, vendorType }) {
     <section className="marketplace-studio-step-panel">
       <header><span>03</span><div><h2>Set price and availability</h2><p>{foodMode ? 'Price the item and tell students how many servings you have today.' : 'Control how the listing is priced, negotiated and taken out of stock.'}</p></div></header>
       <div className="marketplace-studio-price-card">
-        <label>Price<span><b>KSh</b><input type="number" min="0" step="1" value={form.priceAmount} onChange={(event) => updateField('priceAmount', event.target.value)} placeholder="0" /></span></label>
+        <label>Price<span><b>KES</b><input type="number" min="0" step="1" value={form.priceAmount} onChange={(event) => updateField('priceAmount', event.target.value)} placeholder="0" /></span></label>
         <label>{foodMode ? 'Servings available today' : form.kind === 'service' ? 'Available slots' : 'Units in stock'}<input type="number" min="0" step="1" value={form.stock} onChange={(event) => updateField('stock', event.target.value)} /></label>
       </div>
       {foodMode ? (
@@ -118,7 +118,7 @@ function ListingPricingStep({ form, foodMode, updateField, vendorType }) {
       ) : (
         <>
           <article className="marketplace-studio-toggle-row"><div><strong>Allow buyers to make offers</strong><p>Buyers can propose another price; you still decide whether to accept.</p></div><button type="button" role="switch" aria-checked={form.negotiable} className={form.negotiable ? 'is-on' : ''} onClick={() => updateField('negotiable', !form.negotiable)}><span /></button></article>
-          {form.negotiable ? <label className="marketplace-studio-minimum-offer">Minimum offer you want to consider <span><b>KSh</b><input type="number" min="0" step="1" value={form.minimumOffer} onChange={(event) => updateField('minimumOffer', event.target.value)} placeholder="Optional" /></span><small>Buyers will not see this threshold.</small></label> : null}
+          {form.negotiable ? <label className="marketplace-studio-minimum-offer">Minimum offer you want to consider <span><b>KES</b><input type="number" min="0" step="1" value={form.minimumOffer} onChange={(event) => updateField('minimumOffer', event.target.value)} placeholder="Optional" /></span><small>Buyers will not see this threshold.</small></label> : null}
           <label className="marketplace-studio-variants">Variants or options<input value={form.variantsText} onChange={(event) => updateField('variantsText', event.target.value)} placeholder="e.g. Small, Medium, Large or Black, Blue" /><small>Separate options with commas.</small></label>
           <div className="marketplace-studio-pricing-note"><FiBox aria-hidden="true" /><p><strong>Inventory stays under your control.</strong> Pause a listing at any time, mark it reserved while agreeing a handoff, or mark it sold when the transaction completes.</p></div>
         </>
@@ -184,7 +184,7 @@ function ListingFulfilmentStep({ form, toggleDeliveryOption, updateField }) {
           {form.deliveryZones.length ? form.deliveryZones.map((zone, index) => (
             <div key={index}>
               <label>Area or destination<input value={zone.location} onChange={(event) => updateDeliveryZone(index, 'location', event.target.value)} placeholder="e.g. Ruiru town" /></label>
-              <label>Delivery price<span><b>KSh</b><input type="number" min="0" step="1" value={zone.fee} onChange={(event) => updateDeliveryZone(index, 'fee', event.target.value)} placeholder="0" /></span></label>
+              <label>Delivery price<span><b>KES</b><input type="number" min="0" step="1" value={zone.fee} onChange={(event) => updateDeliveryZone(index, 'fee', event.target.value)} placeholder="0" /></span></label>
               <button type="button" aria-label={`Remove delivery area ${index + 1}`} onClick={() => removeDeliveryZone(index)}><FiX aria-hidden="true" /></button>
             </div>
           )) : <p className="marketplace-studio-delivery-empty">Add every place you can deliver to and the exact price for each.</p>}
@@ -226,7 +226,7 @@ function ListingReviewStep({ activeStep, form, foodMode, goToStep, vendorType })
             <article><header><h3>Listing information</h3><button type="button" onClick={() => goToStep(1)}>Edit</button></header><dl><div><dt>Type</dt><dd>{form.kind}</dd></div><div><dt>Category</dt><dd>{form.category}</dd></div><div><dt>{form.kind === 'service' ? 'Customer flow' : 'Condition'}</dt><dd>{form.kind === 'service' ? form.serviceMode.replace('_', ' ') : form.condition}</dd></div><div><dt>Description</dt><dd>{form.description || 'Not provided'}</dd></div></dl></article>
             <article><header><h3>Media and specifications</h3><button type="button" onClick={() => goToStep(2)}>Edit</button></header><dl><div><dt>Images</dt><dd>{form.gallery.length}</dd></div><div><dt>Brand</dt><dd>{form.brand || 'Not specified'}</dd></div><div><dt>Model</dt><dd>{form.model || 'Not specified'}</dd></div><div><dt>Included</dt><dd>{form.included || 'Item only'}</dd></div></dl></article>
             <article><header><h3>Sale settings</h3><button type="button" onClick={() => goToStep(3)}>Edit</button></header><dl><div><dt>Offers</dt><dd>{form.negotiable ? 'Accepted' : 'Fixed price'}</dd></div><div><dt>Stock</dt><dd>{form.stock}</dd></div><div><dt>Options</dt><dd>{form.variantsText || 'None'}</dd></div></dl></article>
-            <article><header><h3>Fulfilment</h3><button type="button" onClick={() => goToStep(4)}>Edit</button></header><dl><div><dt>Methods</dt><dd>{form.deliveryOptions.join(', ') || 'Not selected'}</dd></div><div><dt>Delivery areas</dt><dd>{form.deliveryZones.map((zone) => `${zone.location} (KSh ${zone.fee || 0})`).join(', ') || 'Pickup only'}</dd></div><div><dt>Location</dt><dd>{form.locationLabel || 'Not provided'}</dd></div><div><dt>Returns</dt><dd>{form.returnPolicy || 'Discuss with buyer'}</dd></div></dl></article>
+            <article><header><h3>Fulfilment</h3><button type="button" onClick={() => goToStep(4)}>Edit</button></header><dl><div><dt>Methods</dt><dd>{form.deliveryOptions.join(', ') || 'Not selected'}</dd></div><div><dt>Delivery areas</dt><dd>{form.deliveryZones.map((zone) => `${zone.location} (KES ${zone.fee || 0})`).join(', ') || 'Pickup only'}</dd></div><div><dt>Location</dt><dd>{form.locationLabel || 'Not provided'}</dd></div><div><dt>Returns</dt><dd>{form.returnPolicy || 'Discuss with buyer'}</dd></div></dl></article>
           </>
         )}
       </div>

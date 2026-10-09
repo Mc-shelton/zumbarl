@@ -157,7 +157,7 @@ function OpportunityBidForm({
     if (stepId === 'proposal') {
       if (proposal.proposal.trim().length < 10) return 'Write a proposal of at least 10 characters.'
       if (!isTeamOpportunity) {
-        if (!proposal.price.trim()) return 'Enter your proposed price.'
+        if (!(Number(proposal.price) > 0)) return 'Enter a proposed price greater than zero.'
         if (proposal.pricingType !== 'fixed' && !(Number(proposal.estimatedUnits) > 0)) {
           return `Estimate how many ${PRICING_UNIT_LABELS[proposal.pricingType]?.unit || 'units'} the work will take.`
         }
@@ -181,22 +181,38 @@ function OpportunityBidForm({
   }
 
   async function goToNextStep() {
-    const validationError = getStepValidationError(activeStep.id)
-    if (validationError) {
-      setStepError(validationError)
-      return
-    }
-
-    setStepError('')
-    const nextStepIndex = Math.min(applicationSteps.length - 1, activeStepIndex + 1)
-    const savedDraft = await onSaveDraft?.(buildApplicationState(nextStepIndex), { silent: true })
-    if (onSaveDraft && !savedDraft) return
-    setActiveStepIndex(nextStepIndex)
+    await goToApplicationStep(activeStepIndex + 1)
   }
 
   function goToPreviousStep() {
     setStepError('')
     setActiveStepIndex((current) => Math.max(0, current - 1))
+  }
+
+  async function goToApplicationStep(requestedIndex) {
+    const nextStepIndex = Math.min(applicationSteps.length - 1, Math.max(0, requestedIndex))
+    if (nextStepIndex === activeStepIndex) return
+
+    if (nextStepIndex < activeStepIndex) {
+      setStepError('')
+      setActiveStepIndex(nextStepIndex)
+      return
+    }
+
+    const firstInvalidIndex = applicationSteps
+      .slice(0, nextStepIndex)
+      .findIndex((step) => getStepValidationError(step.id))
+
+    if (firstInvalidIndex !== -1) {
+      setActiveStepIndex(firstInvalidIndex)
+      setStepError(getStepValidationError(applicationSteps[firstInvalidIndex].id))
+      return
+    }
+
+    setStepError('')
+    const savedDraft = await onSaveDraft?.(buildApplicationState(nextStepIndex), { silent: true })
+    if (onSaveDraft && !savedDraft) return
+    setActiveStepIndex(nextStepIndex)
   }
 
   async function handleSubmit(event) {
@@ -245,24 +261,35 @@ function OpportunityBidForm({
       <ol
         className={`opportunities-application-steps has-${applicationSteps.length}-steps`}
         aria-label="Application phases"
+        role="tablist"
       >
         {applicationSteps.map((step, index) => {
           const isActive = index === activeStepIndex
           const isComplete = index < activeStepIndex
           return (
-            <li key={step.id} className={`${isActive ? 'is-active' : ''}${isComplete ? ' is-complete' : ''}`}>
-              <span>{isComplete ? <FiCheck aria-hidden="true" /> : <step.Icon aria-hidden="true" />}</span>
-              <div>
-                <small>Phase {index + 1}</small>
-                <strong>{step.label}</strong>
-              </div>
+            <li key={step.id} className={`${isActive ? 'is-active' : ''}${isComplete ? ' is-complete' : ''}`} role="presentation">
+              <button
+                aria-controls={`application-${step.id}-panel`}
+                aria-selected={isActive}
+                disabled={isSavingDraft || isSubmitting}
+                id={`application-${step.id}-tab`}
+                role="tab"
+                type="button"
+                onClick={() => goToApplicationStep(index)}
+              >
+                <span>{isComplete ? <FiCheck aria-hidden="true" /> : <step.Icon aria-hidden="true" />}</span>
+                <div>
+                  <small>Phase {index + 1}</small>
+                  <strong>{step.label}</strong>
+                </div>
+              </button>
             </li>
           )
         })}
       </ol>
 
       {activeStep.id === 'proposal' ? (
-        <section className="opportunities-application-phase" aria-labelledby="application-proposal-title">
+        <section className="opportunities-application-phase" aria-labelledby="application-proposal-tab" id="application-proposal-panel" role="tabpanel">
           <div className="opportunities-application-phase-heading">
             <span>1</span>
             <div>
@@ -323,7 +350,7 @@ function OpportunityBidForm({
                   id="bid-price"
                   value={proposal.price}
                   type="number"
-                  min="0"
+                  min="1"
                   placeholder="Enter your price"
                   required
                   onChange={(event) => updateProposal('price', event.target.value)}
@@ -390,7 +417,7 @@ function OpportunityBidForm({
       ) : null}
 
       {activeStep.id === 'questions' ? (
-        <section className="opportunities-application-phase" aria-labelledby="application-questions-title">
+        <section className="opportunities-application-phase" aria-labelledby="application-questions-tab" id="application-questions-panel" role="tabpanel">
           <div className="opportunities-application-phase-heading">
             <span>{activeStepIndex + 1}</span>
             <div>
@@ -428,7 +455,7 @@ function OpportunityBidForm({
       ) : null}
 
       {activeStep.id === 'attachments' ? (
-        <section className="opportunities-application-phase" aria-labelledby="application-attachments-title">
+        <section className="opportunities-application-phase" aria-labelledby="application-attachments-tab" id="application-attachments-panel" role="tabpanel">
           <div className="opportunities-application-phase-heading">
             <span>{activeStepIndex + 1}</span>
             <div>
@@ -493,7 +520,7 @@ function OpportunityBidForm({
       ) : null}
 
       {activeStep.id === 'review' ? (
-        <section className="opportunities-application-phase" aria-labelledby="application-review-title">
+        <section className="opportunities-application-phase" aria-labelledby="application-review-tab" id="application-review-panel" role="tabpanel">
           <div className="opportunities-application-phase-heading">
             <span>{activeStepIndex + 1}</span>
             <div>

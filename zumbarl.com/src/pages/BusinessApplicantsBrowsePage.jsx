@@ -15,7 +15,7 @@ import {
 } from 'react-icons/fi'
 import { Link, useSearchParams } from 'react-router-dom'
 import Seo from '../components/Seo'
-import { Breadcrumb, StatusPill } from '../components/ui'
+import { Breadcrumb, DEFAULT_PROFILE_AVATAR, ProfileAvatar, StatusPill } from '../components/ui'
 import { BusinessWorkspaceHeader } from '../features/business/components/BusinessWorkspaceHeader'
 import { BusinessWorkspaceSidebar } from '../features/business/components/BusinessApplicantSidebar'
 import {
@@ -36,8 +36,6 @@ const BROWSE_CATEGORIES = [
   { id: 'writing', label: 'Writing & Content', icon: FiBriefcase },
   { id: 'video', label: 'Video & Animation', icon: FiCheckCircle },
 ]
-
-const DEFAULT_STUDENT_IMAGE = '/assets/index/bee_nobg.png'
 
 function formatServicePrice(service) {
   const amount = Number(service.priceAmount)
@@ -60,7 +58,8 @@ function toBrowseStudent(student) {
     featureMeta: portfolio.length
       ? `${portfolio.length} published portfolio item${portfolio.length === 1 ? '' : 's'}`
       : 'Profile',
-    image: student.image || portfolio[0]?.image || DEFAULT_STUDENT_IMAGE,
+    featureImage: portfolio[0]?.image || '/assets/index/bee_nobg.png',
+    image: student.image,
     location: student.location || 'Location not set',
     match: `${Number(student.match || 0)}% match`,
     services: services.map((service) => `${service.title} · ${formatServicePrice(service)}`),
@@ -111,7 +110,7 @@ function BusinessBrowseProfileSummary({
   return (
     <section className="business-browse-profile-summary">
       <header>
-        <img src={image} alt={`${name} avatar`} />
+        <ProfileAvatar src={image} alt={`${name} avatar`} />
         <div>
           <h3>{name} <StatusPill tone="purple">{status}</StatusPill></h3>
           <p>{handle}</p>
@@ -135,7 +134,7 @@ function BusinessStudentCard({ student }) {
   return (
     <article className="business-browse-student-card">
       <Link className="business-browse-student-media" to={profileHref}>
-        <img src={student.image} alt="" />
+        <img src={student.featureImage} alt="" />
         <span>Story</span>
         <strong>{student.feature}</strong>
         <em>{student.featureMeta}</em>
@@ -184,7 +183,7 @@ function BusinessApplicantsBrowsePage() {
   const promotedServices = useMemo(() => students.flatMap((student) => (
     (student.services || []).map((service) => ({
       ...service,
-      image: student.image || student.portfolio?.[0]?.image || DEFAULT_STUDENT_IMAGE,
+      image: student.image || student.portfolio?.[0]?.image || DEFAULT_PROFILE_AVATAR,
       meta: student.bio || student.headline || 'Student service',
       profileHref: `/business/applicant-profile/${encodeURIComponent(student.id)}`,
       student: student.name,
@@ -195,9 +194,9 @@ function BusinessApplicantsBrowsePage() {
     (student.portfolio || []).map((portfolio) => ({
       ...student,
       id: portfolio.id,
-      image: portfolio.image || student.image || DEFAULT_STUDENT_IMAGE,
+      image: portfolio.image || student.image || DEFAULT_PROFILE_AVATAR,
       profileHref: `/business/applicant-profile/${encodeURIComponent(student.id)}`,
-      profileImage: student.image || DEFAULT_STUDENT_IMAGE,
+      profileImage: student.image || DEFAULT_PROFILE_AVATAR,
       role: student.headline || 'Student creator',
       story: portfolio.description || portfolio.title,
     }))

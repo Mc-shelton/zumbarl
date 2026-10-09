@@ -4,10 +4,12 @@ import {
   FiCheckCircle,
   FiDollarSign,
   FiMapPin,
+  FiMonitor,
   FiUsers,
   FiX,
 } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 function OpportunityDetailRailPanel({
   activeOpportunityIntentId,
@@ -75,7 +77,7 @@ function OpportunityDetailRailPanel({
 
       <section className="opportunities-owner-card">
         <div className="opportunities-owner-head">
-          <img src="/assets/index/bee_nobg.png" alt={`${selectedOpportunity.owner.name} avatar`} loading="lazy" />
+          <ProfileAvatar src={selectedOpportunity.owner.avatarUrl} alt={`${selectedOpportunity.owner.name} avatar`} loading="lazy" />
           <div>
             <h4>{selectedOpportunity.owner.name}</h4>
             <p>{selectedOpportunity.owner.role}</p>
@@ -110,7 +112,7 @@ function OpportunityDetailRailPanel({
         </span>
         {intentFit ? <p>{intentFit}</p> : null}
         {selectedOpportunity.progressionOutcome ? <p>{selectedOpportunity.progressionOutcome}</p> : null}
-        <button type="button" onClick={onEditFilters}>Adjust my matches</button>
+        <button type="button" className="opportunities-detail-desktop-only" onClick={onEditFilters}>Adjust my matches</button>
       </section>
 
       <div className="opportunities-detail-disclosures">
@@ -161,6 +163,19 @@ function OpportunityDetailRailPanel({
                 {selectedOpportunityProject ? 'View Ongoing Work' : selectedOpportunityBid?.isDraft ? 'Continue Application' : selectedOpportunityBid ? 'View Application' : 'Place Bid'}
                 <FiArrowRight aria-hidden="true" />
               </button>
+              <div className="opportunities-detail-mobile-preview-note" role="note">
+                <FiMonitor aria-hidden="true" />
+                <div>
+                  <strong>Preview only on mobile</strong>
+                  <span>
+                    {selectedOpportunityProject
+                      ? 'Open and manage this project from a desktop computer.'
+                      : selectedOpportunityBid
+                        ? 'Continue or manage your application from a desktop computer.'
+                        : 'Use a desktop computer when you are ready to apply.'}
+                  </span>
+                </div>
+              </div>
             </>
           )}
         </footer>

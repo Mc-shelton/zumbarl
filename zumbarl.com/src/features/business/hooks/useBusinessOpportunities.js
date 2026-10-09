@@ -15,6 +15,7 @@ import {
   startBackendApplicantInterview,
   awardBackendApplicant,
   counterOfferBackendApplicant,
+  createBackendOpportunityDeliverables,
   fundBackendBusinessOpportunity,
   waitForBackendMpesaPayment,
   setBackendOpportunityApplicationsClosed,
@@ -29,6 +30,7 @@ import { useBusinessFlowState } from './useBusinessFlowState'
 const DEFAULT_PAGE_SIZE = 5
 const PAGE_SIZE_OPTIONS = [5, 10, 20]
 const VIEW_MODE_STORAGE_KEY = 'zumbarl.business-opportunities-view'
+const REVIEW_OPPORTUNITY_STORAGE_KEY = 'zumbarl.business-opportunities-review-id'
 // Stable identity, so an in-flight invite fetch doesn't re-run downstream memos.
 const NO_INVITE_CANDIDATES = []
 const ACTIVE_OPPORTUNITY_STATUSES = new Set(['Open', 'In Progress', 'Pending'])
@@ -58,6 +60,23 @@ function storeViewMode(viewMode) {
     window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, viewMode)
   } catch {
     // View mode persistence is best-effort; ignore storage failures.
+  }
+}
+
+function getStoredReviewOpportunityId() {
+  try {
+    return window.sessionStorage.getItem(REVIEW_OPPORTUNITY_STORAGE_KEY)
+  } catch {
+    return null
+  }
+}
+
+function storeReviewOpportunityId(opportunityId) {
+  try {
+    if (opportunityId) window.sessionStorage.setItem(REVIEW_OPPORTUNITY_STORAGE_KEY, opportunityId)
+    else window.sessionStorage.removeItem(REVIEW_OPPORTUNITY_STORAGE_KEY)
+  } catch {
+    // Refresh recovery is best-effort when browser storage is unavailable.
   }
 }
 
@@ -96,11 +115,13 @@ function mapFlowOpportunity(opportunity, invitedCount = 0) {
     acceptanceCriteria: opportunity.acceptanceCriteria,
     applicants: opportunity.applicants || 0,
     budget: opportunity.budget,
+    budgetAmount: opportunity.budgetAmount,
     bidderInstructions: opportunity.bidderInstructions,
     category: opportunity.category,
     clarityScore: opportunity.clarityScore || 0,
     company: opportunity.company,
     companyDescription: opportunity.companyDescription,
+    currency: opportunity.currency || 'KES',
     canInvite: INVITABLE_OPPORTUNITY_STATUSES.has(status)
       && opportunity.visibility === 'public'
       && Boolean(opportunity.publishedAt),
@@ -115,7 +136,9 @@ function mapFlowOpportunity(opportunity, invitedCount = 0) {
     duration: opportunity.duration,
     icon: 'briefcase',
     engagementMode: opportunity.engagementMode,
+    escrowCoverage: Number(opportunity.escrowCoverage || 0),
     escrowStatus: opportunity.escrowStatus,
+    activeMpesaPayment: opportunity.activeMpesaPayment || null,
     image: opportunity.image,
     imageUrl: opportunity.imageUrl,
     invitedCount: invitedCount || opportunity.invitedCount || 0,
@@ -192,7 +215,9 @@ export function useBusinessOpportunities() {
   const [activeApplicationStatus, setActiveApplicationStatus] = useState('all')
   const [projectActionState, setProjectActionState] = useState({ error: '', notice: '', pending: '' })
   const [activeInterviewConversation, setActiveInterviewConversation] = useState(null)
-  const [reviewOpportunityId, setReviewOpportunityId] = useState(incomingReviewOpportunityId)
+  const [reviewOpportunityId, setReviewOpportunityId] = useState(
+    () => incomingReviewOpportunityId || getStoredReviewOpportunityId(),
+  )
   const [publishPaymentOpportunityId, setPublishPaymentOpportunityId] = useState(
     shouldOpenPublishPayment ? incomingReviewOpportunityId : null,
   )
@@ -219,6 +244,27 @@ export function useBusinessOpportunities() {
   const [isSendingInvites, setIsSendingInvites] = useState(false)
   const [deletingOpportunityId, setDeletingOpportunityId] = useState(null)
   const [deleteOpportunityError, setDeleteOpportunityError] = useState('')
+
+  useEffect(() => {
+    if (!shouldOpenPublishPayment) return
+
+    // The create flow uses history state as a one-time handoff. Remove the
+    // payment flag immediately so refreshing this URL cannot reopen the modal.
+    const nextState = { ...(location.state || {}) }
+    delete nextState.openPublishPayment
+    navigate({
+      pathname: location.pathname,
+      search: location.search,
+      hash: location.hash,
+    }, {
+      replace: true,
+      state: nextState,
+    })
+  }, [location.hash, location.pathname, location.search, location.state, navigate, shouldOpenPublishPayment])
+
+  useEffect(() => {
+    storeReviewOpportunityId(reviewOpportunityId)
+  }, [reviewOpportunityId])
 
   const opportunities = useMemo(() => (
     businessFlow.opportunities.map((item) => mapFlowOpportunity(item))
@@ -450,6 +496,7 @@ export function useBusinessOpportunities() {
 
   const recentActivity = useMemo(() => (
     backendActivity.slice(0, 4).map((event, index) => ({
+      id: event.id,
       actor: event.actorName || 'Zumbarl user',
       initials: String(event.actorName || 'ZU').split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase(),
       detail: getActivityDetail(event),
@@ -524,11 +571,20 @@ export function useBusinessOpportunities() {
     if (!opportunity?.canPublish) return
 
     const published = await publishBusinessOpportunity(opportunity.id, payment)
+    setPublishPaymentOpportunityId(null)
     setReviewOpportunityId(opportunity.id)
     setActiveReviewTab('overview')
     setActiveApplicationStatus('all')
-    setPublishPaymentOpportunityId(null)
     return published
+  }
+
+  async function addOpportunityDeliverables(opportunity, deliverables) {
+    const opportunityId = opportunity?.backendId || opportunity?.id
+    if (!opportunityId) throw new Error('Save this opportunity before adding deliverables.')
+
+    const result = await createBackendOpportunityDeliverables(opportunityId, deliverables)
+    await hydrateBusinessOpportunitiesFromBackend()
+    return result
   }
 
   function continueDraftOpportunity(opportunity) {
@@ -686,6 +742,21 @@ export function useBusinessOpportunities() {
     }
   }
 
+  async function resumeOpportunityPayment(opportunity, payment) {
+    if (!payment?.id) throw new Error('The existing M-Pesa request could not be found.')
+    setProjectActionState({ error: '', notice: '', pending: 'fund' })
+    try {
+      const completedPayment = await waitForBackendMpesaPayment(payment.id)
+      await hydrateBusinessOpportunitiesFromBackend()
+      refreshApplicantsAfterProjectAction().catch(() => {})
+      setProjectActionState({ error: '', notice: 'Escrow funded successfully.', pending: '' })
+      return completedPayment
+    } catch (error) {
+      setProjectActionState({ error: error instanceof Error ? error.message : 'Could not check the existing payment.', notice: '', pending: '' })
+      throw error
+    }
+  }
+
   async function endProject(projectId) {
     if (!projectId) return
     setProjectActionState({ error: '', notice: '', pending: 'end' })
@@ -763,7 +834,8 @@ export function useBusinessOpportunities() {
     opportunitiesLoading: businessFlow.isLoading,
     isLoadingInviteCandidates,
     isSendingInvites,
-    openPublishPaymentForReview: publishPaymentOpportunityId === reviewOpportunity?.id,
+    openPublishPaymentForReview: publishPaymentOpportunityId === reviewOpportunity?.id
+      && Boolean(reviewOpportunity?.canPublish),
     isLoadingReviewApplicants,
     reviewOpportunity,
     reviewApplicants,
@@ -797,6 +869,7 @@ export function useBusinessOpportunities() {
     onCloseInvitePanel: closeInvitePanel,
     onChangeApplicationStatus: setActiveApplicationStatus,
     onChangeReviewTab: changeReviewTab,
+    onAddOpportunityDeliverables: addOpportunityDeliverables,
     onCloseReviewOpportunity: () => {
       setReviewOpportunityId(null)
       setPublishPaymentOpportunityId(null)
@@ -822,6 +895,7 @@ export function useBusinessOpportunities() {
     onStartProject: startProject,
     onEndProject: endProject,
     onFundOpportunity: fundOpportunityEscrow,
+    onResumeOpportunityPayment: resumeOpportunityPayment,
     projectActionState,
     onReviewSubmission: reviewSubmission,
     onCompleteScopeTarget: completeScopeTarget,

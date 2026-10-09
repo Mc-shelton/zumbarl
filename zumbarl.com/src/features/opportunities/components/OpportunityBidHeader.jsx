@@ -1,4 +1,4 @@
-import { FiArrowLeft, FiBookmark } from 'react-icons/fi'
+import { FiArrowLeft, FiBookmark, FiBriefcase, FiMapPin } from 'react-icons/fi'
 import { Breadcrumb } from '../../../components/ui'
 
 function OpportunityBidHeader({ onBackToGig, selectedGig }) {
@@ -16,10 +16,15 @@ function OpportunityBidHeader({ onBackToGig, selectedGig }) {
       </section>
 
       <header className="opportunities-bid-header">
-        <div>
+        <div className="opportunities-bid-header-copy">
+          <small>Application workspace</small>
           <h1>{selectedGig.title}</h1>
-          <p>{selectedGig.company} · {selectedGig.domain}</p>
-          <span>{selectedGig.summary}</span>
+          <div className="opportunities-bid-header-meta">
+            <span><FiBriefcase aria-hidden="true" /> {selectedGig.company}</span>
+            <span>{selectedGig.domain}</span>
+            <span><FiMapPin aria-hidden="true" /> {selectedGig.mode}</span>
+          </div>
+          <p>{selectedGig.summary}</p>
         </div>
 
         <div className="opportunities-bid-top-actions">

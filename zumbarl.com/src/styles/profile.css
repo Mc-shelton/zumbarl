@@ -37,9 +37,11 @@
 .campus-profile-main {
   padding: 0 6px 20px 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-auto-rows: max-content;
   gap: var(--campus-main-gap);
   align-content: start;
+  min-width: 0;
 }
 
 .campus-profile-topbar {
@@ -332,7 +334,7 @@
 
 .campus-profile-identity-copy > .campus-profile-academic-detail {
   margin-top: 7px;
-  color: #737a99;
+  color: #68708c;
   font-size: var(--text-caption);
   font-weight: 650;
 }
@@ -1588,7 +1590,7 @@
   padding: 3px 7px;
   font-weight: 700;
   background: #e7f7ed;
-  color: #20935d;
+  color: #137047;
 }
 
 .campus-profile-pipeline-list article:nth-child(2) em {
@@ -1732,7 +1734,7 @@
   margin: 1px 0 0;
   flex: 0 0 auto;
   font-size: var(--text-caption);
-  color: #7580a0;
+  color: #666f8f;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;

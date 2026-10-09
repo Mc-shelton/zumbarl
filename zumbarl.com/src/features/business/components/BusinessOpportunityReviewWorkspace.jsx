@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { TabNav } from '../../../components/ui'
 import { getSplashCropStyle } from '../../../lib/getSplashCropStyle'
 import {
+  FiAlertCircle,
   FiCalendar,
   FiCheckCircle,
   FiCreditCard,
@@ -24,7 +25,7 @@ import {
   FiVideo,
   FiX,
 } from 'react-icons/fi'
-import { Button, MetricCard, PersonRow, StatusPill } from '../../../components/ui'
+import { Button, MetricCard, PersonRow, ProfileAvatar, StatusPill } from '../../../components/ui'
 import { getAuthUserSnapshot } from '../../auth/services/authUserService'
 import { listBackendBusinessActivity, listBackendFinanceWallets } from '../services/persistBusinessOpportunity'
 import { useDeliverableTasks } from '../../projects/hooks/useDeliverableTasks'
@@ -201,6 +202,7 @@ function getOpportunitySampleFiles(opportunity) {
       name: sample.fileName || sample.label || sample.title || `Reference file ${index + 1}`,
       type: String(sample.fileType || sample.mimeType || 'File').toUpperCase(),
       owner: opportunity?.company || 'Business account',
+      ownerAvatar: opportunity?.companyLogoUrl,
       updated: item.title,
       size: sample.sizeBytes ? `${(sample.sizeBytes / (1024 * 1024)).toFixed(1)} MB` : '—',
       url: sample.url || sample.previewUrl || '',
@@ -215,6 +217,7 @@ function getOpportunityDeliverableRows(opportunity, agreedAmount = 0, agreedCurr
 
   return scopeItems.map((item, index) => {
     const source = item.source || {}
+    const isAwaitingFunding = String(source.status || '').toLowerCase() === 'pending_payment'
     return {
       id: item.id,
       title: item.title,
@@ -222,10 +225,10 @@ function getOpportunityDeliverableRows(opportunity, agreedAmount = 0, agreedCurr
       type: `${item.typeLabel} ${index + 1}`,
       description: item.description,
       dueDate: formatOpportunityDate(opportunity?.deadline, 'Scheduled after agreement'),
-      dueMeta: opportunity?.deadline ? 'From brief deadline' : 'No fixed due date',
+      dueMeta: isAwaitingFunding ? 'Escrow top-up required' : opportunity?.deadline ? 'From brief deadline' : 'No fixed due date',
       submissions: '0',
-      status: opportunity?.status === 'Open' ? 'Ready' : opportunity?.status || 'Draft',
-      tone: opportunity?.status === 'Open' ? 'green' : 'gray',
+      status: isAwaitingFunding ? 'Awaiting funding' : opportunity?.status === 'Open' ? 'Ready' : opportunity?.status || 'Draft',
+      tone: isAwaitingFunding ? 'orange' : opportunity?.status === 'Open' ? 'green' : 'gray',
       icon: 'scope',
       format: source.evidenceRequired || 'Defined in the opportunity scope',
       evidenceRequired: source.evidenceRequired || 'Defined in the opportunity scope',
@@ -279,7 +282,7 @@ function toApplicationRow(bid) {
 
   return {
     ...bid,
-    avatar: student.avatarUrl || '/assets/index/bee_nobg.png',
+    avatar: student.avatarUrl,
     bio: student.bio || 'This student has not added a profile summary yet.',
     campus: student.campus || 'Campus not provided',
     completedGigs: student.completedGigs || 0,
@@ -462,7 +465,7 @@ function ApplicationNegotiationModal({ application, onClose, onCounterOffer, opp
 
         <div className="business-review-negotiation-body">
           <section className="business-review-negotiation-applicant">
-            <img src={application.avatar} alt="" />
+            <ProfileAvatar src={application.avatar} alt="" />
             <div>
               <strong>{application.creator}</strong>
               <span>{application.handle}</span>
@@ -558,7 +561,7 @@ function ApplicationNegotiationModal({ application, onClose, onCounterOffer, opp
   )
 }
 
-function ApplicationReviewModal({ application, initialStep = 'review', onClose, onScheduleInterview, onStartInterview, onAccept, onRequestEscrowTopUp, opportunityBudgetAmount = 0 }) {
+function ApplicationReviewModal({ application, initialStep = 'review', isTeamOpportunity = false, onClose, onScheduleInterview, onStartInterview, onAccept, onRequestEscrowTopUp, opportunityBudgetAmount = 0 }) {
   const interviewer = getAuthUserSnapshot()
   const [reviewStep, setReviewStep] = useState(initialStep)
   const [previewAttachment, setPreviewAttachment] = useState(null)
@@ -681,7 +684,7 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose, 
           <aside className="business-review-application-profile">
             <section className="business-profile-card">
               <div className="business-review-applicant-head">
-                <img src={application.avatar} alt={`${application.creator} avatar`} />
+                <ProfileAvatar src={application.avatar} alt={`${application.creator} avatar`} />
                 <div>
                   <h3>{application.creator} <StatusPill tone={application.tone}>{application.status}</StatusPill></h3>
                   <p>{application.handle}</p>
@@ -814,9 +817,11 @@ function ApplicationReviewModal({ application, initialStep = 'review', onClose, 
                   <p>{application.proposal || 'No proposal text was provided.'}</p>
                 </li>
                 <li>
-                  <h4>Commercial offer</h4>
-                  <p>{currency} {bidAmount.toLocaleString()} · {application.deliveryTime || 'Delivery time not specified'}</p>
-                  {isAboveBudget ? (
+                  <h4>{isTeamOpportunity ? 'Payment basis' : 'Commercial offer'}</h4>
+                  <p>{isTeamOpportunity
+                    ? `${currency} ${bidAmount.toLocaleString()} shared project pool · individual pay follows approved workload`
+                    : `${currency} ${bidAmount.toLocaleString()} · ${application.deliveryTime || 'Delivery time not specified'}`}</p>
+                  {!isTeamOpportunity && isAboveBudget ? (
                     <p className="business-review-above-budget">
                       This bid is above your {currency} {opportunityBudgetAmount.toLocaleString()} budget.
                     </p>
@@ -1002,12 +1007,12 @@ const DELIVERABLE_WORKFLOW_OPTIONS = [
 ]
 
 const NEW_DELIVERABLE_TEMPLATE = {
-  acceptanceCriteria: 'No watermarks, follows brand assets, and includes editable source files for work above KES 5,000.',
-  budget: '6,000',
-  lockedUntilApproved: true,
-  requirement: 'Design and upload the final campaign graphics plus editable source files.',
-  title: 'Create branded social media assets',
-  workflow: 'file-assets',
+  acceptanceCriteria: '',
+  budget: '',
+  lockedUntilApproved: false,
+  requirement: '',
+  title: '',
+  workflow: '',
 }
 
 function getDeliverableWorkflow(workflowValue, deliverableType = '') {
@@ -1018,20 +1023,24 @@ function getDeliverableWorkflow(workflowValue, deliverableType = '') {
   return matchedType || DELIVERABLE_WORKFLOW_OPTIONS[0]
 }
 
-function getDeliverablePaymentPercent(draft, drafts) {
-  const totalBudget = drafts.reduce((sum, item) => sum + Number(String(item.budget).replace(/,/g, '') || 0), 0)
+function getDeliverablePaymentPercent(draft, drafts, existingBudget = 0) {
+  const addedBudget = drafts.reduce((sum, item) => sum + Number(String(item.budget).replace(/,/g, '') || 0), 0)
+  const totalBudget = getCurrencyAmount(existingBudget) + addedBudget
   const draftBudget = Number(String(draft.budget).replace(/,/g, '') || 0)
 
-  if (!totalBudget) return Math.round(100 / drafts.length)
+  if (!totalBudget) return 0
 
-  return Math.round((draftBudget / totalBudget) * 100)
+  return Math.round((draftBudget / totalBudget) * 10_000) / 100
+}
+
+function formatPaymentPercent(value) {
+  return Number(value || 0).toLocaleString('en-US', { maximumFractionDigits: 2 })
 }
 
 function createDeliverableDraft(index = 0) {
   return {
     ...NEW_DELIVERABLE_TEMPLATE,
     id: `draft-deliverable-${Date.now()}-${index}`,
-    title: index ? `New Deliverable ${index + 1}` : NEW_DELIVERABLE_TEMPLATE.title,
   }
 }
 
@@ -1191,15 +1200,21 @@ function DeliverableDetailPanel({
   )
 }
 
-function AddDeliverableModal({ isOpen, onClose, onCreate }) {
+function AddDeliverableModal({ existingBudget = 0, isOpen, onClose, onCreate }) {
   const [activeTab, setActiveTab] = useState('deliverables')
   const [drafts, setDrafts] = useState(() => [createDeliverableDraft()])
+  const [createError, setCreateError] = useState('')
+  const [isCreating, setIsCreating] = useState(false)
 
   if (!isOpen) return null
 
   const totalBudget = drafts.reduce((sum, draft) => sum + Number(String(draft.budget).replace(/,/g, '') || 0), 0)
+  const canReview = drafts.every((draft) => (
+    Boolean(draft.workflow) && Boolean(draft.title.trim()) && getCurrencyAmount(draft.budget) > 0
+  ))
 
   function updateDraft(id, field, value) {
+    setCreateError('')
     setDrafts((items) => items.map((item) => (item.id === id ? { ...item, [field]: value } : item)))
   }
 
@@ -1212,14 +1227,32 @@ function AddDeliverableModal({ isOpen, onClose, onCreate }) {
   }
 
   function handleClose() {
+    if (isCreating) return
     setActiveTab('deliverables')
     setDrafts([createDeliverableDraft()])
+    setCreateError('')
     onClose()
   }
 
-  function handleCreate() {
-    onCreate(drafts)
-    handleClose()
+  async function handleCreate() {
+    if (isCreating) return
+    if (drafts.some((draft) => !draft.workflow || !draft.title.trim() || getCurrencyAmount(draft.budget) <= 0)) {
+      setCreateError('Every deliverable needs a workflow, title, and positive budget before it can be funded.')
+      return
+    }
+
+    setIsCreating(true)
+    setCreateError('')
+    try {
+      await onCreate(drafts)
+      setActiveTab('deliverables')
+      setDrafts([createDeliverableDraft()])
+      onClose()
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : 'The deliverables could not be added.')
+    } finally {
+      setIsCreating(false)
+    }
   }
 
   return (
@@ -1254,7 +1287,7 @@ function AddDeliverableModal({ isOpen, onClose, onCreate }) {
                   <header>
                     <div>
                       <p>Deliverable {index + 1}</p>
-                      <h3>{draft.title}</h3>
+                      <h3>{draft.title || `New deliverable ${index + 1}`}</h3>
                     </div>
                     <button type="button" aria-label={`Remove deliverable ${index + 1}`} onClick={() => removeDraft(draft.id)}>
                       <FiX aria-hidden="true" />
@@ -1265,38 +1298,48 @@ function AddDeliverableModal({ isOpen, onClose, onCreate }) {
                     <label className="business-review-add-field">
                       <span>Deliverable Workflow</span>
                       <select value={draft.workflow} onChange={(event) => updateDraft(draft.id, 'workflow', event.target.value)}>
+                        <option value="" disabled>Select a workflow</option>
                         {DELIVERABLE_WORKFLOW_OPTIONS.map((workflow) => (
                           <option key={workflow.value} value={workflow.value}>{workflow.label}</option>
                         ))}
                       </select>
-                      <small>{getDeliverableWorkflow(draft.workflow).acceptedEvidence}</small>
+                      <small>{draft.workflow
+                        ? getDeliverableWorkflow(draft.workflow).acceptedEvidence
+                        : 'Choose the workflow that matches the evidence creators must submit.'}</small>
                     </label>
                     <label className="business-review-add-field">
                       <span>Title</span>
-                      <input type="text" value={draft.title} onChange={(event) => updateDraft(draft.id, 'title', event.target.value)} />
+                      <input type="text" placeholder="e.g. Create branded social media assets" value={draft.title} onChange={(event) => updateDraft(draft.id, 'title', event.target.value)} />
                     </label>
                   </div>
 
                   <label className="business-review-add-field">
                     <span>Deliverable Requirement</span>
-                    <textarea value={draft.requirement} onChange={(event) => updateDraft(draft.id, 'requirement', event.target.value)} />
+                    <textarea placeholder="Describe exactly what the creator should produce and submit." value={draft.requirement} onChange={(event) => updateDraft(draft.id, 'requirement', event.target.value)} />
                   </label>
 
                   <div className="business-review-add-two-column">
                     <label className="business-review-add-field">
                       <span>Budget (KES)</span>
-                      <input type="text" value={draft.budget} onChange={(event) => updateDraft(draft.id, 'budget', event.target.value)} />
+                      <input type="text" inputMode="decimal" placeholder="e.g. 6,000" value={draft.budget} onChange={(event) => updateDraft(draft.id, 'budget', event.target.value)} />
                     </label>
                     <label className="business-review-add-field">
-                      <span>Payment %</span>
-                      <input type="text" value={getDeliverablePaymentPercent(draft, drafts)} readOnly />
-                      <small>Recalculates based on total deliverables</small>
+                      <span>Share of updated budget</span>
+                      <input
+                        type="text"
+                        placeholder="Calculated automatically"
+                        value={getCurrencyAmount(draft.budget) > 0
+                          ? `${formatPaymentPercent(getDeliverablePaymentPercent(draft, drafts, existingBudget))}%`
+                          : ''}
+                        readOnly
+                      />
+                      <small>Calculated against the existing scope and all new deliverables</small>
                     </label>
                   </div>
 
                   <label className="business-review-add-field">
                     <span>Acceptance Criteria</span>
-                    <textarea value={draft.acceptanceCriteria} onChange={(event) => updateDraft(draft.id, 'acceptanceCriteria', event.target.value)} />
+                    <textarea placeholder="e.g. No watermarks, follows the supplied brand assets, and includes editable source files." value={draft.acceptanceCriteria} onChange={(event) => updateDraft(draft.id, 'acceptanceCriteria', event.target.value)} />
                   </label>
 
                   <label className="business-review-add-lock">
@@ -1319,7 +1362,7 @@ function AddDeliverableModal({ isOpen, onClose, onCreate }) {
           {activeTab === 'review' ? (
             <section className="business-review-add-review">
               <h3>Review New Deliverables</h3>
-              <p>{drafts.length} deliverable{drafts.length === 1 ? '' : 's'} will be created and added to this opportunity.</p>
+              <p>{drafts.length} deliverable{drafts.length === 1 ? '' : 's'} will add KES {totalBudget.toLocaleString()} to the opportunity. You will fund this escrow top-up next.</p>
               {drafts.map((draft, index) => (
                 <article key={draft.id}>
                   <span>{index + 1}</span>
@@ -1328,19 +1371,20 @@ function AddDeliverableModal({ isOpen, onClose, onCreate }) {
                     <p>{getDeliverableWorkflow(draft.workflow).label} · {getDeliverableWorkflow(draft.workflow).acceptedEvidence}</p>
                     <em>{draft.requirement}</em>
                   </div>
-                  <strong>{getDeliverablePaymentPercent(draft, drafts)}%</strong>
+                  <strong>{formatPaymentPercent(getDeliverablePaymentPercent(draft, drafts, existingBudget))}%</strong>
                   <b>KES {Number(String(draft.budget).replace(/,/g, '') || 0).toLocaleString()}</b>
                 </article>
               ))}
-              <footer><span>Total budget to approve</span><strong>KES {totalBudget.toLocaleString()}</strong></footer>
+              <footer><span>Additional escrow to fund</span><strong>KES {totalBudget.toLocaleString()}</strong></footer>
             </section>
           ) : null}
+          {createError ? <p className="business-review-capacity-error" role="alert">{createError}</p> : null}
         </div>
 
         <footer>
-          <Button tone="ghost" onClick={activeTab === 'deliverables' ? handleClose : () => setActiveTab('deliverables')}>{activeTab === 'deliverables' ? 'Cancel' : 'Back'}</Button>
-          <Button tone="brand" onClick={activeTab === 'review' ? handleCreate : () => setActiveTab('review')}>
-            {activeTab === 'deliverables' ? 'Review Deliverables' : 'Create Deliverables'}
+          <Button tone="ghost" disabled={isCreating} onClick={activeTab === 'deliverables' ? handleClose : () => setActiveTab('deliverables')}>{activeTab === 'deliverables' ? 'Cancel' : 'Back'}</Button>
+          <Button tone="brand" disabled={isCreating || (activeTab === 'deliverables' && !canReview)} onClick={activeTab === 'review' ? handleCreate : () => setActiveTab('review')}>
+            {isCreating ? 'Adding deliverables…' : activeTab === 'deliverables' ? 'Review Deliverables' : 'Add & Fund Deliverables'}
           </Button>
         </footer>
       </section>
@@ -1348,15 +1392,20 @@ function AddDeliverableModal({ isOpen, onClose, onCreate }) {
   )
 }
 
-function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen, mode = 'publish', opportunity, type, onClose, onFund, onPublish }) {
-  const [publishStep, setPublishStep] = useState(1)
-  const [paymentMethod, setPaymentMethod] = useState('wallet')
-  const [mpesaPhoneNumber, setMpesaPhoneNumber] = useState('')
+function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen, mode = 'publish', opportunity, type, onClose, onFund, onPublish, onResumePayment }) {
+  const activeMpesaPayment = ['PENDING', 'PROCESSING'].includes(String(opportunity?.activeMpesaPayment?.status || '').toUpperCase())
+    ? opportunity.activeMpesaPayment
+    : null
+  const [publishStep, setPublishStep] = useState(activeMpesaPayment ? 3 : 1)
+  const [paymentMethod, setPaymentMethod] = useState(activeMpesaPayment ? 'mobile-money' : 'wallet')
+  const [mpesaPhoneNumber, setMpesaPhoneNumber] = useState(activeMpesaPayment?.phoneNumber || '')
   const [isCompletingPayment, setIsCompletingPayment] = useState(false)
   const [paymentError, setPaymentError] = useState('')
+  const [paymentOutcome, setPaymentOutcome] = useState(activeMpesaPayment ? 'processing' : 'idle')
   const [companyWallet, setCompanyWallet] = useState(null)
   const [walletLoading, setWalletLoading] = useState(false)
-  const [paymentReference] = useState(() => `opportunity-payment-${opportunity?.backendId || opportunity?.id || 'draft'}-${Date.now()}`)
+  const [paymentReference, setPaymentReference] = useState(() => `opportunity-payment-${opportunity?.backendId || opportunity?.id || 'draft'}-${Date.now()}`)
+  const resumedPaymentId = useRef(null)
 
   useEffect(() => {
     if (!isOpen) return undefined
@@ -1378,8 +1427,6 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
       })
     return () => { active = false }
   }, [isOpen])
-
-  if (!isOpen) return null
 
   const isEscrowTopUp = mode === 'topup'
   const isExistingEscrowFunding = mode === 'fund' || isEscrowTopUp
@@ -1406,13 +1453,20 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
       detailCopy: 'Enter your phone number to receive the payment request.',
       detailTitle: 'You will receive an STK push on your registered phone number',
       label: 'Mobile Money STK Push',
-      meta: 'M-Pesa request sent to your phone',
+      meta: 'Ready to send an M-Pesa request',
       nextLabel: 'Next: STK Push',
       stepLabel: 'STK Push',
       summary: 'Complete payment from your phone.',
     },
   }
   const selectedPaymentMethod = paymentMethods[paymentMethod]
+  const selectedPaymentMeta = paymentMethod === 'mobile-money'
+    ? paymentOutcome === 'processing' ? 'Waiting for your response'
+      : paymentOutcome === 'paid' ? 'Payment confirmed'
+        : paymentOutcome === 'failed' ? 'Payment not completed'
+          : paymentOutcome === 'pending' ? 'Confirmation still pending'
+            : selectedPaymentMethod.meta
+    : selectedPaymentMethod.meta
   const paymentScopeItems = isEscrowTopUp ? [] : getOpportunityPaymentScopeItems(opportunity)
   const scopedBudgetTotal = paymentScopeItems.reduce((total, item) => total + item.budgetAmount, 0)
   const fallbackBudgetTotal = getCurrencyAmount(opportunity.budget || opportunity.budgetAmount)
@@ -1428,26 +1482,62 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
   const modalDeadline = opportunity.deadline === 'Rolling' ? 'Rolling' : formatOpportunityDate(opportunity.deadline, 'Rolling')
   async function completePaymentAndPublish() {
     if (isCompletingPayment) return
+    const reference = paymentOutcome === 'failed'
+      ? `${paymentReference}-retry`
+      : paymentReference
+    if (reference !== paymentReference) setPaymentReference(reference)
     setIsCompletingPayment(true)
     setPaymentError('')
+    setPaymentOutcome('processing')
     try {
       const completeFunding = isExistingEscrowFunding ? onFund : onPublish
       await completeFunding?.(opportunity, {
         amount: paymentBudgetTotal,
         currency: opportunity.currency || 'KES',
         method: paymentMethod === 'mobile-money' ? 'mobile_money' : paymentMethod,
-        reference: paymentReference,
+        reference,
         ...(paymentMethod === 'mobile-money' ? { phoneNumber: mpesaPhoneNumber } : {}),
       })
-      onClose()
+      setPaymentOutcome('paid')
     } catch (error) {
-      setPaymentError(error instanceof Error
+      const message = error instanceof Error
         ? error.message
-        : isExistingEscrowFunding ? 'Escrow could not be funded.' : 'Payment could not be completed. The opportunity remains private.')
+        : isExistingEscrowFunding ? 'Escrow could not be funded.' : 'Payment could not be completed. The opportunity remains private.'
+      setPaymentError(message)
+      setPaymentOutcome(error?.code === 'MPESA_PAYMENT_PENDING' ? 'pending' : 'failed')
     } finally {
       setIsCompletingPayment(false)
     }
   }
+
+  useEffect(() => {
+    if (!isOpen || !activeMpesaPayment?.id || !onResumePayment || resumedPaymentId.current === activeMpesaPayment.id) return undefined
+    resumedPaymentId.current = activeMpesaPayment.id
+    let isCurrent = true
+    setIsCompletingPayment(true)
+    setPaymentError('')
+    setPaymentOutcome('processing')
+    // Resume by payment ID through read/reconcile endpoints. This path never
+    // calls opportunity funding and therefore cannot initiate another STK push.
+    onResumePayment(opportunity, activeMpesaPayment)
+      .then(() => {
+        if (isCurrent) setPaymentOutcome('paid')
+      })
+      .catch((error) => {
+        if (!isCurrent) return
+        setPaymentError(error instanceof Error ? error.message : 'The M-Pesa payment status could not be checked.')
+        setPaymentOutcome(error?.code === 'MPESA_PAYMENT_PENDING' ? 'pending' : 'failed')
+      })
+      .finally(() => {
+        if (isCurrent) setIsCompletingPayment(false)
+      })
+    return () => { isCurrent = false }
+    // The payment ID is the stable identity of this recovery attempt. Callback
+    // props intentionally do not restart it when parent state refreshes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeMpesaPayment?.id, isOpen])
+
+  if (!isOpen) return null
 
   return (
     <div className="business-review-modal-backdrop" role="presentation">
@@ -1475,8 +1565,8 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
           <li className={publishStep === 3 ? 'is-active' : ''}><span>3</span><strong>{selectedPaymentMethod.stepLabel}</strong><em>Complete payment</em></li>
         </ol>
 
-        <div className="business-review-publish-body">
-          <section className="business-review-publish-summary">
+        <div className="business-review-publish-body" data-step={publishStep}>
+          {publishStep === 1 ? <section className="business-review-publish-summary">
             <h2>Opportunity Summary</h2>
             <div>
               <figure>
@@ -1498,17 +1588,28 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
                 <div><dt>Skills</dt><dd>{skills.length ? skills.slice(0, 3).join(', ') : 'Not specified'}</dd></div>
               </dl>
             </div>
-          </section>
+          </section> : (
+            <section className="business-review-publish-context" aria-label="Payment summary">
+              <div>
+                <span>{isEscrowTopUp ? 'Escrow top-up' : mode === 'fund' ? 'Escrow funding' : 'Opportunity payment'}</span>
+                <strong>{opportunity.title}</strong>
+              </div>
+              <dl>
+                <div><dt>Amount</dt><dd>{paymentBudgetLabel}</dd></div>
+                <div><dt>Protection</dt><dd><FiLock aria-hidden="true" /> Held in escrow</dd></div>
+              </dl>
+            </section>
+          )}
 
           {publishStep === 3 ? (
             <section className="business-review-publish-stk">
               <h2>Payment Details</h2>
               <div className="business-review-publish-stk-grid">
                 <div className="business-review-publish-stk-main">
-                  <div className="business-review-publish-selected-method">
+                  <div className={`business-review-publish-selected-method is-${paymentOutcome}`}>
                     <span><FiCreditCard aria-hidden="true" /></span>
                     <strong>You selected: {selectedPaymentMethod.label}</strong>
-                    <em>{selectedPaymentMethod.meta}</em>
+                    <em>{selectedPaymentMeta}</em>
                   </div>
                   <section className="business-review-publish-amount">
                     <span>Amount to Pay</span>
@@ -1550,6 +1651,7 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
                             placeholder="0712 345 678"
                             value={mpesaPhoneNumber}
                             onChange={(event) => setMpesaPhoneNumber(event.target.value)}
+                            disabled={isCompletingPayment || paymentOutcome === 'paid'}
                             aria-invalid={Boolean(mpesaPhoneNumber) && !mpesaPhoneValid}
                           />
                           {mpesaPhoneValid ? <StatusPill tone="green">Ready</StatusPill> : null}
@@ -1570,6 +1672,24 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
                   <b><FiLock aria-hidden="true" /></b>
                 </aside>
               </div>
+              {paymentOutcome !== 'idle' ? (
+                <section className={`business-review-payment-outcome is-${paymentOutcome}`} role={paymentOutcome === 'failed' ? 'alert' : 'status'} aria-live="polite">
+                  {paymentOutcome === 'paid' ? <FiCheckCircle aria-hidden="true" />
+                    : paymentOutcome === 'processing' ? <FiMessageSquare aria-hidden="true" />
+                      : <FiAlertCircle aria-hidden="true" />}
+                  <div>
+                    <strong>{paymentOutcome === 'paid' ? 'Payment confirmed'
+                      : paymentOutcome === 'processing' ? 'Waiting for your M-Pesa response'
+                        : paymentOutcome === 'pending' ? 'Confirmation is still pending'
+                          : 'Payment was not completed'}</strong>
+                    <p>{paymentOutcome === 'paid'
+                      ? `${paymentBudgetLabel} has been received and the opportunity funding status has been updated.`
+                      : paymentOutcome === 'processing'
+                        ? 'Check your phone, enter your M-Pesa PIN, then keep this window open while we verify the provider response.'
+                        : paymentError}</p>
+                  </div>
+                </section>
+              ) : null}
             </section>
           ) : publishStep === 2 ? (
             <section className="business-review-publish-payment">
@@ -1682,24 +1802,30 @@ function PublishOpportunityModal({ fundingAmount = 0, noticeMessage = '', isOpen
         </div>
 
         <footer className="business-review-publish-actions">
-          {publishStep > 1 ? (
+          {paymentOutcome === 'paid' ? <span /> : paymentOutcome === 'processing' ? (
+            <Button tone="ghost" onClick={onClose}>Close &amp; check later</Button>
+          ) : paymentOutcome === 'failed' || paymentOutcome === 'pending' ? (
+            <Button tone="ghost" onClick={onClose}>Fund later</Button>
+          ) : publishStep > 1 ? (
             <Button tone="ghost" onClick={() => setPublishStep(publishStep - 1)}>Back</Button>
           ) : (
             <Button tone="ghost" onClick={onClose}>Cancel</Button>
           )}
           {publishStep === 3 ? <p><FiMessageSquare aria-hidden="true" /> {isEscrowTopUp
-            ? 'Project start becomes available after escrow is updated.'
+            ? paymentOutcome === 'paid' ? 'Escrow was updated successfully.' : 'Project start becomes available after escrow is updated.'
             : mode === 'fund'
-              ? 'The Payments overview will update after escrow is funded.'
-              : paymentMethod === 'wallet' ? 'Your opportunity will publish after wallet escrow is funded.' : 'We will publish after M-Pesa confirms the payment.'}</p> : null}
-          {paymentError ? <p role="alert">{paymentError}</p> : null}
+              ? paymentOutcome === 'paid' ? 'The Payments overview now reflects the funded escrow.' : 'The Payments overview will update after escrow is funded.'
+              : paymentOutcome === 'paid' ? 'Your opportunity is funded and published.' : paymentMethod === 'wallet' ? 'Your opportunity will publish after wallet escrow is funded.' : 'We will publish only after M-Pesa confirms the payment.'}</p> : null}
           <Button
             tone="brand"
-            disabled={isCompletingPayment || paymentBudgetTotal <= 0 || (publishStep === 3 && (walletInsufficient || (paymentMethod === 'mobile-money' && !mpesaPhoneValid)))}
-            onClick={publishStep === 3 ? completePaymentAndPublish : () => setPublishStep(Math.min(3, publishStep + 1))}
+            disabled={isCompletingPayment || paymentBudgetTotal <= 0 || (publishStep === 3 && paymentOutcome !== 'paid' && (walletInsufficient || (paymentMethod === 'mobile-money' && !mpesaPhoneValid)))}
+            onClick={paymentOutcome === 'paid' ? onClose : publishStep === 3 ? completePaymentAndPublish : () => setPublishStep(Math.min(3, publishStep + 1))}
           >
-            {isCompletingPayment
+            {paymentOutcome === 'paid' ? 'Done'
+              : isCompletingPayment
               ? paymentMethod === 'mobile-money' ? 'Waiting for M-Pesa confirmation...' : 'Completing payment...'
+              : paymentOutcome === 'failed' ? 'Try payment again'
+                : paymentOutcome === 'pending' ? 'Check payment status'
               : publishStep === 3 ? selectedPaymentMethod.actionLabel : publishStep === 2 ? selectedPaymentMethod.nextLabel : 'Next: Payment Method'}
           </Button>
         </footer>
@@ -1883,7 +2009,7 @@ function ApplicationsPanel({
             <span>Applicant</span>
             <span>Course</span>
             <span>Campus</span>
-            <span>Bid</span>
+            <span>{isTaskOpportunity ? 'Bid' : 'Pay basis'}</span>
             <span>Submitted</span>
             <span>Actions</span>
           </div>
@@ -1902,7 +2028,10 @@ function ApplicationsPanel({
               />
               <span>{row.course}</span>
               <strong>{row.campus}</strong>
-              <strong className="business-review-engagement-rate">{row.currency || 'KES'} {Number(row.bidAmount || 0).toLocaleString()}</strong>
+              <span className="business-review-engagement-cell">
+                <strong className="business-review-engagement-rate">{row.currency || 'KES'} {Number(row.bidAmount || 0).toLocaleString()}</strong>
+                {!isTaskOpportunity ? <em>Shared pool</em> : null}
+              </span>
               <time>{row.submitted}<span>{row.submittedAgo}</span></time>
               <div className="business-review-shortlisted-actions">
                 <button type="button" onClick={() => openApplicationReview(row)}>Review</button>
@@ -1931,7 +2060,7 @@ function ApplicationsPanel({
           <span>Applicant</span>
           <span>Course</span>
           <span>Campus</span>
-          <span>Bid</span>
+          <span>{isTaskOpportunity ? 'Bid' : 'Pay basis'}</span>
           <span>Submitted</span>
           <span>Status</span>
           <span>Actions</span>
@@ -1955,6 +2084,8 @@ function ApplicationsPanel({
               <strong className="business-review-engagement-rate">{row.currency || 'KES'} {Number(row.bidAmount || 0).toLocaleString()}</strong>
               {isNegotiationLocked ? (
                 <em className="business-review-above-budget-tag is-locked">Agreed price locked</em>
+              ) : !isTaskOpportunity ? (
+                <em>Shared pool · workload split</em>
               ) : rowAboveBudget ? (
                 <em className="business-review-above-budget-tag">Above budget</em>
               ) : null}
@@ -1986,6 +2117,7 @@ function ApplicationsPanel({
       <ApplicationReviewModal
         application={selectedApplication}
         initialStep={initialReviewStep}
+        isTeamOpportunity={!isTaskOpportunity}
         onClose={() => setSelectedApplication(null)}
         onScheduleInterview={onScheduleApplicantInterview}
         onStartInterview={onStartApplicantInterview}
@@ -2060,7 +2192,7 @@ function BusinessDeliverableFilesPanel({ opportunity }) {
                 </span>
                 <span>{file.type}</span>
                 <span>
-                  <img src="/assets/index/bee_nobg.png" alt="" />
+                  <ProfileAvatar src={file.ownerAvatar} alt="" />
                   {file.owner}
                 </span>
                 <span>{file.updated}</span>
@@ -2168,7 +2300,7 @@ function SubmissionReviewModal({
         <div className="business-review-application-modal-body">
           <section className="business-profile-card">
             <div className="business-review-applicant-head">
-              <img src={submission.student?.avatarUrl || '/assets/index/bee_nobg.png'} alt={`${submission.student?.name || 'Student'} avatar`} />
+              <ProfileAvatar src={submission.student?.avatarUrl} alt={`${submission.student?.name || 'Student'} avatar`} />
               <div>
                 <h3>{submission.student?.name || 'Student applicant'}</h3>
                 <p>{[submission.student?.course, submission.student?.campus].filter(Boolean).join(' · ') || 'Zumbarl student'}</p>
@@ -2444,13 +2576,12 @@ function BusinessTeamPanel({ projectId }) {
   return <TeamPanel invites={team.invites} members={team.members} tasks={tasks} />
 }
 
-function DeliverablesPanel({ agreedAmount = 0, agreedCurrency = 'KES', canAddDeliverables = true, hasStarted = true, onRequestPayment, onStartProject, opportunity, submissions = [], submissionsError = '', isLoadingSubmissions = false, onReviewSubmission, onCompleteScopeTarget, projectId, isTeamProject = false, isMilestoneScope = false, projectActionState }) {
+function DeliverablesPanel({ agreedAmount = 0, agreedCurrency = 'KES', canAddDeliverables = true, hasStarted = true, onAddDeliverables, onRequestPayment, onStartProject, opportunity, submissions = [], submissionsError = '', isLoadingSubmissions = false, onReviewSubmission, onCompleteScopeTarget, projectId, isTeamProject = false, isMilestoneScope = false, projectActionState }) {
   const [activeDeliverableTab, setActiveDeliverableTab] = useState('deliverables')
   const [selectedSubmission, setSelectedSubmission] = useState(null)
   const [selectedDeliverable, setSelectedDeliverable] = useState(null)
   // Bumped after every review decision so the deliverable's task board reloads.
   const [reviewSignal, setReviewSignal] = useState(0)
-  const [addedDeliverableRows, setAddedDeliverableRows] = useState([])
   const [isAddingDeliverable, setIsAddingDeliverable] = useState(false)
   const deliverableTasks = useDeliverableTasks(projectId, {
     enabled: isTeamProject && Boolean(projectId),
@@ -2493,7 +2624,7 @@ function DeliverablesPanel({ agreedAmount = 0, agreedCurrency = 'KES', canAddDel
   const isSubmittedWork = activeDeliverableTab === 'submitted-work'
   const isFiles = activeDeliverableTab === 'files'
   const isMessages = activeDeliverableTab === 'messages'
-  const deliverableRows = [...addedDeliverableRows, ...getOpportunityDeliverableRows(opportunity, agreedAmount, agreedCurrency)]
+  const deliverableRows = getOpportunityDeliverableRows(opportunity, agreedAmount, agreedCurrency)
   const deliverableCount = deliverableRows.length
   const sampleFiles = getOpportunitySampleFiles(opportunity)
   const deliverableTabCounts = {
@@ -2521,46 +2652,35 @@ function DeliverablesPanel({ agreedAmount = 0, agreedCurrency = 'KES', canAddDel
     })
   })
 
-  function getDeliverableIcon(type) {
-    if (type.includes('Code')) return 'x'
-    if (type.includes('Document')) return 'youtube'
-    if (type.includes('Proof')) return 'tiktok'
-    return 'instagram'
-  }
-
-  function createDeliverableRows(drafts) {
-    const timestamp = Date.now()
-
-    const rows = drafts.map((draft, index) => {
+  async function createDeliverableRows(drafts) {
+    const deliverables = drafts.map((draft) => {
       const budgetValue = Number(String(draft.budget).replace(/,/g, '') || 0)
       const workflow = getDeliverableWorkflow(draft.workflow)
-      const paymentPercent = getDeliverablePaymentPercent(draft, drafts)
 
       return {
-        id: `added-deliverable-${timestamp}-${index}`,
         title: draft.title,
-        required: true,
         type: workflow.type,
         description: draft.requirement,
         requirement: draft.requirement,
         workflow: draft.workflow,
         workflowLabel: workflow.label,
         acceptedEvidence: workflow.acceptedEvidence,
-        dueDate: 'Scheduled after agreement',
-        dueMeta: 'Payment approved',
-        submissions: '0',
-        status: 'Approved',
-        tone: 'green',
-        icon: getDeliverableIcon(workflow.type),
         acceptanceCriteria: draft.acceptanceCriteria,
-        paymentPercent: `${paymentPercent}%`,
         lockedUntilApproved: draft.lockedUntilApproved,
-        budget: `KES ${budgetValue.toLocaleString()}`,
+        budgetAmount: budgetValue,
+        budget: String(budgetValue),
       }
     })
 
-    setAddedDeliverableRows((items) => [...rows, ...items])
-    onRequestPayment?.()
+    const result = await onAddDeliverables?.(opportunity, deliverables)
+    const fundingRequired = getCurrencyAmount(result?.fundingRequired)
+    if (fundingRequired > 0) {
+      onRequestPayment?.({
+        amount: fundingRequired,
+        message: `Fund ${formatCurrencyAmount(fundingRequired, opportunity.currency || agreedCurrency)} to activate the new deliverables.`,
+      })
+    }
+    return result
   }
 
   return (
@@ -2651,7 +2771,7 @@ function DeliverablesPanel({ agreedAmount = 0, agreedCurrency = 'KES', canAddDel
                     }}
                   >
                     <div className="business-review-submission-creator">
-                      <img src={item.student?.avatarUrl || '/assets/index/bee_nobg.png'} alt="" />
+                      <ProfileAvatar src={item.student?.avatarUrl} alt="" />
                       <div>
                         <strong>{item.student?.name || 'Student applicant'}</strong>
                         <span>{targetLabel}</span>
@@ -2806,6 +2926,7 @@ function DeliverablesPanel({ agreedAmount = 0, agreedCurrency = 'KES', canAddDel
       )}
       {canAddDeliverables ? (
         <AddDeliverableModal
+          existingBudget={getCurrencyAmount(opportunity?.budgetAmount || opportunity?.budget)}
           isOpen={isAddingDeliverable}
           onClose={() => setIsAddingDeliverable(false)}
           onCreate={createDeliverableRows}
@@ -2876,17 +2997,19 @@ function DeliverableWorkloadPanel({ deliverable, deliverableTasks, onOpenSubmiss
 
 function PaymentsPanel({ agreedAmount = 0, agreedCurrency = 'KES', applications = [], onRequestPayment = () => {}, opportunity }) {
   const budgetAmount = getCurrencyAmount(agreedAmount || opportunity?.budgetAmount || opportunity?.budget)
+  const isTeamProject = String(opportunity?.opportunityType || '').toLowerCase() !== 'task'
   const isFunded = String(opportunity?.escrowStatus || 'unfunded') !== 'unfunded'
   const awardedApplications = applications.filter((application) => (
     ['awarded', 'accepted'].includes(String(application.status || '').toLowerCase())
   ))
-  const committedAmount = awardedApplications
-    .reduce((total, application) => total + getCurrencyAmount(application.project?.agreedAmount || application.bidAmount), 0)
+  const committedAmount = isTeamProject
+    ? awardedApplications.length ? budgetAmount : 0
+    : awardedApplications.reduce((total, application) => total + getCurrencyAmount(application.project?.agreedAmount || application.bidAmount), 0)
   const scopeCount = getOpportunityPaymentScopeItems(opportunity).length
   const paymentMetrics = [
     { label: agreedAmount ? 'Agreed Budget' : 'Total Budget', value: formatCurrencyAmount(budgetAmount, agreedCurrency), meta: '100% of budget', tone: 'blue' },
     { label: 'Escrow', value: isFunded ? 'Funded' : 'Not funded', meta: isFunded ? 'Held for payouts' : 'Fund to release payments', tone: isFunded ? 'green' : 'orange' },
-    { label: 'Committed', value: formatCurrencyAmount(committedAmount, agreedCurrency), meta: `${awardedApplications.length} awarded bid${awardedApplications.length === 1 ? '' : 's'}`, tone: 'purple' },
+    { label: 'Committed', value: formatCurrencyAmount(committedAmount, agreedCurrency), meta: isTeamProject ? `${awardedApplications.length} member${awardedApplications.length === 1 ? '' : 's'} sharing one pool` : `${awardedApplications.length} awarded bid${awardedApplications.length === 1 ? '' : 's'}`, tone: 'purple' },
     { label: 'Remaining', value: formatCurrencyAmount(Math.max(0, budgetAmount - committedAmount), agreedCurrency), meta: 'Uncommitted budget', tone: 'green' },
   ]
 
@@ -2941,7 +3064,9 @@ function PaymentsPanel({ agreedAmount = 0, agreedCurrency = 'KES', applications 
               subtitle={row.student?.username ? `@${row.student.username}` : 'Zumbarl student'}
             />
             <strong>{scopeCount ? `${scopeCount} Deliverable${scopeCount === 1 ? '' : 's'}` : 'Full scope'}</strong>
-            <strong>{formatCurrencyAmount(getCurrencyAmount(row.project?.agreedAmount || row.bidAmount), row.project?.agreedCurrency || agreedCurrency)}</strong>
+            <strong>{isTeamProject
+              ? `Workload share of ${formatCurrencyAmount(budgetAmount, agreedCurrency)}`
+              : formatCurrencyAmount(getCurrencyAmount(row.project?.agreedAmount || row.bidAmount), row.project?.agreedCurrency || agreedCurrency)}</strong>
             <StatusPill className="business-review-status-pill" tone={isFunded ? 'green' : 'blue'}>
               {isFunded ? 'Escrow funded' : 'Awaiting funding'}
             </StatusPill>
@@ -3115,9 +3240,11 @@ function OverviewPanel({ agreedAmount = 0, agreedCurrency = 'KES', applications 
         id: application.id,
         name: application.student?.name || application.bidderName || 'Team member',
         handle: application.handle || application.student?.username || '',
-        avatar: application.student?.avatarUrl || '/assets/index/bee_nobg.png',
+        avatar: application.student?.avatarUrl,
         status: memberStatus,
-        amountLabel: amount ? formatCurrencyAmount(amount, application.currency || application.project?.agreedCurrency || 'KES') : '',
+        amountLabel: isTeamProject
+          ? 'Paid by approved workload share'
+          : amount ? formatCurrencyAmount(amount, application.currency || application.project?.agreedCurrency || 'KES') : '',
       }
     })
   const upcomingInterviews = applications
@@ -3222,7 +3349,7 @@ function OverviewPanel({ agreedAmount = 0, agreedCurrency = 'KES', applications 
           <div className="business-review-team-list">
             {acceptedMembers.map((member) => (
               <article key={member.id}>
-                <img src={member.avatar} alt="" />
+                <ProfileAvatar src={member.avatar} alt="" />
                 <div>
                   <strong>{member.name}</strong>
                   {member.handle ? <em>{member.handle}</em> : null}
@@ -3309,11 +3436,13 @@ export function BusinessOpportunityReviewWorkspace({
   applications = [],
   applicationsError = '',
   isLoadingApplications = false,
+  onAddDeliverables,
   onBack,
   onChangeApplicationStatus,
   onChangeReviewTab,
   onInviteApplicants,
   onPublishOpportunity,
+  onResumeOpportunityPayment,
   onScheduleApplicantInterview,
   onStartApplicantInterview,
   onAwardApplicant,
@@ -3332,15 +3461,22 @@ export function BusinessOpportunityReviewWorkspace({
   opportunity,
 }) {
   const navigate = useNavigate()
-  const [fundingModalMode, setFundingModalMode] = useState(openPublishPayment ? 'publish' : null)
+  const hasActiveMpesaPayment = ['PENDING', 'PROCESSING'].includes(String(opportunity?.activeMpesaPayment?.status || '').toUpperCase())
+  const [fundingModalMode, setFundingModalMode] = useState(
+    openPublishPayment && opportunity?.canPublish
+      ? 'publish'
+      : hasActiveMpesaPayment
+        ? opportunity?.canPublish ? 'publish' : 'topup'
+        : null,
+  )
   const [escrowTopUpRequest, setEscrowTopUpRequest] = useState(null)
 
   useEffect(() => {
     // A create-flow navigation can select the review workspace before its draft
     // finishes hydrating; mirror that external navigation signal once it arrives.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (openPublishPayment) setFundingModalMode('publish')
-  }, [openPublishPayment, opportunity?.id])
+    if (openPublishPayment && opportunity?.canPublish) setFundingModalMode('publish')
+  }, [openPublishPayment, opportunity?.canPublish, opportunity?.id])
 
   const acceptedProject = applications.find((application) => (
     application.projectId && ['accepted', 'awarded'].includes(String(application.status || '').toLowerCase())
@@ -3381,11 +3517,17 @@ export function BusinessOpportunityReviewWorkspace({
     : opportunity.budget
   const acceptedProjectEscrowCoverage = Number(acceptedProject?.project?.escrowCoverage || 0)
   const acceptedProjectEscrowShortfall = Math.max(0, acceptedProjectAgreedAmount - acceptedProjectEscrowCoverage)
+  const opportunityEscrowShortfall = Math.max(
+    0,
+    getCurrencyAmount(opportunity.budgetAmount || opportunity.budget) - getCurrencyAmount(opportunity.escrowCoverage),
+  )
 
   function startPublishPayment() {
     if (opportunity.canPublish) {
       setFundingModalMode('publish')
     } else if (acceptedProjectEscrowShortfall > 0) {
+      setFundingModalMode('topup')
+    } else if (opportunityEscrowShortfall > 0) {
       setFundingModalMode('topup')
     } else if (String(opportunity.escrowStatus || 'unfunded') !== 'funded') {
       setFundingModalMode('fund')
@@ -3433,6 +3575,11 @@ export function BusinessOpportunityReviewWorkspace({
               onClick={() => onEndProject?.(acceptedProject.projectId)}
             >
               {projectActionState?.pending === 'end' ? 'Ending project...' : 'End project'}
+            </button>
+          ) : opportunityEscrowShortfall > 0 && !opportunity.canPublish ? (
+            <button type="button" className="business-profile-primary-btn" onClick={() => setFundingModalMode('topup')}>
+              <FiCreditCard aria-hidden="true" />
+              Fund {formatCurrencyAmount(opportunityEscrowShortfall, opportunity.currency || 'KES')} scope
             </button>
           ) : opportunity.canPublish ? (
             <button type="button" className="business-profile-primary-btn" onClick={startPublishPayment}>
@@ -3514,7 +3661,17 @@ export function BusinessOpportunityReviewWorkspace({
           agreedAmount={acceptedProjectAgreedAmount}
           agreedCurrency={acceptedProjectAgreedCurrency}
           canAddDeliverables={!isLoadingApplications && !acceptedProjectHasStarted && !acceptedProjectHasEnded}
-          onRequestPayment={startPublishPayment}
+          onAddDeliverables={onAddDeliverables}
+          onRequestPayment={(request) => {
+            if (getCurrencyAmount(request?.amount) > 0) {
+              setEscrowTopUpRequest({
+                amount: getCurrencyAmount(request.amount),
+                message: request.message || 'Fund the added scope before it becomes available for creator payments.',
+              })
+              return
+            }
+            startPublishPayment()
+          }}
           opportunity={opportunity}
           submissions={submissions}
           submissionsError={submissionsError}
@@ -3580,7 +3737,9 @@ export function BusinessOpportunityReviewWorkspace({
       )}
       <PublishOpportunityModal
         key={`${opportunity.id}-${escrowTopUpRequest ? 'topup-request' : fundingModalMode || 'closed'}`}
-        fundingAmount={escrowTopUpRequest ? escrowTopUpRequest.amount : acceptedProjectEscrowShortfall}
+        fundingAmount={escrowTopUpRequest
+          ? escrowTopUpRequest.amount
+          : acceptedProjectEscrowShortfall || opportunityEscrowShortfall}
         noticeMessage={escrowTopUpRequest?.message || ''}
         isOpen={Boolean(fundingModalMode) || Boolean(escrowTopUpRequest)}
         mode={escrowTopUpRequest ? 'topup' : fundingModalMode || 'publish'}
@@ -3600,6 +3759,7 @@ export function BusinessOpportunityReviewWorkspace({
           return escrow
         }}
         onPublish={onPublishOpportunity}
+        onResumePayment={onResumeOpportunityPayment}
       />
     </>
   )

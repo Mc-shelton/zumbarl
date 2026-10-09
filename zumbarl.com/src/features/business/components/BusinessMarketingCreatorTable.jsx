@@ -1,5 +1,6 @@
 import { FiFileText, FiMoreVertical, FiRadio } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 const PLATFORM_LABELS = {
   Instagram: 'IG',
@@ -40,7 +41,7 @@ export function BusinessMarketingCreatorTable({ campaign, compact = false }) {
             {campaign.detail.creators.map((creator) => (
               <tr key={creator.handle}>
                 <td>
-                  <span className="business-marketing-creator-avatar">{creator.name.slice(0, 1)}</span>
+                  <span className="business-marketing-creator-avatar"><ProfileAvatar src={creator.avatarUrl || creator.avatar} alt="" /></span>
                   <div>
                     <strong>{creator.name}</strong>
                     <em>{creator.handle}</em>

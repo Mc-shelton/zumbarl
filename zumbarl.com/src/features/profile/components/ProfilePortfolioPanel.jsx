@@ -4,6 +4,7 @@ import {
   PORTFOLIO_FILTERS,
 } from '../constants'
 import ProfilePortfolioServicesPanel from './ProfilePortfolioServicesPanel'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 function handleKeyboardActivation(event, onActivate) {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -167,7 +168,7 @@ function ProfilePortfolioPanel({
                 <p className="campus-portfolio-description">{item.description}</p>
                 <div className="campus-portfolio-item-foot">
                   <div className="campus-portfolio-client">
-                    <img src="/assets/index/bee_nobg.png" alt={`${item.client} logo`} />
+                    <ProfileAvatar src={item.companyLogoUrl} alt={`${item.client} logo`} />
                     <div>
                       <strong>{item.client}</strong>
                       <p>

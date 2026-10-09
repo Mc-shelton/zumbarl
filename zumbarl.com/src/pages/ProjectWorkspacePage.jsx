@@ -22,7 +22,7 @@ import SubmittedPanel from '../features/projects/components/SubmittedPanel'
 import WorkDeliverablesPanel from '../features/projects/components/WorkDeliverablesPanel'
 import useProjectWorkspace from '../features/projects/hooks/useProjectWorkspace'
 import { useDeliverableTasks } from '../features/projects/hooks/useDeliverableTasks'
-import { reviewProjectDeliverable } from '../features/projects/services/projectWorkspaceService'
+import { completeProjectScopeTarget, reviewProjectDeliverable } from '../features/projects/services/projectWorkspaceService'
 import { endProject, startProject } from '../features/projects/services/projectSettingsService'
 import BusinessProjectSettingsPanel from '../features/business/components/BusinessProjectSettingsPanel'
 import ProjectStartNotice from '../features/projects/components/ProjectStartNotice'
@@ -113,6 +113,14 @@ function ProjectWorkspacePage() {
     }
   }
 
+  function handleEndProject() {
+    const confirmed = window.confirm(
+      'End this project? This closes the workspace once all deliverables are approved and paid.',
+    )
+    if (!confirmed) return
+    runLifecycle('end', () => endProject(projectId))
+  }
+
   // A task is never marked done directly - it is submitted for review, and the
   // business approving that submission is what marks it done.
   const openSubmitWorkForTask = (task) => {
@@ -168,26 +176,46 @@ function ProjectWorkspacePage() {
     }
   }
 
+  const handleCompleteTarget = (scopeItemId) => runLifecycle(`complete:${scopeItemId}`, async () => {
+    await completeProjectScopeTarget(projectId, { scopeItemId })
+    await deliverableTasks.refresh()
+  })
+
+  const handleCompleteMilestone = (milestone) => runLifecycle(`complete-milestone:${milestone.id}`, async () => {
+    await completeProjectScopeTarget(projectId, { milestoneId: milestone.id })
+    await Promise.all([deliverableTasks.refresh(), milestoneWorkspace.refresh()])
+  })
+
   const myOpenTasks = deliverableTasks.tasks.filter((task) => (
     task.ownerId && task.ownerId === deliverableTasks.viewerStudentId
   ))
 
   // Milestone planning submits the concrete backend deliverable. The milestone
   // remains attached as its parent context; it is not the selectable work item.
-  const milestoneDeliverableTargets = useMemo(() => (
-    milestoneWorkspace.deliverablesWithMilestone.map((deliverable) => ({
-      value: deliverable.id,
-      label: deliverable.title,
-      kind: 'milestone-deliverable',
-      milestoneId: deliverable.milestoneId,
-      milestoneTitle: deliverable.milestoneTitle,
-      // A team deliverable can receive separate task submissions from several
-      // students. Only final approval closes it to further work.
-      canSubmit: deliverable.status !== 'approved',
-      canRevise: deliverable.status === 'submitted',
-      disabled: deliverable.status === 'approved',
-    }))
-  ), [milestoneWorkspace.deliverablesWithMilestone])
+  const milestoneDeliverableTargets = useMemo(() => {
+    const milestoneById = new Map(milestoneWorkspace.milestones.map((item) => [item.id, item]))
+    return milestoneWorkspace.deliverablesWithMilestone.map((deliverable) => {
+      const milestone = milestoneById.get(deliverable.milestoneId)
+      const completed = milestone?.status === 'approved'
+      const parked = deliverable.status === 'dormant'
+      const hasSubmission = ['submitted', 'approved', 'changes_requested'].includes(deliverable.status)
+      return {
+        value: deliverable.id,
+        label: deliverable.title,
+        kind: 'milestone-deliverable',
+        milestoneId: deliverable.milestoneId,
+        milestoneTitle: deliverable.milestoneTitle,
+        submissionStatus: hasSubmission ? deliverable.status : null,
+        completed,
+        // Approval settles one contribution, not the whole team target. A new
+        // task may still be added and submitted until the milestone is paid.
+        canSubmit: !completed && !parked,
+        canRevise: !completed && deliverable.status === 'changes_requested',
+        disabled: completed || parked,
+        disabledReason: completed ? 'Completed' : parked ? 'Parked until funded' : '',
+      }
+    })
+  }, [milestoneWorkspace.deliverablesWithMilestone, milestoneWorkspace.milestones])
 
   const submissionTargets = usesTeamPlanning
     ? milestoneDeliverableTargets
@@ -215,7 +243,11 @@ function ProjectWorkspacePage() {
               activeTab={activeTab}
               hasStarted={hasStarted}
               isBusinessViewer={isBusinessViewer}
+              isEnding={lifecyclePending === 'end'}
               isStarting={lifecyclePending === 'start'}
+              onEndProject={isBusinessViewer && hasStarted && activeProject.lifecycleStatus !== 'ended'
+                ? handleEndProject
+                : undefined}
               onStartProject={isBusinessViewer && !hasStarted
                 ? () => runLifecycle('start', () => startProject(projectId))
                 : undefined}
@@ -247,18 +279,6 @@ function ProjectWorkspacePage() {
               {lifecycleError ? (
                 <p className="project-lifecycle-error" role="alert">{lifecycleError}</p>
               ) : null}
-              {isBusinessViewer && hasStarted && activeProject.lifecycleStatus !== 'ended' ? (
-                <p className="project-lifecycle-actions">
-                  <button
-                    type="button"
-                    disabled={lifecyclePending === 'end'}
-                    onClick={() => runLifecycle('end', () => endProject(projectId))}
-                  >
-                    {lifecyclePending === 'end' ? 'Ending project…' : 'End project'}
-                  </button>
-                </p>
-              ) : null}
-
               {workspaceIsLoading ? (
                 <section className="project-card project-files-empty" aria-live="polite">
                   <strong>Loading project…</strong>
@@ -345,7 +365,9 @@ function ProjectWorkspacePage() {
                     <>
                       <MilestoneScopePanel
                         canSettle={isBusinessViewer}
+                        completionPending={lifecyclePending.startsWith('complete-milestone:') ? lifecyclePending.split(':')[1] : ''}
                         onActivateMilestone={milestoneWorkspace.onActivateMilestone}
+                        onCompleteMilestone={isBusinessViewer ? handleCompleteMilestone : undefined}
                         onFundMilestone={milestoneWorkspace.onFundMilestone}
                         deliverablesByMilestone={milestoneWorkspace.deliverablesByMilestone}
                         milestones={milestoneWorkspace.milestones}
@@ -405,6 +427,9 @@ function ProjectWorkspacePage() {
                 <WorkDeliverablesPanel
                   deliverableTasks={deliverableTasks}
                   isBusinessViewer={isBusinessViewer}
+                  lifecycleError={lifecycleError}
+                  completionPending={lifecyclePending}
+                  onCompleteTarget={isBusinessViewer ? handleCompleteTarget : undefined}
                   onReview={isBusinessViewer ? handleSubmissionReview : undefined}
                   project={activeProject}
                   reviewState={reviewActionState}
@@ -473,6 +498,7 @@ function ProjectWorkspacePage() {
               onPaymentCompleted={refreshWorkspace}
               onSubmitWork={isBusinessViewer ? undefined : () => openSubmitWork()}
               onTabChange={handleTabChange}
+              tasks={deliverableTasks.tasks}
             />
           )}
         </div>
@@ -483,6 +509,10 @@ function ProjectWorkspacePage() {
           onClose={closeSubmitWorkModal}
           onSubmit={handleSubmitWork}
           myTasks={(usesDeliverableRooms || usesTeamPlanning) ? myOpenTasks : []}
+          tasks={(usesDeliverableRooms || usesTeamPlanning) ? deliverableTasks.tasks : []}
+          taskCoverageEnabled={isTeamProject}
+          viewerStudentId={deliverableTasks.viewerStudentId}
+          onClaimTask={(task) => deliverableTasks.onClaimTask(task.id, deliverableTasks.viewerStudentId)}
           initialTaskIds={pendingSubmitTaskIds}
           milestone={submitMilestone}
           initialTargetValue={submitTargetValue}
@@ -502,6 +532,7 @@ function ProjectWorkspacePage() {
           isSending={teamInviteIsSending}
           onClose={() => setTeamModal(null)}
           onSend={handleInviteTeamMembers}
+          projectId={projectId}
         />
       ) : null}
     </main>

@@ -168,7 +168,7 @@ test.describe('core demo smoke journey', () => {
     await expect(page.getByRole('heading', { name: 'Student Skills Launch Sprint' })).toBeVisible()
     await expect(page.getByRole('button', { name: /Withdraw to M-Pesa/ })).toBeVisible()
     await page.getByRole('button', { name: 'Work & Deliverables', exact: true }).click()
-    await page.getByRole('button', { name: 'Open', exact: true }).click()
+    await page.getByRole('link', { name: /Open Launch Content And Performance Report/ }).click()
     await expect(page.getByText('Create Launch Assets', { exact: true })).toBeVisible()
     await expect(page.getByText('Prepare The Performance Report', { exact: true })).toBeVisible()
 

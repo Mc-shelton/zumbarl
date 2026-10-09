@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { FiBarChart2, FiStar } from 'react-icons/fi'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 import {
   getScoreFillColor,
 } from '../constants'
@@ -149,7 +150,7 @@ function ProfileOverviewPanel({ achievements = [], earningsSummary = [], endorse
           <div className="campus-profile-endorsement-list">
             {visibleEndorsements.length ? visibleEndorsements.map((item) => (
               <article key={`${item.company}-${item.date}`} className="campus-profile-endorsement-item">
-                <img src="/assets/index/bee_nobg.png" alt={`${item.company} logo`} />
+                <ProfileAvatar src={item.companyLogoUrl} alt={`${item.company} logo`} />
                 <div>
                   <h3>{item.company}</h3>
                   <p>{item.person || [item.author, item.role].filter(Boolean).join(' · ')}</p>

@@ -13,6 +13,7 @@ function CampusRegistrationField({ onChange }) {
   const [locationQuery, setLocationQuery] = useState('')
   const [locations, setLocations] = useState([])
   const [selectedLocation, setSelectedLocation] = useState(null)
+  const [isNewCampusCollapsed, setIsNewCampusCollapsed] = useState(false)
   const [isSearching, setIsSearching] = useState(false)
 
   useEffect(() => {
@@ -40,13 +41,14 @@ function CampusRegistrationField({ onChange }) {
     setSelectedCampus(campus)
     setCampusQuery([campus.name, campus.branch].filter(Boolean).join(' · '))
     setShowCampusResults(false)
-    onChange({ id: campus.id })
+    onChange({ id: campus.id, name: campus.name, branch: campus.branch, city: campus.city })
   }
 
   function startNewCampus() {
     setMode('new')
     setCampusName(campusQuery.trim())
     setSelectedCampus(null)
+    setIsNewCampusCollapsed(false)
     onChange(null)
   }
 
@@ -55,6 +57,7 @@ function CampusRegistrationField({ onChange }) {
     setLocationQuery(location.label)
     setLocations([])
     onChange({ name: campusName.trim(), branch: branch.trim() || undefined, city: location.city || location.label.split(',')[0], locationLabel: location.label, latitude: location.latitude, longitude: location.longitude })
+    setIsNewCampusCollapsed(true)
   }
 
   function updateNewCampus(patch) {
@@ -64,6 +67,23 @@ function CampusRegistrationField({ onChange }) {
   }
 
   if (mode === 'new') {
+    if (isNewCampusCollapsed && selectedLocation) {
+      return (
+        <div className="auth-campus-new-summary">
+          <HiOutlineCheck aria-hidden="true" />
+          <span>
+            <small>New campus ready</small>
+            <strong>{campusName}</strong>
+            <span>{[branch, selectedLocation.label].filter(Boolean).join(' · ')}</span>
+          </span>
+          <div>
+            <button type="button" onClick={() => setIsNewCampusCollapsed(false)}>Edit details</button>
+            <button type="button" onClick={() => { setMode('existing'); onChange(null) }}>Choose existing</button>
+          </div>
+        </div>
+      )
+    }
+
     return (
       <fieldset className="auth-campus-create">
         <legend>Add your campus</legend>
@@ -85,7 +105,7 @@ function CampusRegistrationField({ onChange }) {
           {locations.length ? <div className="auth-campus-results" role="listbox">{locations.map((location) => <button key={location.id} type="button" role="option" onClick={() => selectLocation(location)}><HiOutlineMapPin /><span><strong>{location.label.split(',')[0]}</strong><small>{location.label}</small></span></button>)}</div> : null}
           <small>{isSearching ? 'Searching locations…' : selectedLocation ? `Pin selected: ${selectedLocation.latitude.toFixed(5)}, ${selectedLocation.longitude.toFixed(5)}` : 'Select a search result to capture exact coordinates.'}</small>
         </div>
-        <button className="auth-campus-switch" type="button" onClick={() => { setMode('existing'); onChange(selectedCampus ? { id: selectedCampus.id } : null) }}>Choose an existing campus instead</button>
+        <button className="auth-campus-switch" type="button" onClick={() => { setMode('existing'); onChange(selectedCampus ? { id: selectedCampus.id, name: selectedCampus.name, branch: selectedCampus.branch, city: selectedCampus.city } : null) }}>Choose an existing campus instead</button>
       </fieldset>
     )
   }

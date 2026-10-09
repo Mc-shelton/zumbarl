@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { FiArrowLeft, FiBriefcase, FiCheck, FiMapPin, FiMessageCircle, FiMessageSquare, FiShoppingBag, FiTruck, FiUserPlus } from 'react-icons/fi'
 import { Link, useParams } from 'react-router-dom'
 import CampusSidebar from '../components/layout/CampusSidebar'
+import ProfileAvatar from '../components/ui/ProfileAvatar'
 import Seo from '../components/Seo'
 import ExploreShareModal from '../features/explore/components/ExploreShareModal'
 import ExploreStoryViewer from '../features/explore/components/ExploreStoryViewer'
@@ -193,7 +194,7 @@ function CampusVendorProfilePage() {
                 <header><div><span>Registered people</span><h3 id="vendor-profile-erranders-title">Other erranders</h3><p>See who else is connected to {shop.name} and whether they are available.</p></div><strong>{(profile.erranders || []).length} registered</strong></header>
                 <div>
                   {(profile.erranders || []).map((errander) => <article key={errander.id}>
-                    <span className="vendor-errander-person"><img alt="" src={normalizeZumbarlFileUrl(errander.avatarUrl) || FALLBACK_AVATAR} /><span><strong>{errander.name}</strong><small>{Number(errander.completedCount || 0)} completed</small></span></span>
+                    <span className="vendor-errander-person"><ProfileAvatar alt="" src={errander.avatarUrl} /><span><strong>{errander.name}</strong><small>{Number(errander.completedCount || 0)} completed</small></span></span>
                     <span className={`vendor-profile-availability is-${String(errander.status || 'UNAVAILABLE').toLowerCase().replaceAll('_', '-')}`}>{errander.status === 'ON_ERRAND' ? 'On an errand' : errander.status === 'AVAILABLE' ? 'Available now' : 'Unavailable'}</span>
                   </article>)}
                   {!profile.erranders?.length ? <div className="vendor-profile-empty"><FiTruck /><strong>No other erranders yet</strong><p>You are currently the only accepted errander on this page.</p></div> : null}

@@ -330,6 +330,7 @@ function MilestoneBoardPanel({
           dependencies={deliverableTasks.dependencies}
           error={deliverableTasks.error}
           isLoading={deliverableTasks.isLoading}
+          isClosed={open.milestone?.status === 'approved'}
           isPending={Boolean(deliverableTasks.pendingTaskId)}
           notes={deliverableTasks.notesByScopeItem.get(open.id) || []}
           splitLock={deliverableTasks.splitLockByScopeItem.get(open.id)}

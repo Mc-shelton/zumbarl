@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom'
 import { creatorProfilePath, postCreatorProfilePath } from '../utils/creatorProfilePath'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 import { recordRecommendationInteraction } from '../../recommendations/services/recommendationEventService'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 function mediaTypeFor(post, index) {
   return post?.mediaEdits?.[index]?.type === 'video' || post?.tag === 'Video' || post?.type === 'video' ? 'video' : 'image'
@@ -51,7 +52,7 @@ function PostComments({ comments, onComment, post }) {
       <div className="explore-post-comments-list">
         {comments.length ? comments.map((comment) => (
           <article key={comment.id}>
-            <img src={comment.avatar || '/assets/index/bee_nobg.png'} alt="" loading="lazy" />
+            <ProfileAvatar src={comment.avatar} alt="" loading="lazy" />
             <div>
               <p><strong>{comment.author}</strong><span>{comment.handle} · {comment.time}</span></p>
               <div>{comment.text}</div>
@@ -139,7 +140,7 @@ function ResharedPostPreview({ onOpenMediaViewer, post }) {
   return (
     <section className="explore-reshared-post" aria-label={`Original post by ${mediaPost.author}`}>
       <header>
-        {profilePath ? <Link className="explore-reshared-owner-avatar" to={profilePath} aria-label={`View ${mediaPost.author}'s profile`}><img src={normalizeZumbarlFileUrl(mediaPost.avatar) || '/assets/index/bee_nobg.png'} alt="" loading="lazy" /></Link> : <img src={normalizeZumbarlFileUrl(mediaPost.avatar) || '/assets/index/bee_nobg.png'} alt="" loading="lazy" />}
+        {profilePath ? <Link className="explore-reshared-owner-avatar" to={profilePath} aria-label={`View ${mediaPost.author}'s profile`}><ProfileAvatar src={mediaPost.avatar} alt="" loading="lazy" /></Link> : <ProfileAvatar src={mediaPost.avatar} alt="" loading="lazy" />}
         <div>
           {profilePath ? <Link className="explore-reshared-owner-link" to={profilePath}>{mediaPost.author}</Link> : <strong>{mediaPost.author}</strong>}
           <span>
@@ -318,7 +319,7 @@ function ExploreFeed({ activeFilter, allowAnnouncementSubmission = true, comment
     <>
       {showComposer ? <section className="explore-campus-composer-card" aria-label="Create a post">
         <div className="explore-campus-composer-head">
-          <img src={composerAvatar} alt="Your avatar" loading="lazy" />
+          <ProfileAvatar src={composerAvatar} alt="Your avatar" loading="lazy" />
           <button type="button" className="explore-campus-composer-input" onClick={() => onComposerPost('post')}>
             Share a win, need, idea or campus moment…
           </button>
@@ -368,7 +369,7 @@ function ExploreFeed({ activeFilter, allowAnnouncementSubmission = true, comment
           ) : null}
           <header className="explore-campus-feed-head">
             <div className="explore-campus-feed-author">
-              {profilePath ? <Link className="explore-campus-author-avatar-link" to={profilePath} aria-label={`View ${post.author}'s profile`}><img src={post.avatar || '/assets/index/bee_nobg.png'} alt={post.author} loading="lazy" /></Link> : <img src={post.avatar || '/assets/index/bee_nobg.png'} alt={post.author} loading="lazy" />}
+              {profilePath ? <Link className="explore-campus-author-avatar-link" to={profilePath} aria-label={`View ${post.author}'s profile`}><ProfileAvatar src={post.avatar} alt={post.author} loading="lazy" /></Link> : <ProfileAvatar src={post.avatar} alt={post.author} loading="lazy" />}
               <div>
                 <h3>
                   {profilePath ? <Link className="explore-campus-author-link" to={profilePath}>{post.author} <span>{post.handle}</span></Link> : <>{post.author} <span>{post.handle}</span></>}

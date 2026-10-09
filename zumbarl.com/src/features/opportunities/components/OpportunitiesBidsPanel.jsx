@@ -4,6 +4,7 @@ import {
   BID_PROGRESS_POINT_COUNT,
   getBidProgressPointIndex,
 } from '../constants'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 function handleKeyboardActivation(event, onActivate) {
   if (event.key === 'Enter' || event.key === ' ') {
@@ -278,7 +279,7 @@ function OpportunitiesBidsPanel({
 
                 <footer className="opportunities-bid-foot">
                   <div className="opportunities-bid-client">
-                    <img src="/assets/index/bee_nobg.png" alt={`${bid.company} logo`} loading="lazy" />
+                    <ProfileAvatar src={bid.companyLogoUrl} alt={`${bid.company} logo`} loading="lazy" />
                     <div>
                       <strong>{bid.client}</strong>
                       <p>{bid.company}</p>

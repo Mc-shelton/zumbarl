@@ -7,6 +7,7 @@ import {
   FiClipboard,
   FiCreditCard,
   FiFileText,
+  FiFlag,
   FiFolder,
   FiHome,
   FiMessageCircle,
@@ -29,8 +30,10 @@ function ProjectTopBar({
   activeTab,
   hasStarted = true,
   isBusinessViewer = false,
+  isEnding = false,
   isStarting = false,
   onStartProject,
+  onEndProject,
   onTabChange,
   onSubmitWork,
 }) {
@@ -144,6 +147,18 @@ function ProjectTopBar({
           <button type="button" className="project-primary-btn" onClick={onSubmitWork}>
             <FiUploadCloud aria-hidden="true" />
             {activeProject.workActionLabel || 'Submit Work'}
+          </button>
+        ) : null}
+        {onEndProject ? (
+          <button
+            type="button"
+            className="project-end-btn"
+            disabled={isEnding}
+            title="Close the project after all deliverables have been approved and paid"
+            onClick={onEndProject}
+          >
+            <FiFlag aria-hidden="true" />
+            {isEnding ? 'Ending project…' : 'End project'}
           </button>
         ) : null}
         <div className="project-actions-menu" ref={menuRef}>

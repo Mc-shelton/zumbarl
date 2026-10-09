@@ -29,6 +29,7 @@ import {
 } from "react-icons/fi";
 import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import ProfileAvatar from "../ui/ProfileAvatar";
 import {
   ACCESS_KEYS,
   filterByAccess,
@@ -183,6 +184,7 @@ function CampusSidebar({
                 to={href}
                 className={`campus-nav-item${isActive ? " is-active" : ""}`}
                 data-label={label}
+                aria-label={label}
                 aria-current={isActive ? "page" : undefined}
               >
                 {content}
@@ -193,6 +195,7 @@ function CampusSidebar({
                 type="button"
                 className={`campus-nav-item${isActive ? " is-active" : ""}`}
                 data-label={label}
+                aria-label={label}
                 aria-current={isActive ? "page" : undefined}
               >
                 {content}
@@ -214,16 +217,12 @@ function CampusSidebar({
             aria-label={`Open ${resolvedViewer.name || profileLabel} account menu`}
             onClick={() => setIsAccountMenuOpen((current) => !current)}
           >
-            <img
+            <ProfileAvatar
               className="campus-avatar"
               width="42"
               height="42"
               src={resolvedViewer.avatar}
               alt={resolvedViewer.name}
-              onError={(event) => {
-                event.currentTarget.onerror = null;
-                event.currentTarget.src = "/assets/index/bee_nobg.png";
-              }}
             />
             <div>
               <p className="campus-profile-name">{resolvedViewer.name}</p>
@@ -235,7 +234,7 @@ function CampusSidebar({
           {isAccountMenuOpen ? (
             <section className="campus-sidebar-account-menu" aria-label="Account menu">
               <header>
-                <img src={resolvedViewer.avatar} alt="" />
+                <ProfileAvatar src={resolvedViewer.avatar} alt="" />
                 <span><strong>{resolvedViewer.name}</strong><small>{resolvedViewer.campus || resolvedViewer.meta}</small></span>
               </header>
               <Link to={profileHref} onClick={() => setIsAccountMenuOpen(false)}>{profileLabel}</Link>
@@ -344,7 +343,7 @@ function CampusSidebar({
           <div className="campus-mobile-account-backdrop" role="presentation" onMouseDown={() => setIsAccountMenuOpen(false)}>
             <section id="campus-mobile-more-sheet" className="campus-mobile-account-sheet" role="dialog" aria-modal="true" aria-labelledby="campus-mobile-more-title" onMouseDown={(event) => event.stopPropagation()}>
               <header>
-                <img src={resolvedViewer.avatar} alt="" />
+                <ProfileAvatar src={resolvedViewer.avatar} alt="" />
                 <span><strong id="campus-mobile-more-title">More</strong><small>{resolvedViewer.name} · {resolvedViewer.campus || resolvedViewer.meta}</small></span>
                 <button type="button" onClick={() => setIsAccountMenuOpen(false)} aria-label="Close more menu"><FiX aria-hidden="true" /></button>
               </header>

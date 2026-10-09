@@ -1,6 +1,7 @@
 import { FiBarChart2, FiCheckCircle, FiDownload, FiFileText, FiMousePointer, FiRepeat } from "react-icons/fi";
 import { BusinessMarketingCreatorTable } from "./BusinessMarketingCreatorTable";
 import { BusinessMarketingOutlets } from "./BusinessMarketingOutlets";
+import ProfileAvatar from "../../../components/ui/ProfileAvatar";
 
 function DetailList({ rows }) {
   return (
@@ -120,7 +121,7 @@ function LiveClickProgress({ campaign }) {
               : `Campaigner ${index + 1}`;
             return (
               <article key={acceptance.id || acceptance.studentId}>
-                <span className="business-marketing-creator-avatar">{creatorName.slice(0, 1)}</span>
+                <span className="business-marketing-creator-avatar"><ProfileAvatar src={acceptance.student?.avatarUrl} alt="" /></span>
                 <div><strong>{creatorName}</strong><small>{acceptance.promoCode || "Tracked creator link"}</small></div>
                 <p>
                   <strong>{Number(acceptance.trackingClicks || 0).toLocaleString()} unique</strong>

@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import CampusSidebar from '../components/layout/CampusSidebar'
 import CampusTopActions from '../components/layout/CampusTopActions'
 import Seo from '../components/Seo'
+import ProfileAvatar from '../components/ui/ProfileAvatar'
 import { BusinessWorkspaceSidebar } from '../features/business/components/BusinessApplicantSidebar'
 import { getCurrentLoginRole } from '../features/auth/roleConfig'
 import { ensurePageConversation, listConversations, listMessageNetwork, listMessages, listPageConversations, listPageMessages, listProjectGroupConversations, listProjectGroupMessages, sendMessage, sendPageMessage, sendProjectGroupMessage } from '../features/messages/services/messageService'
@@ -795,9 +796,7 @@ function MessagesPage() {
                     <span className={`messages-avatar is-${conversation.kind || 'personal'}`}>
                       {conversation.kind === 'group'
                         ? <FiUsers aria-hidden="true" />
-                        : participantAvatar(conversation.participant)
-                        ? <img src={participantAvatar(conversation.participant)} alt="" />
-                        : conversation.participant.name.slice(0, 1)}
+                        : <ProfileAvatar src={participantAvatar(conversation.participant)} alt="" />}
                     </span>
                     <span className="messages-conversation-copy">
                       <span className="messages-conversation-title"><strong>{conversation.participant.name}</strong><time>{conversationTime(conversation.latestMessage?.createdAt)}</time></span>
@@ -831,9 +830,7 @@ function MessagesPage() {
                       {isPageConversation ? (
                         <Link className="messages-participant-link" to={activeConversation.actingAsPage ? activeConversation.page.inboxHref : activeConversation.page.href}>
                           <span className="messages-avatar">
-                            {participantAvatar(activeConversation.participant)
-                              ? <img src={participantAvatar(activeConversation.participant)} alt="" />
-                              : activeConversation.participant.name.slice(0, 1)}
+                            <ProfileAvatar src={participantAvatar(activeConversation.participant)} alt="" />
                           </span>
                           <span>
                             <h2>{activeConversation.participant.name}</h2>
@@ -855,9 +852,7 @@ function MessagesPage() {
                           aria-label={`View ${activeConversation.participant.name}'s profile`}
                         >
                           <span className="messages-avatar">
-                            {participantAvatar(activeConversation.participant)
-                              ? <img src={participantAvatar(activeConversation.participant)} alt="" />
-                              : activeConversation.participant.name.slice(0, 1)}
+                            <ProfileAvatar src={participantAvatar(activeConversation.participant)} alt="" />
                           </span>
                           <span>
                             <h2>{activeConversation.participant.name}</h2>
@@ -867,9 +862,7 @@ function MessagesPage() {
                       ) : (
                         <div className="messages-participant-link is-static">
                           <span className="messages-avatar">
-                            {participantAvatar(activeConversation.participant)
-                              ? <img src={participantAvatar(activeConversation.participant)} alt="" />
-                              : activeConversation.participant.name.slice(0, 1)}
+                            <ProfileAvatar src={participantAvatar(activeConversation.participant)} alt="" />
                           </span>
                           <span>
                             <h2>{activeConversation.participant.name}</h2>
@@ -904,9 +897,7 @@ function MessagesPage() {
                           <article key={message.id} className={isMine ? 'is-mine' : ''}>
                             {!isMine ? (
                               <span className="messages-message-avatar">
-                                {participantAvatar(isGroupConversation ? message.sender : activeConversation.participant)
-                                  ? <img src={participantAvatar(isGroupConversation ? message.sender : activeConversation.participant)} alt="" />
-                                  : (isGroupConversation ? message.sender?.name : activeConversation.participant.name)?.slice(0, 1) || '?'}
+                                <ProfileAvatar src={participantAvatar(isGroupConversation ? message.sender : activeConversation.participant)} alt="" />
                               </span>
                             ) : null}
                             <div>
@@ -961,10 +952,8 @@ function MessagesPage() {
                             {isMine ? (
                               <span className="messages-message-avatar">
                                 {isPageConversation && activeConversation.actingAsPage
-                                  ? (participantAvatar(activeConversation.page) ? <img src={participantAvatar(activeConversation.page)} alt="" /> : activeConversation.page.name.slice(0, 1))
-                                  : viewerProfile.avatar
-                                    ? <img src={viewerProfile.avatar} alt="" />
-                                    : viewerProfile.initials}
+                                  ? <ProfileAvatar src={participantAvatar(activeConversation.page)} alt="" />
+                                  : <ProfileAvatar src={viewerProfile.avatar} alt="" />}
                               </span>
                             ) : null}
                           </article>
@@ -1026,7 +1015,7 @@ function MessagesPage() {
           <div className="messages-network-results">
             {visibleNetworkTargets.map((target) => <button disabled={Boolean(networkStartingId)} key={target.id} onClick={() => startNetworkConversation(target)} type="button">
               <span className={`messages-network-avatar is-${target.kind}`}>
-                {participantAvatar(target.participant) ? <img alt="" src={participantAvatar(target.participant)} /> : target.kind === 'page' ? <FiMessageCircle aria-hidden="true" /> : target.participant.name.slice(0, 1)}
+                <ProfileAvatar alt="" src={participantAvatar(target.participant)} />
               </span>
               <span><strong>{target.participant.name}</strong><small>{target.kind === 'page' ? 'Page' : 'Person'} · {target.relationship}</small></span>
               <FiArrowRight aria-hidden="true" />

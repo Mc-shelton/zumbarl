@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { listPageConversations, listPageMessages, sendPageMessage } from '../services/messageService'
 import { decideMarketplaceOffer, readMarketplaceOffer } from '../../opportunities/services/marketplaceInteractionService'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 import '../../../styles/page-inbox.css'
 
 function time(value) {
@@ -146,7 +147,7 @@ function PageInboxPanel({ pageType, pageId, pageName }) {
     <div className="page-inbox-workspace">
       <aside>
         {conversations.map((conversation) => <button className={conversation.id === active?.id ? 'is-active' : ''} key={conversation.id} onClick={() => setActiveId(conversation.id)} type="button">
-          <span className="page-inbox-avatar">{normalizeZumbarlFileUrl(conversation.customer?.avatarUrl) ? <img alt="" src={normalizeZumbarlFileUrl(conversation.customer.avatarUrl)} /> : conversation.customer?.name?.slice(0, 1)}</span>
+          <span className="page-inbox-avatar"><ProfileAvatar alt="" src={conversation.customer?.avatarUrl} /></span>
           <span><strong>{conversation.customer?.name}</strong><small>{conversation.latestMessage?.body}</small></span>
           {conversation.unreadCount ? <em>{conversation.unreadCount}</em> : null}
         </button>)}
@@ -156,10 +157,10 @@ function PageInboxPanel({ pageType, pageId, pageName }) {
         {active ? <>
           <header>
             {active.customer?.studentId ? <Link className="page-inbox-customer-link" to={`/campus/profiles/${encodeURIComponent(active.customer.studentId)}`} aria-label={`View ${active.customer.name}'s profile`}>
-              <span className="page-inbox-avatar">{normalizeZumbarlFileUrl(active.customer?.avatarUrl) ? <img alt="" src={normalizeZumbarlFileUrl(active.customer.avatarUrl)} /> : active.customer?.name?.slice(0, 1)}</span>
+              <span className="page-inbox-avatar"><ProfileAvatar alt="" src={active.customer?.avatarUrl} /></span>
               <span><strong>{active.customer?.name}</strong><small>Replying as {active.page?.name}</small></span>
             </Link> : <div className="page-inbox-customer-link is-static">
-              <span className="page-inbox-avatar">{normalizeZumbarlFileUrl(active.customer?.avatarUrl) ? <img alt="" src={normalizeZumbarlFileUrl(active.customer.avatarUrl)} /> : active.customer?.name?.slice(0, 1)}</span>
+              <span className="page-inbox-avatar"><ProfileAvatar alt="" src={active.customer?.avatarUrl} /></span>
               <span><strong>{active.customer?.name}</strong><small>Replying as {active.page?.name}</small></span>
             </div>}
           </header>

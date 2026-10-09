@@ -22,7 +22,7 @@ import '../styles/cart.css'
 
 function CampusCartReviewPage() {
   const navigate = useNavigate()
-  const { cartId, cartItems, totals: orderTotals } = useCartPageState()
+  const { cartId, cartItems, isLoading, totals: orderTotals } = useCartPageState()
   const [isPlacingOrder, setIsPlacingOrder] = useState(false)
   const [orderError, setOrderError] = useState('')
   const [customer, setCustomer] = useState(() => getAuthUserSnapshot())
@@ -34,6 +34,10 @@ function CampusCartReviewPage() {
     })
     return () => { active = false }
   }, [])
+
+  useEffect(() => {
+    if (!isLoading && cartItems.length === 0) navigate('/campus/cart', { replace: true })
+  }, [cartItems.length, isLoading, navigate])
 
   const handlePlaceOrder = async () => {
     if (isPlacingOrder || !cartId || !cartItems.length) return

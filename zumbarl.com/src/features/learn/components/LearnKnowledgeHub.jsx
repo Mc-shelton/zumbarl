@@ -6,6 +6,7 @@ import {
 } from 'react-icons/fi'
 import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
+import { DEFAULT_PROFILE_AVATAR } from '../../../components/ui/profileAvatarUtils'
 import KnowledgeResourceCheckoutModal from './KnowledgeResourceCheckoutModal'
 import KnowledgeAvatarPicker from './KnowledgeAvatarPicker'
 import GeneratedResourceThumbnailPicker from './GeneratedResourceThumbnailPicker'
@@ -32,7 +33,7 @@ const EMPTY_RESOURCE = {
   availableCopies: '', spaceId: '', currency: 'KES',
 }
 const EMPTY_SPACE = { type: 'LIBRARY', name: '', description: '', visibility: 'CAMPUS', membershipMode: 'REQUEST', avatarUrl: '' }
-const DEFAULT_MEMBER_AVATAR = '/assets/knowledge/default-member-avatar.svg'
+const DEFAULT_MEMBER_AVATAR = DEFAULT_PROFILE_AVATAR
 const memberAvatar = (value) => normalizeZumbarlFileUrl(value) || DEFAULT_MEMBER_AVATAR
 const useAvatarFallback = (event) => {
   event.currentTarget.onerror = null

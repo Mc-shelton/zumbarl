@@ -1,5 +1,6 @@
 import { FiCheck, FiClock, FiMapPin, FiUserPlus, FiX } from 'react-icons/fi'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 function OpportunitiesInvitesPanel({
   activeInviteClientsCount,
@@ -127,7 +128,7 @@ function OpportunitiesInvitesPanel({
 
               <footer className="opportunities-invite-page-foot">
                 <div className="opportunities-bid-client">
-                  <img src="/assets/index/bee_nobg.png" alt={`${invite.company} logo`} loading="lazy" />
+                  <ProfileAvatar src={invite.companyLogoUrl} alt={`${invite.company} logo`} loading="lazy" />
                   <div>
                     <strong>{invite.inviter}</strong>
                     <p>{invite.posted}</p>

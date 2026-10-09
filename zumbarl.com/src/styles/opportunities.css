@@ -65,7 +65,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #8a90ad;
+  color: #66708f;
   font-family: 'Manrope', 'Inter', sans-serif;
   font-size: var(--text-body);
   line-height: 1.2;
@@ -535,7 +535,7 @@
 .opportunities-type-copy small {
   color: inherit;
   font-size: var(--text-caption);
-  opacity: 0.78;
+  opacity: 1;
 }
 
 .opportunities-type-count {
@@ -553,8 +553,8 @@
 }
 
 .opportunities-type-card.is-active .opportunities-type-count {
-  background: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
+  background: #ffffff;
+  color: #76506f;
 }
 
 .opportunities-list-section {
@@ -2840,7 +2840,7 @@
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  color: #8a90ad;
+  color: #66708f;
   font-family: 'Manrope', 'Inter', sans-serif;
   font-size: var(--text-body);
   line-height: 1.2;
@@ -2848,7 +2848,7 @@
 }
 
 .opportunities-bid-breadcrumb a {
-  color: #8a90ad;
+  color: #66708f;
   text-decoration: none;
 }
 
@@ -3640,7 +3640,7 @@
 
 .student-interview-card header p {
   margin-top: 4px;
-  color: #6d7697;
+  color: #68708f;
   font-size: var(--text-small);
 }
 
@@ -3682,7 +3682,7 @@
   display: flex;
   align-items: center;
   gap: 6px;
-  color: #737c9b;
+  color: #626b88;
   font-size: var(--text-caption);
   font-weight: 800;
   text-transform: uppercase;
@@ -4474,6 +4474,32 @@
   display: block;
 }
 
+.opportunities-job-avatar.is-missing {
+  background:
+    radial-gradient(circle at 18% 16%, rgba(251, 180, 43, 0.2), transparent 34%),
+    radial-gradient(circle at 86% 82%, rgba(47, 130, 118, 0.18), transparent 38%),
+    linear-gradient(145deg, #f4edf3, #f7faf9);
+}
+
+.opportunities-job-avatar-fallback {
+  max-width: 100%;
+  padding: 12px;
+  color: #76506f;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.opportunities-job-avatar-fallback svg {
+  font-size: 25px;
+}
+
+.opportunities-job-avatar-fallback strong {
+  font-size: var(--text-micro);
+  line-height: 1.25;
+}
+
 .opportunities-job-main {
   min-width: 0;
   padding-block: 1px;
@@ -4788,7 +4814,7 @@
 .opportunities-filter-heading small {
   display: block;
   margin-bottom: 2px;
-  color: #9a7893;
+  color: #76506f;
   font-size: var(--text-micro);
   font-weight: 800;
   letter-spacing: 0.055em;
@@ -4981,7 +5007,7 @@
 }
 
 .opportunities-budget-row label > span {
-  color: #85899b;
+  color: #666b7c;
   font-size: var(--text-micro);
   font-weight: 750;
 }
@@ -6096,7 +6122,7 @@
 .opportunities-marketplace-location-btn { border-left: 1px solid #e5e7f0; min-height: 40px; padding: 0 12px; color: #30375c; font-size: var(--text-small); font-weight: 600; }
 .opportunities-marketplace-search-btn { height: 40px; padding: 0 18px; min-width: 96px; border-radius: 9px; font-size: var(--text-small); font-weight: 800; }
 
-.opportunities-section-head p { margin: 2px 0 0; color: #7a839d; font-size: var(--text-caption); }
+.opportunities-section-head p { margin: 2px 0 0; color: #69728e; font-size: var(--text-caption); }
 .marketplace-service-mode { width: fit-content; border-radius: 999px; padding: 3px 7px; background: #e7f6ee; color: #16784a; font-size: var(--text-micro); font-weight: 850; }
 .marketplace-service-mode.is-order_ahead { background: #fff1d8; color: #a86205; }
 .marketplace-service-mode.is-request_quote { background: #e7f2f5; color: #27757d; }
@@ -7965,6 +7991,7 @@
     grid-template-columns: 28px minmax(0, 1fr) auto;
     grid-template-areas:
       "order title action"
+      "order tasks tasks"
       "order description description"
       "order due status"
       "order submissions type";
@@ -7979,6 +8006,7 @@
   .project-work-deliverable-row:not(.is-head) > .project-work-deliverable-order { grid-area: order; align-self: start; }
   .project-work-deliverable-row:not(.is-head) > .project-work-deliverable-title { grid-area: title; }
   .project-work-deliverable-row:not(.is-head) > strong:nth-child(3) { grid-area: type; justify-self: end; }
+  .project-work-deliverable-row:not(.is-head) > .project-work-deliverable-task-summary { grid-area: tasks; }
   .project-work-deliverable-row:not(.is-head) > p { grid-area: description; color: #706978; font-weight: 650; }
   .project-work-deliverable-row:not(.is-head) > time { grid-area: due; }
   .project-work-deliverable-row:not(.is-head) > .project-work-deliverable-submissions { grid-area: submissions; }
@@ -8052,6 +8080,568 @@
   }
 }
 
+/* Application workspace refresh. The phase navigation follows the profile
+   page's flat, underline-led tabs while retaining application progress. */
+.opportunities-bid-page {
+  --bid-accent: #76506f;
+  --bid-accent-strong: #65445f;
+  --bid-ink: #302d3a;
+  --bid-muted: #746e7b;
+  background: #f8f6f8;
+}
+
+.opportunities-bid-page .opportunities-bid-main {
+  gap: 12px;
+  padding-bottom: 48px;
+}
+
+.opportunities-bid-page .opportunities-bid-breadcrumb-wrap {
+  padding: 3px 4px 1px;
+}
+
+.opportunities-bid-page .opportunities-bid-breadcrumb {
+  color: #8a818e;
+  font-size: var(--text-small);
+}
+
+.opportunities-bid-page .opportunities-bid-breadcrumb strong {
+  color: var(--bid-ink);
+}
+
+.opportunities-bid-page .opportunities-bid-header {
+  position: relative;
+  align-items: center;
+  overflow: hidden;
+  padding: 22px 24px;
+  border-color: #e3dce5;
+  border-radius: 18px;
+  background: linear-gradient(135deg, #fff 0%, #fbf7fa 67%, #fff8e9 100%);
+  box-shadow: 0 10px 28px rgba(52, 41, 58, .055);
+}
+
+.opportunities-bid-page .opportunities-bid-header::after {
+  position: absolute;
+  right: -54px;
+  bottom: -84px;
+  width: 180px;
+  height: 180px;
+  border: 28px solid rgba(251, 177, 48, .08);
+  border-radius: 50%;
+  content: '';
+  pointer-events: none;
+}
+
+.opportunities-bid-header-copy {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+.opportunities-bid-page .opportunities-bid-header-copy > small {
+  color: #87627f;
+  font-size: 10px;
+  font-weight: 850;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.opportunities-bid-page .opportunities-bid-header h1 {
+  margin-top: 5px;
+  color: var(--bid-ink);
+  font-size: clamp(28px, 2.3vw, 40px);
+  letter-spacing: -.035em;
+}
+
+.opportunities-bid-page .opportunities-bid-header-copy > p {
+  display: -webkit-box;
+  max-width: 760px;
+  margin-top: 10px;
+  overflow: hidden;
+  color: var(--bid-muted);
+  line-height: 1.5;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.opportunities-bid-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 9px;
+}
+
+.opportunities-bid-page .opportunities-bid-header-meta > span {
+  display: inline-flex;
+  min-height: 27px;
+  margin: 0;
+  padding: 4px 9px;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #e6dfe7;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .85);
+  color: #615967;
+  font-size: var(--text-caption);
+  font-weight: 750;
+}
+
+.opportunities-bid-page .opportunities-bid-header-meta > span:first-child {
+  border-color: #d7e9e3;
+  background: #edf7f4;
+  color: #287566;
+}
+
+.opportunities-bid-page .opportunities-bid-top-actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: max-content;
+}
+
+.opportunities-bid-page .opportunities-bid-ghost-btn {
+  min-height: 42px;
+  padding: 0 15px;
+  border-color: #ded6e0;
+  border-radius: 10px;
+  background: #fff;
+  color: #625a67;
+}
+
+.opportunities-bid-page .opportunities-bid-ghost-btn:hover {
+  border-color: var(--bid-accent);
+  background: #f7f1f6;
+  color: var(--bid-accent);
+}
+
+.opportunities-bid-page .opportunities-bid-form-card {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  padding: 0;
+  border-color: #e3dce5;
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(52, 41, 58, .06);
+}
+
+.opportunities-bid-page .opportunities-bid-form-card > header {
+  padding: 22px 24px 17px;
+}
+
+.opportunities-bid-page .opportunities-bid-form-card > header h2 {
+  color: var(--bid-ink);
+  font-size: 21px;
+  letter-spacing: -.015em;
+}
+
+.opportunities-bid-page .opportunities-bid-form-card > header p {
+  max-width: 68ch;
+  color: var(--bid-muted);
+  font-size: var(--text-small);
+  line-height: 1.45;
+}
+
+.opportunities-bid-page .opportunities-application-steps {
+  display: flex;
+  min-width: 0;
+  gap: 24px;
+  overflow-x: auto;
+  padding: 0 24px;
+  border-top: 1px solid #eee9ef;
+  border-bottom: 1px solid #e7e1e8;
+  background: #fbfafb;
+  scrollbar-width: none;
+}
+
+.opportunities-bid-page .opportunities-application-steps::-webkit-scrollbar {
+  display: none;
+}
+
+.opportunities-bid-page .opportunities-application-steps li {
+  display: block;
+  min-width: 0;
+  flex: 1 1 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.opportunities-bid-page .opportunities-application-steps li > button {
+  position: relative;
+  width: 100%;
+  min-height: 62px;
+  margin-bottom: -1px;
+  padding: 8px 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: #817986;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.opportunities-bid-page .opportunities-application-steps li > button:disabled {
+  cursor: wait;
+  opacity: .65;
+}
+
+.opportunities-bid-page .opportunities-application-steps li > button:focus-visible {
+  outline: 3px solid rgba(118, 80, 111, .2);
+  outline-offset: -3px;
+}
+
+.opportunities-bid-page .opportunities-application-steps li > button > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 999px;
+  background: #eee9ef;
+  color: #776e7b;
+}
+
+.opportunities-bid-page .opportunities-application-steps li > button > div {
+  display: grid;
+  min-width: 0;
+}
+
+.opportunities-bid-page .opportunities-application-steps small {
+  color: #938b97;
+  font-size: 9px;
+  letter-spacing: .07em;
+}
+
+.opportunities-bid-page .opportunities-application-steps strong {
+  color: inherit;
+  font-size: var(--text-small);
+}
+
+.opportunities-bid-page .opportunities-application-steps li.is-active > button {
+  border-bottom-color: var(--bid-accent);
+  color: var(--bid-accent);
+}
+
+.opportunities-bid-page .opportunities-application-steps li.is-active > button > span {
+  background: var(--bid-accent);
+  color: #fff;
+}
+
+.opportunities-bid-page .opportunities-application-steps li.is-complete > button {
+  color: #287566;
+}
+
+.opportunities-bid-page .opportunities-application-steps li.is-complete > button > span {
+  background: #dcefe8;
+  color: #287566;
+}
+
+.opportunities-bid-page .opportunities-application-phase {
+  padding: 23px 24px 26px;
+  gap: 20px;
+}
+
+.opportunities-bid-page .opportunities-application-phase-heading {
+  padding-bottom: 15px;
+  border-bottom-color: #eee9ef;
+}
+
+.opportunities-bid-page .opportunities-application-phase-heading > span {
+  background: var(--bid-accent);
+}
+
+.opportunities-bid-page .opportunities-application-phase-heading h3 {
+  color: var(--bid-ink);
+}
+
+.opportunities-bid-page .opportunities-bid-field label,
+.opportunities-bid-page .opportunities-bid-field-label {
+  color: #423d47;
+}
+
+.opportunities-bid-page .opportunities-bid-field textarea,
+.opportunities-bid-page .opportunities-bid-price-row input,
+.opportunities-bid-page .opportunities-bid-price-row select,
+.opportunities-bid-page .opportunities-application-attachment > input,
+.opportunities-bid-page .opportunities-bid-delivery-row {
+  border-color: #ded7e1;
+  border-radius: 10px;
+  background: #fdfcfd;
+}
+
+.opportunities-bid-page .opportunities-bid-field textarea:focus,
+.opportunities-bid-page .opportunities-bid-price-row input:focus,
+.opportunities-bid-page .opportunities-bid-price-row select:focus,
+.opportunities-bid-page .opportunities-application-attachment > input:focus {
+  border-color: var(--bid-accent);
+  box-shadow: 0 0 0 3px rgba(118, 80, 111, .12);
+}
+
+.opportunities-bid-page .opportunities-bid-team-pay-note {
+  padding: 14px 15px;
+  border-color: #dfd3dc;
+  background: linear-gradient(135deg, #f7f1f6, #fffaf0);
+  color: #5d4c59;
+}
+
+.opportunities-bid-page .opportunities-application-saved,
+.opportunities-bid-page .opportunities-application-error {
+  margin: 0 24px 18px;
+}
+
+.opportunities-bid-page .opportunities-bid-form-foot {
+  padding: 16px 24px;
+  border-top: 1px solid #e9e3ea;
+  background: #fbfafb;
+}
+
+.opportunities-bid-page .opportunities-application-save-btn {
+  border-color: #d9cad6;
+  background: #f7f1f6;
+  color: var(--bid-accent);
+}
+
+.opportunities-bid-page .opportunities-detail-bid-btn {
+  min-height: 43px;
+  border-color: var(--bid-accent);
+  border-radius: 10px;
+  background: var(--bid-accent);
+  box-shadow: 0 9px 20px rgba(82, 55, 77, .16);
+}
+
+.opportunities-bid-page .opportunities-detail-bid-btn:hover {
+  border-color: var(--bid-accent-strong);
+  background: var(--bid-accent-strong);
+}
+
+.opportunities-bid-page .opportunities-bid-summary-rail {
+  gap: 12px;
+  padding-top: 18px;
+}
+
+.opportunities-bid-page .opportunities-bid-summary-card,
+.opportunities-bid-page .opportunities-bid-info-card {
+  border-color: #e3dce5;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(52, 41, 58, .05);
+}
+
+.opportunities-bid-page .opportunities-bid-summary-card {
+  gap: 14px;
+}
+
+.opportunities-bid-page .opportunities-bid-summary-card > header small {
+  color: #8b6683;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.opportunities-bid-page .opportunities-bid-summary-card > header h3 {
+  margin-top: 3px;
+  color: var(--bid-ink);
+}
+
+.opportunities-bid-page .opportunities-bid-summary-head {
+  border-color: #e4dce5;
+  background: #fbf9fb;
+}
+
+.opportunities-bid-page .opportunities-bid-summary-logo {
+  border-color: #d9cad7;
+  background: #fff;
+}
+
+.opportunities-bid-page .opportunities-bid-summary-block p {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--bid-muted);
+  font-size: var(--text-small);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+}
+
+.opportunities-bid-page .opportunities-bid-process-block {
+  border-color: #e7d7bc;
+  background: #fff7e9;
+}
+
+.opportunities-bid-page .opportunities-bid-summary-meta {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.opportunities-bid-page .opportunities-bid-summary-meta article {
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid #ebe5ec;
+  border-radius: 10px;
+  background: #fcfbfc;
+}
+
+.opportunities-bid-page .opportunities-bid-summary-meta article p {
+  color: #8b838e;
+  font-size: var(--text-caption);
+}
+
+.opportunities-bid-page .opportunities-bid-summary-meta article strong {
+  margin: 4px 0 0;
+  overflow: hidden;
+  color: #433e48;
+  font-size: var(--text-small);
+  text-overflow: ellipsis;
+}
+
+.opportunities-bid-page .opportunities-bid-summary-meta article:nth-child(4) {
+  border-color: #cfe4dd;
+  background: #eef8f4;
+}
+
+.opportunities-bid-page .opportunities-bid-summary-meta article:nth-child(4) strong {
+  color: #287566;
+}
+
+.opportunities-bid-page .opportunities-bid-summary-skills span {
+  background: #f1edf1;
+  color: #675c69;
+}
+
+.opportunities-bid-page .opportunities-bid-info-card {
+  grid-template-columns: 36px minmax(0, 1fr);
+  border-color: #e3dce5;
+}
+
+.opportunities-bid-page .opportunities-bid-info-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #f2eaf0;
+  color: var(--bid-accent);
+}
+
+.opportunities-bid-page .opportunities-bid-info-card h4 {
+  color: var(--bid-ink);
+  font-size: var(--text-body);
+}
+
+.opportunities-bid-page .opportunities-bid-info-card p {
+  color: var(--bid-muted);
+}
+
+.opportunities-bid-page .opportunities-bid-help-link {
+  color: var(--bid-accent);
+  font-size: var(--text-small);
+  font-weight: 800;
+  text-decoration: none;
+}
+
+@media (max-width: 1260px) {
+  .opportunities-bid-page .opportunities-application-steps {
+    gap: 12px;
+  }
+
+  .opportunities-bid-page .opportunities-application-steps li > button {
+    justify-content: flex-start;
+  }
+
+  .opportunities-bid-page .opportunities-bid-summary-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 980px) {
+  .opportunities-bid-page .opportunities-bid-header {
+    align-items: stretch;
+  }
+
+  .opportunities-bid-page .opportunities-bid-top-actions {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .opportunities-bid-page .opportunities-bid-ghost-btn {
+    flex: 1;
+  }
+
+  .opportunities-bid-page .opportunities-bid-summary-rail {
+    padding-top: 0;
+  }
+
+  .opportunities-bid-page .opportunities-bid-summary-meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .opportunities-bid-page .opportunities-bid-main {
+    gap: 10px;
+    padding-top: 10px;
+  }
+
+  .opportunities-bid-page .opportunities-bid-header {
+    padding: 18px;
+    border-radius: 15px;
+  }
+
+  .opportunities-bid-page .opportunities-bid-header h1 {
+    font-size: 27px;
+  }
+
+  .opportunities-bid-page .opportunities-bid-header-copy > p {
+    -webkit-line-clamp: 3;
+  }
+
+  .opportunities-bid-page .opportunities-bid-form-card {
+    border-radius: 15px;
+  }
+
+  .opportunities-bid-page .opportunities-bid-form-card > header,
+  .opportunities-bid-page .opportunities-application-phase {
+    padding: 18px;
+  }
+
+  .opportunities-bid-page .opportunities-application-steps {
+    gap: 5px;
+    padding: 0 16px;
+    scroll-snap-type: x proximity;
+  }
+
+  .opportunities-bid-page .opportunities-application-steps li {
+    flex: 0 0 142px;
+    scroll-snap-align: start;
+  }
+
+  .opportunities-bid-page .opportunities-application-steps li > button {
+    min-height: 56px;
+  }
+
+  .opportunities-bid-page .opportunities-application-steps li > button > span {
+    width: 25px;
+    height: 25px;
+  }
+
+  .opportunities-bid-page .opportunities-application-saved,
+  .opportunities-bid-page .opportunities-application-error {
+    margin: 0 18px 16px;
+  }
+
+  .opportunities-bid-page .opportunities-bid-form-foot {
+    padding: 15px 18px 18px;
+  }
+
+  .opportunities-bid-page .opportunities-bid-summary-meta {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 640px) {
   .project-panel-intro {
     padding: 18px;
@@ -8105,6 +8695,7 @@
     grid-template-columns: 28px minmax(0, 1fr);
     grid-template-areas:
       "order title"
+      "tasks tasks"
       "description description"
       "due status"
       "submissions type"
@@ -9311,9 +9902,9 @@
 }
 
 .project-work-deliverable-row {
-  min-width: 1050px;
+  min-width: 1210px;
   display: grid;
-  grid-template-columns: 28px minmax(170px, 1.35fr) minmax(100px, 0.78fr) minmax(190px, 1.35fr) minmax(130px, 0.95fr) minmax(85px, 0.68fr) minmax(110px, 0.78fr) minmax(88px, 0.68fr);
+  grid-template-columns: 28px minmax(170px, 1.25fr) minmax(100px, 0.72fr) minmax(145px, 1fr) minmax(190px, 1.3fr) minmax(130px, 0.9fr) minmax(85px, 0.62fr) minmax(110px, 0.74fr) minmax(88px, 0.64fr);
   align-items: center;
   gap: 12px;
   min-height: 70px;
@@ -9322,6 +9913,27 @@
   color: var(--project-ink);
   font-size: var(--text-caption);
   font-weight: 850;
+}
+
+.project-work-deliverable-row.is-clickable {
+  position: relative;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, box-shadow .18s ease, transform .18s ease;
+}
+
+.project-work-deliverable-row.is-clickable:hover {
+  z-index: 1;
+  border-color: #cdbdca;
+  background: #fdfafd;
+  box-shadow: 0 9px 22px rgba(62, 45, 66, .09);
+  transform: translateY(-1px);
+}
+
+.project-work-deliverable-row.is-clickable:focus-visible {
+  z-index: 2;
+  outline: 3px solid rgba(118, 80, 111, .2);
+  outline-offset: -3px;
+  border-color: #76506f;
 }
 
 .project-work-deliverable-row.is-head {
@@ -9388,6 +10000,43 @@
   line-height: 1.45;
 }
 
+.project-work-deliverable-task-summary {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+  padding: 8px 9px;
+  border: 1px solid #dce8e3;
+  border-radius: 9px;
+  background: #f2faf7;
+}
+
+.project-work-deliverable-task-summary strong,
+.project-work-deliverable-task-summary span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-work-deliverable-task-summary strong {
+  color: #287566;
+  font-size: var(--text-caption);
+}
+
+.project-work-deliverable-task-summary span {
+  color: #708078;
+  font-size: var(--text-micro);
+  font-weight: 700;
+}
+
+.project-work-deliverable-task-summary.has-pending {
+  border-color: #eed49d;
+  background: #fff8e9;
+}
+
+.project-work-deliverable-task-summary.has-pending strong { color: #8f5d0c; }
+.project-work-deliverable-task-summary.has-pending span { color: #8a7045; }
+
 .project-work-deliverable-row time {
   display: grid;
   gap: 5px;
@@ -9440,7 +10089,8 @@
   color: #a96500;
 }
 
-.project-work-deliverable-actions button {
+.project-work-deliverable-actions button,
+.project-work-deliverable-actions > span {
   min-height: 32px;
   padding: 0 12px;
   border: 1px solid rgba(107, 47, 232, 0.45);
@@ -9451,6 +10101,11 @@
   font-size: var(--text-caption);
   font-weight: 900;
   cursor: pointer;
+}
+
+.project-work-deliverable-actions > span {
+  display: inline-flex;
+  align-items: center;
 }
 
 .project-work-deliverable-footer {
@@ -10375,47 +11030,64 @@
   backdrop-filter: blur(2px);
   display: grid;
   place-items: center;
-  padding: 28px;
+  padding: 24px;
 }
 
 .project-submit-modal {
   position: relative;
-  width: min(720px, 100%);
-  max-height: calc(100vh - 56px);
-  overflow-y: auto;
-  border-radius: 12px;
+  width: min(800px, 100%);
+  max-height: min(900px, calc(100dvh - 48px));
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  border: 1px solid #ece8f1;
+  border-radius: 20px;
   background: #ffffff;
   box-shadow: 0 30px 90px rgba(11, 16, 72, 0.25);
-  padding: 34px 36px 28px;
   color: var(--project-ink);
 }
 
 .project-modal-close {
-  position: absolute;
-  top: 28px;
-  right: 28px;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  margin-left: auto;
   border: 0;
+  border-radius: 50%;
   background: transparent;
   color: var(--project-ink);
   font-size: var(--text-title-sm);
   cursor: pointer;
 }
 
-.project-submit-modal header {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
+.project-modal-close:hover {
+  background: #f5f2f7;
 }
 
-.project-submit-modal header > span {
-  width: 56px;
-  height: 56px;
-  border-radius: 10px;
+.project-submit-modal-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 26px 30px 20px;
+  border-bottom: 1px solid #eeeaf2;
+}
+
+.project-submit-modal-header .project-submit-modal-icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 auto;
+  border-radius: 14px;
   background: var(--project-primary-soft);
   color: var(--project-primary);
   display: grid;
   place-items: center;
-  font-size: var(--text-title-md);
+  font-size: 22px;
+}
+
+.project-submit-modal-header > div {
+  min-width: 0;
 }
 
 .project-submit-modal h2,
@@ -10423,20 +11095,63 @@
   margin: 0;
 }
 
-.project-submit-modal p {
+.project-submit-modal-header p {
   margin-top: 6px;
   color: #4e5682;
   font-size: var(--text-small);
   font-weight: 700;
+  line-height: 1.45;
+}
+
+.project-submit-modal-body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 22px 30px 26px;
+  scrollbar-gutter: stable;
+}
+
+.project-submit-field-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 14px;
 }
 
 .project-submit-modal label {
   display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  column-gap: 0;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 14px;
   color: var(--project-ink);
   font-size: var(--text-small);
   font-weight: 900;
+}
+
+.project-submit-modal label > input,
+.project-submit-modal label > select,
+.project-submit-modal label > textarea,
+.project-submit-modal label > .project-submit-target {
+  grid-column: 1 / -1;
+}
+
+.project-submit-field-grid > label,
+.project-submit-field-grid > .project-submit-target {
+  margin-top: 0;
+}
+
+.project-required-mark,
+.project-optional-mark {
+  justify-self: start;
+  margin-left: 5px;
+  color: #795a75;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.project-optional-mark {
+  color: #858ba7;
 }
 
 .project-submit-modal input,
@@ -10454,32 +11169,81 @@
 }
 
 .project-submit-modal textarea {
-  min-height: 78px;
+  min-height: 72px;
   resize: vertical;
 }
 
+.project-submit-attachments {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid #eeeaf2;
+}
+
+.project-submit-attachments > div:first-child {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.project-submit-attachments h3 {
+  margin: 0;
+  color: var(--project-ink);
+  font-size: var(--text-small);
+  font-weight: 900;
+}
+
+.project-submit-attachments > div:first-child p {
+  color: #737b9d;
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
 .project-upload-box {
-  margin-top: 16px;
+  width: 100%;
+  margin-top: 10px;
   border: 1px dashed #a995ff;
-  border-radius: 8px;
+  border-radius: 12px;
   background: #fbf9ff;
-  min-height: 124px;
+  min-height: 88px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  color: var(--project-primary);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 160ms ease, background 160ms ease;
+}
+
+.project-upload-box:hover {
+  border-color: var(--project-primary);
+  background: #f7f2ff;
+}
+
+.project-upload-box-icon {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
   display: grid;
   place-items: center;
-  align-content: center;
-  gap: 5px;
-  color: var(--project-primary);
-  text-align: center;
+  border-radius: 50%;
+  background: #eee7ff;
+  font-size: 19px;
+}
+
+.project-upload-box-copy {
+  display: grid;
+  gap: 4px;
 }
 
 .project-upload-box strong,
-.project-upload-box span,
 .project-upload-box small {
   color: var(--project-ink);
   font-size: var(--text-small);
 }
 
-.project-upload-box span,
 .project-upload-box small {
   color: #69719a;
   font-weight: 700;
@@ -10491,29 +11255,88 @@
   margin-top: 12px;
 }
 
-.project-submitted-file-list p {
+.project-submitted-file-list > div {
   border: 1px solid var(--project-border);
-  border-radius: 6px;
-  padding: 8px 10px;
+  border-radius: 10px;
+  padding: 10px 12px;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto 22px;
+  grid-template-columns: 32px minmax(0, 1fr) auto 28px;
   gap: 10px;
   align-items: center;
   color: var(--project-ink);
   font-weight: 800;
 }
 
-.project-submitted-file-list em {
+.project-submitted-file-list > div.is-error {
+  border-color: #fecaca;
+  background: #fff8f8;
+}
+
+.project-submitted-file-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: #f2eef8;
+  color: var(--project-primary);
+}
+
+.project-submitted-file-list .is-error .project-submitted-file-icon {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.project-submitted-file-list .is-uploading .project-submitted-file-icon svg {
+  animation: project-file-spin 800ms linear infinite;
+}
+
+@keyframes project-file-spin {
+  to { transform: rotate(360deg); }
+}
+
+.project-submitted-file-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.project-submitted-file-copy strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-small);
+}
+
+.project-submitted-file-copy small {
   color: #6b739b;
   font-size: var(--text-caption);
-  font-style: normal;
+  font-weight: 700;
+}
+
+.project-submitted-file-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #168153;
+  font-size: var(--text-caption);
+  font-weight: 900;
 }
 
 .project-submitted-file-list button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
   border: 0;
+  border-radius: 50%;
   background: transparent;
   color: #757ca2;
   cursor: pointer;
+}
+
+.project-submitted-file-list button:hover {
+  background: #f1eef4;
 }
 
 .project-submit-modal footer {
@@ -10521,7 +11344,10 @@
   grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 12px;
-  margin-top: 20px;
+  padding: 16px 30px;
+  border-top: 1px solid #eeeaf2;
+  background: #fff;
+  box-shadow: 0 -8px 24px rgba(45, 38, 50, 0.04);
 }
 
 .project-submit-modal footer p {
@@ -10822,8 +11648,7 @@
   .project-messages-grid,
   .project-submit-summary,
   .project-success-summary,
-  .project-payment-readiness dl,
-  .project-submit-modal footer {
+  .project-payment-readiness dl {
     grid-template-columns: 1fr;
   }
 
@@ -10943,7 +11768,65 @@
   }
 
   .project-submit-modal {
-    padding: 28px 20px 22px;
+    width: 100%;
+    max-height: calc(100dvh - 20px);
+    border-radius: 16px;
+  }
+
+  .project-modal-backdrop {
+    padding: 10px;
+  }
+
+  .project-submit-modal-header,
+  .project-submit-modal-body,
+  .project-submit-modal footer {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .project-submit-modal-header {
+    padding-top: 18px;
+    padding-bottom: 16px;
+  }
+
+  .project-submit-modal-header .project-submit-modal-icon {
+    width: 42px;
+    height: 42px;
+  }
+
+  .project-submit-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .project-submit-attachments > div:first-child {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .project-upload-box {
+    justify-content: flex-start;
+    padding: 14px;
+  }
+
+  .project-submitted-file-list > div {
+    grid-template-columns: 32px minmax(0, 1fr) 28px;
+  }
+
+  .project-submitted-file-status {
+    display: none;
+  }
+
+  .project-submit-modal footer {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .project-submit-modal footer p {
+    grid-column: 1 / -1;
+  }
+
+  .project-submit-modal footer button {
+    width: 100%;
   }
 }
 
@@ -12456,21 +13339,38 @@
 }
 
 .team-task-modal,
-.team-milestone-modal,
-.team-invite-modal {
+.team-milestone-modal {
   width: min(720px, 100%);
 }
 
-.team-invite-modal header {
+.team-invite-modal {
+  width: min(760px, 100%);
+}
+
+.team-invite-modal-header {
   align-items: center;
 }
 
-.team-invite-modal header h2 {
+.team-invite-modal-header h2 {
   font-size: var(--text-title-md);
+}
+
+.team-invite-modal-body {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+}
+
+.project-submit-modal .team-invite-search {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin: 0;
 }
 
 .team-invite-search > div {
   position: relative;
+  grid-column: 1 / -1;
 }
 
 .team-invite-search > div > svg {
@@ -12482,15 +13382,18 @@
 }
 
 .team-invite-search input {
+  min-height: 48px;
   padding-left: 42px;
 }
 
 .team-invite-candidate-list {
   display: grid;
   gap: 10px;
-  max-height: 310px;
+  max-height: min(34vh, 300px);
   overflow-y: auto;
-  margin-top: 16px;
+  padding: 2px 5px 2px 2px;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
 }
 
 .team-invite-candidate-list > label {
@@ -12498,16 +13401,39 @@
   grid-template-columns: 20px 42px minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
+  min-width: 0;
   margin: 0;
   border: 1px solid var(--project-border);
-  border-radius: 9px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 11px 12px;
+  background: #ffffff;
   cursor: pointer;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease;
+}
+
+.team-invite-candidate-list > label:hover {
+  border-color: #cfc3d1;
+  box-shadow: 0 5px 16px rgba(55, 42, 61, 0.06);
 }
 
 .team-invite-candidate-list > label.is-selected {
   border-color: var(--project-primary);
   background: var(--project-primary-soft);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--project-primary) 15%, transparent);
+}
+
+.team-invite-candidate-list > label.is-invited {
+  cursor: default;
+  opacity: 0.72;
+}
+
+.project-submit-modal .team-invite-candidate-list input[type="checkbox"] {
+  grid-column: auto;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  accent-color: var(--project-primary);
 }
 
 .team-invite-candidate-list img {
@@ -12523,6 +13449,17 @@
   display: block;
 }
 
+.team-invite-candidate-list > label > span {
+  min-width: 0;
+}
+
+.team-invite-candidate-list strong {
+  overflow: hidden;
+  color: var(--project-ink);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .team-invite-candidate-list small,
 .team-invite-candidate-list em {
   margin-top: 2px;
@@ -12533,14 +13470,27 @@
 }
 
 .team-invite-candidate-list b {
+  min-width: 64px;
+  border-radius: 999px;
+  background: #f4eff5;
   color: var(--project-primary);
   font-size: var(--text-caption);
+  padding: 6px 9px;
+  text-align: center;
+}
+
+.team-invite-candidate-list > label.is-selected b {
+  background: var(--project-primary);
+  color: #ffffff;
 }
 
 .team-invite-empty {
+  margin: 0;
   border: 1px dashed var(--project-border);
-  border-radius: 9px;
+  border-radius: 12px;
+  background: #fbfafc;
   padding: 24px;
+  color: #687099;
   text-align: center;
 }
 
@@ -12548,10 +13498,27 @@
   display: grid;
   grid-template-columns: minmax(180px, 0.65fr) minmax(0, 1.35fr);
   gap: 16px;
+  padding-top: 18px;
+  border-top: 1px solid #eeeaf2;
+}
+
+.project-submit-modal .team-invite-fields > label {
+  align-content: start;
+  margin: 0;
 }
 
 .team-invite-fields textarea {
   min-height: 74px;
+}
+
+.team-invite-role-note {
+  grid-column: 1 / -1;
+  display: block;
+  margin-top: 7px;
+  color: #687099;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 .team-invite-success {
@@ -12566,7 +13533,7 @@
 }
 
 .team-invite-error {
-  margin: 12px 0 0;
+  margin: 0;
   border: 1px solid #f2c5c5;
   border-radius: 8px;
   background: #fff3f3;
@@ -12574,6 +13541,38 @@
   padding: 10px 14px;
   font-size: var(--text-small);
   font-weight: 800;
+}
+
+@media (max-width: 640px) {
+  .team-invite-modal-body {
+    gap: 14px;
+  }
+
+  .team-invite-candidate-list {
+    max-height: min(38vh, 280px);
+  }
+
+  .team-invite-candidate-list > label {
+    grid-template-columns: 18px 38px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+
+  .team-invite-candidate-list img {
+    width: 38px;
+    height: 38px;
+  }
+
+  .team-invite-candidate-list b {
+    grid-column: 3;
+    justify-self: start;
+    min-width: 0;
+    padding: 4px 8px;
+  }
+
+  .team-invite-fields {
+    grid-template-columns: 1fr;
+  }
 }
 
 .project-team-invite-response {
@@ -15365,10 +16364,23 @@
 }
 
 .project-submit-error {
-  margin: 8px 0 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 14px 0 0 !important;
+  padding: 11px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fff7f7;
   color: #dc2626;
   font-size: var(--text-small);
   font-weight: 800;
+  line-height: 1.4;
+}
+
+.project-submit-error svg {
+  flex: 0 0 auto;
+  margin-top: 1px;
 }
 
 .project-activity-panel > header {
@@ -15654,6 +16666,40 @@
   font-weight: 900;
 }
 
+.project-wallet-release-status {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  margin: -2px 0 14px;
+  border: 1px solid #f3d49d;
+  border-radius: 12px;
+  background: #fff9ed;
+  padding: 11px 12px;
+  color: #8a5a14;
+}
+
+.project-wallet-release-status > svg {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+}
+
+.project-wallet-release-status strong {
+  display: block;
+  color: #6f4510;
+  font-size: var(--text-small);
+  font-weight: 900;
+}
+
+.project-wallet-release-status p {
+  margin: 4px 0 0;
+  color: #805b28;
+  font-size: var(--text-caption);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
 .project-wallet-payouts {
   list-style: none;
   margin: 0;
@@ -15685,7 +16731,7 @@
 }
 
 .project-submit-tasks {
-  margin: 0;
+  margin: 18px 0 0;
   padding: 12px 14px;
   border: 1px solid var(--color-border);
   border-radius: 10px;
@@ -15703,13 +16749,116 @@
   font-size: var(--text-caption);
 }
 
-.project-submit-task {
+.project-submit-modal .project-submit-task {
   display: flex;
+  grid-template-columns: none;
   align-items: center;
   gap: 8px;
+  margin-top: 0 !important;
   padding: 5px 0;
   font-size: var(--text-small);
   cursor: pointer;
+}
+
+.project-submit-modal .project-submit-task input {
+  width: auto;
+  flex: 0 0 auto;
+}
+
+.project-submit-task > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  color: var(--project-ink);
+  font-weight: 800;
+}
+
+.project-submit-task > span small {
+  color: var(--color-text-muted);
+  font-size: var(--text-caption);
+  font-weight: 700;
+}
+
+.project-submit-modal .project-submit-task.is-unavailable {
+  padding: 8px 0;
+  border-top: 1px solid var(--project-border);
+  cursor: default;
+}
+
+.project-submit-task.is-unavailable button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 6px;
+  padding: 6px 9px;
+  border: 1px solid #d7c8e5;
+  border-radius: 8px;
+  background: #fbf8fd;
+  color: var(--project-primary);
+  font: inherit;
+  font-size: var(--text-caption);
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.project-submit-task.is-unavailable button:disabled {
+  opacity: .55;
+  cursor: wait;
+}
+
+.project-submit-task-note {
+  margin-top: 8px !important;
+  padding-top: 8px;
+  border-top: 1px solid var(--project-border);
+}
+
+.project-submit-task-note.is-required {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  margin: 0 !important;
+  padding: 10px;
+  border: 1px solid #f0d49d;
+  border-radius: 10px;
+  background: #fff9ed;
+  color: #71511a;
+}
+
+.project-submit-task-note.is-required > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+
+.project-submit-task-note.is-required span {
+  display: grid;
+  gap: 2px;
+}
+
+.project-submit-task-note.is-required strong {
+  color: #51370c;
+}
+
+.project-submit-auto-contribution {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0 !important;
+  color: var(--color-text-muted);
+}
+
+.project-submit-auto-contribution > svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: var(--project-green);
+}
+
+.project-submit-auto-contribution span {
+  display: grid;
+  gap: 2px;
+}
+
+.project-submit-auto-contribution strong {
+  color: var(--project-ink);
 }
 
 .project-submit-task em {
@@ -16159,6 +17308,236 @@
   font-style: normal;
 }
 
+.project-review-evidence {
+  overflow: hidden;
+  border: 1px solid #ded8e4;
+  border-radius: 15px;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(55, 43, 61, .06);
+}
+
+.project-review-evidence > header {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 15px;
+  border-bottom: 1px solid #e8e2ea;
+  background: linear-gradient(115deg, #f7f1f6, #fffaf1 68%, #f2f9f7);
+}
+
+.project-review-evidence > header > span {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  background: #76506f;
+  color: #fff;
+  font-size: 17px;
+}
+
+.project-review-evidence > header h4,
+.project-review-evidence > header p {
+  margin: 0;
+}
+
+.project-review-evidence > header h4 {
+  font-size: var(--text-body);
+}
+
+.project-review-evidence > header p {
+  margin-top: 3px;
+  color: var(--project-muted);
+  font-size: var(--text-caption);
+  line-height: 1.4;
+}
+
+.project-review-evidence > header > strong {
+  padding: 5px 9px;
+  border: 1px solid #d9cad7;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, .8);
+  color: #76506f;
+  font-size: var(--text-micro);
+  white-space: nowrap;
+}
+
+.project-review-evidence-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.project-review-evidence-layout:has(.project-review-evidence-picker) {
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 230px);
+}
+
+.project-review-evidence-preview {
+  min-width: 0;
+  background: #f2f1f4;
+}
+
+.project-review-evidence-stage {
+  min-height: 420px;
+  max-height: 620px;
+  overflow: hidden;
+  background:
+    linear-gradient(45deg, rgba(118, 80, 111, .035) 25%, transparent 25%) 0 0 / 20px 20px,
+    linear-gradient(-45deg, rgba(118, 80, 111, .035) 25%, transparent 25%) 0 10px / 20px 20px,
+    #f7f6f8;
+  display: grid;
+  place-items: center;
+}
+
+.project-review-evidence-stage img,
+.project-review-evidence-stage video {
+  width: 100%;
+  height: 100%;
+  min-height: 420px;
+  max-height: 620px;
+  object-fit: contain;
+  background: #17161b;
+}
+
+.project-review-evidence-stage iframe {
+  width: 100%;
+  height: 560px;
+  border: 0;
+  background: #fff;
+}
+
+.project-review-evidence-placeholder {
+  max-width: 320px;
+  padding: 30px;
+  color: var(--project-muted);
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  text-align: center;
+  font-size: var(--text-caption);
+}
+
+.project-review-evidence-placeholder > svg {
+  width: 48px;
+  height: 48px;
+  padding: 12px;
+  border-radius: 15px;
+  background: #eee8ef;
+  color: #76506f;
+}
+
+.project-review-evidence-placeholder strong {
+  color: var(--project-ink);
+  font-size: var(--text-small);
+}
+
+.project-review-evidence-placeholder small {
+  font-size: var(--text-caption);
+}
+
+.project-review-evidence-preview > footer {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 14px;
+  border-top: 1px solid #e5e0e7;
+  background: #fff;
+}
+
+.project-review-evidence-preview > footer > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.project-review-evidence-preview > footer strong,
+.project-review-evidence-preview > footer small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-review-evidence-preview > footer strong {
+  color: var(--project-ink);
+  font-size: var(--text-caption);
+}
+
+.project-review-evidence-preview > footer small {
+  color: var(--project-muted);
+  font-size: var(--text-micro);
+}
+
+.project-review-evidence-preview > footer a {
+  flex: 0 0 auto;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #d9cad7;
+  border-radius: 9px;
+  color: #76506f;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--text-caption);
+  font-weight: 850;
+  text-decoration: none;
+}
+
+.project-review-evidence-picker {
+  max-height: 674px;
+  overflow-y: auto;
+  padding: 9px;
+  border-left: 1px solid #e5e0e7;
+  background: #faf9fb;
+  display: grid;
+  align-content: start;
+  gap: 7px;
+}
+
+.project-review-evidence-picker button {
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--project-muted);
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  text-align: left;
+  font: inherit;
+}
+
+.project-review-evidence-picker button:hover,
+.project-review-evidence-picker button.is-active {
+  border-color: #d9cad7;
+  background: #fff;
+  color: #76506f;
+}
+
+.project-review-evidence-picker button > svg {
+  font-size: 18px;
+}
+
+.project-review-evidence-picker button span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.project-review-evidence-picker button strong,
+.project-review-evidence-picker button small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.project-review-evidence-picker button strong { font-size: var(--text-caption); }
+.project-review-evidence-picker button small { color: var(--project-muted); font-size: var(--text-micro); }
+.project-review-evidence-empty { margin: 0; padding: 24px; color: var(--project-muted); font-size: var(--text-caption); text-align: center; }
+
 .project-review-existing-feedback {
   padding: 14px;
   border-left: 3px solid #94a3b8;
@@ -16170,8 +17549,10 @@
 .project-review-existing-feedback.is-changes { border-color: #e5932d; background: #fffaf0; }
 
 .project-review-decision {
-  padding-top: 18px;
-  border-top: 1px solid var(--project-border);
+  padding: 17px;
+  border: 1px solid #e2dce5;
+  border-radius: 14px;
+  background: #fcfbfd;
 }
 
 .project-review-decision label {
@@ -16197,6 +17578,23 @@
   box-shadow: 0 0 0 3px rgba(80, 69, 117, .1);
 }
 
+.project-review-feedback-help {
+  margin: -3px 0 0;
+  color: var(--project-muted);
+  font-size: var(--text-micro);
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.project-review-feedback-help.is-error {
+  color: #b4233f;
+}
+
+.project-review-decision textarea[aria-invalid='true'] {
+  border-color: #d94b63;
+  box-shadow: 0 0 0 3px rgba(217, 75, 99, .1);
+}
+
 .project-review-decision > div {
   display: flex;
   justify-content: flex-end;
@@ -16208,9 +17606,25 @@
   padding-inline: 14px;
 }
 
+.project-review-decision .project-request-changes-btn.is-waiting {
+  border-color: #d7c7d4;
+  background: #faf7fa;
+  color: #76506f;
+}
+
+.project-review-decision .project-request-changes-btn.is-ready {
+  border-color: #b4233f;
+  background: #fff5f6;
+  color: #a51e38;
+}
+
 .project-review-decision button:disabled {
   cursor: not-allowed;
   opacity: .55;
+}
+
+.project-review-mobile-preview-note {
+  display: none;
 }
 
 .project-review-empty {
@@ -16386,6 +17800,91 @@
     align-items: flex-start;
     flex-direction: column;
   }
+
+  .project-review-evidence > header {
+    grid-template-columns: 36px minmax(0, 1fr);
+    padding: 12px;
+  }
+
+  .project-review-evidence > header > span {
+    width: 36px;
+    height: 36px;
+  }
+
+  .project-review-evidence > header > strong {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  .project-review-evidence-layout:has(.project-review-evidence-picker) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-review-evidence-stage,
+  .project-review-evidence-stage img,
+  .project-review-evidence-stage video {
+    min-height: 280px;
+    max-height: 460px;
+  }
+
+  .project-review-evidence-stage iframe {
+    height: 420px;
+  }
+
+  .project-review-evidence-picker {
+    max-height: 210px;
+    border-top: 1px solid #e5e0e7;
+    border-left: 0;
+  }
+
+  .project-review-evidence-preview > footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .project-score-review > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-score-review .project-score-review-repeat {
+    grid-column: 1;
+  }
+
+  .project-review-decision {
+    display: none;
+  }
+
+  .project-review-mobile-preview-note {
+    padding: 12px;
+    border: 1px solid #ded2dc;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f7f1f6, #fffaf1);
+    color: #76506f;
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+  }
+
+  .project-review-mobile-preview-note > svg {
+    width: 36px;
+    height: 36px;
+    padding: 9px;
+    border-radius: 10px;
+    background: #fff;
+  }
+
+  .project-review-mobile-preview-note > span {
+    display: grid;
+    gap: 2px;
+    color: var(--project-muted);
+    font-size: var(--text-caption);
+    line-height: 1.4;
+  }
+
+  .project-review-mobile-preview-note strong {
+    color: var(--project-ink);
+  }
 }
 .marketplace-delivery-code-backdrop {
   position: fixed;
@@ -16519,6 +18018,31 @@
 .project-workspace-titlebar .project-primary-btn:hover { background: #65445f; }
 .project-workspace-titlebar .project-primary-btn:disabled { cursor: wait; opacity: .65; }
 .project-workspace-titlebar .project-icon-btn { position: relative; z-index: 1; border-color: #ded6e0; background: #fff; color: #625a67; }
+
+.project-workspace-titlebar .project-end-btn {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  min-height: 42px;
+  padding: 0 17px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #9d3047;
+  border-radius: 10px;
+  background: #9d3047;
+  color: #fff;
+  box-shadow: 0 9px 20px rgba(119, 35, 54, .18);
+  font: inherit;
+  font-size: var(--text-caption);
+  font-weight: 850;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.project-workspace-titlebar .project-end-btn:hover { border-color: #812438; background: #812438; }
+.project-workspace-titlebar .project-end-btn:focus-visible { outline: 3px solid rgba(157, 48, 71, .22); outline-offset: 2px; }
+.project-workspace-titlebar .project-end-btn:disabled { cursor: wait; opacity: .65; }
 
 .project-workspace-meta {
   display: grid;
@@ -16658,6 +18182,7 @@
 .opportunities-detail-cta { position: sticky; z-index: 3; bottom: 0; display: grid; gap: 9px; margin-top: 2px; padding: 12px 14px 14px; border-top: 1px solid #e8e2e8; background: rgba(255, 255, 255, .96); box-shadow: 0 -10px 24px rgba(55, 44, 59, .055); backdrop-filter: blur(12px); }
 .opportunities-detail-cta .opportunities-detail-application-note,
 .opportunities-detail-cta .opportunities-detail-closed-note { margin: 0; padding: 9px 10px; }
+.opportunities-detail-mobile-preview-note { display: none; }
 .opportunities-detail-bid-btn { width: 100%; min-height: 44px; margin: 0; border-color: #35313f; border-radius: 11px; background: #35313f; box-shadow: 0 8px 18px rgba(41, 35, 45, .14); }
 .opportunities-detail-bid-btn:hover { border-color: #76506f; background: #76506f; box-shadow: 0 12px 24px rgba(82, 55, 77, .2); }
 
@@ -16677,6 +18202,7 @@
   .project-workspace-title-mark { width: 46px; height: 46px; }
   .project-workspace-title-copy > div { align-items: flex-start; flex-direction: column; }
   .project-workspace-titlebar .project-primary-btn,
+  .project-workspace-titlebar .project-end-btn,
   .project-workspace-titlebar .project-icon-btn { align-self: flex-start; }
   .project-workspace-meta { grid-template-columns: 1fr; }
   .project-workspace-tabs { margin-right: -10px; margin-left: -10px; border-radius: 0; }
@@ -16684,6 +18210,48 @@
   .opportunities-detail-stat-row { grid-template-columns: 1fr; margin-top: 0; }
   .opportunities-detail-stat-row article { padding: 10px; }
   .opportunities-detail-stat-row article + article { border-top: 1px solid #e6e0e7; border-left: 0; }
+
+  .opportunities-detail-desktop-only,
+  .opportunities-detail-bid-btn {
+    display: none;
+  }
+
+  .opportunities-detail-mobile-preview-note {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: center;
+    gap: 10px;
+    padding: 12px;
+    border: 1px solid #ded2dc;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #f7f1f6, #fffaf1);
+    color: #76506f;
+  }
+
+  .opportunities-detail-mobile-preview-note > svg {
+    width: 38px;
+    height: 38px;
+    padding: 9px;
+    border-radius: 11px;
+    background: #fff;
+  }
+
+  .opportunities-detail-mobile-preview-note > div {
+    min-width: 0;
+    display: grid;
+    gap: 2px;
+  }
+
+  .opportunities-detail-mobile-preview-note strong {
+    color: #4c3548;
+    font-size: 11px;
+  }
+
+  .opportunities-detail-mobile-preview-note span {
+    color: #756c77;
+    font-size: 10px;
+    line-height: 1.4;
+  }
 }
 
 /* Mobile opportunities follows the same app-first rhythm as Explore Campus. */
@@ -17044,13 +18612,13 @@
   }
 
   .opportunities-job-card {
-    padding: 12px;
+    padding: 0;
     border-color: #e7e1e8;
-    border-radius: 16px;
+    border-radius: 20px;
     background: #ffffff;
-    grid-template-columns: 72px minmax(0, 1fr);
-    gap: 10px;
-    box-shadow: 0 5px 16px rgba(53, 43, 59, 0.055);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    box-shadow: 0 8px 24px rgba(53, 43, 59, 0.07);
   }
 
   .opportunities-job-card::before {
@@ -17058,14 +18626,17 @@
   }
 
   .opportunities-job-avatar {
-    width: 72px;
-    height: 72px;
-    border-radius: 16px;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    border: 0;
+    border-bottom: 1px solid #ece6ed;
+    border-radius: 0;
     box-shadow: none;
   }
 
   .opportunities-job-main {
-    padding: 0;
+    padding: 15px 15px 13px;
   }
 
   .opportunities-job-head {
@@ -17076,8 +18647,8 @@
   }
 
   .opportunities-job-head h3 {
-    font-size: 17px;
-    line-height: 1.2;
+    font-size: 20px;
+    line-height: 1.15;
   }
 
   .opportunities-badge,
@@ -17099,10 +18670,10 @@
   }
 
   .opportunities-job-description {
-    margin-top: 7px;
+    margin-top: 9px;
     display: -webkit-box;
     overflow: hidden;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.45;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
@@ -17121,9 +18692,9 @@
 
   .opportunities-job-side {
     min-height: 0;
-    grid-column: 1 / -1;
-    padding: 9px 10px;
-    border-radius: 11px;
+    margin: 0 14px 14px;
+    padding: 11px 12px;
+    border-radius: 13px;
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
@@ -18025,6 +19596,7 @@
     grid-template-columns: 28px minmax(0, 1fr);
     grid-template-areas:
       "order title"
+      "tasks tasks"
       "description description"
       "due due"
       "status status"
@@ -18036,5 +19608,30 @@
   .project-workspace-page .project-work-deliverable-row:not(.is-head) > strong:nth-child(3),
   .project-workspace-page .project-work-deliverable-row:not(.is-head) > .project-work-deliverable-status {
     justify-self: start;
+  }
+}
+
+/* Keep application actions available after the mobile opportunity-preview
+   rules, which intentionally hide the preview panel's bid CTA. */
+.opportunities-bid-page .opportunities-bid-form-foot .opportunities-detail-bid-btn {
+  display: inline-flex;
+  width: auto;
+  min-height: 43px;
+  margin: 0;
+  border-color: var(--bid-accent);
+  border-radius: 10px;
+  background: var(--bid-accent);
+  box-shadow: 0 9px 20px rgba(82, 55, 77, .16);
+}
+
+.opportunities-bid-page .opportunities-bid-form-foot .opportunities-detail-bid-btn:hover {
+  border-color: var(--bid-accent-strong);
+  background: var(--bid-accent-strong);
+}
+
+@media (max-width: 680px) {
+  .opportunities-bid-page .opportunities-bid-form-foot .opportunities-detail-bid-btn {
+    display: inline-flex;
+    width: 100%;
   }
 }

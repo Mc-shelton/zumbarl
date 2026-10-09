@@ -103,8 +103,8 @@ function OpportunitiesBuySellProductPage() {
     setIsOfferOpen(false)
     const offerAmount = Number(response.offer?.amount ?? amount)
     setActionStatus(response.alreadyPending
-      ? `Your KSh ${offerAmount.toLocaleString('en-KE')} offer is already awaiting ${seller?.name || 'the seller'}'s response.`
-      : `Your KSh ${offerAmount.toLocaleString('en-KE')} offer was sent to ${seller?.name || 'the seller'}.`)
+      ? `Your KES ${offerAmount.toLocaleString('en-KE')} offer is already awaiting ${seller?.name || 'the seller'}'s response.`
+      : `Your KES ${offerAmount.toLocaleString('en-KE')} offer was sent to ${seller?.name || 'the seller'}.`)
   }
 
   async function handleViewSellerProfile() {

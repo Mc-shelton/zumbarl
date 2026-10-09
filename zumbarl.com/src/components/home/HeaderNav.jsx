@@ -27,7 +27,7 @@ function HeaderNav({ activeMegaMenu, brandOnly = false, closeMegaMenu, isMobileM
         <HeaderLink href="/login" className="sign-in" onClick={closeMegaMenu}>
           Sign in
         </HeaderLink>
-        <HeaderLink href="/register" className="try-btn" onClick={closeMegaMenu}>
+        <HeaderLink href="/login" className="try-btn" onClick={closeMegaMenu}>
           Try it free
         </HeaderLink>
       </div>}

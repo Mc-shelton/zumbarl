@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FiSearch, FiSend, FiUserPlus, FiX } from 'react-icons/fi'
-import { useDialog } from '../../../components/ui'
+import { ProfileAvatar, useDialog } from '../../../components/ui'
+import { readProjectSettings } from '../services/projectSettingsService'
 
-const PROJECT_ROLES = [
+const STANDARD_PROJECT_ROLES = [
   'Contributor',
   'Designer',
   'Content Writer',
@@ -19,12 +20,35 @@ function TeamInviteModal({
   isSending = false,
   onClose,
   onSend,
+  projectId,
 }) {
   const dialogRef = useDialog({ isOpen: true, onClose })
   const [query, setQuery] = useState('')
   const [selectedIds, setSelectedIds] = useState([])
-  const [role, setRole] = useState(PROJECT_ROLES[0])
+  const [role, setRole] = useState(STANDARD_PROJECT_ROLES[0])
   const [note, setNote] = useState('')
+  const [projectSettings, setProjectSettings] = useState(null)
+  useEffect(() => {
+    if (!projectId) return undefined
+    let isCurrent = true
+    readProjectSettings(projectId)
+      .then((settings) => {
+        if (isCurrent) setProjectSettings(settings)
+      })
+      .catch(() => {
+        if (isCurrent) setProjectSettings(null)
+      })
+    return () => { isCurrent = false }
+  }, [projectId])
+  const projectRoles = useMemo(() => [
+    ...STANDARD_PROJECT_ROLES,
+    ...(projectSettings?.allowInterns ? ['Intern'] : []),
+    ...(projectSettings?.allowAttachees ? ['Attachee'] : []),
+  ], [projectSettings])
+  const roleEarningFactors = projectSettings?.roleEarningFactors || {}
+  const internEarningFactor = Number.isFinite(Number(roleEarningFactors.intern))
+    ? Number(roleEarningFactors.intern)
+    : 100
   const memberNames = useMemo(() => new Set(existingMembers.map((member) => member.name)), [existingMembers])
   const invitedIds = useMemo(() => new Set(existingInvites.map((invite) => invite.userId)), [existingInvites])
   const candidates = useMemo(() => {
@@ -62,79 +86,89 @@ function TeamInviteModal({
         aria-modal="true"
         aria-labelledby="invite-project-members-title"
       >
-        <button type="button" className="project-modal-close" aria-label="Close invite members modal" onClick={onClose}>
-          <FiX aria-hidden="true" />
-        </button>
-        <header>
-          <span aria-hidden="true"><FiUserPlus /></span>
+        <header className="project-submit-modal-header team-invite-modal-header">
+          <span className="project-submit-modal-icon" aria-hidden="true"><FiUserPlus /></span>
           <div>
             <h2 id="invite-project-members-title">Invite project members</h2>
             <p>Select Zumbarl users and assign their role on this project.</p>
           </div>
+          <button type="button" className="project-modal-close" aria-label="Close invite members modal" onClick={onClose}>
+            <FiX aria-hidden="true" />
+          </button>
         </header>
 
-        <label className="team-invite-search">
-          <span>Find users</span>
-          <div>
-            <FiSearch aria-hidden="true" />
-            <input
-              type="search"
-              value={query}
-              placeholder="Search by name, school, role, or skill"
-              onChange={(event) => setQuery(event.target.value)}
-            />
+        <div className="project-submit-modal-body team-invite-modal-body">
+          <label className="team-invite-search">
+            <span>Find users</span>
+            <div>
+              <FiSearch aria-hidden="true" />
+              <input
+                type="search"
+                value={query}
+                placeholder="Search by name, school, role, or skill"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+            </div>
+          </label>
+
+          <div className="team-invite-candidate-list" aria-label="Available project members">
+            {isLoading ? (
+              <p className="team-invite-empty" role="status">Loading available students...</p>
+            ) : candidates.length ? candidates.map((candidate) => {
+              const isInvited = invitedIds.has(candidate.userId) || candidate.alreadyInvited
+              const isSelected = selectedIds.includes(candidate.userId)
+              return (
+                <label key={candidate.userId} className={`${isSelected ? 'is-selected' : ''}${isInvited ? ' is-invited' : ''}`}>
+                  <input
+                    type="checkbox"
+                    checked={isSelected || isInvited}
+                    disabled={isInvited}
+                    onChange={() => toggleCandidate(candidate.userId)}
+                  />
+                  <ProfileAvatar
+                    src={candidate.avatar}
+                    alt=""
+                  />
+                  <span>
+                    <strong>{candidate.name}</strong>
+                    <small>{candidate.school || 'Student profile'}</small>
+                    <em>{(candidate.skills || []).join(' · ') || 'Skills not added yet'}</em>
+                  </span>
+                  <b>{isInvited ? 'Invited' : isSelected ? 'Selected' : 'Select'}</b>
+                </label>
+              )
+            }) : (
+              <p className="team-invite-empty">No users match that search.</p>
+            )}
           </div>
-        </label>
 
-        <div className="team-invite-candidate-list">
-          {isLoading ? (
-            <p className="team-invite-empty" role="status">Loading available students...</p>
-          ) : candidates.length ? candidates.map((candidate) => {
-            const isInvited = invitedIds.has(candidate.userId) || candidate.alreadyInvited
-            const isSelected = selectedIds.includes(candidate.userId)
-            return (
-              <label key={candidate.userId} className={isSelected ? 'is-selected' : ''}>
-                <input
-                  type="checkbox"
-                  checked={isSelected || isInvited}
-                  disabled={isInvited}
-                  onChange={() => toggleCandidate(candidate.userId)}
-                />
-                <img src={candidate.avatar || '/assets/index/bee_nobg.png'} alt="" />
-                <span>
-                  <strong>{candidate.name}</strong>
-                  <small>{candidate.school || 'Student profile'}</small>
-                  <em>{(candidate.skills || []).join(' · ') || 'Skills not added yet'}</em>
-                </span>
-                <b>{isInvited ? 'Invited' : isSelected ? 'Selected' : 'Select'}</b>
-              </label>
-            )
-          }) : (
-            <p className="team-invite-empty">No users match that search.</p>
-          )}
-        </div>
+          {error ? <p className="team-invite-error" role="alert">{error}</p> : null}
 
-        {error ? <p className="team-invite-error" role="alert">{error}</p> : null}
-
-        <div className="team-invite-fields">
-          <label>
-            Project role
-            <select value={role} onChange={(event) => setRole(event.target.value)}>
-              {PROJECT_ROLES.map((option) => <option key={option}>{option}</option>)}
-            </select>
-          </label>
-          <label>
-            Invite note (optional)
-            <textarea
-              value={note}
-              placeholder="Add project context or what you would like them to work on."
-              onChange={(event) => setNote(event.target.value)}
-            />
-          </label>
+          <div className="team-invite-fields">
+            <label>
+              Project role
+              <select value={role} onChange={(event) => setRole(event.target.value)}>
+                {projectRoles.map((option) => <option key={option}>{option}</option>)}
+              </select>
+              <span className="team-invite-role-note">
+                {projectSettings?.allowInterns
+                  ? `Interns are enabled and earn ${internEarningFactor}% of their approved contribution on this project.`
+                  : 'The business can enable interns from Project Settings.'}
+              </span>
+            </label>
+            <label>
+              Invite note (optional)
+              <textarea
+                value={note}
+                placeholder="Add project context or what you would like them to work on."
+                onChange={(event) => setNote(event.target.value)}
+              />
+            </label>
+          </div>
         </div>
 
         <footer>
-          <p>{selectedIds.length} user{selectedIds.length === 1 ? '' : 's'} selected</p>
+          <p aria-live="polite">{selectedIds.length} user{selectedIds.length === 1 ? '' : 's'} selected</p>
           <button type="button" className="project-soft-btn" disabled={isSending} onClick={onClose}>Cancel</button>
           <button type="button" className="project-primary-btn" disabled={!selectedIds.length || isSending} onClick={sendInvites}>
             <FiSend aria-hidden="true" />

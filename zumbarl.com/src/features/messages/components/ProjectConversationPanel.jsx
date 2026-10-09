@@ -19,6 +19,7 @@ import {
 } from '../services/messageService'
 import { playCallRingtone, playMessageSentSound } from '../../communications/services/communicationSounds'
 import { useViewerProfile } from '../../auth/viewerProfile'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 import '../../../styles/messages.css'
 
@@ -368,9 +369,7 @@ function ProjectConversationPanel({ conversation = null, opportunity = null, par
                 <span className={`messages-avatar is-${item.isGroup ? 'group' : 'personal'}`}>
                   {item.isGroup
                     ? <FiUsers aria-hidden="true" />
-                    : avatar
-                      ? <img src={avatar} alt="" />
-                      : item.participant.name?.slice(0, 1) || '?'}
+                    : <ProfileAvatar src={avatar} alt="" />}
                 </span>
                 <span className="messages-conversation-copy">
                   <span className="messages-conversation-title">
@@ -404,9 +403,7 @@ function ProjectConversationPanel({ conversation = null, opportunity = null, par
               <span className={`messages-avatar${activeConversation.isGroup ? ' is-group' : ''}`}>
                 {activeConversation.isGroup
                   ? <FiUsers aria-hidden="true" />
-                  : avatarSource(activeConversation.participant.avatarUrl)
-                    ? <img src={avatarSource(activeConversation.participant.avatarUrl)} alt="" />
-                    : activeConversation.participant.name?.slice(0, 1) || '?'}
+                  : <ProfileAvatar src={avatarSource(activeConversation.participant.avatarUrl)} alt="" />}
               </span>
               <span>
                 <h2>{activeConversation.participant.name || 'Project participant'}</h2>
@@ -446,7 +443,7 @@ function ProjectConversationPanel({ conversation = null, opportunity = null, par
                 <article key={message.id} className={isMine ? 'is-mine' : ''}>
                   {!isMine ? (
                     <span className="messages-message-avatar">
-                      {senderAvatar ? <img src={senderAvatar} alt="" /> : senderName.slice(0, 1)}
+                      <ProfileAvatar src={senderAvatar} alt="" />
                     </span>
                   ) : null}
                   <div>
@@ -461,7 +458,7 @@ function ProjectConversationPanel({ conversation = null, opportunity = null, par
                   </div>
                   {isMine ? (
                     <span className="messages-message-avatar">
-                      {viewerProfile.avatar ? <img src={viewerProfile.avatar} alt="" /> : viewerProfile.initials}
+                      <ProfileAvatar src={viewerProfile.avatar} alt="" />
                     </span>
                   ) : null}
                 </article>

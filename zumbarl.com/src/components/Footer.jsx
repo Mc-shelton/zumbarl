@@ -12,7 +12,7 @@ import '../styles/footer.css'
 
 const PLATFORM_LINKS = [
   { label: 'Home', href: '/' },
-  { label: 'Join Zumbarl', href: '/register' },
+  { label: 'Join Zumbarl', href: '/login' },
   { label: 'Sign in', href: '/login' },
 ]
 

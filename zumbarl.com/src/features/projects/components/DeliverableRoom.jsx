@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import {
   FiAlertCircle,
+  FiCheckCircle,
   FiClock,
   FiEye,
   FiFileText,
@@ -468,6 +469,7 @@ function SplitLockNotice({ canEdit, isPending, lock, onConfirm, viewerStudentId 
 
 function DeliverableRoom({
   assignees = [],
+  canComplete = false,
   canEdit = true,
   canAssignTasks = false,
   // Writing tasks belongs to the team; the thread and dependencies are shared
@@ -475,12 +477,16 @@ function DeliverableRoom({
   canParticipate = canEdit,
   embedded = false,
   deliverable,
+  completionPending = false,
   error,
   isLoading = false,
   isPending,
+  isClosed = false,
+  isReadyToComplete = false,
   onRetry,
   onClaimTask,
   onClose,
+  onComplete,
   onDeclareTask,
   onDropTask,
   onReleaseTask,
@@ -533,6 +539,7 @@ function DeliverableRoom({
   ), [tasks])
 
   const blockedCount = grouped.blocked.length
+  const taskEditingAllowed = canEdit && !isClosed
 
   return (
     <section className="deliverable-room">
@@ -544,7 +551,16 @@ function DeliverableRoom({
           {embedded ? null : (
             <>
               <h3>{deliverable?.title || 'Deliverable'}</h3>
-              <p>{deliverable?.description || 'Divide this deliverable into tasks so everyone can see who is doing what.'}</p>
+              <div className={`deliverable-room-pending-summary${openTasks.length ? '' : ' is-clear'}`}>
+                {openTasks.length ? <FiClock aria-hidden="true" /> : <FiCheckCircle aria-hidden="true" />}
+                <div>
+                  <strong>{openTasks.length ? `${openTasks.length} pending ${openTasks.length === 1 ? 'task' : 'tasks'}` : 'No pending tasks'}</strong>
+                  <span>{openTasks.length
+                    ? `${openTasks.slice(0, 3).map((task) => task.title).join(' · ')}${openTasks.length > 3 ? ` +${openTasks.length - 3} more` : ''}`
+                    : 'Everything currently declared here is complete.'}</span>
+                </div>
+              </div>
+              <p className="deliverable-room-description">{deliverable?.description || 'Divide this deliverable into tasks so everyone can see who is doing what.'}</p>
             </>
           )}
         </div>
@@ -569,6 +585,28 @@ function DeliverableRoom({
           <p>{error}</p>
           {onRetry ? <button type="button" onClick={onRetry}>Try again</button> : null}
         </div>
+      ) : null}
+
+      {isClosed ? (
+        <section className="deliverable-room-completion is-complete">
+          <FiLock aria-hidden="true" />
+          <div><strong>Completed and paid</strong><p>The contribution split is finalized. New payable tasks require a new deliverable or change order.</p></div>
+        </section>
+      ) : canComplete ? (
+        <section className={`deliverable-room-completion${isReadyToComplete ? ' is-ready' : ''}`}>
+          <FiCheckCircle aria-hidden="true" />
+          <div>
+            <strong>{isReadyToComplete ? 'Ready to complete and pay' : 'Deliverable remains open'}</strong>
+            <p>{isReadyToComplete
+              ? 'This freezes the approved contribution split and releases this deliverable’s payment.'
+              : deliverable?.statusKey !== 'approved'
+                ? 'Approve every current submission before releasing payment.'
+                : 'Finish or drop every open task before releasing payment.'}</p>
+          </div>
+          <button type="button" disabled={!isReadyToComplete || completionPending} onClick={onComplete}>
+            {completionPending ? 'Completing…' : 'Complete & pay'}
+          </button>
+        </section>
       ) : null}
 
       <SplitLockNotice
@@ -610,19 +648,19 @@ function DeliverableRoom({
         </section>
       ) : null}
 
-      {submitBlockedReason && canEdit ? (
+      {submitBlockedReason && taskEditingAllowed ? (
         <p className="deliverable-room-readonly is-blocked">
           Submissions are not open on this work yet: {submitBlockedReason} Tasks can still be declared, claimed and worked on.
         </p>
       ) : null}
 
-      {!canEdit && !error ? (
+      {!taskEditingAllowed && !error && !isClosed ? (
         <p className="deliverable-room-readonly">
           Tasks and weights are the team's to set. You can still reply in the thread and clear anything the team is waiting on from you.
         </p>
       ) : null}
 
-      {canEdit ? (
+      {taskEditingAllowed ? (
         isDeclaring ? (
           <DeclareTaskForm
             assignees={assignees}
@@ -698,7 +736,7 @@ function DeliverableRoom({
             key={task.id}
             assignees={assignees}
             canAssignTasks={canAssignTasks}
-            canEdit={canEdit}
+            canEdit={taskEditingAllowed}
             dependencies={dependencies}
             isPending={isPending}
             openTasks={openTasks}
@@ -729,7 +767,7 @@ function DeliverableRoom({
             <FiClock aria-hidden="true" />
             <strong>No tasks declared yet</strong>
             <p>Declare what you plan to contribute so the team can divide this deliverable.</p>
-            {canEdit && !isDeclaring ? (
+            {taskEditingAllowed && !isDeclaring ? (
               <button type="button" className="project-primary-btn" onClick={() => setIsDeclaring(true)}>
                 <FiPlus aria-hidden="true" /> Declare the first task
               </button>

@@ -10,18 +10,22 @@ import {
   FiShield,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 function OpportunityBidSummaryRail({ selectedGig }) {
   return (
     <aside className="campus-rail opportunities-rail opportunities-bid-summary-rail" aria-label="Gig summary">
       <section className="campus-rail-card opportunities-bid-summary-card">
         <header>
-          <h3>Gig Summary</h3>
+          <div>
+            <small>Before you apply</small>
+            <h3>Opportunity overview</h3>
+          </div>
         </header>
 
         <article className="opportunities-bid-summary-head">
           <div className="opportunities-bid-summary-logo">
-            <img src="/assets/index/bee_nobg.png" alt={`${selectedGig.company} logo`} loading="lazy" />
+            <ProfileAvatar src={selectedGig.companyLogoUrl} alt={`${selectedGig.company} logo`} loading="lazy" />
           </div>
           <div>
             <h4>{selectedGig.title}</h4>

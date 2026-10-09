@@ -66,7 +66,7 @@ function MarketplaceOfferModal({ initialAmount = '', isOpen, item, onClose, onSu
 
         <label htmlFor="marketplace-offer-amount">
           Your offer
-          <span><b>KSh</b><input id="marketplace-offer-amount" type="number" min="1" step="1" inputMode="numeric" autoFocus value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Enter amount" /></span>
+          <span><b>KES</b><input id="marketplace-offer-amount" type="number" min="1" step="1" inputMode="numeric" autoFocus value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="Enter amount" /></span>
         </label>
         <p>The seller will receive your offer in Messages and as a notification.</p>
         {error ? <p className="marketplace-offer-error" role="alert">{error}</p> : null}

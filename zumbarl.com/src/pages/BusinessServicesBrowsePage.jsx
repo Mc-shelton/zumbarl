@@ -9,7 +9,7 @@ import {
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
 import Seo from '../components/Seo'
-import { Breadcrumb, StatusPill } from '../components/ui'
+import { Breadcrumb, ProfileAvatar, StatusPill } from '../components/ui'
 import { BusinessWorkspaceHeader } from '../features/business/components/BusinessWorkspaceHeader'
 import { BusinessWorkspaceSidebar } from '../features/business/components/BusinessApplicantSidebar'
 import { listBusinessTalent } from '../features/business/services/readBusinessDashboard'
@@ -29,7 +29,7 @@ function formatPrice(service) {
 function toServiceListings(students) {
   return students.flatMap((student) => (student.services || []).map((service) => ({
     ...service,
-    avatar: student.image || DEFAULT_SERVICE_IMAGE,
+    avatar: student.image,
     handle: student.handle,
     image: service.image || student.portfolio?.[0]?.image || student.image || DEFAULT_SERVICE_IMAGE,
     profileHref: `/business/applicant-profile/${encodeURIComponent(student.id)}`,
@@ -47,7 +47,7 @@ function BusinessServiceCard({ isSelected, onSelect, service }) {
       </button>
       <div>
         <header>
-          <img src={service.avatar} alt={`${service.student} avatar`} />
+          <ProfileAvatar src={service.avatar} alt={`${service.student} avatar`} />
           <div>
             <h3>{service.title}</h3>
             <p>{service.student}{service.handle ? ` · ${service.handle}` : ''}</p>

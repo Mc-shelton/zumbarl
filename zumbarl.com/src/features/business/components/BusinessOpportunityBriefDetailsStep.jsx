@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { FiUploadCloud, FiX } from 'react-icons/fi'
 import {
   BUSINESS_OPPORTUNITY_BRIEF_SELECTS,
@@ -11,6 +11,7 @@ import {
   BusinessCreateTextareaField,
 } from './BusinessOpportunityCreateFields'
 import { uploadZumbarlFile } from '../../../lib/uploadZumbarlFile'
+import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
 import { ImageCropper } from '../../../components/ui'
 
 const DEFAULT_SPLASH_CROP = {
@@ -50,14 +51,31 @@ function formatFileSize(size = 0) {
 
 function BusinessOpportunitySplashField({ splash, onSplashUploadStateChange, onUpdateField }) {
   const [fileInputKey, setFileInputKey] = useState(0)
-  const [previewFailed, setPreviewFailed] = useState(false)
+  const [failedPreviewUrl, setFailedPreviewUrl] = useState('')
   const [isUploading, setIsUploading] = useState(false)
   const [uploadError, setUploadError] = useState('')
+  const localPreviewUrlRef = useRef('')
   const selectedSplash = splash?.name ? splash : null
   const isImage = selectedSplash?.type?.startsWith('image/')
-  const previewUrl = selectedSplash?.previewUrl || selectedSplash?.url || selectedSplash?.src || ''
+  const previewUrl = normalizeZumbarlFileUrl(
+    selectedSplash?.previewUrl || selectedSplash?.url || selectedSplash?.src || '',
+    selectedSplash || {},
+  )
+  const previewFailed = Boolean(previewUrl && failedPreviewUrl === previewUrl)
   const crop = selectedSplash?.crop || DEFAULT_SPLASH_CROP
   const cropConfirmed = selectedSplash?.cropConfirmed === true
+
+  useEffect(() => {
+    const localPreviewUrl = localPreviewUrlRef.current
+    if (localPreviewUrl && previewUrl && previewUrl !== localPreviewUrl) {
+      URL.revokeObjectURL(localPreviewUrl)
+      localPreviewUrlRef.current = ''
+    }
+  }, [previewUrl])
+
+  useEffect(() => () => {
+    if (localPreviewUrlRef.current) URL.revokeObjectURL(localPreviewUrlRef.current)
+  }, [])
 
   function updateSplashCrop(nextCrop) {
     if (!selectedSplash) return
@@ -69,8 +87,12 @@ function BusinessOpportunitySplashField({ splash, onSplashUploadStateChange, onU
   }
 
   function clearSplash() {
+    if (localPreviewUrlRef.current) {
+      URL.revokeObjectURL(localPreviewUrlRef.current)
+      localPreviewUrlRef.current = ''
+    }
     onUpdateField('opportunitySplash', null)
-    setPreviewFailed(false)
+    setFailedPreviewUrl('')
     setFileInputKey((current) => current + 1)
   }
 
@@ -98,9 +120,11 @@ function BusinessOpportunitySplashField({ splash, onSplashUploadStateChange, onU
           onChange={async (event) => {
             const file = event.target.files?.[0]
             if (!file) return
+            if (localPreviewUrlRef.current) URL.revokeObjectURL(localPreviewUrlRef.current)
             const localPreviewUrl = URL.createObjectURL(file)
+            localPreviewUrlRef.current = localPreviewUrl
 
-            setPreviewFailed(false)
+            setFailedPreviewUrl('')
             onUpdateField('opportunitySplash', {
               ...toFileMetadata(file, null, localPreviewUrl),
               uploadStatus: 'uploading',
@@ -113,12 +137,11 @@ function BusinessOpportunitySplashField({ splash, onSplashUploadStateChange, onU
                 scope: 'opportunity-splash',
                 metadata: { placement: 'opportunity_splash' },
               })
-              setPreviewFailed(false)
+              setFailedPreviewUrl('')
               onUpdateField('opportunitySplash', {
                 ...toFileMetadata(file, upload, localPreviewUrl),
                 uploadStatus: 'complete',
               })
-              URL.revokeObjectURL(localPreviewUrl)
             } catch (error) {
               onUpdateField('opportunitySplash', {
                 ...toFileMetadata(file, null, localPreviewUrl),
@@ -149,7 +172,7 @@ function BusinessOpportunitySplashField({ splash, onSplashUploadStateChange, onU
                 src={previewUrl}
                 value={crop}
                 onChange={updateSplashCrop}
-                onImageError={() => setPreviewFailed(true)}
+                onImageError={() => setFailedPreviewUrl(previewUrl)}
                 aspectRatio={16 / 9}
                 aspectLabel="16:9 card · locked"
                 alt="Opportunity splash being cropped"
@@ -157,7 +180,7 @@ function BusinessOpportunitySplashField({ splash, onSplashUploadStateChange, onU
               />
             ) : (
               <div className="business-create-splash-preview" aria-label="Opportunity video preview">
-                <video src={previewUrl} muted playsInline onError={() => setPreviewFailed(true)} />
+                <video src={previewUrl} muted playsInline onError={() => setFailedPreviewUrl(previewUrl)} />
               </div>
             )}
           <div className="business-create-splash-controls">

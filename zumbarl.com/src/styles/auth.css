@@ -1147,36 +1147,31 @@
     z-index: 2;
     top: 50%;
     left: 50%;
-    width: clamp(180px, 39%, 210px);
-    aspect-ratio: 1;
-    padding: 30px;
+    width: auto;
+    min-width: 188px;
+    padding: 13px 18px;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 5px;
-    border: 0;
-    border-radius: 50%;
-    background: radial-gradient(
-      circle,
-      rgba(255, 255, 255, .98) 0%,
-      rgba(255, 255, 255, .93) 38%,
-      rgba(255, 255, 255, .7) 58%,
-      rgba(255, 255, 255, .28) 72%,
-      rgba(255, 255, 255, 0) 88%
-    );
+    gap: 10px;
+    border: 1px solid rgba(255, 255, 255, .88);
+    border-radius: 18px;
+    background: rgba(255, 255, 255, .82);
     color: #252942;
-    font-size: 26px;
+    font-size: 24px;
     letter-spacing: -.04em;
+    box-shadow: 0 16px 38px rgba(42, 29, 39, .16);
+    backdrop-filter: blur(14px);
     transform: translate(-50%, -50%);
   }
 
   .auth-page:is(.is-login, .is-register) .auth-login-promo-brand span {
-    width: 68px;
-    height: 68px;
+    width: 46px;
+    height: 46px;
     display: grid;
     place-items: center;
-    filter: drop-shadow(0 10px 12px rgba(45, 31, 42, .2));
+    filter: drop-shadow(0 7px 9px rgba(45, 31, 42, .16));
     animation: auth-bee-float 3.6s ease-in-out infinite;
   }
 
@@ -1492,4 +1487,372 @@
   .auth-page:is(.is-login, .is-register) .auth-form-brand-mark,
   .auth-page:is(.is-login, .is-register) .auth-login-promo-brand span { animation: none; }
   .login-onboarding-track { transition: none; }
+}
+
+/* Staged profile setup */
+.auth-page.is-step-profile .auth-stage {
+  padding-block: clamp(20px, 3vw, 40px);
+}
+
+.auth-page.is-step-profile .auth-card {
+  width: min(1180px, 100%);
+  grid-template-columns: minmax(0, 56%) minmax(360px, 44%);
+}
+
+.auth-page.is-step-profile .auth-form-panel {
+  padding: clamp(28px, 3vw, 42px) clamp(28px, 3.5vw, 48px);
+  gap: 8px;
+}
+
+.auth-page.is-step-profile .auth-title {
+  font-size: clamp(46px, 4vw, 62px);
+}
+
+.auth-page.is-step-profile .auth-intro {
+  margin-bottom: 5px;
+}
+
+.auth-profile-progress {
+  margin: 2px 0 4px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  list-style: none;
+}
+
+.auth-profile-progress li {
+  position: relative;
+  min-width: 0;
+}
+
+.auth-profile-progress li:not(:last-child)::after {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  top: 18px;
+  left: calc(50% + 20px);
+  right: calc(-50% + 20px);
+  height: 2px;
+  background: #e6dfe7;
+}
+
+.auth-profile-progress li.is-complete:not(:last-child)::after {
+  background: #63ba8b;
+}
+
+.auth-profile-progress button {
+  width: 100%;
+  padding: 0 4px;
+  border: 0;
+  display: grid;
+  justify-items: center;
+  gap: 5px;
+  background: transparent;
+  color: #8b828d;
+  font: inherit;
+}
+
+.auth-profile-progress button:not(:disabled) { cursor: pointer; }
+
+.auth-profile-progress button > span {
+  width: 36px;
+  height: 36px;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  border: 1px solid #ded5df;
+  border-radius: 50%;
+  background: #fff;
+  color: #8b7c89;
+}
+
+.auth-profile-progress button svg { width: 18px; height: 18px; }
+
+.auth-profile-progress small {
+  overflow: hidden;
+  font-size: 11px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-profile-progress .is-current button,
+.auth-profile-progress .is-complete button { color: var(--auth-purple-deep); }
+
+.auth-profile-progress .is-current button > span {
+  border-color: var(--auth-purple);
+  background: var(--auth-purple);
+  color: #fff;
+  box-shadow: 0 0 0 4px rgba(118, 80, 111, .1);
+}
+
+.auth-profile-progress .is-complete button > span {
+  border-color: #63ba8b;
+  background: #eaf8f0;
+  color: #278c5b;
+}
+
+.auth-profile-step-card {
+  min-height: 330px;
+  padding: clamp(18px, 2vw, 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border: 1px solid rgba(83, 51, 79, .13);
+  border-radius: 20px;
+  background: linear-gradient(150deg, #fff 0%, #fdfbfc 100%);
+  box-shadow: 0 14px 36px rgba(64, 45, 61, .07);
+}
+
+.auth-profile-step-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.auth-profile-step-heading > span {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: rgba(118, 80, 111, .1);
+  color: var(--auth-purple);
+}
+
+.auth-profile-step-heading > span svg { width: 22px; height: 22px; }
+.auth-profile-step-heading > div { min-width: 0; }
+
+.auth-profile-step-heading small {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--auth-purple);
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.auth-profile-step-heading h2 {
+  margin: 0;
+  color: #252435;
+  font-size: 20px;
+  line-height: 1.2;
+  letter-spacing: -.02em;
+}
+
+.auth-profile-step-heading p {
+  margin: 4px 0 0;
+  color: #746d78;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.auth-profile-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.auth-profile-field-wide { grid-column: 1 / -1; }
+
+.auth-profile-campus-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.auth-profile-campus-fields > :first-child { grid-column: 1 / -1; }
+
+.auth-profile-campus-fields:has(.course-picker-new) {
+  grid-template-columns: 1fr;
+}
+
+.auth-profile-campus-fields:has(.course-picker-new) > * {
+  grid-column: 1;
+}
+
+.auth-campus-new-summary {
+  min-width: 0;
+  padding: 13px 14px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 11px;
+  border: 1px solid rgba(73, 185, 123, .34);
+  border-radius: 14px;
+  background: rgba(73, 185, 123, .07);
+}
+
+.auth-campus-new-summary > svg {
+  width: 22px;
+  height: 22px;
+  padding: 3px;
+  border-radius: 50%;
+  background: #dff4e8;
+  color: #278c5b;
+}
+
+.auth-campus-new-summary > span {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.auth-campus-new-summary small {
+  color: #278c5b;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.auth-campus-new-summary strong,
+.auth-campus-new-summary span span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-campus-new-summary strong { color: #2e3832; font-size: 13px; }
+.auth-campus-new-summary span span { color: #66716a; font-size: 11px; }
+
+.auth-campus-new-summary > div {
+  display: grid;
+  justify-items: end;
+  gap: 5px;
+}
+
+.auth-campus-new-summary button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--auth-purple);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.auth-profile-summary {
+  margin: 0;
+  padding: 4px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.auth-profile-summary > div {
+  min-width: 0;
+  padding: 11px 12px;
+  border: 1px solid #ece6ed;
+  border-radius: 12px;
+  background: #fbf9fb;
+}
+
+.auth-profile-summary dt {
+  margin: 0 0 3px;
+  color: #8a7f89;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.auth-profile-summary dd {
+  margin: 0;
+  overflow: hidden;
+  color: #312d37;
+  font-size: 13px;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auth-profile-actions {
+  min-height: 54px;
+  display: grid;
+  grid-template-columns: minmax(110px, auto) minmax(190px, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.auth-profile-actions .auth-primary-btn {
+  width: 100%;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+
+.auth-profile-actions .auth-primary-btn svg { width: 18px; height: 18px; }
+
+.auth-profile-back-btn {
+  min-height: 52px;
+  padding: 0 18px;
+  border: 1px solid rgba(83, 51, 79, .18);
+  border-radius: 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #fff;
+  color: var(--auth-purple-deep);
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.auth-profile-back-btn:hover { background: #f8f3f7; }
+.auth-profile-back-btn:focus-visible,
+.auth-profile-progress button:focus-visible { outline: 3px solid rgba(245, 184, 61, .65); outline-offset: 2px; }
+
+@media (max-width: 980px) {
+  .auth-page.is-step-profile .auth-card { grid-template-columns: 1fr; }
+  .auth-page.is-step-profile .auth-promo-panel { display: none; }
+}
+
+@media (max-width: 680px) {
+  .auth-page.is-step-profile .auth-stage {
+    min-height: 100dvh;
+    padding: max(10px, env(safe-area-inset-top)) 10px max(14px, env(safe-area-inset-bottom));
+    align-items: start;
+  }
+
+  .auth-page.is-step-profile .auth-card {
+    width: min(100%, 460px);
+    overflow: hidden;
+    border: 1px solid rgba(83, 51, 79, .09);
+    border-radius: 24px;
+  }
+
+  .auth-page.is-step-profile .auth-form-panel {
+    padding: 22px 15px 18px;
+  }
+
+  .auth-page.is-step-profile .auth-login-illustration { display: none; }
+  .auth-page.is-step-profile .auth-title { margin-top: 4px; font-size: 45px; }
+  .auth-page.is-step-profile .auth-intro { margin: 2px 0 10px; }
+  .auth-profile-step-card { min-height: 0; padding: 16px; border-radius: 17px; }
+  .auth-profile-field-grid,
+  .auth-profile-campus-fields { grid-template-columns: 1fr; }
+  .auth-profile-campus-fields > :first-child,
+  .auth-profile-field-wide { grid-column: auto; }
+  .auth-campus-new-summary { grid-template-columns: auto minmax(0, 1fr); }
+  .auth-campus-new-summary > div { grid-column: 2; justify-items: start; }
+  .auth-profile-summary { grid-template-columns: 1fr 1fr; }
+  .auth-profile-actions { grid-template-columns: auto minmax(0, 1fr); }
+  .auth-profile-actions > span { width: 0; }
+  .auth-profile-back-btn { min-width: 96px; padding-inline: 12px; }
+  .auth-profile-progress small { font-size: 10px; }
+}
+
+@media (max-width: 390px) {
+  .auth-profile-summary { grid-template-columns: 1fr; }
+  .auth-profile-actions { grid-template-columns: 1fr; }
+  .auth-profile-actions > span { display: none; }
 }

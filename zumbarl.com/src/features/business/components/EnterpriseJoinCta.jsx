@@ -6,7 +6,7 @@ function EnterpriseJoinCta() {
       <p>
         Ready For <span className="x_wd_yellow_highlight_bold_05">Talent</span>?
       </p>
-      <Link to="/register" className="event-link event-play-btn">
+      <Link to="/login" className="event-link event-play-btn">
         Try It Out -&gt;
       </Link>
     </div>

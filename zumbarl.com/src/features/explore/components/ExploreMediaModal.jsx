@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { FiChevronLeft, FiChevronRight, FiShare2, FiX } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
-import { useDialog } from '../../../components/ui'
+import { ProfileAvatar, useDialog } from '../../../components/ui'
 import { postCreatorProfilePath } from '../utils/creatorProfilePath'
 import { recordRecommendationInteraction } from '../../recommendations/services/recommendationEventService'
 
@@ -96,9 +96,9 @@ function ExploreMediaModal({
             <div className="explore-campus-media-post-head">
               {profilePath ? (
                 <Link className="explore-campus-media-owner-avatar" to={profilePath} aria-label={`View ${activeMediaPost.author}'s profile`}>
-                  <img src={activeMediaPost.avatar || '/assets/index/bee_nobg.png'} alt={activeMediaPost.author} loading="lazy" />
+                  <ProfileAvatar src={activeMediaPost.avatar} alt={activeMediaPost.author} loading="lazy" />
                 </Link>
-              ) : <img src={activeMediaPost.avatar || '/assets/index/bee_nobg.png'} alt={activeMediaPost.author} loading="lazy" />}
+              ) : <ProfileAvatar src={activeMediaPost.avatar} alt={activeMediaPost.author} loading="lazy" />}
               {profilePath ? (
                 <Link className="explore-campus-media-owner-copy" to={profilePath}>
                   <h4>{activeMediaPost.author}</h4>
@@ -113,9 +113,9 @@ function ExploreMediaModal({
             {!activeMediaComments.length ? <p className="explore-campus-media-comments-empty">No comments yet. Start the conversation.</p> : null}
             {activeMediaComments.map((comment) => (
               <article key={comment.id}>
-                <img
+                <ProfileAvatar
                   className="explore-campus-media-comment-avatar"
-                  src={comment.avatar || '/assets/index/bee_nobg.png'}
+                  src={comment.avatar}
                   alt={comment.author}
                   loading="lazy"
                 />

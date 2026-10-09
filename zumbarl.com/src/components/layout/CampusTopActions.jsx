@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { FiBell, FiCheck, FiChevronDown, FiMessageCircle } from 'react-icons/fi'
 import { Link, useNavigate } from 'react-router-dom'
+import ProfileAvatar from '../ui/ProfileAvatar'
 import { ACCESS_KEYS, hasAccess } from '../../features/auth/roleConfig'
 import { useViewerProfile } from '../../features/auth/viewerProfile'
 import { logoutAuthUser } from '../../features/auth/services/authUserService'
@@ -304,11 +305,7 @@ function CampusTopActions({
               setIsNotificationsOpen(false)
             }}
           >
-            {currentViewer.avatar ? (
-              <img src={currentViewer.avatar} alt={`${currentViewer.name} avatar`} />
-            ) : (
-              <span>{currentViewer.initials}</span>
-            )}
+            <ProfileAvatar src={currentViewer.avatar} alt={`${currentViewer.name} avatar`} />
             {showUserChevron ? <FiChevronDown aria-hidden="true" /> : null}
           </button>
           {showMenu ? (

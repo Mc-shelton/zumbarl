@@ -1,5 +1,6 @@
 import { FiChevronRight, FiClock, FiMessageCircle, FiPhone, FiVideo } from 'react-icons/fi'
 import { filterByAccess } from '../../auth/roleConfig'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 import {
   QUICK_ACTIONS,
 } from '../constants'
@@ -77,7 +78,7 @@ function ProfileDefaultRail({
         <div className="campus-profile-pipeline-list">
           {relationships.length ? relationships.map((item) => (
             <article key={item.id || item.name || item.company}>
-              <img src="/assets/index/bee_nobg.png" alt={`${item.name || item.company} logo`} />
+              <ProfileAvatar src={item.companyLogoUrl || item.avatarUrl} alt={`${item.name || item.company} logo`} />
               <div>
                 <h3>{item.name || item.company}</h3>
                 <p>{item.meta || `${item.gigs || 0} gigs${item.targetRole ? ` · ${item.targetRole}` : ''}`}</p>

@@ -103,7 +103,7 @@ function Header({ brandOnly = false }) {
 
         <div className="mobile-nav-sheet-actions">
           <HeaderLink href="/login" onClick={closeMobileMenu}>Sign in</HeaderLink>
-          <HeaderLink href="/register" onClick={closeMobileMenu}>Try it free</HeaderLink>
+          <HeaderLink href="/login" onClick={closeMobileMenu}>Try it free</HeaderLink>
         </div>
       </aside>
 

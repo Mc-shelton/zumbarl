@@ -1,5 +1,6 @@
 import { FiInfo, FiX } from 'react-icons/fi'
 import { buildRadarRingPoints } from '../constants'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 function ProfilePortfolioProjectRail({
   canManage = false,
@@ -35,7 +36,7 @@ function ProfilePortfolioProjectRail({
           <article>
             <h4>Client</h4>
             <div className="campus-portfolio-detail-client-row">
-              <img src="/assets/index/bee_nobg.png" alt={`${selectedPortfolioItem.client} logo`} />
+              <ProfileAvatar src={selectedPortfolioItem.companyLogoUrl} alt={`${selectedPortfolioItem.client} logo`} />
               <strong>{selectedPortfolioItem.client}</strong>
             </div>
           </article>

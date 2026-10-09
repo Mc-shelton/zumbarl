@@ -39,6 +39,7 @@ export function useCartPageState() {
   const [cartItems, setCartItems] = useState([])
   const [cartId, setCartId] = useState('')
   const [promoCode, setPromoCode] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
@@ -50,6 +51,9 @@ export function useCartPageState() {
         setCartItems(cart.items.map(mapCartItem))
       })
       .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setIsLoading(false)
+      })
     return () => { cancelled = true }
   }, [])
 
@@ -158,6 +162,7 @@ export function useCartPageState() {
     handleFreeCampusDelivery,
     handleZumbarlDeliveryQuote,
     handleRemoveItem,
+    isLoading,
     promoCode,
     setPromoCode,
     totals,

@@ -1,5 +1,6 @@
 import { FiBarChart2, FiCalendar, FiEdit3, FiEye, FiHeart, FiMessageCircle, FiPackage, FiShield, FiShoppingCart } from 'react-icons/fi'
 import { normalizeZumbarlFileUrl } from '../../../lib/normalizeZumbarlFileUrl'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 import { ACCESS_KEYS, hasAccess } from '../../auth/roleConfig'
 
 function MarketplaceProductRail({
@@ -90,19 +91,19 @@ function MarketplaceProductRail({
             {activeOffer?.status === 'accepted' ? (
               <div className="opportunities-marketplace-offer-accepted" role="status">
                 <strong>Offer accepted!</strong>
-                <span>The seller accepted your KSh {Number(activeOffer.amount).toLocaleString('en-KE')} offer. Complete checkout to secure the item.</span>
+                <span>The seller accepted your KES {Number(activeOffer.amount).toLocaleString('en-KE')} offer. Complete checkout to secure the item.</span>
                 <button type="button" disabled={isActionPending} onClick={onCheckoutAcceptedOffer}>Checkout now</button>
               </div>
             ) : activeOffer?.status === 'declined' ? (
               <div className="opportunities-marketplace-offer-declined" role="status">
                 <strong>Offer declined</strong>
-                <span>Your KSh {Number(activeOffer.amount).toLocaleString('en-KE')} offer wasn’t accepted. You can adjust it and try again.</span>
+                <span>Your KES {Number(activeOffer.amount).toLocaleString('en-KE')} offer wasn’t accepted. You can adjust it and try again.</span>
                 <button type="button" disabled={isActionPending} onClick={onMakeOffer}>Edit offer</button>
               </div>
             ) : activeOffer ? (
               <div className="opportunities-marketplace-offer-pending" role="status">
                 <strong>Offer pending</strong>
-                <span>Your KSh {Number(activeOffer.amount).toLocaleString('en-KE')} offer is awaiting the seller’s response.</span>
+                <span>Your KES {Number(activeOffer.amount).toLocaleString('en-KE')} offer is awaiting the seller’s response.</span>
               </div>
             ) : !isService ? (
               <button type="button" className="opportunities-marketplace-product-secondary-btn" disabled={isActionPending} onClick={onMakeOffer}>Make an Offer</button>
@@ -134,7 +135,7 @@ function MarketplaceProductRail({
         <h3>{isFoodVendor ? `${isOwner ? 'Your ' : ''}${vendorNoun}` : isOwner ? 'Your shop' : (isService ? 'Provider information' : 'Seller information')}</h3>
 
         <div className="opportunities-marketplace-product-seller-head">
-          <img src={sellerPresentation.avatar} alt={sellerPresentation.name} />
+          <ProfileAvatar src={sellerPresentation.avatar} alt={sellerPresentation.name} />
           <div>
             <h4>{sellerPresentation.name}</h4>
             <p>{sellerPresentation.role}</p>

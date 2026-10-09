@@ -7,6 +7,7 @@ import {
   FiZap,
 } from 'react-icons/fi'
 import { Link } from 'react-router-dom'
+import ProfileAvatar from '../../../components/ui/ProfileAvatar'
 
 const SUMMARY_ICONS = {
   briefcase: FiBriefcase,
@@ -69,9 +70,9 @@ export function BusinessOpportunityRail({ activity, summary, topSkills = [] }) {
           <p className="business-rail-empty">Applicant and opportunity activity will appear here.</p>
         ) : (
           <ul>
-            {activity.map((item) => (
-              <li key={`${item.actor}-${item.time}-${item.detail}`}>
-                <span className={`tone-${item.tone}`}>{item.initials}</span>
+            {activity.map((item, index) => (
+              <li key={item.id || `${item.actor}-${item.time}-${item.detail}-${index}`}>
+                <span className={`tone-${item.tone}`}><ProfileAvatar src={item.avatarUrl || item.avatar} alt="" /></span>
                 <p><strong>{item.actor}</strong> {item.detail}</p>
                 <time>{item.time}</time>
               </li>

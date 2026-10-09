@@ -10,7 +10,7 @@ const COMPANY_SIZES = ['1', '2-10', '11-50', '51-200', '201+']
 
 const FIELD_GROUPS = [
   {
-    title: 'Business identity verification',
+    title: 'Business registration details',
     fields: [
       ['registeredBusinessName', 'Registered business name', 'text', true],
       ['businessRegistrationNumber', 'Business registration number', 'text', true],

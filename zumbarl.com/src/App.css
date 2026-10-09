@@ -1012,6 +1012,7 @@
 
 .community-proof {
   position: relative;
+  overflow-x: clip;
   background: linear-gradient(180deg, #f0f2f5 0%, #f4f5f7 64%, #ffffff 100%);
   padding: 56px 0 28px;
 }

@@ -9,9 +9,11 @@ function readMyStudentProfileExperience() {
   return sendZumbarlApiRequest('/campus/profile/me')
 }
 
-function readStudentProfileExperience(studentId) {
+function readStudentProfileExperience(studentId, { recordInteraction = true } = {}) {
   return sendZumbarlApiRequest(`/campus/profiles/${studentId}`).then((profile) => {
-    recordRecommendationInteraction({ surface: 'people', entityType: 'student_profile', entityId: studentId, eventType: 'profile_click' })
+    if (recordInteraction) {
+      recordRecommendationInteraction({ surface: 'people', entityType: 'student_profile', entityId: studentId, eventType: 'profile_click' })
+    }
     return profile
   })
 }
